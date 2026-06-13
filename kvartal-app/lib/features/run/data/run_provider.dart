@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart' as permissions;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../loyalty/data/loyalty_provider.dart';
 import 'completed_runs_provider.dart';
 
 enum RunStatus { idle, active, paused }
@@ -281,6 +282,32 @@ class RunNotifier extends StateNotifier<RunState> {
       capturedTerritory: capturedTerritory,
     );
     await _ref.read(completedRunsProvider.notifier).add(run);
+    await _awardLoyaltyPoints(run);
+  }
+
+  /// Начисление баллов в общий счёт экосистемы за пробежку и захват территории.
+  /// 10 баллов/км + 50 за захват территории (как в демо-экономике бэка).
+  /// Баллы становятся видны и в Store (общий аккаунт).
+  Future<void> _awardLoyaltyPoints(CompletedRun run) async {
+    final loyalty = _ref.read(loyaltyProvider.notifier);
+    final runPoints = (run.distanceKm * 10).round();
+    if (runPoints > 0) {
+      await loyalty.award(
+        amount: runPoints,
+        source: 'runnerRun',
+        description: 'Пробежка ${run.distanceKm.toStringAsFixed(1)} км',
+        runId: run.id,
+      );
+    }
+    if (run.capturedTerritory) {
+      final zonesNote = run.capturedZones > 0 ? ' (${run.capturedZones} зон)' : '';
+      await loyalty.award(
+        amount: 50,
+        source: 'runnerTerritory',
+        description: 'Захват территории$zonesNote',
+        runId: run.id,
+      );
+    }
   }
 
   Future<void> _restoreSavedRun() async {

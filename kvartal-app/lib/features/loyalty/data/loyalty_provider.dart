@@ -118,6 +118,34 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
       state = state.copyWith(isLoading: false, error: 'Не удалось загрузить баллы');
     }
   }
+
+  /// Начислить баллы в общий счёт экосистемы (POST /loyalty/transactions),
+  /// затем обновить баланс. Best-effort: при офлайне начисление не уходит
+  /// (для прода нужна очередь/идемпотентность по runId).
+  Future<void> award({
+    required int amount,
+    required String source,
+    required String description,
+    String? runId,
+  }) async {
+    final token = ref.read(authProvider).token;
+    if (token == null || token.isEmpty || amount <= 0) return;
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/loyalty/transactions',
+        data: {
+          'amount': amount,
+          'source': source,
+          'description': description,
+          'runId': runId,
+        },
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      await refresh();
+    } catch (_) {
+      // Офлайн/ошибка сети — баланс не меняем; начисление можно повторить позже.
+    }
+  }
 }
 
 final loyaltyProvider =
