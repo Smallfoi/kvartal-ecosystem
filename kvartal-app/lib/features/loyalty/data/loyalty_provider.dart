@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_config.dart';
 import '../../auth/data/auth_provider.dart';
@@ -88,6 +91,8 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
     ),
   );
 
+  static const _pendingKey = 'kvartal.loyalty.pending.v1';
+
   Future<void> refresh() async {
     if (state.isLoading) return; // дедуп: не пускаем два запроса разом
     final token = ref.read(authProvider).token;
@@ -96,6 +101,8 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
       return;
     }
     state = state.copyWith(isLoading: true, clearError: true);
+    // Сначала досылаем накопленные офлайн-начисления, затем читаем баланс.
+    await _flushPending(token);
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/loyalty/account',
@@ -119,32 +126,64 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
     }
   }
 
-  /// Начислить баллы в общий счёт экосистемы (POST /loyalty/transactions),
-  /// затем обновить баланс. Best-effort: при офлайне начисление не уходит
-  /// (для прода нужна очередь/идемпотентность по runId).
+  /// Начислить баллы в общий счёт экосистемы. Начисление кладётся в локальную
+  /// очередь и сразу пытается уйти на backend; при офлайне остаётся в очереди и
+  /// долетит при следующем refresh (открытие профиля / повторный вход), когда
+  /// связь вернётся. Backend идемпотентен по runId+source — повтор не задвоит.
   Future<void> award({
     required int amount,
     required String source,
     required String description,
     String? runId,
   }) async {
-    final token = ref.read(authProvider).token;
-    if (token == null || token.isEmpty || amount <= 0) return;
+    if (amount <= 0) return;
+    await _enqueue({
+      'amount': amount,
+      'source': source,
+      'description': description,
+      'runId': runId,
+    });
+    await refresh();
+  }
+
+  Future<void> _enqueue(Map<String, dynamic> item) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = _readPending(prefs)..add(item);
+    await prefs.setString(_pendingKey, jsonEncode(list));
+  }
+
+  List<Map<String, dynamic>> _readPending(SharedPreferences prefs) {
+    final raw = prefs.getString(_pendingKey);
+    if (raw == null || raw.isEmpty) return [];
     try {
-      await _dio.post<Map<String, dynamic>>(
-        '/loyalty/transactions',
-        data: {
-          'amount': amount,
-          'source': source,
-          'description': description,
-          'runId': runId,
-        },
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-      await refresh();
+      return (jsonDecode(raw) as List)
+          .whereType<Map<String, dynamic>>()
+          .toList();
     } catch (_) {
-      // Офлайн/ошибка сети — баланс не меняем; начисление можно повторить позже.
+      return [];
     }
+  }
+
+  /// Досылает накопленные начисления по порядку. На первой сетевой ошибке
+  /// останавливается и сохраняет остаток — повторим при следующем refresh.
+  Future<void> _flushPending(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    final pending = _readPending(prefs);
+    if (pending.isEmpty) return;
+    final remaining = <Map<String, dynamic>>[];
+    for (var i = 0; i < pending.length; i++) {
+      try {
+        await _dio.post<Map<String, dynamic>>(
+          '/loyalty/transactions',
+          data: pending[i],
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+      } catch (_) {
+        remaining.addAll(pending.sublist(i)); // офлайн — остаток оставляем
+        break;
+      }
+    }
+    await prefs.setString(_pendingKey, jsonEncode(remaining));
   }
 }
 
