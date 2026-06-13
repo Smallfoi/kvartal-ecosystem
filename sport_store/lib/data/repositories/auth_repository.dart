@@ -1,0 +1,220 @@
+import '../../models/auth_user.dart';
+import '../api/api_client.dart';
+
+/// Контракт аутентификации. Валидация форм остаётся в `AuthProvider`,
+/// здесь — обращение к backend (или его имитация).
+abstract class AuthRepository {
+  Future<AuthUser> login(String email, String password);
+  Future<AuthUser> loginByPhone(String phone, String code);
+  Future<AuthUser> register(String name, String email, String password);
+  Future<OAuthPendingData> startGoogleSignIn();
+  Future<OAuthPendingData> startAppleSignIn();
+  Future<AuthUser> completeSocialSignUp(
+      OAuthPendingData data, String name, String? phone);
+  Future<void> sendPasswordReset(String email);
+  Future<void> resetPassword(String newPassword);
+  Future<void> changePassword(String oldPassword, String newPassword);
+
+  /// Обновление профиля на backend (источник правды). Возвращает актуального юзера.
+  Future<AuthUser> updateProfile(AuthUser current,
+      {String? name, String? phone, String? city, String? avatarPath});
+
+  /// Профиль текущего пользователя по JWT (GET /auth/me).
+  Future<AuthUser> fetchMe();
+}
+
+class MockAuthRepository implements AuthRepository {
+  @override
+  Future<AuthUser> login(String email, String password) async {
+    await Future.delayed(const Duration(milliseconds: 1400));
+    return AuthUser(name: email.split('@').first, email: email.trim());
+  }
+
+  @override
+  Future<AuthUser> loginByPhone(String phone, String code) async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    return AuthUser(
+      id: 'local-phone-${phone.replaceAll(RegExp(r'\D'), '')}',
+      name: 'Бегун',
+      email: 'runner_${phone.replaceAll(RegExp(r'\D'), '')}@kvartal.local',
+      phone: phone.trim(),
+      provider: LoginProvider.phone,
+    );
+  }
+
+  @override
+  Future<AuthUser> register(String name, String email, String password) async {
+    await Future.delayed(const Duration(milliseconds: 1400));
+    return AuthUser(name: name.trim(), email: email.trim());
+  }
+
+  @override
+  Future<OAuthPendingData> startGoogleSignIn() async {
+    await Future.delayed(const Duration(milliseconds: 1200));
+    return const OAuthPendingData(
+      name: 'Алексей Иванов',
+      email: 'alexivanov@gmail.com',
+      provider: LoginProvider.google,
+    );
+  }
+
+  @override
+  Future<OAuthPendingData> startAppleSignIn() async {
+    await Future.delayed(const Duration(milliseconds: 1200));
+    return const OAuthPendingData(
+      name: 'A. Иванов',
+      email: 'user@privaterelay.appleid.com',
+      provider: LoginProvider.apple,
+    );
+  }
+
+  @override
+  Future<AuthUser> completeSocialSignUp(
+      OAuthPendingData data, String name, String? phone) async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    return AuthUser(
+      name: name.trim(),
+      email: data.email,
+      phone: (phone?.trim().isNotEmpty == true) ? phone!.trim() : null,
+      provider: data.provider,
+    );
+  }
+
+  @override
+  Future<void> sendPasswordReset(String email) async {
+    await Future.delayed(const Duration(milliseconds: 1200));
+  }
+
+  @override
+  Future<void> resetPassword(String newPassword) async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+  }
+
+  @override
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    await Future.delayed(const Duration(milliseconds: 800));
+  }
+
+  @override
+  Future<AuthUser> updateProfile(AuthUser current,
+      {String? name, String? phone, String? city, String? avatarPath}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return AuthUser(
+      id: current.id,
+      name: (name?.trim().isNotEmpty == true) ? name!.trim() : current.name,
+      email: current.email,
+      phone: phone != null
+          ? (phone.trim().isNotEmpty ? phone.trim() : null)
+          : current.phone,
+      provider: current.provider,
+      addresses: current.addresses,
+      avatarPath: avatarPath ?? current.avatarPath,
+    );
+  }
+
+  @override
+  Future<AuthUser> fetchMe() async =>
+      throw UnimplementedError('Mock не имеет /auth/me');
+}
+
+class ApiAuthRepository implements AuthRepository {
+  final ApiClient _client;
+  ApiAuthRepository(this._client);
+
+  @override
+  Future<AuthUser> login(String email, String password) async {
+    final data = await _client
+        .post('/auth/login', body: {'email': email, 'password': password});
+    final map = data as Map<String, dynamic>;
+    _client.authToken = map['token'] as String?;
+    return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AuthUser> loginByPhone(String phone, String code) async {
+    final data = await _client.post('/auth/phone/verify',
+        body: {'phone': phone, 'code': code, 'name': 'Бегун'});
+    final map = data as Map<String, dynamic>;
+    _client.authToken = map['token'] as String?;
+    return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AuthUser> register(String name, String email, String password) async {
+    final data = await _client.post('/auth/register',
+        body: {'name': name, 'email': email, 'password': password});
+    final map = data as Map<String, dynamic>;
+    _client.authToken = map['token'] as String?;
+    return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<OAuthPendingData> startGoogleSignIn() async {
+    final data = await _client.post('/auth/oauth/google');
+    final m = data as Map<String, dynamic>;
+    return OAuthPendingData(
+      name: m['name'] as String,
+      email: m['email'] as String,
+      provider: LoginProvider.google,
+    );
+  }
+
+  @override
+  Future<OAuthPendingData> startAppleSignIn() async {
+    final data = await _client.post('/auth/oauth/apple');
+    final m = data as Map<String, dynamic>;
+    return OAuthPendingData(
+      name: m['name'] as String,
+      email: m['email'] as String,
+      provider: LoginProvider.apple,
+    );
+  }
+
+  @override
+  Future<AuthUser> completeSocialSignUp(
+      OAuthPendingData data, String name, String? phone) async {
+    final res = await _client.post('/auth/oauth/complete', body: {
+      'email': data.email,
+      'provider': data.provider.name,
+      'name': name,
+      'phone': phone,
+    });
+    final m = res as Map<String, dynamic>;
+    _client.authToken = m['token'] as String?;
+    return AuthUser.fromJson(m['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> sendPasswordReset(String email) async {
+    await _client.post('/auth/password/forgot', body: {'email': email});
+  }
+
+  @override
+  Future<void> resetPassword(String newPassword) async {
+    await _client.post('/auth/password/reset', body: {'password': newPassword});
+  }
+
+  @override
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    await _client.put('/auth/password',
+        body: {'old': oldPassword, 'new': newPassword});
+  }
+
+  @override
+  Future<AuthUser> updateProfile(AuthUser current,
+      {String? name, String? phone, String? city, String? avatarPath}) async {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (phone != null) body['phone'] = phone;
+    if (city != null) body['city'] = city;
+    if (avatarPath != null) body['avatarPath'] = avatarPath;
+    final data = await _client.patch('/profile', body: body);
+    return AuthUser.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AuthUser> fetchMe() async {
+    final data = await _client.get('/auth/me');
+    return AuthUser.fromJson(data as Map<String, dynamic>);
+  }
+}

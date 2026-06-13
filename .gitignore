@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────
+# Монорепо экосистемы STAW/Квартал — .gitignore
+# ─────────────────────────────────────────────────────────────
+
+# === Секреты / локальная конфигурация (НИКОГДА не коммитить) ===
+.mcp.json
+**/.env
+**/.env.*
+*.key
+*.pem
+**/secrets.*
+**/key.properties
+**/*.keystore
+**/*.jks
+
+# === Локальные dev-базы (содержат тестовых юзеров / PII) ===
+*.db
+*.sqlite
+*.sqlite3
+backend/ecosystem.db
+
+# === Отдельный инструмент со своим git-репозиторием ===
+/higgsfield_mcp/
+
+# === Python ===
+**/__pycache__/
+*.py[cod]
+*$py.class
+**/.venv/
+**/venv/
+**/env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# === Flutter / Dart ===
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.fvm/
+**/doc/api/
+*.apk
+*.aab
+*.ipa
+
+# === Android ===
+**/.gradle/
+**/captures/
+**/local.properties
+**/.cxx/
+
+# === iOS / macOS (CocoaPods, симлинки) ===
+**/Pods/
+**/.symlinks/
+
+# === IDE / редакторы ===
+.idea/
+*.iml
+.vscode/
+
+# === ОС ===
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# === Прочее ===
+*.log

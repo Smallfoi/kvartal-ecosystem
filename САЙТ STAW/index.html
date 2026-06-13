@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STAW — официальный магазин</title>
+    <meta
+      name="description"
+      content="Официальный сайт-магазин STAW: спортивная одежда для бега, тренировки, города и движения каждый день."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="STAW официальный магазин">STAW</a>
+      <nav class="main-nav" aria-label="Основная навигация">
+        <a href="#philosophy">Философия</a>
+        <a href="#catalog">Каталог</a>
+        <a href="#references">Референсы</a>
+      </nav>
+      <button class="cart-button" type="button" data-cart-toggle>
+        <span data-cart-count>0</span>
+        Корзина
+      </button>
+    </header>
+
+    <main id="top">
+      <section class="hero scene" aria-labelledby="hero-title">
+        <div class="hero-media" aria-hidden="true">
+          <img src="Референсы/Фото товаров/staw-reference-11.jpg" alt="" />
+        </div>
+        <div class="hero-content">
+          <p class="eyebrow reveal">Run. City. Weekend.</p>
+          <h1 id="hero-title" class="brand-wordmark reveal" aria-label="STAW">
+            <span>S</span><span>T</span><span>A</span><span>W</span>
+          </h1>
+          <p class="hero-copy reveal">
+            Спортивная одежда для тех, кто двигается каждый день: пробежка утром, город днём, лёгкий маршрут на выходных.
+          </p>
+        </div>
+      </section>
+
+      <section class="brand-motion scene" aria-label="Бренд STAW">
+        <div class="brand-motion-word" aria-hidden="true">
+          <span>STAW</span>
+          <span>STAW</span>
+          <span>STAW</span>
+        </div>
+        <div class="brand-motion-copy reveal">
+          <p class="eyebrow">Brand signal</p>
+          <h2>Движение как стиль. Функция как основа.</h2>
+        </div>
+      </section>
+
+      <section class="statement scene" id="philosophy">
+        <div class="statement-inner reveal">
+          <p class="eyebrow">Философия</p>
+          <h2>Не ждать идеального момента. Начинать движение сейчас.</h2>
+          <p>
+            STAW создаёт одежду для активного ритма: бег, тренировка, прогулка, дорога, выходной маршрут. Это вещи,
+            которые не выглядят как случайная экипировка, но работают как спортивный слой: дышат, сохнут, держат форму
+            и остаются частью повседневного образа.
+          </p>
+        </div>
+      </section>
+
+      <section class="cinema scene">
+        <div class="cinema-copy reveal">
+          <p class="eyebrow">Sport / Street / Outdoor</p>
+          <h2>Один гардероб для разных скоростей.</h2>
+        </div>
+        <div class="cinema-grid">
+          <article class="cinema-card reveal">
+            <img src="Референсы/Фото товаров/staw-reference-02.jpg" alt="Беговой жилет STAW" />
+            <div>
+              <h3>Бег</h3>
+            </div>
+          </article>
+          <article class="cinema-card reveal">
+            <img src="Референсы/Фото товаров/staw-reference-06.jpg" alt="Беговые шорты STAW" />
+            <div>
+              <h3>Тренировка</h3>
+            </div>
+          </article>
+          <article class="cinema-card reveal">
+            <img src="Референсы/Фото товаров/staw-reference-18.jpg" alt="Городская спортивная одежда STAW" />
+            <div>
+              <h3>Город</h3>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="product-story scene" id="system">
+        <div class="sticky-copy">
+          <p class="eyebrow reveal">STAW System</p>
+          <h2 class="reveal">Лёгкость, вентиляция, чистый силуэт.</h2>
+          <p class="reveal">
+            В основе — быстросохнущие ткани, вентиляционные зоны, антибактериальные обработки, эластичные посадки и
+            спокойная графика. STAW выглядит современно, потому что не перегружает форму: вещь работает, а не спорит с
+            образом.
+          </p>
+        </div>
+        <div class="feature-stack">
+          <article class="feature-panel reveal">
+            <h3>Быстросохнущие материалы</h3>
+            <p>Для жары, темпа и длинной городской активности.</p>
+          </article>
+          <article class="feature-panel reveal">
+            <h3>Посадка для движения</h3>
+            <p>Свобода шага, лёгкий вес, продуманная вентиляция.</p>
+          </article>
+          <article class="feature-panel reveal">
+            <h3>Городская эстетика</h3>
+            <p>Спортивная функция без ощущения формы только для зала.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="catalog scene" id="catalog">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Shop the motion</p>
+          <h2>Каталог</h2>
+        </div>
+        <div class="filters reveal" role="group" aria-label="Фильтры каталога">
+          <button class="filter is-active" type="button" data-filter="all">Все</button>
+          <button class="filter" type="button" data-filter="run">Бег</button>
+          <button class="filter" type="button" data-filter="top">Верх</button>
+          <button class="filter" type="button" data-filter="bottom">Низ</button>
+          <button class="filter" type="button" data-filter="accessory">Аксессуары</button>
+        </div>
+        <div class="product-grid" data-product-grid>
+          <article class="product-card reveal" data-category="run top">
+            <img src="Референсы/Фото товаров/staw-reference-01.jpg" alt="STAW COOLMAX беговой жилет" />
+            <div class="product-info">
+              <p>Бег / верх</p>
+              <h3>COOLMAX Race Vest</h3>
+              <span>1 790 ₽</span>
+              <small>Вентилируемый беговой жилет для темпа, марафона и летних тренировок. Лёгкая сетка, быстрое высыхание, чистая спортивная посадка.</small>
+              <button type="button" data-add-cart="COOLMAX Race Vest" data-price="1790">В корзину</button>
+            </div>
+          </article>
+
+          <article class="product-card reveal" data-category="run bottom">
+            <img src="Референсы/Фото товаров/staw-reference-07.jpg" alt="STAW Run 2.0 беговые шорты" />
+            <div class="product-info">
+              <p>Бег / низ</p>
+              <h3>Run 2.0 Two-in-One Shorts</h3>
+              <span>2 790 ₽</span>
+              <small>Двухслойные беговые шорты с внутренним слоем. Подходят для тренировок, длинных пробежек и марафонского режима.</small>
+              <button type="button" data-add-cart="Run 2.0 Two-in-One Shorts" data-price="2790">В корзину</button>
+            </div>
+          </article>
+
+          <article class="product-card reveal" data-category="top">
+            <img src="Референсы/Фото товаров/staw-reference-14.jpg" alt="STAW городская беговая футболка" />
+            <div class="product-info">
+              <p>Верх</p>
+              <h3>City Motion Tee</h3>
+              <span>1 490 ₽</span>
+              <small>Базовая футболка для бега и города: лёгкая ткань, спокойная графика, универсальный силуэт.</small>
+              <button type="button" data-add-cart="City Motion Tee" data-price="1490">В корзину</button>
+            </div>
+          </article>
+
+          <article class="product-card reveal" data-category="run top">
+            <img src="Референсы/Фото товаров/staw-reference-12.jpg" alt="STAW беговая футболка с графикой" />
+            <div class="product-info">
+              <p>Бег / верх</p>
+              <h3>Statement Pace Tee</h3>
+              <span>1 690 ₽</span>
+              <small>Футболка для темповых тренировок: графичный вид, спортивная посадка и материал, рассчитанный на активное движение.</small>
+              <button type="button" data-add-cart="Statement Pace Tee" data-price="1690">В корзину</button>
+            </div>
+          </article>
+
+          <article class="product-card reveal" data-category="bottom">
+            <img src="Референсы/Фото товаров/staw-reference-09.jpg" alt="STAW марафонские беговые шорты" />
+            <div class="product-info">
+              <p>Низ</p>
+              <h3>Marathon Training Shorts</h3>
+              <span>2 490 ₽</span>
+              <small>Лёгкие шорты для регулярных тренировок: быстро сохнут, не утяжеляют образ, держат спортивную геометрию.</small>
+              <button type="button" data-add-cart="Marathon Training Shorts" data-price="2490">В корзину</button>
+            </div>
+          </article>
+
+          <article class="product-card reveal" data-category="top">
+            <img src="Референсы/Фото товаров/staw-reference-16.jpg" alt="STAW лёгкий спортивный слой" />
+            <div class="product-info">
+              <p>Верх</p>
+              <h3>Everyday Training Layer</h3>
+              <span>3 190 ₽</span>
+              <small>Лёгкий слой для дороги, разминки и прохладного вечера. Работает как спортивная вещь, выглядит как городской слой.</small>
+              <button type="button" data-add-cart="Everyday Training Layer" data-price="3190">В корзину</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="references scene" id="references">
+        <div class="section-heading reveal">
+          <p class="eyebrow">References</p>
+          <h2>Материалы из товарных карточек</h2>
+        </div>
+        <div class="reference-grid">
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-03.jpg" alt="Референс STAW 1" />
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-04.jpg" alt="Референс STAW 2" />
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-05.jpg" alt="Референс STAW 3" />
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-10.jpg" alt="Референс STAW 4" />
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-08.jpg" alt="Референс STAW 5" />
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-15.jpg" alt="Референс STAW 6" />
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-13.jpg" alt="Референс STAW 7" />
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-17.jpg" alt="Референс STAW 8" />
+          <img class="reveal" src="Референсы/Фото товаров/staw-reference-18.jpg" alt="Референс STAW 9" />
+        </div>
+      </section>
+    </main>
+
+    <aside class="cart-panel" data-cart-panel aria-label="Корзина">
+      <div class="cart-header">
+        <h2>Корзина</h2>
+        <button type="button" data-cart-toggle aria-label="Закрыть корзину">×</button>
+      </div>
+      <div class="cart-items" data-cart-items>
+        <p class="empty-cart">Корзина пуста</p>
+      </div>
+      <div class="cart-footer">
+        <span>Итого</span>
+        <strong data-cart-total>0 ₽</strong>
+      </div>
+    </aside>
+    <div class="overlay" data-cart-toggle data-overlay></div>
+
+    <footer class="site-footer">
+      <p>STAW Official Concept</p>
+      <p>Run, train, move daily</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
