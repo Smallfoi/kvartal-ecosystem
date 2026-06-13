@@ -379,6 +379,16 @@ def loyalty_account(authorization: str | None = Header(default=None)):
 def loyalty_post(body: TxnIn, authorization: str | None = Header(default=None)):
     uid = user_id_from_token(authorization)
     con = connect()
+    # Идемпотентность: одно начисление за (пользователь, runId, source).
+    # Защищает от двойного начисления при повторной отправке из офлайн-очереди.
+    if body.runId:
+        existing = con.execute(
+            "SELECT 1 FROM loyalty_transactions WHERE user_id=? AND run_id=? AND source=?",
+            (uid, body.runId, body.source),
+        ).fetchone()
+        if existing:
+            con.close()
+            return {"ok": True, "deduped": True}
     add_txn(con, uid, body.amount, body.source, body.description, body.orderId, body.runId)
     con.commit()
     con.close()
