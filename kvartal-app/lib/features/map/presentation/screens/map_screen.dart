@@ -90,7 +90,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: yakutskCenter,
-              initialZoom: 14,
+              initialZoom: 16,
               minZoom: 5,
               maxZoom: 20,
               onMapEvent: (e) {
@@ -111,9 +111,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 tileProvider: useOfflineBaseMap ? FileTileProvider() : null,
                 userAgentPackageName: 'com.kvartal.kvartal_app',
-                // Онлайн: z19 — на этом зуме Voyager рисует номера домов.
+                // Онлайн: z19 — на этом зуме OSM рисует номера домов.
                 // Офлайн: тайлы скачаны только до z15, выше — переувеличение.
                 maxNativeZoom: useOfflineBaseMap ? 15 : 19,
+                // HiDPI/retina: чётче и плотнее на телефоне (ближе к 2ГИС).
+                // Только онлайн (офлайн-тайлы есть лишь до z15).
+                retinaMode:
+                    useOfflineBaseMap ? false : RetinaMode.isHighDensity(context),
                 errorTileCallback: (_, __, ___) {
                   if (!useOfflineBaseMap) _handleTileError();
                 },
