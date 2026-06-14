@@ -31,6 +31,14 @@
 
 ---
 
+## 2026-06-14 — Claude — карта модулей экосистемы (docs/MODULES.md)
+**Сделано:** введён единый список модулей `docs/MODULES.md` (ядро / Квартал / Store / Сайт / инфраструктура)
+со статусами (✅/🟡/🔴) и привязкой к приложениям+бэку. Ссылка добавлена в CLAUDE.md и AGENTS.md.
+**Решения:** разбиваем экосистему на модули; при изменении модуля — обновлять его статус в MODULES.md.
+**Состояние:** справочник готов. Статусы на сейчас: Auth/Profile/Loyalty/Map/Achievements ✅; Clubs бэк ✅ UI 🔴;
+Run/Catalog/Cart/Notifications/Site 🟡; Territories/Leaderboard/Shoes/Admin/Insights 🔴.
+**Дальше:** по плану — UI Клуба, синк пробежек, Рейтинг, территории на сервере.
+
 ## 2026-06-14 — Claude — бэкенд клубов (FastAPI)
 **Сделано:** таблицы `clubs` / `club_members` (uniq `user_id` → один клуб на человека) / `club_join_requests`
 + эндпоинты: list/search, create, me, detail, patch, join, leave, requests, approve/reject. Политика
