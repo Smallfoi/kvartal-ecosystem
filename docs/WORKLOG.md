@@ -15,6 +15,29 @@
 
 ---
 
+## 2026-06-15 - Codex - Club edit sheet UX fixes
+**Done:** edit sheet now uses edit/save wording for existing clubs, has extra bottom gap above the app nav bar, and logo section is redesigned with preview, richer presets, and a disabled own-photo upload placeholder until media storage is added.
+**State:** `flutter analyze`, `flutter test`, and `git diff --check` are green.
+**Next:** implement real club logo upload via backend media storage/CDN and image picker.
+
+## 2026-06-14 - Codex - Club owner admin UI and metrics polish
+**Done:** added club edit flow for owner through existing PATCH `/v1/clubs/{id}`; owner now has mini admin card for name/city/description/logo/join policy. Replaced dry top stats with icon metric cards: activity, members, entry policy.
+**Decisions:** club points in current UI are treated as club activity/ranking, not spendable wallet. Personal loyalty points remain user-owned and spendable in Store.
+**State:** `flutter analyze`, `flutter test`, and `git diff --check` are green.
+**Next:** install on phone and visually verify Club tab; later formalize personal vs club points in DECISIONS/API docs.
+
+## 2026-06-14 - Codex - Club empty state layout fix
+**Done:** moved create-club action from floating button into the top empty-state card; search is now a separate block; removed ellipsis usage from club screen and added scale-down text helper for one-line labels.
+**State:** installed updated debug APK on Infinix X6873; `flutter analyze` is green.
+**Next:** owner should visually check the Club tab on the phone and confirm text fit on the real screen.
+
+## 2026-06-14 - Codex - Kvartal Clubs UI connected to backend
+**Done:** added `kvartal-app/lib/features/club/data/club_provider.dart`; rewrote `ClubScreen` to use `/v1/clubs/me`, `/v1/clubs`, create club, search, join/request, leave, owner requests approve/reject, real members and backend points.
+**Tried - failed:** `apply_patch` cannot write to real monorepo `D:\\MyProjectsCLAUDE` from the stale Codex cwd; used UTF-8 Python/PowerShell with escalated access.
+**Decisions:** removed demo members/challenges/territories as real data. Challenges and club territories remain honest future cards until run-sync and server geometry D-09.
+**State:** `flutter analyze` and `flutter test` in `kvartal-app` are green. Clubs: backend done, UI MVP partial.
+**Next:** test club create/join on phone; then backend run-sync for real club kilometers and leaderboard.
+
 ## Текущее состояние экосистемы (снимок на 2026-06-14)
 - **Backend (FastAPI + SQLite, dev):** общий аккаунт + общие баллы. Эндпоинты:
   `POST /v1/auth/register|login|phone/verify`, `GET /v1/auth/me`, `PATCH /v1/profile`,
