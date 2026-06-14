@@ -173,24 +173,30 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ],
                 ),
 
-              // Real user GPS marker
-              posAsync.when(
-                data: (pos) => pos == null
-                    ? const MarkerLayer(markers: [])
-                    : MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: pos.toLatLng,
-                            width: 26,
-                            height: 26,
-                            child: _UserMarker(
-                              isRunning: runState.status == RunStatus.active,
-                            ),
-                          ),
-                        ],
+              // Маркер пользователя. Во время бега берём ПОСЛЕДНЮЮ точку
+              // сглаженного трека — тогда маркер и линия совпадают и не прыгают.
+              // Вне бега — текущая позиция из потока.
+              Builder(
+                builder: (_) {
+                  final running = runState.status != RunStatus.idle &&
+                      runState.route.isNotEmpty;
+                  final point = running
+                      ? runState.route.last
+                      : posAsync.valueOrNull?.toLatLng;
+                  if (point == null) return const MarkerLayer(markers: []);
+                  return MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: point,
+                        width: 26,
+                        height: 26,
+                        child: _UserMarker(
+                          isRunning: runState.status == RunStatus.active,
+                        ),
                       ),
-                loading: () => const MarkerLayer(markers: []),
-                error: (_, __) => const MarkerLayer(markers: []),
+                    ],
+                  );
+                },
               ),
             ],
           ),
