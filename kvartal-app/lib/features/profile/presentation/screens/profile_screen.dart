@@ -251,7 +251,7 @@ class _AccountCard extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           _InfoLine(icon: CupertinoIcons.phone, label: 'Телефон', value: user?.phone ?? 'Не указан'),
-          _InfoLine(icon: CupertinoIcons.mail, label: 'Email', value: user?.email.isNotEmpty == true ? user!.email : '\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d'),
+          _InfoLine(icon: CupertinoIcons.mail, label: 'Email', value: (user?.email.isNotEmpty == true && !user!.email.endsWith('@kvartal.local')) ? user!.email : '\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d'),
           _InfoLine(icon: CupertinoIcons.location, label: '\u0413\u043e\u0440\u043e\u0434', value: user?.city?.isNotEmpty == true ? user!.city! : '\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d'),
         ],
       ),
@@ -275,12 +275,12 @@ class _InfoLine extends StatelessWidget {
           Icon(icon, size: 16, color: AppColors.textTertiary),
           const SizedBox(width: 10),
           Text(label, style: Theme.of(context).textTheme.bodySmall),
-          const Spacer(),
-          Flexible(
+          const SizedBox(width: 12),
+          Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
             ),
@@ -845,10 +845,17 @@ class _BadgeTile extends StatelessWidget {
         children: [
           Icon(icon, size: 32, color: unlocked ? color : AppColors.textDisabled),
           const SizedBox(height: 7),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: unlocked ? AppColors.textPrimary : AppColors.textDisabled),
-            textAlign: TextAlign.center,
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: unlocked ? AppColors.textPrimary : AppColors.textDisabled),
+              ),
+            ),
           ),
         ],
       ),
