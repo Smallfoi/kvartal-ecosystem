@@ -23,7 +23,7 @@ import os
 import secrets
 import sqlite3
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -721,3 +721,112 @@ def club_requests(club_id: str, authorization: str | None = Header(default=None)
     ).fetchall()
     con.close()
     return [{"id": r["id"], "userId": r["user_id"], "name": r["name"]} for r in rows]
+
+
+# ─── Рейтинг (по км из записей о беге) ─────────────────────────────────────────
+# Метрика — пробежанные км: км = сумма начислений за бег (source='runnerRun') / 10.
+# Берём именно ЗАРАБОТАННЫЕ за бег записи (не баланс кошелька) — значение не падает
+# при тратах баллов в магазине. У каждой записи есть дата → режем по периодам.
+def _period_start_iso(period: str) -> str:
+    now = datetime.now(timezone.utc)
+    if period == "week":
+        start = (now - timedelta(days=now.weekday())).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+    elif period == "month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:  # all-time
+        start = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return start.isoformat()
+
+
+def _club_name_for_user(con, uid):
+    r = con.execute(
+        "SELECT c.name FROM club_members m JOIN clubs c ON c.id=m.club_id "
+        "WHERE m.user_id=?",
+        (uid,),
+    ).fetchone()
+    return r["name"] if r else None
+
+
+@app.get("/v1/leaderboard/users")
+def leaderboard_users(
+    period: str = "week",
+    limit: int = 50,
+    authorization: str | None = Header(default=None),
+):
+    me = user_id_from_token(authorization)
+    if period not in ("week", "month", "all"):
+        period = "week"
+    start = _period_start_iso(period)
+    con = connect()
+    rows = con.execute(
+        "SELECT u.id, u.name, COALESCE(SUM(t.amount),0) AS pts FROM users u "
+        "LEFT JOIN loyalty_transactions t ON t.user_id=u.id "
+        "AND t.source='runnerRun' AND t.created_at >= ? "
+        "GROUP BY u.id, u.name",
+        (start,),
+    ).fetchall()
+    ranked = sorted(
+        ((r["id"], r["name"], r["pts"] / 10.0) for r in rows if r["pts"] > 0),
+        key=lambda x: x[2],
+        reverse=True,
+    )
+    top = [
+        {
+            "userId": uid,
+            "name": name,
+            "km": round(km, 1),
+            "club": _club_name_for_user(con, uid),
+            "rank": i + 1,
+            "isMe": uid == me,
+        }
+        for i, (uid, name, km) in enumerate(ranked[:limit])
+    ]
+    my_rank = next((i + 1 for i, (uid, _, _) in enumerate(ranked) if uid == me), None)
+    my_km = next((km for (uid, _, km) in ranked if uid == me), 0.0)
+    con.close()
+    return {
+        "period": period,
+        "top": top,
+        "me": {"rank": my_rank, "km": round(my_km, 1)},
+    }
+
+
+@app.get("/v1/leaderboard/clubs")
+def leaderboard_clubs(
+    period: str = "week",
+    limit: int = 50,
+    authorization: str | None = Header(default=None),
+):
+    me = user_id_from_token(authorization)
+    if period not in ("week", "month", "all"):
+        period = "week"
+    start = _period_start_iso(period)
+    con = connect()
+    my_club = current_club_id(con, me)
+    rows = con.execute(
+        "SELECT c.id, c.name, c.logo, COUNT(DISTINCT m.user_id) AS members, "
+        "COALESCE(SUM(CASE WHEN t.source='runnerRun' AND t.created_at >= ? "
+        "THEN t.amount ELSE 0 END),0) AS pts "
+        "FROM clubs c JOIN club_members m ON m.club_id=c.id "
+        "LEFT JOIN loyalty_transactions t ON t.user_id=m.user_id "
+        "GROUP BY c.id, c.name, c.logo",
+        (start,),
+    ).fetchall()
+    ranked = sorted(
+        (
+            {"id": r["id"], "name": r["name"], "logo": r["logo"],
+             "members": r["members"], "km": round(r["pts"] / 10.0, 1)}
+            for r in rows
+        ),
+        key=lambda x: x["km"],
+        reverse=True,
+    )
+    top = []
+    for i, c in enumerate(ranked[:limit]):
+        c = {**c, "rank": i + 1, "isMine": c["id"] == my_club}
+        top.append(c)
+    my_rank = next((i + 1 for i, c in enumerate(ranked) if c["id"] == my_club), None)
+    con.close()
+    return {"period": period, "top": top, "myRank": my_rank}
