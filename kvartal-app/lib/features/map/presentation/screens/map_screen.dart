@@ -92,7 +92,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               initialCenter: yakutskCenter,
               initialZoom: 14,
               minZoom: 5,
-              maxZoom: 19,
+              maxZoom: 20,
               onMapEvent: (e) {
                 if (e is MapEventMove && e.source == MapEventSource.onDrag) {
                   if (_followUser) setState(() => _followUser = false);
@@ -102,12 +102,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               TileLayer(
                 key: ValueKey(_tileLayerReloadId),
+                // Стандартный OSM (Mapnik): рисует здания, POI, названия улиц и
+                // НОМЕРА ДОМОВ на z18-19 (Voyager их не показывает вовсе).
+                // ВНИМАНИЕ: tile.openstreetmap.org — community-сервис, для прод-нагрузки
+                // нужен свой/платный тайл-провайдер (MapTiler/Thunderforest/self-host).
                 urlTemplate:
                     offlineTileTemplate ??
-                    'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 tileProvider: useOfflineBaseMap ? FileTileProvider() : null,
                 userAgentPackageName: 'com.kvartal.kvartal_app',
-                maxNativeZoom: 18,
+                // Онлайн: z19 — на этом зуме Voyager рисует номера домов.
+                // Офлайн: тайлы скачаны только до z15, выше — переувеличение.
+                maxNativeZoom: useOfflineBaseMap ? 15 : 19,
                 errorTileCallback: (_, __, ___) {
                   if (!useOfflineBaseMap) _handleTileError();
                 },
