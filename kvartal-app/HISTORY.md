@@ -784,3 +784,10 @@ C:\Android\platform-tools\adb.exe reverse tcp:3000 tcp:3000
 - Migration should be gradual: preserve current API contracts first, then switch apps to Django after verification.
 - Added Cloud handoff: `CLAUDE_HANDOFF_GITHUB_DJANGO_2026-06-13.md`.
 
+## 2026-06-13 - Docker noted for future infrastructure
+
+- Project owner confirmed Docker is needed for the ecosystem, but later and step-by-step.
+- Intended use: Django API, PostgreSQL/PostGIS, Redis, Celery worker/beat and deployment-like local environment.
+- Docker should not block the current GitHub/monorepo setup or initial Django migration.
+- Added Docker note to `CLAUDE_HANDOFF_GITHUB_DJANGO_2026-06-13.md`.
+
