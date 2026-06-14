@@ -70,6 +70,33 @@ def init_db():
             run_id TEXT,
             created_at TEXT
         );
+        CREATE TABLE IF NOT EXISTS clubs (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            logo TEXT,
+            city TEXT,
+            description TEXT,
+            owner_id TEXT NOT NULL,
+            join_policy TEXT DEFAULT 'open',   -- 'open' | 'request'
+            created_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS club_members (
+            club_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            role TEXT DEFAULT 'member',        -- 'owner' | 'member'
+            joined_at TEXT,
+            PRIMARY KEY (club_id, user_id)
+        );
+        -- один клуб на человека (на уровне БД)
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_one_club_per_user
+            ON club_members(user_id);
+        CREATE TABLE IF NOT EXISTS club_join_requests (
+            id TEXT PRIMARY KEY,
+            club_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',     -- 'pending' | 'approved' | 'rejected'
+            created_at TEXT
+        );
         """
     )
     columns = {row[1] for row in con.execute("PRAGMA table_info(users)").fetchall()}
@@ -234,6 +261,22 @@ class TxnIn(BaseModel):
     runId: str | None = None
 
 
+class ClubCreateIn(BaseModel):
+    name: str
+    logo: str | None = None
+    city: str | None = None
+    description: str | None = None
+    joinPolicy: str = "open"  # 'open' | 'request'
+
+
+class ClubUpdateIn(BaseModel):
+    name: str | None = None
+    logo: str | None = None
+    city: str | None = None
+    description: str | None = None
+    joinPolicy: str | None = None
+
+
 # ─── Эндпоинты ────────────────────────────────────────────────────────────────
 @app.get("/v1/health")
 def health():
@@ -393,3 +436,288 @@ def loyalty_post(body: TxnIn, authorization: str | None = Header(default=None)):
     con.commit()
     con.close()
     return {"ok": True}
+
+
+# ─── Клубы ──────────────────────────────────────────────────────────────────
+def user_balance(con, uid) -> int:
+    r = con.execute(
+        "SELECT COALESCE(SUM(amount),0) b FROM loyalty_transactions WHERE user_id=?",
+        (uid,),
+    ).fetchone()
+    return r["b"]
+
+
+def current_club_id(con, uid):
+    r = con.execute("SELECT club_id FROM club_members WHERE user_id=?", (uid,)).fetchone()
+    return r["club_id"] if r else None
+
+
+def club_members_json(con, club_id) -> list:
+    rows = con.execute(
+        "SELECT m.user_id, m.role, u.name FROM club_members m "
+        "JOIN users u ON u.id=m.user_id WHERE m.club_id=?",
+        (club_id,),
+    ).fetchall()
+    out = [
+        {"userId": r["user_id"], "name": r["name"], "role": r["role"],
+         "points": user_balance(con, r["user_id"])}
+        for r in rows
+    ]
+    out.sort(key=lambda x: x["points"], reverse=True)
+    return out
+
+
+def club_summary_json(con, row) -> dict:
+    members = con.execute(
+        "SELECT user_id FROM club_members WHERE club_id=?", (row["id"],)
+    ).fetchall()
+    return {
+        "id": row["id"], "name": row["name"], "logo": row["logo"], "city": row["city"],
+        "description": row["description"], "ownerId": row["owner_id"],
+        "joinPolicy": row["join_policy"], "memberCount": len(members),
+        "totalPoints": sum(user_balance(con, m["user_id"]) for m in members),
+    }
+
+
+def club_detail_json(con, row, uid) -> dict:
+    base = club_summary_json(con, row)
+    base["members"] = club_members_json(con, row["id"])
+    myrole = con.execute(
+        "SELECT role FROM club_members WHERE club_id=? AND user_id=?", (row["id"], uid)
+    ).fetchone()
+    base["myRole"] = myrole["role"] if myrole else None
+    return base
+
+
+@app.get("/v1/clubs")
+def list_clubs(search: str | None = None, authorization: str | None = Header(default=None)):
+    user_id_from_token(authorization)
+    con = connect()
+    if search:
+        like = f"%{search}%"
+        rows = con.execute(
+            "SELECT * FROM clubs WHERE name LIKE ? OR city LIKE ? ORDER BY created_at DESC",
+            (like, like),
+        ).fetchall()
+    else:
+        rows = con.execute("SELECT * FROM clubs ORDER BY created_at DESC").fetchall()
+    result = [club_summary_json(con, r) for r in rows]
+    con.close()
+    result.sort(key=lambda c: c["totalPoints"], reverse=True)
+    return result
+
+
+@app.post("/v1/clubs")
+def create_club(body: ClubCreateIn, authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    if not body.name.strip():
+        raise HTTPException(400, "Название клуба обязательно")
+    con = connect()
+    if current_club_id(con, uid):
+        con.close()
+        raise HTTPException(409, "Вы уже состоите в клубе")
+    policy = body.joinPolicy if body.joinPolicy in ("open", "request") else "open"
+    cid = f"c_{secrets.token_hex(8)}"
+    con.execute(
+        "INSERT INTO clubs (id,name,logo,city,description,owner_id,join_policy,created_at)"
+        " VALUES (?,?,?,?,?,?,?,?)",
+        (cid, body.name.strip(), body.logo, (body.city or "").strip() or None,
+         (body.description or "").strip() or None, uid, policy, now_iso()),
+    )
+    con.execute(
+        "INSERT INTO club_members (club_id,user_id,role,joined_at) VALUES (?,?,?,?)",
+        (cid, uid, "owner", now_iso()),
+    )
+    con.commit()
+    row = con.execute("SELECT * FROM clubs WHERE id=?", (cid,)).fetchone()
+    result = club_detail_json(con, row, uid)
+    con.close()
+    return result
+
+
+@app.get("/v1/clubs/me")
+def my_club(authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    con = connect()
+    cid = current_club_id(con, uid)
+    if not cid:
+        con.close()
+        return {"club": None}
+    row = con.execute("SELECT * FROM clubs WHERE id=?", (cid,)).fetchone()
+    result = club_detail_json(con, row, uid)
+    con.close()
+    return {"club": result}
+
+
+@app.post("/v1/clubs/requests/{req_id}/approve")
+def approve_request(req_id: str, authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    con = connect()
+    req = con.execute("SELECT * FROM club_join_requests WHERE id=?", (req_id,)).fetchone()
+    if not req or req["status"] != "pending":
+        con.close()
+        raise HTTPException(404, "Заявка не найдена")
+    club = con.execute("SELECT * FROM clubs WHERE id=?", (req["club_id"],)).fetchone()
+    if not club or club["owner_id"] != uid:
+        con.close()
+        raise HTTPException(403, "Только владелец клуба")
+    if current_club_id(con, req["user_id"]):
+        con.execute("UPDATE club_join_requests SET status='rejected' WHERE id=?", (req_id,))
+        con.commit()
+        con.close()
+        raise HTTPException(409, "Пользователь уже состоит в клубе")
+    con.execute(
+        "INSERT INTO club_members (club_id,user_id,role,joined_at) VALUES (?,?,?,?)",
+        (req["club_id"], req["user_id"], "member", now_iso()),
+    )
+    con.execute("UPDATE club_join_requests SET status='approved' WHERE id=?", (req_id,))
+    con.commit()
+    con.close()
+    return {"status": "approved"}
+
+
+@app.post("/v1/clubs/requests/{req_id}/reject")
+def reject_request(req_id: str, authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    con = connect()
+    req = con.execute("SELECT * FROM club_join_requests WHERE id=?", (req_id,)).fetchone()
+    if not req:
+        con.close()
+        raise HTTPException(404, "Заявка не найдена")
+    club = con.execute("SELECT * FROM clubs WHERE id=?", (req["club_id"],)).fetchone()
+    if not club or club["owner_id"] != uid:
+        con.close()
+        raise HTTPException(403, "Только владелец клуба")
+    con.execute("UPDATE club_join_requests SET status='rejected' WHERE id=?", (req_id,))
+    con.commit()
+    con.close()
+    return {"status": "rejected"}
+
+
+@app.get("/v1/clubs/{club_id}")
+def club_detail(club_id: str, authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    con = connect()
+    row = con.execute("SELECT * FROM clubs WHERE id=?", (club_id,)).fetchone()
+    if not row:
+        con.close()
+        raise HTTPException(404, "Клуб не найден")
+    result = club_detail_json(con, row, uid)
+    con.close()
+    return result
+
+
+@app.patch("/v1/clubs/{club_id}")
+def update_club(club_id: str, body: ClubUpdateIn, authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    con = connect()
+    row = con.execute("SELECT * FROM clubs WHERE id=?", (club_id,)).fetchone()
+    if not row:
+        con.close()
+        raise HTTPException(404, "Клуб не найден")
+    if row["owner_id"] != uid:
+        con.close()
+        raise HTTPException(403, "Только владелец клуба")
+    updates, values = [], []
+    if body.name is not None and body.name.strip():
+        updates.append("name=?"); values.append(body.name.strip())
+    if body.logo is not None:
+        updates.append("logo=?"); values.append(body.logo)
+    if body.city is not None:
+        updates.append("city=?"); values.append(body.city.strip() or None)
+    if body.description is not None:
+        updates.append("description=?"); values.append(body.description.strip() or None)
+    if body.joinPolicy is not None and body.joinPolicy in ("open", "request"):
+        updates.append("join_policy=?"); values.append(body.joinPolicy)
+    if updates:
+        con.execute(f"UPDATE clubs SET {', '.join(updates)} WHERE id=?", (*values, club_id))
+        con.commit()
+    row = con.execute("SELECT * FROM clubs WHERE id=?", (club_id,)).fetchone()
+    result = club_detail_json(con, row, uid)
+    con.close()
+    return result
+
+
+@app.post("/v1/clubs/{club_id}/join")
+def join_club(club_id: str, authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    con = connect()
+    club = con.execute("SELECT * FROM clubs WHERE id=?", (club_id,)).fetchone()
+    if not club:
+        con.close()
+        raise HTTPException(404, "Клуб не найден")
+    if current_club_id(con, uid):
+        con.close()
+        raise HTTPException(409, "Вы уже состоите в клубе")
+    if club["join_policy"] == "open":
+        con.execute(
+            "INSERT INTO club_members (club_id,user_id,role,joined_at) VALUES (?,?,?,?)",
+            (club_id, uid, "member", now_iso()),
+        )
+        con.commit()
+        con.close()
+        return {"status": "joined"}
+    # join_policy == 'request'
+    ex = con.execute(
+        "SELECT 1 FROM club_join_requests WHERE club_id=? AND user_id=? AND status='pending'",
+        (club_id, uid),
+    ).fetchone()
+    if not ex:
+        con.execute(
+            "INSERT INTO club_join_requests (id,club_id,user_id,status,created_at)"
+            " VALUES (?,?,?,?,?)",
+            (f"r_{secrets.token_hex(8)}", club_id, uid, "pending", now_iso()),
+        )
+        con.commit()
+    con.close()
+    return {"status": "requested"}
+
+
+@app.post("/v1/clubs/{club_id}/leave")
+def leave_club(club_id: str, authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    con = connect()
+    m = con.execute(
+        "SELECT * FROM club_members WHERE club_id=? AND user_id=?", (club_id, uid)
+    ).fetchone()
+    if not m:
+        con.close()
+        raise HTTPException(404, "Вы не состоите в этом клубе")
+    if m["role"] == "owner":
+        cnt = con.execute(
+            "SELECT COUNT(*) c FROM club_members WHERE club_id=?", (club_id,)
+        ).fetchone()["c"]
+        if cnt > 1:
+            con.close()
+            raise HTTPException(409, "Владелец не может выйти, пока есть участники")
+        con.execute("DELETE FROM club_members WHERE club_id=?", (club_id,))
+        con.execute("DELETE FROM club_join_requests WHERE club_id=?", (club_id,))
+        con.execute("DELETE FROM clubs WHERE id=?", (club_id,))
+        con.commit()
+        con.close()
+        return {"status": "left", "clubDeleted": True}
+    con.execute("DELETE FROM club_members WHERE club_id=? AND user_id=?", (club_id, uid))
+    con.commit()
+    con.close()
+    return {"status": "left"}
+
+
+@app.get("/v1/clubs/{club_id}/requests")
+def club_requests(club_id: str, authorization: str | None = Header(default=None)):
+    uid = user_id_from_token(authorization)
+    con = connect()
+    club = con.execute("SELECT * FROM clubs WHERE id=?", (club_id,)).fetchone()
+    if not club:
+        con.close()
+        raise HTTPException(404, "Клуб не найден")
+    if club["owner_id"] != uid:
+        con.close()
+        raise HTTPException(403, "Только владелец клуба")
+    rows = con.execute(
+        "SELECT r.id, r.user_id, u.name FROM club_join_requests r "
+        "JOIN users u ON u.id=r.user_id "
+        "WHERE r.club_id=? AND r.status='pending' ORDER BY r.created_at",
+        (club_id,),
+    ).fetchall()
+    con.close()
+    return [{"id": r["id"], "userId": r["user_id"], "name": r["name"]} for r in rows]
