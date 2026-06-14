@@ -774,7 +774,11 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
                         height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Создать'),
+                    : Text(
+                        _isEdit
+                            ? '\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c'
+                            : '\u0421\u043e\u0437\u0434\u0430\u0442\u044c',
+                      ),
               ),
             ),
           ],
