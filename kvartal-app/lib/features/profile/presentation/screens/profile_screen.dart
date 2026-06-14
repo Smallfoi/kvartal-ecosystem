@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../loyalty/data/loyalty_provider.dart';
+import '../../../run/data/completed_runs_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -487,74 +488,259 @@ class _PointsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loyalty = ref.watch(loyaltyProvider);
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0A1628), AppColors.bgCard],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.electricBlue.withValues(alpha: 0.35)),
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PointsHistoryScreen()),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(CupertinoIcons.star_fill, color: AppColors.warning, size: 24),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0A1628), AppColors.bgCard],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Баллы экосистемы',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  loyalty.isLoading && !loyalty.loaded ? '…' : '${loyalty.balance}',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-              ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.electricBlue.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(CupertinoIcons.star_fill, color: AppColors.warning, size: 24),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              loyalty.levelTitle,
-              style: const TextStyle(
-                color: AppColors.warning,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Баллы экосистемы',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    loyalty.isLoading && !loyalty.loaded ? '…' : '${loyalty.balance}',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                loyalty.levelTitle,
+                style: const TextStyle(
+                  color: AppColors.warning,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(CupertinoIcons.chevron_right, color: AppColors.textTertiary, size: 18),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _StatsRow extends StatelessWidget {
-  const _StatsRow();
+/// Источник баллов → иконка и подпись для истории.
+({IconData icon, String label}) _loyaltySourceMeta(String source) {
+  switch (source) {
+    case 'runnerRun':
+      return (icon: Icons.directions_run, label: 'Пробежка');
+    case 'runnerTerritory':
+      return (icon: CupertinoIcons.flag_fill, label: 'Захват территории');
+    case 'runnerCompetition':
+      return (icon: Icons.emoji_events, label: 'Соревнование');
+    case 'registration':
+      return (icon: CupertinoIcons.gift_fill, label: 'Бонус');
+    case 'purchase':
+      return (icon: CupertinoIcons.bag_fill, label: 'Покупка');
+    case 'redeem':
+      return (icon: CupertinoIcons.minus_circle, label: 'Списание');
+    default:
+      return (icon: CupertinoIcons.star_fill, label: 'Баллы');
+  }
+}
+
+String _formatTxnDate(String? iso) {
+  if (iso == null) return '';
+  final dt = DateTime.tryParse(iso)?.toLocal();
+  if (dt == null) return '';
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(dt.day)}.${two(dt.month)}.${dt.year} ${two(dt.hour)}:${two(dt.minute)}';
+}
+
+/// История баллов экосистемы (за что начислено/списано). Открывается тапом по карточке.
+class PointsHistoryScreen extends ConsumerStatefulWidget {
+  const PointsHistoryScreen({super.key});
+
+  @override
+  ConsumerState<PointsHistoryScreen> createState() => _PointsHistoryScreenState();
+}
+
+class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(loyaltyProvider.notifier).refresh();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final loyalty = ref.watch(loyaltyProvider);
+    final txns = loyalty.transactions;
+
+    return Scaffold(
+      backgroundColor: AppColors.bgDark,
+      appBar: AppBar(
+        backgroundColor: AppColors.bgDark,
+        title: const Text('История баллов'),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0A1628), AppColors.bgCard],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.electricBlue.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(CupertinoIcons.star_fill, color: AppColors.warning, size: 28),
+                  const SizedBox(width: 12),
+                  Text(
+                    '${loyalty.balance}',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('баллов', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(loyalty.levelTitle, style: const TextStyle(color: AppColors.warning, fontWeight: FontWeight.w800, fontSize: 13)),
+                  ),
+                ],
+              ),
+            ),
+            if (txns.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    loyalty.isLoading ? 'Загрузка…' : 'Пока нет операций с баллами',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: txns.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) {
+                    final t = txns[i];
+                    final meta = _loyaltySourceMeta(t.source);
+                    final positive = t.amount >= 0;
+                    final accent = positive ? AppColors.success : AppColors.error;
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.bgCard,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.separator),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(meta.icon, size: 20, color: accent),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.description.isNotEmpty ? t.description : meta.label,
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _formatTxnDate(t.createdAt),
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${positive ? '+' : ''}${t.amount}',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: accent,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatsRow extends ConsumerWidget {
+  const _StatsRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final runs = ref.watch(completedRunsProvider);
+    final totalKm = runs.fold<double>(0, (s, r) => s + r.distanceKm);
+    final zones = runs.fold<int>(0, (s, r) => s + r.capturedZones);
+    final wins = runs.where((r) => r.capturedTerritory).length;
+    final kmText =
+        totalKm >= 100 ? totalKm.round().toString() : totalKm.toStringAsFixed(1);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -562,15 +748,15 @@ class _StatsRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.separator),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          _ProfileStat(value: '0', label: 'км всего'),
+          _ProfileStat(value: kmText, label: 'км всего'),
           _Div(),
-          _ProfileStat(value: '0', label: '\u0437\u043e\u043d'),
+          _ProfileStat(value: '$zones', label: '\u0437\u043e\u043d'),
           _Div(),
-          _ProfileStat(value: '0', label: '\u043f\u0440\u043e\u0431\u0435\u0436\u0435\u043a'),
+          _ProfileStat(value: '${runs.length}', label: '\u043f\u0440\u043e\u0431\u0435\u0436\u0435\u043a'),
           _Div(),
-          _ProfileStat(value: '0', label: '\u043f\u043e\u0431\u0435\u0434'),
+          _ProfileStat(value: '$wins', label: '\u043f\u043e\u0431\u0435\u0434'),
         ],
       ),
     );
@@ -607,18 +793,23 @@ class _Div extends StatelessWidget {
   Widget build(BuildContext context) => Container(width: 1, height: 32, color: AppColors.separator);
 }
 
-class _BadgesGrid extends StatelessWidget {
+class _BadgesGrid extends ConsumerWidget {
   const _BadgesGrid();
 
   @override
-  Widget build(BuildContext context) {
-    const badges = [
-      (CupertinoIcons.snow, '\u0410\u0440\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439', AppColors.info, false),
-      (CupertinoIcons.bolt_fill, '\u0421\u043f\u0440\u0438\u043d\u0442\u0435\u0440', AppColors.warning, false),
-      (CupertinoIcons.flame_fill, ' 7', AppColors.error, false),
-      (CupertinoIcons.moon_stars_fill, '\u042f\u043a\u0443\u0442\u0441\u043a', AppColors.textSecondary, false),
-      (CupertinoIcons.star_fill, '\u041b\u0435\u0433\u0435\u043d\u0434\u0430', AppColors.warning, false),
-      (CupertinoIcons.location_north_fill, '\u0412\u044b\u0441\u043e\u0442\u043d\u0438\u043a', AppColors.success, false),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final runs = ref.watch(completedRunsProvider);
+    final loyalty = ref.watch(loyaltyProvider);
+    final totalKm = runs.fold<double>(0, (s, r) => s + r.distanceKm);
+    final runsCount = runs.length;
+    final captures = runs.where((r) => r.capturedTerritory).length;
+    final badges = [
+      (CupertinoIcons.snow, '\u0410\u0440\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439', AppColors.info, runsCount >= 1),
+      (CupertinoIcons.bolt_fill, '\u0421\u043f\u0440\u0438\u043d\u0442\u0435\u0440', AppColors.warning, totalKm >= 5),
+      (CupertinoIcons.flame_fill, '\u0421\u0435\u0440\u0438\u044f 7', AppColors.error, runsCount >= 7),
+      (CupertinoIcons.moon_stars_fill, '\u042f\u043a\u0443\u0442\u0441\u043a', AppColors.textSecondary, totalKm >= 10),
+      (CupertinoIcons.star_fill, '\u041b\u0435\u0433\u0435\u043d\u0434\u0430', AppColors.warning, loyalty.balance >= 500),
+      (CupertinoIcons.location_north_fill, '\u0412\u044b\u0441\u043e\u0442\u043d\u0438\u043a', AppColors.success, captures >= 3),
     ];
 
     return GridView.count(
@@ -665,11 +856,25 @@ class _BadgeTile extends StatelessWidget {
   }
 }
 
-class _ActivityHeatmap extends StatelessWidget {
+class _ActivityHeatmap extends ConsumerWidget {
   const _ActivityHeatmap();
 
+  static const _months = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+  ];
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final runs = ref.watch(completedRunsProvider);
+    final now = DateTime.now();
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final activeDays = <int>{
+      for (final r in runs)
+        if (r.finishedAt.year == now.year && r.finishedAt.month == now.month)
+          r.finishedAt.day,
+    };
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -683,21 +888,32 @@ class _ActivityHeatmap extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('\u0418\u044e\u043d\u044c 2026', style: Theme.of(context).textTheme.labelMedium),
-              Text('0 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u0434\u043d\u0435\u0439', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary)),
+              Text('${_months[now.month - 1]} ${now.year}', style: Theme.of(context).textTheme.labelMedium),
+              Text('${activeDays.length} \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u0434\u043d\u0435\u0439', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary)),
             ],
           ),
           const SizedBox(height: 10),
           Wrap(
             spacing: 4,
             runSpacing: 4,
-            children: List.generate(30, (i) {
+            children: List.generate(daysInMonth, (i) {
+              final day = i + 1;
+              final active = activeDays.contains(day);
               return Container(
                 width: 28,
                 height: 28,
-                decoration: BoxDecoration(color: AppColors.bgElevated, borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(
+                  color: active ? AppColors.electricBlue : AppColors.bgElevated,
+                  borderRadius: BorderRadius.circular(6),
+                ),
                 alignment: Alignment.center,
-                child: Text('${i + 1}', style: const TextStyle(fontSize: 10, color: AppColors.textDisabled)),
+                child: Text(
+                  '$day',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: active ? Colors.white : AppColors.textDisabled,
+                  ),
+                ),
               );
             }),
           ),
