@@ -200,6 +200,31 @@ admin_tools     moderation, support, analytics
 - Keep changes small and branch-based.
 - Update this handoff and related docs after backend migration work.
 
+
+## Docker Decision
+
+Docker is accepted as a required future part of the ecosystem infrastructure, but it is not the first step.
+
+Planned order:
+
+1. GitHub workflow and monorepo.
+2. Django REST Framework backend scaffold.
+3. PostgreSQL/PostGIS connection.
+4. Docker Compose for local infrastructure.
+5. Redis/Celery/background workers after backend modules need them.
+
+Docker should eventually run the backend stack consistently for Cloud, Codex and deployment:
+
+- Django API;
+- PostgreSQL;
+- PostGIS;
+- Redis;
+- Celery worker;
+- Celery beat;
+- optional nginx/admin tooling.
+
+Do not spend time on full Docker infrastructure before the GitHub setup and Django bootstrap are stable. It is OK to prepare `infra/` or `docker-compose.yml` later as a separate branch/PR.
+
 ## Current Priority
 
 1. GitHub workflow first.
