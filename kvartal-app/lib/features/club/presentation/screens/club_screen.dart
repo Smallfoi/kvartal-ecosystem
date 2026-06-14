@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../run/data/completed_runs_provider.dart';
 
 class ClubScreen extends StatelessWidget {
   const ClubScreen({super.key});
@@ -235,17 +237,21 @@ class _SectionHeader extends StatelessWidget {
 
 // ── Members ────────────────────────────────────────────────────────────────
 
-class _MembersList extends StatelessWidget {
+class _MembersList extends ConsumerWidget {
   const _MembersList();
 
   @override
-  Widget build(BuildContext context) {
-    const members = [
+  Widget build(BuildContext context, WidgetRef ref) {
+    final runs = ref.watch(completedRunsProvider);
+    final myKm = runs.fold<double>(0, (s, r) => s + r.distanceKm);
+    // «Ты» — реальный километраж из своих пробежек. Остальные участники пока
+    // демо: настоящие данные клуба требуют бэкенда клубов (его ещё нет).
+    final members = <(String, String, bool)>[
       ('Айаал П.', '138.7 км', true),
-      ('Ты', '124.5 км', true),
+      ('Ты', '${myKm.toStringAsFixed(1)} км', true),
       ('Степан М.', '97.1 км', false),
       ('Нюргун С.', '88.4 км', false),
-    ];
+    ]..sort((a, b) => _parseKm(b.$2).compareTo(_parseKm(a.$2)));
 
     return Column(
       children: members
@@ -254,6 +260,9 @@ class _MembersList extends StatelessWidget {
     );
   }
 }
+
+double _parseKm(String s) =>
+    double.tryParse(s.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
 
 class _MemberTile extends StatelessWidget {
   final String name, km;
