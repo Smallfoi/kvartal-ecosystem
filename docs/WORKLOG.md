@@ -15,6 +15,15 @@
 
 ---
 
+## 2026-06-15 — Claude — UI рейтинга (км, Неделя/Месяц)
+**Сделано:** `leaderboard/data/leaderboard_provider.dart` (Dio + FutureProvider'ы users/clubs по периоду) и
+переписан `leaderboard_screen.dart` на реальные данные (дизайн сохранён): переключатель **Неделя/Месяц**,
+метрика **км**, подиум + «Ваше место», список; вкладка «Клубы» (твой клуб подсвечен); «Районы» — честная
+заглушка до территорий (D-09). «Ты»→«Вы» (без скобок).
+**Состояние:** проверено на устройстве — Личный (я #1, 26.2 км, «Вы»), Клубы («Тестовый» #1), Районы (заглушка).
+Бэкенд — PR #16, решение D-11. Также сохранил незакоммиченную правку Codex (кнопка формы клуба, PR #17).
+**Дальше:** награды за неделю/месяц (этап 2), синк пробежек (точные км/история), территории на сервере (D-09).
+
 ## 2026-06-15 - Codex - Club edit sheet UX fixes
 **Done:** edit sheet now uses edit/save wording for existing clubs, has extra bottom gap above the app nav bar, and logo section is redesigned with preview, richer presets, and a disabled own-photo upload placeholder until media storage is added.
 **State:** `flutter analyze`, `flutter test`, and `git diff --check` are green.
