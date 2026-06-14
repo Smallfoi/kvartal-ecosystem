@@ -102,22 +102,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               TileLayer(
                 key: ValueKey(_tileLayerReloadId),
-                // Стандартный OSM (Mapnik): рисует здания, POI, названия улиц и
-                // НОМЕРА ДОМОВ на z18-19 (Voyager их не показывает вовсе).
-                // ВНИМАНИЕ: tile.openstreetmap.org — community-сервис, для прод-нагрузки
-                // нужен свой/платный тайл-провайдер (MapTiler/Thunderforest/self-host).
+                // CartoDB Voyager — лёгкий, чистый и красивый стиль на быстром CDN.
+                // БЕЗ retina/@2x — карта грузится легко и плавно. {s} (a–d) —
+                // параллельная загрузка тайлов = быстрее. (Voyager — чистый стиль,
+                // номера домов почти не показывает; приоритет — скорость/лёгкость.)
+                // Прод-нагрузка — свой/платный тайл-провайдер.
                 urlTemplate:
                     offlineTileTemplate ??
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c', 'd'],
                 tileProvider: useOfflineBaseMap ? FileTileProvider() : null,
                 userAgentPackageName: 'com.kvartal.kvartal_app',
-                // Онлайн: z19 — на этом зуме OSM рисует номера домов.
-                // Офлайн: тайлы скачаны только до z15, выше — переувеличение.
+                // Офлайн-тайлы скачаны только до z15.
                 maxNativeZoom: useOfflineBaseMap ? 15 : 19,
-                // HiDPI/retina: чётче и плотнее на телефоне (ближе к 2ГИС).
-                // Только онлайн (офлайн-тайлы есть лишь до z15).
-                retinaMode:
-                    useOfflineBaseMap ? false : RetinaMode.isHighDensity(context),
                 errorTileCallback: (_, __, ___) {
                   if (!useOfflineBaseMap) _handleTileError();
                 },
