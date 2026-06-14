@@ -18,8 +18,11 @@ const activeRunStorageKey = 'kvartal.active_run.v1';
 const activeRunSchemaVersion = 2;
 const _maxRunSpeedMs = 11.1;
 const _minRoutePointDistanceMeters = 2.0;
-const _maxRoutePointGapMeters = 80.0;
-const _maxAcceptedAccuracyMeters = 50.0;
+const _maxRoutePointGapMeters = 40.0;
+const _maxAcceptedAccuracyMeters = 35.0;
+// EMA-сглаживание трека: тянет каждую новую точку к предыдущей и убирает
+// дрожь GPS («звёзды» на границе территории). 0 = не двигаемся, 1 = без сглаживания.
+const _smoothingAlpha = 0.35;
 const _locationServiceChannel = MethodChannel('kvartal/location_service');
 
 class RunState {
@@ -193,24 +196,39 @@ class RunNotifier extends StateNotifier<RunState> {
     if (!force && position.accuracy > _maxAcceptedAccuracyMeters) return;
     if (!force && position.speed > _maxRunSpeedMs) return;
 
-    final next = LatLng(position.latitude, position.longitude);
+    final raw = LatLng(position.latitude, position.longitude);
     final route = [...state.route];
     var distanceMeters = state.distanceMeters;
 
+    var next = raw;
     if (route.isNotEmpty) {
       final last = route.last;
-      final gapMeters = Geolocator.distanceBetween(
+      final rawGap = Geolocator.distanceBetween(
+        last.latitude,
+        last.longitude,
+        raw.latitude,
+        raw.longitude,
+      );
+      // микродрожание на месте — игнорируем
+      if (!force && rawGap < _minRoutePointDistanceMeters) return;
+      // явный телепорт (спайк GPS) — отбрасываем ДО сглаживания
+      if (!force && rawGap > _maxRoutePointGapMeters) {
+        debugPrint('KVARTAL_RUN_GPS_JUMP_REJECTED: ${rawGap.toStringAsFixed(1)}m');
+        return;
+      }
+      // EMA-сглаживание: тянем точку к предыдущей, убираем дрожь («звёзды»).
+      if (!force) {
+        next = LatLng(
+          last.latitude + _smoothingAlpha * (raw.latitude - last.latitude),
+          last.longitude + _smoothingAlpha * (raw.longitude - last.longitude),
+        );
+      }
+      distanceMeters += Geolocator.distanceBetween(
         last.latitude,
         last.longitude,
         next.latitude,
         next.longitude,
       );
-      if (!force && gapMeters < _minRoutePointDistanceMeters) return;
-      if (!force && gapMeters > _maxRoutePointGapMeters) {
-        debugPrint('KVARTAL_RUN_GPS_JUMP_REJECTED: ${gapMeters.toStringAsFixed(1)}m');
-        return;
-      }
-      distanceMeters += gapMeters;
     }
 
     route.add(next);
