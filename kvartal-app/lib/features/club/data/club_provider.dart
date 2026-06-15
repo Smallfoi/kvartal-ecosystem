@@ -255,6 +255,35 @@ class ClubNotifier extends StateNotifier<ClubState> {
     });
   }
 
+  Future<void> joinByInvite(String invite) async {
+    final clubId = _clubIdFromInvite(invite);
+    if (clubId.isEmpty) {
+      state = state.copyWith(
+        error:
+            '\u0412\u0432\u0435\u0434\u0438 \u043a\u043e\u0434 \u0438\u043b\u0438 \u0441\u0441\u044b\u043b\u043a\u0443 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f',
+      );
+      return;
+    }
+    await _mutate(() async {
+      final detail = await _dio.get<Map<String, dynamic>>(
+        '/clubs/$clubId',
+        options: _authOptions(),
+      );
+      final club = Club.fromJson(detail.data ?? const <String, dynamic>{});
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/clubs/${club.id}/join',
+        options: _authOptions(),
+      );
+      final status = response.data?['status']?.toString();
+      state = state.copyWith(
+        message: status == 'joined'
+            ? '\u0422\u044b \u0432\u0441\u0442\u0443\u043f\u0438\u043b \u0432 \u043a\u043b\u0443\u0431'
+            : '\u0417\u0430\u044f\u0432\u043a\u0430 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0430 \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0443',
+      );
+      if (status == 'joined') await refresh();
+    });
+  }
+
   Future<void> leaveClub() async {
     final club = state.myClub;
     if (club == null) return;
@@ -344,6 +373,22 @@ class ClubNotifier extends StateNotifier<ClubState> {
     }
     return 'Не удалось выполнить действие. Попробуй ещё раз.';
   }
+}
+
+String _clubIdFromInvite(String raw) {
+  var value = raw.trim();
+  if (value.isEmpty) return '';
+  value = value.replaceAll('quartal://club/', '');
+  value = value.replaceAll('kvartal://club/', '');
+  final uri = Uri.tryParse(value);
+  if (uri != null && uri.pathSegments.isNotEmpty) {
+    final index = uri.pathSegments.indexOf('club');
+    if (index >= 0 && uri.pathSegments.length > index + 1) {
+      return uri.pathSegments[index + 1].trim();
+    }
+    if (uri.host.isNotEmpty) return uri.pathSegments.last.trim();
+  }
+  return value.split('/').where((part) => part.trim().isNotEmpty).last.trim();
 }
 
 final clubProvider = StateNotifierProvider<ClubNotifier, ClubState>((ref) {
