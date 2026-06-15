@@ -71,16 +71,8 @@ class KvartalLocationService : Service(), LocationListener {
         } catch (_: Exception) {
             // GPS provider may be unavailable indoors; network provider below is a fallback.
         }
-        try {
-            locationManager.requestLocationUpdates(
-                LocationManager.NETWORK_PROVIDER,
-                2000L,
-                0f,
-                this,
-            )
-        } catch (_: Exception) {
-            // Network provider is optional.
-        }
+        // Do not append NETWORK_PROVIDER points to the run route: they are often
+        // coarse indoors and create star-shaped territory artifacts.
     }
 
     private fun stopTracking() {
