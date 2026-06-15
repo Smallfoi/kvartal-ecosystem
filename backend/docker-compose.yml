@@ -34,7 +34,8 @@ services:
     volumes:
       - ./django_api:/app
     ports:
-      - "8001:8000"   # Django на хосте: http://localhost:8001 (FastAPI остаётся на 8000)
+      - "8000:8000"   # Django на хосте :8000 — приложения уже ходят сюда (adb reverse tcp:8000).
+                       # FastAPI (backend/main.py) отключён; оставлен как legacy до полного удаления.
     depends_on:
       db:
         condition: service_healthy

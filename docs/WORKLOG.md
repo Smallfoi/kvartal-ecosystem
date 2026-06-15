@@ -16,6 +16,17 @@
 ---
 
 
+## 2026-06-15 — Claude — ПЕРЕХОД НА DJANGO ЗАВЕРШЁН (clubs+leaderboard, данные, :8000)
+**Сделано:** (1) перенёс clubs + leaderboard на Django (PR #22) — все эндпоинты теперь на Django/DRF, контракт как у FastAPI.
+(2) Миграция данных: `core/management/commands/import_sqlite.py` — `docker compose cp ecosystem.db web:/tmp/` →
+`flush` (чистка тестовых) → `import_sqlite`. Перенесено 9 юзеров / 50 транзакций / 1 клуб / 1 участник.
+(3) Переключение: docker-compose web порт 8001→**8000**, FastAPI остановлен; приложения через `adb reverse tcp:8000`
+теперь ходят в Django без пересборки и БЕЗ перелогина (JWT совместим).
+**Проверено на устройстве:** Квартал → профиль «Михаил Татаринов», телефон/город, баллы 678/Золото, карта — всё из Django.
+**Состояние:** ✅ бэкенд = Django + PostgreSQL/PostGIS (Docker, :8000). FastAPI (`backend/main.py`) остановлен, оставлен как legacy.
+Запуск: `cd backend && docker compose up -d` (после перезагрузки сначала запустить Docker Desktop).
+**Дальше:** территории на PostGIS (D-09, «сердце»); потом убрать legacy FastAPI + обновить CI-джобу на Django; синк пробежек.
+
 ## 2026-06-15 — Claude — Django-стек ЖИВ + перенос ядра (auth/profile/loyalty)
 **Сделано:** владелец поднял WSL2 + Docker. Запустил стек: `cd backend && docker compose up --build -d` →
 db (postgis/postgis:16-3.4, PostGIS 3.4.3 ✅) + web (Django :8001). `migrate` ок, `GET http://localhost:8001/v1/health` = ok, db:true.
