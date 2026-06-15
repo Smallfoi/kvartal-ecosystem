@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/club_provider.dart';
@@ -14,6 +16,7 @@ class ClubScreen extends ConsumerStatefulWidget {
 
 class _ClubScreenState extends ConsumerState<ClubScreen> {
   final _searchCtrl = TextEditingController();
+  final _inviteCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -26,6 +29,7 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _inviteCtrl.dispose();
     super.dispose();
   }
 
@@ -68,7 +72,10 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
                   else if (state.myClub != null)
                     _MyClubBody(club: state.myClub!)
                   else
-                    _DiscoverBody(searchCtrl: _searchCtrl),
+                    _DiscoverBody(
+                      searchCtrl: _searchCtrl,
+                      inviteCtrl: _inviteCtrl,
+                    ),
                 ]),
               ),
             ),
@@ -100,6 +107,18 @@ void _showEditClubSheet(BuildContext context, Club club) {
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (_) => _ClubFormSheet(existing: club),
+  );
+}
+
+void _showClubInviteSheet(BuildContext context, Club club) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.bgSurface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => _ClubInviteSheet(club: club),
   );
 }
 
@@ -234,7 +253,8 @@ class _ClubSliverHeader extends ConsumerWidget {
 
 class _DiscoverBody extends ConsumerWidget {
   final TextEditingController searchCtrl;
-  const _DiscoverBody({required this.searchCtrl});
+  final TextEditingController inviteCtrl;
+  const _DiscoverBody({required this.searchCtrl, required this.inviteCtrl});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -254,6 +274,8 @@ class _DiscoverBody extends ConsumerWidget {
           actionIcon: CupertinoIcons.plus,
           onAction: () => _showCreateClubSheet(context),
         ),
+        const SizedBox(height: 16),
+        _InviteCodeCard(controller: inviteCtrl),
         const SizedBox(height: 16),
         _SectionHeader(
           title:
@@ -442,11 +464,259 @@ class _OwnerToolsCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
+        IconButton.filledTonal(
+          tooltip:
+              '\u041f\u0440\u0438\u0433\u043b\u0430\u0441\u0438\u0442\u044c \u0432 \u043a\u043b\u0443\u0431',
+          onPressed: () => _showClubInviteSheet(context, club),
+          icon: const Icon(CupertinoIcons.qrcode, size: 18),
+        ),
+        const SizedBox(width: 8),
         IconButton.filled(
           tooltip:
               '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u043a\u043b\u0443\u0431',
           onPressed: () => _showEditClubSheet(context, club),
           icon: const Icon(CupertinoIcons.pencil, size: 18),
+        ),
+      ],
+    ),
+  );
+}
+
+class _InviteCodeCard extends ConsumerWidget {
+  final TextEditingController controller;
+  const _InviteCodeCard({required this.controller});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(clubProvider);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.separator),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                CupertinoIcons.qrcode_viewfinder,
+                size: 20,
+                color: AppColors.electricBlue,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '\u041a\u043e\u0434 \u0438\u043b\u0438 \u0441\u0441\u044b\u043b\u043a\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            style: const TextStyle(color: AppColors.textPrimary),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _submit(context, ref),
+            decoration: InputDecoration(
+              hintText:
+                  'KQ-123 \u0438\u043b\u0438 https://kvartal.app/club/...',
+              hintStyle: const TextStyle(color: AppColors.textTertiary),
+              prefixIcon: const Icon(CupertinoIcons.link, size: 18),
+              filled: true,
+              fillColor: AppColors.bgElevated,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.separator),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.separator),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: FilledButton.icon(
+              onPressed: state.isMutating ? null : () => _submit(context, ref),
+              icon: const Icon(CupertinoIcons.person_badge_plus, size: 18),
+              label: Text(
+                state.isMutating
+                    ? '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c...'
+                    : '\u0412\u0441\u0442\u0443\u043f\u0438\u0442\u044c \u043f\u043e \u043a\u043e\u0434\u0443',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submit(BuildContext context, WidgetRef ref) {
+    FocusScope.of(context).unfocus();
+    ref.read(clubProvider.notifier).joinByInvite(controller.text);
+  }
+}
+
+class _ClubInviteSheet extends StatelessWidget {
+  final Club club;
+  const _ClubInviteSheet({required this.club});
+
+  String get _link => 'https://kvartal.app/club/${club.id}';
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottom + 96),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                _ClubLogo(logo: club.logo, size: 46),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _FitText(
+                        club.name,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '\u041f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u0435 \u0432 \u043a\u043b\u0443\u0431',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: '\u0417\u0430\u043a\u0440\u044b\u0442\u044c',
+                  icon: const Icon(CupertinoIcons.xmark),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: QrImageView(
+                  data: _link,
+                  version: QrVersions.auto,
+                  size: 196,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Color(0xFF111827),
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _InviteValueCard(
+              icon: CupertinoIcons.number,
+              title: '\u041a\u043e\u0434 \u043a\u043b\u0443\u0431\u0430',
+              value: club.id,
+              copyText: club.id,
+            ),
+            const SizedBox(height: 10),
+            _InviteValueCard(
+              icon: CupertinoIcons.link,
+              title: '\u0421\u0441\u044b\u043b\u043a\u0430',
+              value: _link,
+              copyText: _link,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InviteValueCard extends StatelessWidget {
+  final IconData icon;
+  final String title, value, copyText;
+  const _InviteValueCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.copyText,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: AppColors.bgCard,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: AppColors.separator),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.electricBlue),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: AppColors.textTertiary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              _FitText(
+                value,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton.filledTonal(
+          tooltip:
+              '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c',
+          icon: const Icon(CupertinoIcons.doc_on_doc, size: 18),
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: copyText));
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e',
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
         ),
       ],
     ),

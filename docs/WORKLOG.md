@@ -15,6 +15,13 @@
 
 ---
 
+
+## 2026-06-15 - Codex - Club invite MVP
+**Done:** added Flutter club invite flow: owner can open an invite sheet with QR, invite link, and copyable club code; users without a club can paste a code/link and join or send a request through existing backend club join rules. Added `qr_flutter`.
+**Decisions:** MVP invite code is the existing `club.id` and link format is `https://kvartal.app/club/<club_id>`; backend invite tokens/deep links/media sharing should be added later.
+**State:** `flutter analyze` and `flutter test` are green.
+**Next:** add backend invite-token endpoint, deep links/app links, and owner invite by phone/nickname after user search/notifications exist.
+
 ## 2026-06-15 — Claude — UI рейтинга (км, Неделя/Месяц)
 **Сделано:** `leaderboard/data/leaderboard_provider.dart` (Dio + FutureProvider'ы users/clubs по периоду) и
 переписан `leaderboard_screen.dart` на реальные данные (дизайн сохранён): переключатель **Неделя/Месяц**,
