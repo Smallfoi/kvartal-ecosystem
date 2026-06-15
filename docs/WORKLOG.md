@@ -16,6 +16,16 @@
 ---
 
 
+## 2026-06-15 — Claude — каркас Django + Postgres/PostGIS (Docker)
+**Сделано:** `backend/django_api/` (Django-проект `config` + app `core` с `/v1/health`, Dockerfile, requirements,
+settings под Postgres из env) и `backend/docker-compose.yml` (`db` postgis/postgis + `web` Django на хосте :8001).
+FastAPI (:8000) остаётся рабочим во время перехода. Решение **D-12**.
+**Решения:** D-12 — переезд на Django+PostGIS в Docker рядом с FastAPI; FastAPI держим до паритета, цель — Django-only.
+**Пробовали — не вышло:** Docker Desktop поставлен (winget), но не стартует — **нет WSL2** (`wsl --install`, нужен админ+перезагрузка от владельца). `psycopg`/драйверы на хостовый Python 3.14 не ставим — Django живёт в контейнере.
+**Состояние:** каркас собран (синтаксис ок), но НЕ запущен (ждёт WSL2+Docker). Приложения работают на FastAPI.
+**Дальше:** владелец ставит WSL2 и запускает Docker → `cd backend && docker compose up` → migrate → `/v1/health` →
+перенос эндпоинтов по модулям (auth→profile→loyalty→clubs→leaderboard) → данные → переключение приложений → территории (D-09).
+
 ## 2026-06-15 - Codex - Club invite MVP
 **Done:** added Flutter club invite flow: owner can open an invite sheet with QR, invite link, and copyable club code; users without a club can paste a code/link and join or send a request through existing backend club join rules. Added `qr_flutter`.
 **Decisions:** MVP invite code is the existing `club.id` and link format is `https://kvartal.app/club/<club_id>`; backend invite tokens/deep links/media sharing should be added later.

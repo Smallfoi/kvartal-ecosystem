@@ -1,0 +1,43 @@
+# Стек бэкенда экосистемы STAW (этап перехода на Django + PostGIS).
+# FastAPI (backend/main.py, порт 8000) пока работает рядом и обслуживает приложения —
+# Django поднимаем параллельно на 8001, переключим приложения после паритета (D-06).
+#
+# Запуск (когда Docker Desktop работает):  cd backend && docker compose up --build
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: kvartal
+      POSTGRES_USER: kvartal
+      POSTGRES_PASSWORD: kvartal
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kvartal -d kvartal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: ./django_api
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: dev-secret-change-in-prod
+      POSTGRES_DB: kvartal
+      POSTGRES_USER: kvartal
+      POSTGRES_PASSWORD: kvartal
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    volumes:
+      - ./django_api:/app
+    ports:
+      - "8001:8000"   # Django на хосте: http://localhost:8001 (FastAPI остаётся на 8000)
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
