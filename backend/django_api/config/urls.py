@@ -3,6 +3,7 @@ from django.urls import include, path
 
 from accounts import views as account_views
 from clubs import views as clubs_views
+from territories import views as territories_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -20,4 +21,7 @@ urlpatterns = [
     path("v1/clubs/<str:club_id>/leave", clubs_views.leave_club),
     path("v1/clubs/<str:club_id>/requests", clubs_views.club_requests),
     path("v1/leaderboard/", include("leaderboard.urls")),
+    # Территории (PostGIS, D-09)
+    path("v1/territories/capture", territories_views.capture),
+    path("v1/territories", territories_views.list_territories),
 ]

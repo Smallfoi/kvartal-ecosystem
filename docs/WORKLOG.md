@@ -16,6 +16,19 @@
 ---
 
 
+## 2026-06-15 — Claude — D-13 + бэкенд территорий на PostGIS (D-09, серверная часть)
+**Сделано:** зафиксировал **D-13** (экосистема: единый бэк, контракт-first, подключаем поверхности постепенно;
+порядок: территории → Store-магазин → сайт). Начал **территории на PostGIS** (raw SQL, без GeoDjango/GDAL):
+- app `territories` + миграция (RunSQL: postgis + таблица `territories` owner_id UNIQUE, geom MultiPolygon(4326), GIST-индекс).
+- `POST /v1/territories/capture {points:[[lat,lng],...]}` — строит полигон из маршрута, сглаживает
+  (ST_SimplifyPreserveTopology ~5м + ST_MakeValid), своя территория растёт через ST_Union (расширение),
+  у чужих вычитается пересечение ST_Difference (перехват). Один владелец = одна мульти-территория.
+- `GET /v1/territories?bbox=minLng,minLat,maxLng,maxLat` — территории в области, отметка mine/club/enemy, упрощение по зуму.
+**Проверено на :8000:** capture→5601 м², bbox→mine, повторный союзный захват→11201 м² (union растёт). Перехват — логика на месте.
+**Состояние:** серверная часть территорий MVP готова. Клиент Квартала ещё НЕ шлёт/не рисует серверные территории.
+**Дальше (клиент):** при замыкании петли POST /territories/capture; на карте грузить /territories?bbox и рисовать
+полупрозрачно mine/club/enemy; потом 72ч-удержание + античит на сервере; затем Районы-рейтинг оживёт.
+
 ## 2026-06-15 — Claude — ПЕРЕХОД НА DJANGO ЗАВЕРШЁН (clubs+leaderboard, данные, :8000)
 **Сделано:** (1) перенёс clubs + leaderboard на Django (PR #22) — все эндпоинты теперь на Django/DRF, контракт как у FastAPI.
 (2) Миграция данных: `core/management/commands/import_sqlite.py` — `docker compose cp ecosystem.db web:/tmp/` →
