@@ -16,6 +16,18 @@
 ---
 
 
+## 2026-06-15 — Claude — Django-стек ЖИВ + перенос ядра (auth/profile/loyalty)
+**Сделано:** владелец поднял WSL2 + Docker. Запустил стек: `cd backend && docker compose up --build -d` →
+db (postgis/postgis:16-3.4, PostGIS 3.4.3 ✅) + web (Django :8001). `migrate` ок, `GET http://localhost:8001/v1/health` = ok, db:true.
+Перенёс на Django/DRF ЯДРО с тем же контрактом: `accounts` (Account) + `loyalty` (LoyaltyTransaction) + `common/security.py`
+(JWT HS256 + pbkdf2-пароли — БАЙТ-В-БАЙТ как FastAPI, тот же секрет → токены совместимы). Эндпоинты:
+`POST /v1/auth/register|login|phone/verify`, `GET /v1/auth/me`, `PATCH /v1/profile`, `GET /v1/loyalty/account`,
+`POST /v1/loyalty/transactions` (идемпотентность по runId+source), seed_runner_points при создании юзера.
+**Проверено на :8001:** phone/verify(8 914 827 8470) → provider phone, баланс 430/silver/5 txns; register +430; profile PATCH; me.
+**Состояние:** Django отдаёт ядро идентично FastAPI на Postgres. FastAPI (:8000) НЕ тронут — приложения работают.
+**Запуск стека (важно):** `cd backend && docker compose up -d`; миграции `docker compose exec web python manage.py migrate`.
+**Дальше:** перенести clubs + leaderboard на Django; миграция данных SQLite→Postgres; переключить baseUrl приложений на :8001; затем отключить FastAPI; затем территории (PostGIS, D-09).
+
 ## 2026-06-15 — Claude — каркас Django + Postgres/PostGIS (Docker)
 **Сделано:** `backend/django_api/` (Django-проект `config` + app `core` с `/v1/health`, Dockerfile, requirements,
 settings под Postgres из env) и `backend/docker-compose.yml` (`db` postgis/postgis + `web` Django на хосте :8001).
