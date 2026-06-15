@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "core",
+    "accounts",
+    "loyalty",
 ]
 
 MIDDLEWARE = [
@@ -71,6 +73,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # Аутентификация — свой JWT (common.security), session-auth/CSRF DRF не используем.
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
 }
 
 LANGUAGE_CODE = "ru-ru"
