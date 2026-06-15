@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "loyalty",
     "clubs",
     "leaderboard",
+    "territories",
 ]
 
 MIDDLEWARE = [
