@@ -57,9 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _BannerCarousel(controller: _bannerController)
-                .animate()
-                .fadeIn(duration: 600.ms),
+            _BannerCarousel(
+              controller: _bannerController,
+            ).animate().fadeIn(duration: 600.ms),
 
             const SizedBox(height: 32),
 
@@ -75,7 +75,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 36),
 
-            _SectionHeader(title: 'РЕКОМЕНДУЕМ', onTap: () => context.go('/catalog'))
+            _SectionHeader(
+                  title: 'РЕКОМЕНДУЕМ',
+                  onTap: () => context.go('/catalog'),
+                )
                 .animate(delay: 220.ms)
                 .fadeIn(duration: 400.ms)
                 .slideX(begin: -0.15, curve: Curves.easeOut),
@@ -87,7 +90,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 36),
 
-            _SectionHeader(title: 'НОВИНКИ', onTap: () => context.go('/catalog'))
+            _SectionHeader(
+                  title: 'НОВИНКИ',
+                  onTap: () => context.go('/catalog'),
+                )
                 .animate(delay: 340.ms)
                 .fadeIn(duration: 400.ms)
                 .slideX(begin: -0.15, curve: Curves.easeOut),
@@ -232,7 +238,10 @@ class _BannerItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              _BannerButton(label: banner['action']!),
+              _BannerButton(
+                label: banner['action']!,
+                onTap: () => _openBanner(context, banner),
+              ),
             ],
           ),
         ),
@@ -241,9 +250,24 @@ class _BannerItem extends StatelessWidget {
   }
 }
 
+void _openBanner(BuildContext context, Map<String, String> banner) {
+  final title = banner['title'] ?? '';
+  final subtitle = banner['subtitle'] ?? '';
+  if (title.contains('ЗИМ') || subtitle.toLowerCase().contains('тепло')) {
+    context.go('/catalog?category=jackets');
+    return;
+  }
+  if (subtitle.toLowerCase().contains('бег')) {
+    context.go('/catalog?category=shoes');
+    return;
+  }
+  context.go('/catalog');
+}
+
 class _BannerButton extends StatefulWidget {
   final String label;
-  const _BannerButton({required this.label});
+  final VoidCallback onTap;
+  const _BannerButton({required this.label, required this.onTap});
 
   @override
   State<_BannerButton> createState() => _BannerButtonState();
@@ -255,7 +279,7 @@ class _BannerButtonState extends State<_BannerButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
@@ -330,12 +354,36 @@ class _SectionHeader extends StatelessWidget {
 
 class _CategoryCards extends StatelessWidget {
   static const _data = [
-    (id: 'tshirts',     name: 'Футболки',    img: 'assets/images/products/1521572163474-6864f9cf17ab.jpg'),
-    (id: 'hoodies',     name: 'Худи',        img: 'assets/images/products/1620799140408-edc6dcb6d633.jpg'),
-    (id: 'shoes',       name: 'Кроссовки',   img: 'assets/images/products/1542291026-7eec264c27ff.jpg'),
-    (id: 'jackets',     name: 'Куртки',      img: 'assets/images/products/1591047139829-d91aecb6caea.jpg'),
-    (id: 'pants',       name: 'Брюки',       img: 'assets/images/products/1506629082955-511b1aa562c8.jpg'),
-    (id: 'accessories', name: 'Аксессуары',  img: 'assets/images/products/1553062407-98eeb64c6a62.jpg'),
+    (
+      id: 'tshirts',
+      name: 'Футболки',
+      img: 'assets/images/products/1521572163474-6864f9cf17ab.jpg',
+    ),
+    (
+      id: 'hoodies',
+      name: 'Худи',
+      img: 'assets/images/products/1620799140408-edc6dcb6d633.jpg',
+    ),
+    (
+      id: 'shoes',
+      name: 'Кроссовки',
+      img: 'assets/images/products/1542291026-7eec264c27ff.jpg',
+    ),
+    (
+      id: 'jackets',
+      name: 'Куртки',
+      img: 'assets/images/products/1591047139829-d91aecb6caea.jpg',
+    ),
+    (
+      id: 'pants',
+      name: 'Брюки',
+      img: 'assets/images/products/1506629082955-511b1aa562c8.jpg',
+    ),
+    (
+      id: 'accessories',
+      name: 'Аксессуары',
+      img: 'assets/images/products/1553062407-98eeb64c6a62.jpg',
+    ),
   ];
 
   @override
@@ -363,7 +411,11 @@ class _CategoryCard extends StatefulWidget {
   final String id;
   final String name;
   final String imageUrl;
-  const _CategoryCard({required this.id, required this.name, required this.imageUrl});
+  const _CategoryCard({
+    required this.id,
+    required this.name,
+    required this.imageUrl,
+  });
 
   @override
   State<_CategoryCard> createState() => _CategoryCardState();
@@ -441,10 +493,10 @@ class _HorizontalProductList extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, i) {
           return ProductCard(
-            product: products[i],
-            width: 165,
-            heroTag: 'featured-${products[i].id}',
-          )
+                product: products[i],
+                width: 165,
+                heroTag: 'featured-${products[i].id}',
+              )
               .animate(delay: (i * 80).ms)
               .fadeIn(duration: 400.ms)
               .slideX(begin: 0.1, duration: 400.ms, curve: Curves.easeOut);
@@ -476,9 +528,9 @@ class _NewProductsGrid extends StatelessWidget {
         itemCount: products.length,
         itemBuilder: (context, i) {
           return ProductCard(
-            product: products[i],
-            heroTag: 'new-${products[i].id}',
-          )
+                product: products[i],
+                heroTag: 'new-${products[i].id}',
+              )
               .animate(delay: (i * 90).ms)
               .fadeIn(duration: 450.ms)
               .slideY(begin: 0.15, duration: 450.ms, curve: Curves.easeOut);

@@ -26,16 +26,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _placing = false;
 
   // Step 1 — Контакты
-  final _nameCtrl  = TextEditingController();
+  final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
 
   // Step 2 — Доставка
   DeliveryType _delivery = DeliveryType.courier;
-  final _cityCtrl   = TextEditingController();
+  final _cityCtrl = TextEditingController();
   final _streetCtrl = TextEditingController();
-  final _houseCtrl  = TextEditingController();
-  final _aptCtrl    = TextEditingController();
+  final _houseCtrl = TextEditingController();
+  final _aptCtrl = TextEditingController();
   final _postalCtrl = TextEditingController();
 
   // Step 3 — Оплата
@@ -50,16 +50,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final auth = context.read<AuthProvider>();
     if (auth.isLoggedIn) {
       final user = auth.user!;
-      _nameCtrl.text  = user.name;
+      _nameCtrl.text = user.name;
       _emailCtrl.text = user.email;
       if (user.phone != null) _phoneCtrl.text = user.phone!;
       // Pre-fill last saved address
       if (user.addresses.isNotEmpty) {
         final addr = user.addresses.first;
-        _cityCtrl.text   = addr.city;
+        _cityCtrl.text = addr.city;
         _streetCtrl.text = addr.street;
-        _houseCtrl.text  = addr.house;
-        if (addr.apartment != null) _aptCtrl.text   = addr.apartment!;
+        _houseCtrl.text = addr.house;
+        if (addr.apartment != null) _aptCtrl.text = addr.apartment!;
         if (addr.postalCode != null) _postalCtrl.text = addr.postalCode!;
       }
     }
@@ -69,8 +69,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void dispose() {
     _pageCtrl.dispose();
     for (final c in [
-      _nameCtrl, _phoneCtrl, _emailCtrl,
-      _cityCtrl, _streetCtrl, _houseCtrl, _aptCtrl, _postalCtrl,
+      _nameCtrl,
+      _phoneCtrl,
+      _emailCtrl,
+      _cityCtrl,
+      _streetCtrl,
+      _houseCtrl,
+      _aptCtrl,
+      _postalCtrl,
     ]) {
       c.dispose();
     }
@@ -80,15 +86,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _validate() {
     switch (_step) {
       case 0:
-        if (_nameCtrl.text.trim().isEmpty)  return 'Введите имя';
+        if (_nameCtrl.text.trim().isEmpty) return 'Введите имя';
         if (_phoneCtrl.text.trim().isEmpty) return 'Введите телефон';
         if (!_emailCtrl.text.contains('@')) return 'Введите корректный email';
         return null;
       case 1:
         if (_delivery != DeliveryType.pickup) {
-          if (_cityCtrl.text.trim().isEmpty)   return 'Введите город';
+          if (_cityCtrl.text.trim().isEmpty) return 'Введите город';
           if (_streetCtrl.text.trim().isEmpty) return 'Введите улицу';
-          if (_houseCtrl.text.trim().isEmpty)  return 'Введите номер дома';
+          if (_houseCtrl.text.trim().isEmpty) return 'Введите номер дома';
         }
         return null;
       default:
@@ -106,9 +112,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _stepError = null;
       _step++;
     });
-    _pageCtrl.animateToPage(_step,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOutCubic);
+    _pageCtrl.animateToPage(
+      _step,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   void _back() {
@@ -120,32 +128,39 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _step--;
       _stepError = null;
     });
-    _pageCtrl.animateToPage(_step,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOutCubic);
+    _pageCtrl.animateToPage(
+      _step,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   Future<void> _confirm() async {
     if (_placing) return;
+    final cart = context.read<CartProvider>();
+    if (cart.items.isEmpty) {
+      context.go('/cart');
+      return;
+    }
     setState(() => _placing = true);
 
     await Future.delayed(const Duration(milliseconds: 900));
 
     if (!mounted) return;
-
-    final cart   = context.read<CartProvider>();
     final orders = context.read<OrderProvider>();
 
     final data = CheckoutData(
-      name:         _nameCtrl.text.trim(),
-      phone:        _phoneCtrl.text.trim(),
-      email:        _emailCtrl.text.trim(),
+      name: _nameCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
       deliveryType: _delivery,
-      city:   _delivery != DeliveryType.pickup ? _cityCtrl.text.trim()   : null,
+      city: _delivery != DeliveryType.pickup ? _cityCtrl.text.trim() : null,
       street: _delivery != DeliveryType.pickup ? _streetCtrl.text.trim() : null,
-      house:  _delivery != DeliveryType.pickup ? _houseCtrl.text.trim()  : null,
-      apartment:  _aptCtrl.text.trim().isNotEmpty   ? _aptCtrl.text.trim()   : null,
-      postalCode: _postalCtrl.text.trim().isNotEmpty ? _postalCtrl.text.trim() : null,
+      house: _delivery != DeliveryType.pickup ? _houseCtrl.text.trim() : null,
+      apartment: _aptCtrl.text.trim().isNotEmpty ? _aptCtrl.text.trim() : null,
+      postalCode: _postalCtrl.text.trim().isNotEmpty
+          ? _postalCtrl.text.trim()
+          : null,
       paymentType: _payment,
     );
 
@@ -154,26 +169,38 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderTotal = cart.total + _deliveryCost;
     final redeem = _pointsToRedeem.clamp(0, loyalty.maxRedeemable(orderTotal));
 
-    final order =
-        orders.placeOrder(cart.items.toList(), data, pointsRedeemed: redeem);
+    final order = orders.placeOrder(
+      cart.items.toList(),
+      data,
+      pointsRedeemed: redeem,
+    );
     cart.clear();
 
     if (redeem > 0) loyalty.redeem(redeem, order.id);
     // Начисляем за фактически оплаченную сумму (order.total уже со скидкой)
-    loyalty.earnForPurchase(order.total,
-        isFirstOrder: orders.orders.length == 1);
+    loyalty.earnForPurchase(
+      order.total,
+      isFirstOrder: orders.orders.length == 1,
+    );
 
     // Save delivery address to profile
     final auth = context.read<AuthProvider>();
-    if (auth.isLoggedIn && _delivery != DeliveryType.pickup &&
+    if (auth.isLoggedIn &&
+        _delivery != DeliveryType.pickup &&
         _cityCtrl.text.trim().isNotEmpty) {
-      auth.addAddress(SavedAddress(
-        city:       _cityCtrl.text.trim(),
-        street:     _streetCtrl.text.trim(),
-        house:      _houseCtrl.text.trim(),
-        apartment:  _aptCtrl.text.trim().isNotEmpty ? _aptCtrl.text.trim() : null,
-        postalCode: _postalCtrl.text.trim().isNotEmpty ? _postalCtrl.text.trim() : null,
-      ));
+      auth.addAddress(
+        SavedAddress(
+          city: _cityCtrl.text.trim(),
+          street: _streetCtrl.text.trim(),
+          house: _houseCtrl.text.trim(),
+          apartment: _aptCtrl.text.trim().isNotEmpty
+              ? _aptCtrl.text.trim()
+              : null,
+          postalCode: _postalCtrl.text.trim().isNotEmpty
+              ? _postalCtrl.text.trim()
+              : null,
+        ),
+      );
     }
 
     if (!mounted) return;
@@ -184,6 +211,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cart = context.watch<CartProvider>();
+    if (cart.items.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.white,
+        body: Column(
+          children: [
+            _Header(step: _step, onClose: () => context.go('/cart')),
+            const Expanded(child: _EmptyCheckout()),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: Column(
@@ -203,10 +243,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 _DeliveryStep(
                   selected: _delivery,
                   onChanged: (t) => setState(() => _delivery = t),
-                  cityCtrl:   _cityCtrl,
+                  cityCtrl: _cityCtrl,
                   streetCtrl: _streetCtrl,
-                  houseCtrl:  _houseCtrl,
-                  aptCtrl:    _aptCtrl,
+                  houseCtrl: _houseCtrl,
+                  aptCtrl: _aptCtrl,
                   postalCtrl: _postalCtrl,
                   error: _step == 1 ? _stepError : null,
                 ),
@@ -215,15 +255,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   onChanged: (p) => setState(() => _payment = p),
                 ),
                 _ReviewStep(
-                  nameCtrl:     _nameCtrl,
-                  phoneCtrl:    _phoneCtrl,
-                  emailCtrl:    _emailCtrl,
-                  delivery:     _delivery,
-                  cityCtrl:     _cityCtrl,
-                  streetCtrl:   _streetCtrl,
-                  houseCtrl:    _houseCtrl,
-                  aptCtrl:      _aptCtrl,
-                  payment:      _payment,
+                  nameCtrl: _nameCtrl,
+                  phoneCtrl: _phoneCtrl,
+                  emailCtrl: _emailCtrl,
+                  delivery: _delivery,
+                  cityCtrl: _cityCtrl,
+                  streetCtrl: _streetCtrl,
+                  houseCtrl: _houseCtrl,
+                  aptCtrl: _aptCtrl,
+                  payment: _payment,
                   deliveryCost: _deliveryCost,
                   pointsToRedeem: _pointsToRedeem,
                   onRedeemChanged: (v) => setState(() => _pointsToRedeem = v),
@@ -232,10 +272,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           _NavBar(
-            step:     _step,
-            loading:  _placing,
-            onBack:   _back,
-            onNext:   _step < 3 ? _next : _confirm,
+            step: _step,
+            loading: _placing,
+            onBack: _back,
+            onNext: _step < 3 ? _next : _confirm,
           ),
         ],
       ),
@@ -243,7 +283,66 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 }
 
-// ─── Header + step indicator ──────────────────────────────────────────────────
+class _EmptyCheckout extends StatelessWidget {
+  const _EmptyCheckout();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.shopping_bag_outlined,
+              size: 64,
+              color: AppColors.grey200,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Оформлять пока нечего',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Добавьте товары в корзину, чтобы перейти к доставке и оплате',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.grey600,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 28),
+            GestureDetector(
+              onTap: () => context.go('/catalog'),
+              child: Container(
+                height: 52,
+                color: AppColors.black,
+                alignment: Alignment.center,
+                child: Text(
+                  'ПЕРЕЙТИ В КАТАЛОГ',
+                  style: GoogleFonts.oswald(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.white,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.06);
+  }
+} // ─── Header + step indicator ──────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
   final int step;
@@ -279,8 +378,11 @@ class _Header extends StatelessWidget {
                     onTap: onClose,
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      child: const Icon(Icons.close,
-                          color: Colors.white, size: 22),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ],
@@ -288,7 +390,7 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 20),
               Row(
                 children: List.generate(4, (i) {
-                  final done    = i < step;
+                  final done = i < step;
                   final current = i == step;
                   return Expanded(
                     child: Row(
@@ -304,8 +406,8 @@ class _Header extends StatelessWidget {
                                 color: done
                                     ? Colors.white
                                     : current
-                                        ? Colors.transparent
-                                        : Colors.transparent,
+                                    ? Colors.transparent
+                                    : Colors.transparent,
                                 border: Border.all(
                                   color: done || current
                                       ? Colors.white
@@ -315,8 +417,11 @@ class _Header extends StatelessWidget {
                               ),
                               alignment: Alignment.center,
                               child: done
-                                  ? const Icon(Icons.check,
-                                      size: 13, color: Colors.black)
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 13,
+                                      color: Colors.black,
+                                    )
                                   : Text(
                                       '${i + 1}',
                                       style: TextStyle(
@@ -393,17 +498,29 @@ class _ContactStep extends StatelessWidget {
             style: TextStyle(fontSize: 13, color: AppColors.grey600),
           ),
           const SizedBox(height: 24),
-          _Field(ctrl: nameCtrl, label: 'Имя', hint: 'Иван Иванов',
-              icon: Icons.person_outline,
-              cap: TextCapitalization.words),
+          _Field(
+            ctrl: nameCtrl,
+            label: 'Имя',
+            hint: 'Иван Иванов',
+            icon: Icons.person_outline,
+            cap: TextCapitalization.words,
+          ),
           const SizedBox(height: 14),
-          _Field(ctrl: phoneCtrl, label: 'Телефон', hint: '+7 (999) 000-00-00',
-              icon: Icons.phone_outlined,
-              type: TextInputType.phone),
+          _Field(
+            ctrl: phoneCtrl,
+            label: 'Телефон',
+            hint: '+7 (999) 000-00-00',
+            icon: Icons.phone_outlined,
+            type: TextInputType.phone,
+          ),
           const SizedBox(height: 14),
-          _Field(ctrl: emailCtrl, label: 'Email', hint: 'example@mail.ru',
-              icon: Icons.mail_outline,
-              type: TextInputType.emailAddress),
+          _Field(
+            ctrl: emailCtrl,
+            label: 'Email',
+            hint: 'example@mail.ru',
+            icon: Icons.mail_outline,
+            type: TextInputType.emailAddress,
+          ),
           if (error != null) ...[
             const SizedBox(height: 14),
             _ErrorBanner(error!),
@@ -447,45 +564,67 @@ class _DeliveryStep extends StatelessWidget {
         children: [
           const _StepTitle('Способ доставки'),
           const SizedBox(height: 20),
-          ..._options.map((opt) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _DeliveryOption(
-                  type:     opt.$1,
-                  label:    opt.$2,
-                  subtitle: opt.$3,
-                  price:    opt.$4,
-                  selected: selected == opt.$1,
-                  onTap:    () => onChanged(opt.$1),
-                ),
-              )),
+          ..._options.map(
+            (opt) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _DeliveryOption(
+                type: opt.$1,
+                label: opt.$2,
+                subtitle: opt.$3,
+                price: opt.$4,
+                selected: selected == opt.$1,
+                onTap: () => onChanged(opt.$1),
+              ),
+            ),
+          ),
           if (needAddress) ...[
             const SizedBox(height: 20),
             const _StepTitle('Адрес доставки'),
             const SizedBox(height: 16),
-            _Field(ctrl: cityCtrl, label: 'Город', hint: 'Москва',
-                icon: Icons.location_city_outlined),
+            _Field(
+              ctrl: cityCtrl,
+              label: 'Город',
+              hint: 'Москва',
+              icon: Icons.location_city_outlined,
+            ),
             const SizedBox(height: 14),
-            _Field(ctrl: streetCtrl, label: 'Улица', hint: 'ул. Ленина',
-                icon: Icons.signpost_outlined),
+            _Field(
+              ctrl: streetCtrl,
+              label: 'Улица',
+              hint: 'ул. Ленина',
+              icon: Icons.signpost_outlined,
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
                   flex: 2,
-                  child: _Field(ctrl: houseCtrl, label: 'Дом', hint: '12А',
-                      icon: Icons.home_outlined),
+                  child: _Field(
+                    ctrl: houseCtrl,
+                    label: 'Дом',
+                    hint: '12А',
+                    icon: Icons.home_outlined,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _Field(ctrl: aptCtrl, label: 'Кв.', hint: '45',
-                      icon: Icons.door_front_door_outlined),
+                  child: _Field(
+                    ctrl: aptCtrl,
+                    label: 'Кв.',
+                    hint: '45',
+                    icon: Icons.door_front_door_outlined,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 14),
-            _Field(ctrl: postalCtrl, label: 'Индекс (необязательно)',
-                hint: '101000', icon: Icons.markunread_mailbox_outlined,
-                type: TextInputType.number),
+            _Field(
+              ctrl: postalCtrl,
+              label: 'Индекс (необязательно)',
+              hint: '101000',
+              icon: Icons.markunread_mailbox_outlined,
+              type: TextInputType.number,
+            ),
           ],
           if (error != null) ...[
             const SizedBox(height: 14),
@@ -497,10 +636,15 @@ class _DeliveryStep extends StatelessWidget {
   }
 
   static const _options = [
-    (DeliveryType.pickup,      'Самовывоз',     'г. Москва, ул. Спортивная, 5', 'Бесплатно'),
-    (DeliveryType.courier,     'Курьер',         '1–2 дня',                      '300 ₽'),
-    (DeliveryType.cdek,        'СДЭК',           '2–5 дней',                     '200 ₽'),
-    (DeliveryType.russianPost, 'Почта России',   '5–14 дней',                    '150 ₽'),
+    (
+      DeliveryType.pickup,
+      'Самовывоз',
+      'г. Москва, ул. Спортивная, 5',
+      'Бесплатно',
+    ),
+    (DeliveryType.courier, 'Курьер', '1–2 дня', '300 ₽'),
+    (DeliveryType.cdek, 'СДЭК', '2–5 дней', '200 ₽'),
+    (DeliveryType.russianPost, 'Почта России', '5–14 дней', '150 ₽'),
   ];
 }
 
@@ -550,8 +694,7 @@ class _DeliveryOption extends StatelessWidget {
                 ),
               ),
               child: selected
-                  ? const Icon(Icons.circle,
-                      size: 8, color: AppColors.black)
+                  ? const Icon(Icons.circle, size: 8, color: AppColors.black)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -571,9 +714,7 @@ class _DeliveryOption extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: selected
-                          ? Colors.white60
-                          : AppColors.grey600,
+                      color: selected ? Colors.white60 : AppColors.grey600,
                     ),
                   ),
                 ],
@@ -676,9 +817,11 @@ class _PaymentOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon,
-                size: 22,
-                color: selected ? Colors.white : AppColors.grey600),
+            Icon(
+              icon,
+              size: 22,
+              color: selected ? Colors.white : AppColors.grey600,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -758,9 +901,11 @@ class _ReviewStep extends StatelessWidget {
 
   String get _address {
     if (delivery == DeliveryType.pickup) return 'г. Москва, ул. Спортивная, 5';
-    final parts = [cityCtrl.text, streetCtrl.text, houseCtrl.text]
-        .where((s) => s.isNotEmpty)
-        .join(', ');
+    final parts = [
+      cityCtrl.text,
+      streetCtrl.text,
+      houseCtrl.text,
+    ].where((s) => s.isNotEmpty).join(', ');
     final apt = aptCtrl.text.isNotEmpty ? ', кв. ${aptCtrl.text}' : '';
     return '$parts$apt';
   }
@@ -784,62 +929,75 @@ class _ReviewStep extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Cart items
-          ...cart.items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 52,
-                      height: 64,
-                      child: item.product.imageUrls.isNotEmpty
-                          ? ProductImage(
-                              path: item.product.imageUrls.first,
-                              iconSize: 18,
-                            )
-                          : Container(color: AppColors.grey100),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.product.name,
-                            style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+          ...cart.items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 52,
+                    height: 64,
+                    child: item.product.imageUrls.isNotEmpty
+                        ? ProductImage(
+                            path: item.product.imageUrls.first,
+                            iconSize: 18,
+                          )
+                        : Container(color: AppColors.grey100),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.product.name,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
-                          Text(
-                            '${item.size} · ${item.color} · ×${item.quantity}',
-                            style: const TextStyle(
-                                fontSize: 11, color: AppColors.grey600),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '${item.size} · ${item.color} · ×${item.quantity}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.grey600,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '${item.total.toInt()} ₽',
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  Text(
+                    '${item.total.toInt()} ₽',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
           const Divider(height: 24),
 
-          _ReviewRow(label: 'Контакт',
-              value: '${nameCtrl.text} · ${phoneCtrl.text}'),
+          _ReviewRow(
+            label: 'Контакт',
+            value: '${nameCtrl.text} · ${phoneCtrl.text}',
+          ),
           const SizedBox(height: 8),
-          _ReviewRow(label: 'Доставка',
-              value: OrderProvider.deliveryLabel(delivery)),
+          _ReviewRow(
+            label: 'Доставка',
+            value: OrderProvider.deliveryLabel(delivery),
+          ),
           const SizedBox(height: 4),
-          _ReviewRow(label: 'Адрес', value: _address,
-              small: true),
+          _ReviewRow(label: 'Адрес', value: _address, small: true),
           const SizedBox(height: 8),
-          _ReviewRow(label: 'Оплата',
-              value: OrderProvider.paymentLabel(payment)),
+          _ReviewRow(
+            label: 'Оплата',
+            value: OrderProvider.paymentLabel(payment),
+          ),
 
           // Списание баллов лояльности
           if (maxRedeem > 0) ...[
@@ -854,15 +1012,20 @@ class _ReviewStep extends StatelessWidget {
             const Divider(height: 24),
             Row(
               children: [
-                const Icon(Icons.stars_rounded,
-                    size: 16, color: AppColors.grey400),
+                const Icon(
+                  Icons.stars_rounded,
+                  size: 16,
+                  color: AppColors.grey400,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'У вас ${loyalty.balance} баллов. Списать можно от '
                     '${LoyaltyAccount.minRedeem} при заказе крупнее',
                     style: const TextStyle(
-                        fontSize: 12, color: AppColors.grey600),
+                      fontSize: 12,
+                      color: AppColors.grey600,
+                    ),
                   ),
                 ),
               ],
@@ -871,25 +1034,31 @@ class _ReviewStep extends StatelessWidget {
 
           const Divider(height: 24),
 
-          _ReviewRow(label: 'Товары',
-              value: '${cart.total.toInt()} ₽'),
+          _ReviewRow(label: 'Товары', value: '${cart.total.toInt()} ₽'),
           const SizedBox(height: 6),
           _ReviewRow(
             label: 'Доставка',
-            value: deliveryCost == 0 ? 'Бесплатно' : '${deliveryCost.toInt()} ₽',
+            value: deliveryCost == 0
+                ? 'Бесплатно'
+                : '${deliveryCost.toInt()} ₽',
           ),
           if (redeem > 0) ...[
             const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Баллы',
-                    style: TextStyle(fontSize: 13, color: AppColors.grey600)),
-                Text('−$redeem ₽',
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2E7D32))),
+                const Text(
+                  'Баллы',
+                  style: TextStyle(fontSize: 13, color: AppColors.grey600),
+                ),
+                Text(
+                  '−$redeem ₽',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
               ],
             ),
           ],
@@ -897,8 +1066,10 @@ class _ReviewStep extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Итого',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const Text(
+                'Итого',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
               Text(
                 '${total.toInt()} ₽',
                 style: GoogleFonts.oswald(
@@ -944,9 +1115,11 @@ class _RedeemPointsTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.stars_rounded,
-                size: 22,
-                color: applied ? Colors.white : AppColors.black),
+            Icon(
+              Icons.stars_rounded,
+              size: 22,
+              color: applied ? Colors.white : AppColors.black,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -997,8 +1170,11 @@ class _ReviewRow extends StatelessWidget {
   final String value;
   final bool small;
 
-  const _ReviewRow(
-      {required this.label, required this.value, this.small = false});
+  const _ReviewRow({
+    required this.label,
+    required this.value,
+    this.small = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1010,16 +1186,19 @@ class _ReviewRow extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-                fontSize: small ? 12 : 13, color: AppColors.grey600),
+              fontSize: small ? 12 : 13,
+              color: AppColors.grey600,
+            ),
           ),
         ),
         Expanded(
           child: Text(
             value,
             style: TextStyle(
-                fontSize: small ? 12 : 13,
-                fontWeight: small ? FontWeight.w400 : FontWeight.w600,
-                color: AppColors.black),
+              fontSize: small ? 12 : 13,
+              fontWeight: small ? FontWeight.w400 : FontWeight.w600,
+              color: AppColors.black,
+            ),
           ),
         ),
       ],
@@ -1046,7 +1225,11 @@ class _NavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          20, 12, 20, 12 + MediaQuery.of(context).padding.bottom),
+        20,
+        12,
+        20,
+        12 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: const BoxDecoration(
         color: AppColors.white,
         border: Border(top: BorderSide(color: AppColors.grey200)),
@@ -1062,8 +1245,11 @@ class _NavBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.grey200),
                 ),
-                child:
-                    const Icon(Icons.arrow_back, size: 20, color: AppColors.black),
+                child: const Icon(
+                  Icons.arrow_back,
+                  size: 20,
+                  color: AppColors.black,
+                ),
               ),
             ),
           if (step > 0) const SizedBox(width: 12),
@@ -1080,7 +1266,9 @@ class _NavBar extends StatelessWidget {
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                     : Text(
                         step < 3 ? 'ДАЛЕЕ' : 'ПОДТВЕРДИТЬ ЗАКАЗ',
@@ -1176,11 +1364,15 @@ class _FieldState extends State<_Field> {
               style: const TextStyle(fontSize: 15, color: AppColors.black),
               decoration: InputDecoration(
                 hintText: widget.hint,
-                hintStyle:
-                    const TextStyle(color: AppColors.grey400, fontSize: 14),
-                prefixIcon: Icon(widget.icon,
-                    size: 18,
-                    color: _focused ? AppColors.black : AppColors.grey400),
+                hintStyle: const TextStyle(
+                  color: AppColors.grey400,
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  widget.icon,
+                  size: 18,
+                  color: _focused ? AppColors.black : AppColors.grey400,
+                ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -1208,8 +1400,10 @@ class _ErrorBanner extends StatelessWidget {
           const Icon(Icons.error_outline, size: 16, color: AppColors.red),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(message,
-                style: const TextStyle(fontSize: 13, color: AppColors.red)),
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 13, color: AppColors.red),
+            ),
           ),
         ],
       ),

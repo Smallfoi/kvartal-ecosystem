@@ -10,14 +10,22 @@ abstract class AuthRepository {
   Future<OAuthPendingData> startGoogleSignIn();
   Future<OAuthPendingData> startAppleSignIn();
   Future<AuthUser> completeSocialSignUp(
-      OAuthPendingData data, String name, String? phone);
+    OAuthPendingData data,
+    String name,
+    String? phone,
+  );
   Future<void> sendPasswordReset(String email);
   Future<void> resetPassword(String newPassword);
   Future<void> changePassword(String oldPassword, String newPassword);
 
   /// Обновление профиля на backend (источник правды). Возвращает актуального юзера.
-  Future<AuthUser> updateProfile(AuthUser current,
-      {String? name, String? phone, String? city, String? avatarPath});
+  Future<AuthUser> updateProfile(
+    AuthUser current, {
+    String? name,
+    String? phone,
+    String? city,
+    String? avatarPath,
+  });
 
   /// Профиль текущего пользователя по JWT (GET /auth/me).
   Future<AuthUser> fetchMe();
@@ -70,7 +78,10 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> completeSocialSignUp(
-      OAuthPendingData data, String name, String? phone) async {
+    OAuthPendingData data,
+    String name,
+    String? phone,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 800));
     return AuthUser(
       name: name.trim(),
@@ -96,8 +107,13 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthUser> updateProfile(AuthUser current,
-      {String? name, String? phone, String? city, String? avatarPath}) async {
+  Future<AuthUser> updateProfile(
+    AuthUser current, {
+    String? name,
+    String? phone,
+    String? city,
+    String? avatarPath,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return AuthUser(
       id: current.id,
@@ -106,6 +122,9 @@ class MockAuthRepository implements AuthRepository {
       phone: phone != null
           ? (phone.trim().isNotEmpty ? phone.trim() : null)
           : current.phone,
+      city: city != null
+          ? (city.trim().isNotEmpty ? city.trim() : null)
+          : current.city,
       provider: current.provider,
       addresses: current.addresses,
       avatarPath: avatarPath ?? current.avatarPath,
@@ -123,8 +142,10 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> login(String email, String password) async {
-    final data = await _client
-        .post('/auth/login', body: {'email': email, 'password': password});
+    final data = await _client.post(
+      '/auth/login',
+      body: {'email': email, 'password': password},
+    );
     final map = data as Map<String, dynamic>;
     _client.authToken = map['token'] as String?;
     return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
@@ -132,8 +153,10 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> loginByPhone(String phone, String code) async {
-    final data = await _client.post('/auth/phone/verify',
-        body: {'phone': phone, 'code': code, 'name': 'Бегун'});
+    final data = await _client.post(
+      '/auth/phone/verify',
+      body: {'phone': phone, 'code': code, 'name': 'Бегун'},
+    );
     final map = data as Map<String, dynamic>;
     _client.authToken = map['token'] as String?;
     return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
@@ -141,8 +164,10 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> register(String name, String email, String password) async {
-    final data = await _client.post('/auth/register',
-        body: {'name': name, 'email': email, 'password': password});
+    final data = await _client.post(
+      '/auth/register',
+      body: {'name': name, 'email': email, 'password': password},
+    );
     final map = data as Map<String, dynamic>;
     _client.authToken = map['token'] as String?;
     return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
@@ -172,13 +197,19 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> completeSocialSignUp(
-      OAuthPendingData data, String name, String? phone) async {
-    final res = await _client.post('/auth/oauth/complete', body: {
-      'email': data.email,
-      'provider': data.provider.name,
-      'name': name,
-      'phone': phone,
-    });
+    OAuthPendingData data,
+    String name,
+    String? phone,
+  ) async {
+    final res = await _client.post(
+      '/auth/oauth/complete',
+      body: {
+        'email': data.email,
+        'provider': data.provider.name,
+        'name': name,
+        'phone': phone,
+      },
+    );
     final m = res as Map<String, dynamic>;
     _client.authToken = m['token'] as String?;
     return AuthUser.fromJson(m['user'] as Map<String, dynamic>);
@@ -196,13 +227,20 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<void> changePassword(String oldPassword, String newPassword) async {
-    await _client.put('/auth/password',
-        body: {'old': oldPassword, 'new': newPassword});
+    await _client.put(
+      '/auth/password',
+      body: {'old': oldPassword, 'new': newPassword},
+    );
   }
 
   @override
-  Future<AuthUser> updateProfile(AuthUser current,
-      {String? name, String? phone, String? city, String? avatarPath}) async {
+  Future<AuthUser> updateProfile(
+    AuthUser current, {
+    String? name,
+    String? phone,
+    String? city,
+    String? avatarPath,
+  }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
     if (phone != null) body['phone'] = phone;
