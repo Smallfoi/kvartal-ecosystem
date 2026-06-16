@@ -46,11 +46,11 @@ jobs:
         run: flutter test
 
   backend:
-    name: Backend · FastAPI
+    name: Backend · Django
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: backend/django_api
     steps:
       - uses: actions/checkout@v4
 
@@ -61,8 +61,5 @@ jobs:
       - name: Install deps
         run: pip install -r requirements.txt
 
-      - name: Compile check
-        run: python -m py_compile main.py
-
-      - name: Import smoke test
-        run: python -c "import main; print('OK:', main.app.title)"
+      - name: Django system check
+        run: python manage.py check
