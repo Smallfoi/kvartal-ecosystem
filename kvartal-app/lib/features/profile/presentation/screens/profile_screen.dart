@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../loyalty/data/loyalty_provider.dart';
 import '../../../run/data/completed_runs_provider.dart';
+import '../../../territory/data/territory_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -28,6 +29,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   /// Pull-to-refresh: тянем баланс/профиль/статистику с бэка прямо на экране.
   /// (обновление между переходами экранов остаётся — это в дополнение к нему).
   Future<void> _refresh() async {
+    ref.invalidate(footprintAreaProvider);
     await Future.wait([
       ref.read(loyaltyProvider.notifier).refresh(),
       ref.read(authProvider.notifier).restoreSession(),
@@ -59,6 +61,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const _PointsCard(),
                     const SizedBox(height: 12),
                     const _StatsRow(),
+                    const SizedBox(height: 12),
+                    const _FootprintCard(),
                     const SizedBox(height: 12),
                     _AccountCard(user: user),
                     const SizedBox(height: 24),
@@ -1001,6 +1005,71 @@ class _Div extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Container(width: 1, height: 32, color: AppColors.separator);
+}
+
+/// Вечный личный след: исследованная площадь навсегда (не уменьшается со временем,
+/// в отличие от живой территории на карте, которая распадается через 7 дней).
+class _FootprintCard extends ConsumerWidget {
+  const _FootprintCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final area = ref.watch(footprintAreaProvider).valueOrNull ?? 0;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.separator),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.electricBlue.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              CupertinoIcons.map_fill,
+              color: AppColors.electricBlue,
+              size: 21,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Личная территория',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'исследовано навсегда',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            formatAreaM2(area),
+            style: const TextStyle(
+              color: AppColors.electricBlue,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _BadgesGrid extends ConsumerWidget {
