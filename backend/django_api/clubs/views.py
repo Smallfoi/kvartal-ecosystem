@@ -20,6 +20,18 @@ def _balance(uid) -> int:
     )
 
 
+def _km(uid) -> float:
+    """Суммарный пробег за всё время (км). Растёт с каждым забегом, не тратится —
+    в отличие от баллов кошелька. Источник — начисления за бег (runnerRun)/10."""
+    pts = sum(
+        t.amount
+        for t in LoyaltyTransaction.objects.filter(
+            user_id=uid, source="runnerRun"
+        ).only("amount")
+    )
+    return round(pts / 10.0, 1)
+
+
 def _current_club_id(uid):
     m = ClubMember.objects.filter(user_id=uid).first()
     return m.club_id if m else None
@@ -31,12 +43,13 @@ def _name_of(uid):
 
 
 def _members_json(club_id):
+    # Личные баллы кошелька в клубе не показываем — у участника отдаём вклад в км.
     out = [
         {"userId": m.user_id, "name": _name_of(m.user_id), "role": m.role,
-         "points": _balance(m.user_id)}
+         "km": _km(m.user_id)}
         for m in ClubMember.objects.filter(club_id=club_id)
     ]
-    out.sort(key=lambda x: x["points"], reverse=True)
+    out.sort(key=lambda x: x["km"], reverse=True)
     return out
 
 
@@ -46,7 +59,8 @@ def _summary(club: Club) -> dict:
         "id": club.id, "name": club.name, "logo": club.logo, "city": club.city,
         "description": club.description, "ownerId": club.owner_id,
         "joinPolicy": club.join_policy, "memberCount": len(members),
-        "totalPoints": sum(_balance(m.user_id) for m in members),
+        # Активность клуба — суммарный пробег (км), а не баллы (баллы тратятся/динамичны).
+        "totalKm": round(sum(_km(m.user_id) for m in members), 1),
     }
 
 
@@ -70,7 +84,7 @@ def clubs_root(request):
             from django.db.models import Q
             qs = qs.filter(Q(name__icontains=search) | Q(city__icontains=search))
         result = [_summary(c) for c in qs.order_by("-created_at")]
-        result.sort(key=lambda c: c["totalPoints"], reverse=True)
+        result.sort(key=lambda c: c["totalKm"], reverse=True)
         return Response(result)
     # POST — create
     d = request.data

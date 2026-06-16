@@ -6,18 +6,20 @@ import '../../auth/data/auth_provider.dart';
 
 class ClubMember {
   final String userId, name, role;
-  final int points;
+
+  /// Вклад участника в км (растёт с забегами). Личные баллы в клубе не показываем.
+  final double km;
   const ClubMember({
     required this.userId,
     required this.name,
     required this.role,
-    required this.points,
+    required this.km,
   });
   factory ClubMember.fromJson(Map<String, dynamic> json) => ClubMember(
     userId: json['userId']?.toString() ?? '',
     name: json['name']?.toString() ?? 'Участник',
     role: json['role']?.toString() ?? 'member',
-    points: (json['points'] as num?)?.toInt() ?? 0,
+    km: (json['km'] as num?)?.toDouble() ?? 0,
   );
 }
 
@@ -39,7 +41,10 @@ class ClubJoinRequest {
 class Club {
   final String id, name, logo, ownerId, joinPolicy;
   final String? city, description, myRole;
-  final int memberCount, totalPoints;
+  final int memberCount;
+
+  /// Активность клуба — суммарный пробег (км), а не баллы.
+  final double totalKm;
   final List<ClubMember> members;
   const Club({
     required this.id,
@@ -48,7 +53,7 @@ class Club {
     required this.ownerId,
     required this.joinPolicy,
     required this.memberCount,
-    required this.totalPoints,
+    required this.totalKm,
     this.city,
     this.description,
     this.myRole,
@@ -63,7 +68,7 @@ class Club {
     ownerId: json['ownerId']?.toString() ?? '',
     joinPolicy: json['joinPolicy']?.toString() ?? 'open',
     memberCount: (json['memberCount'] as num?)?.toInt() ?? 0,
-    totalPoints: (json['totalPoints'] as num?)?.toInt() ?? 0,
+    totalKm: (json['totalKm'] as num?)?.toDouble() ?? 0,
     city: _text(json['city']?.toString()),
     description: _text(json['description']?.toString()),
     myRole: _text(json['myRole']?.toString()),

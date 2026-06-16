@@ -36,68 +36,79 @@ class _IdleView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _RunHeader(),
-              const SizedBox(height: 20),
-              _QuickStatsRow(),
-              const SizedBox(height: 20),
-              _StartCard(),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Цели на неделю',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+      // Фоновый градиент (синий сверху → чёрный) — как на профиле/клубе/рейтинге.
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0A1628), AppColors.bgDark],
+            stops: [0.0, 0.32],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _RunHeader(),
+                const SizedBox(height: 20),
+                _QuickStatsRow(),
+                const SizedBox(height: 20),
+                _StartCard(),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Цели на неделю',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '42%',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.warning,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _WeeklyGoalCard(),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Последние пробежки',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: const Text(
-                      'Все',
+                    Text(
+                      '42%',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.warning,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              if (recentRuns.isEmpty)
-                const _EmptyRunsHint()
-              else
-                ...recentRuns.take(3).map((r) => _RunTile(run: r)),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _WeeklyGoalCard(),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Последние пробежки',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {},
+                      child: const Text(
+                        'Все',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if (recentRuns.isEmpty)
+                  const _EmptyRunsHint()
+                else
+                  ...recentRuns.take(3).map((r) => _RunTile(run: r)),
+              ],
+            ),
           ),
         ),
       ),

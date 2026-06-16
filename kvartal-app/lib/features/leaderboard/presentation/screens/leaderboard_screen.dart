@@ -19,21 +19,32 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgDark,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _Header(tab: _tab, onTabChanged: (t) => setState(() => _tab = t)),
-            Expanded(
-              child: IndexedStack(
-                index: _tab,
-                children: const [
-                  _PersonalTab(),
-                  _ClubsTab(),
-                  _DistrictsTab(),
-                ],
+      // Фоновый градиент (синий сверху → чёрный) — как на профиле и в клубе.
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0A1628), AppColors.bgDark],
+            stops: [0.0, 0.32],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _Header(tab: _tab, onTabChanged: (t) => setState(() => _tab = t)),
+              Expanded(
+                child: IndexedStack(
+                  index: _tab,
+                  children: const [
+                    _PersonalTab(),
+                    _ClubsTab(),
+                    _DistrictsTab(),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -71,8 +82,9 @@ class _Header extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       '$periodLabel · Якутск',
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: AppColors.textTertiary),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
                     ),
                   ],
                 ),
@@ -211,8 +223,9 @@ class _Empty extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodyMedium
-            ?.copyWith(color: AppColors.textTertiary),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
       ),
     ),
   );
@@ -231,7 +244,9 @@ class _PersonalTab extends ConsumerWidget {
       error: (_, __) => const _Empty('Не удалось загрузить рейтинг'),
       data: (board) {
         if (board.top.isEmpty) {
-          return const _Empty('Пока нет пробежек за период.\nПробегись — и попадёшь в рейтинг!');
+          return const _Empty(
+            'Пока нет пробежек за период.\nПробегись — и попадёшь в рейтинг!',
+          );
         }
         final hasPodium = board.top.length >= 3;
         final podium = board.top.take(3).toList();
@@ -328,7 +343,11 @@ class _PodiumItem extends StatelessWidget {
       child: Column(
         children: [
           if (isFirst) ...[
-            const Icon(CupertinoIcons.rosette, color: AppColors.warning, size: 20),
+            const Icon(
+              CupertinoIcons.rosette,
+              color: AppColors.warning,
+              size: 20,
+            ),
             const SizedBox(height: 4),
           ] else
             const SizedBox(height: 24),
@@ -421,7 +440,9 @@ class _MyPositionBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.electricBlue.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.electricBlue.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: AppColors.electricBlue.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         children: [
@@ -447,13 +468,15 @@ class _MyPositionBanner extends StatelessWidget {
               children: [
                 Text(
                   'Ваше место',
-                  style: Theme.of(context).textTheme.labelSmall
-                      ?.copyWith(color: AppColors.textTertiary),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
                 ),
                 Text(
                   '${km.toStringAsFixed(1)} км',
-                  style: Theme.of(context).textTheme.titleSmall
-                      ?.copyWith(color: AppColors.textPrimary),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ],
             ),
@@ -568,7 +591,9 @@ class _ClubsTab extends ConsumerWidget {
       error: (_, __) => const _Empty('Не удалось загрузить рейтинг клубов'),
       data: (board) {
         if (board.top.isEmpty) {
-          return const _Empty('Пока нет клубов с активностью.\nСоздай клуб и беги за команду!');
+          return const _Empty(
+            'Пока нет клубов с активностью.\nСоздай клуб и беги за команду!',
+          );
         }
         final maxKm = board.top
             .map((c) => c.km)
@@ -678,7 +703,8 @@ class _DistrictsTab extends ConsumerWidget {
     final async = ref.watch(leaderboardDistrictsProvider);
     return async.when(
       loading: () => const _Loading(),
-      error: (_, __) => const _Empty('Не удалось загрузить контроль территорий'),
+      error: (_, __) =>
+          const _Empty('Не удалось загрузить контроль территорий'),
       data: (board) {
         if (board.top.isEmpty) {
           return const _Empty(
@@ -699,8 +725,9 @@ class _DistrictsTab extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 6, top: 2, left: 2),
                 child: Text(
                   'Контроль территорий · удержание 72 ч',
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: AppColors.textTertiary),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
                 ),
               );
             }
