@@ -5,12 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../map/data/zone_provider.dart';
 import '../../../territory/data/territory_provider.dart';
+import '../../../permissions/data/location_access_provider.dart';
+import '../../../permissions/presentation/location_setup_sheet.dart';
 import '../../data/run_provider.dart';
 import '../../data/completed_runs_provider.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
+
+const _locSetupShownKey = 'kvartal.loc_setup_shown.v1';
 
 class RunScreen extends ConsumerWidget {
   const RunScreen({super.key});
@@ -26,12 +31,38 @@ class RunScreen extends ConsumerWidget {
 
 // ── Экран до начала тренировки ─────────────────────────────────────────────
 
-class _IdleView extends ConsumerWidget {
+class _IdleView extends ConsumerStatefulWidget {
   final RunState runState;
   const _IdleView({required this.runState});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_IdleView> createState() => _IdleViewState();
+}
+
+class _IdleViewState extends ConsumerState<_IdleView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeOnboardLocation());
+  }
+
+  /// Один раз при первом запуске объясняем и просим фоновую геолокацию.
+  /// Дальше — постоянный баннер-предупреждение, пока доступ не настроен.
+  Future<void> _maybeOnboardLocation() async {
+    await ref.read(locationAccessProvider.notifier).refresh();
+    if (!mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final shown = prefs.getBool(_locSetupShownKey) ?? false;
+    if (shown) return;
+    final st = ref.read(locationAccessProvider);
+    if (st.fullyReady) return;
+    await prefs.setBool(_locSetupShownKey, true);
+    if (!mounted) return;
+    await showLocationSetupSheet(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final recentRuns = ref.watch(completedRunsProvider);
 
     return Scaffold(
@@ -53,7 +84,8 @@ class _IdleView extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _RunHeader(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                const LocationWarningBanner(),
                 _QuickStatsRow(),
                 const SizedBox(height: 20),
                 _StartCard(),
