@@ -19,7 +19,10 @@ const activeRunSchemaVersion = 2;
 const _maxRunSpeedMs = 11.1;
 const _minRoutePointDistanceMeters = 2.0;
 const _maxRoutePointGapMeters = 80.0;
-const _maxAcceptedAccuracyMeters = 50.0;
+// Жёстче по точности — отсекаем «гуляющие» фиксы, дающие дрожь на 2–3 м.
+const _maxAcceptedAccuracyMeters = 35.0;
+// Фильтр на уровне ОС: не репортим, пока реально не сдвинулись (убирает дрожь на месте).
+const _locationDistanceFilterMeters = 5;
 const _locationServiceChannel = MethodChannel('kvartal/location_service');
 
 class RunState {
@@ -436,7 +439,7 @@ LocationSettings _foregroundLocationSettings() {
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     return AndroidSettings(
       accuracy: LocationAccuracy.bestForNavigation,
-      distanceFilter: 0,
+      distanceFilter: _locationDistanceFilterMeters,
       intervalDuration: const Duration(seconds: 1),
       foregroundNotificationConfig: const ForegroundNotificationConfig(
         notificationTitle: 'КВАРТАЛ записывает пробежку',
@@ -449,7 +452,7 @@ LocationSettings _foregroundLocationSettings() {
 
   return const LocationSettings(
     accuracy: LocationAccuracy.high,
-    distanceFilter: 0,
+    distanceFilter: _locationDistanceFilterMeters,
   );
 }
 
