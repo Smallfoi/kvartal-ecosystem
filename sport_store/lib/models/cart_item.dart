@@ -1,4 +1,3 @@
-import '../data/mock_data.dart';
 import 'product.dart';
 
 class CartItem {
@@ -18,17 +17,18 @@ class CartItem {
   String get key => '${product.id}_${size}_$color';
 
   Map<String, dynamic> toJson() => {
-        'productId': product.id,
-        'size': size,
-        'color': color,
-        'quantity': quantity,
-      };
+    'productId': product.id,
+    'product': product.toJson(),
+    'size': size,
+    'color': color,
+    'quantity': quantity,
+  };
 
   static CartItem? fromJson(Map<String, dynamic> json) {
     try {
-      final product = MockData.products.firstWhere(
-        (p) => p.id == json['productId'],
-      );
+      final productJson = json['product'];
+      if (productJson is! Map<String, dynamic>) return null;
+      final product = Product.fromJson(productJson);
       return CartItem(
         product: product,
         size: json['size'] as String,

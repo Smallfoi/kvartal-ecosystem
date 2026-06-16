@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/order.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_theme.dart';
+import '../profile/order_detail_screen.dart';
 
 class OrderSuccessScreen extends StatelessWidget {
   final String orderId;
@@ -29,98 +30,168 @@ class OrderSuccessScreen extends StatelessWidget {
                     children: [
                       const Spacer(),
 
-              // Icon
-              Container(
-                width: 88,
-                height: 88,
-                color: AppColors.grey100,
-                child: const Icon(Icons.check, size: 44, color: AppColors.black),
-              )
-                  .animate()
-                  .scale(duration: 600.ms, curve: Curves.elasticOut)
-                  .fadeIn(duration: 300.ms),
+                      // Icon
+                      Container(
+                            width: 88,
+                            height: 88,
+                            color: AppColors.grey100,
+                            child: const Icon(
+                              Icons.check,
+                              size: 44,
+                              color: AppColors.black,
+                            ),
+                          )
+                          .animate()
+                          .scale(duration: 600.ms, curve: Curves.elasticOut)
+                          .fadeIn(duration: 300.ms),
 
-              const SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
-              Text(
-                'ЗАКАЗ ОФОРМЛЕН!',
-                style: GoogleFonts.oswald(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: AppColors.black,
-                ),
-              ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
+                      Text(
+                        'ЗАКАЗ ОФОРМЛЕН!',
+                        style: GoogleFonts.oswald(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 2,
+                          color: AppColors.black,
+                        ),
+                      ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
 
-              const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-              if (order != null) ...[
-                Text(
-                  'Заказ №${order.id}',
-                  style: GoogleFonts.oswald(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.grey600,
-                    letterSpacing: 1,
-                  ),
-                ).animate().fadeIn(duration: 400.ms, delay: 300.ms),
-                const SizedBox(height: 24),
-                _InfoCard(order: order)
-                    .animate()
-                    .fadeIn(duration: 400.ms, delay: 400.ms)
-                    .slideY(begin: 0.1),
-              ] else
-                const Text(
-                  'Ваш заказ принят в обработку',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.grey600,
-                    height: 1.5,
-                  ),
-                ).animate().fadeIn(duration: 400.ms, delay: 300.ms),
+                      if (order != null) ...[
+                        Text(
+                          'Заказ №${order.id}',
+                          style: GoogleFonts.oswald(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.grey600,
+                            letterSpacing: 1,
+                          ),
+                        ).animate().fadeIn(duration: 400.ms, delay: 300.ms),
+                        const SizedBox(height: 24),
+                        _InfoCard(order: order)
+                            .animate()
+                            .fadeIn(duration: 400.ms, delay: 400.ms)
+                            .slideY(begin: 0.1),
+                      ] else
+                        const Text(
+                          'Ваш заказ принят в обработку',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.grey600,
+                            height: 1.5,
+                          ),
+                        ).animate().fadeIn(duration: 400.ms, delay: 300.ms),
 
-              const Spacer(),
+                      const Spacer(),
 
-              // Buttons
-              GestureDetector(
-                onTap: () => context.go('/profile'),
-                child: Container(
-                  height: 52,
-                  color: AppColors.black,
-                  alignment: Alignment.center,
-                  child: Text(
-                    'МОИ ЗАКАЗЫ',
-                    style: GoogleFonts.oswald(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-              ).animate().fadeIn(duration: 400.ms, delay: 500.ms).slideY(begin: 0.1),
+                      if (order != null) ...[
+                        GestureDetector(
+                              onTap: () => Navigator.of(context).push(
+                                PageRouteBuilder(
+                                  pageBuilder: (_, a, b) =>
+                                      OrderDetailScreen(order: order),
+                                  transitionsBuilder: (_, a, b, child) =>
+                                      SlideTransition(
+                                        position:
+                                            Tween<Offset>(
+                                              begin: const Offset(1, 0),
+                                              end: Offset.zero,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: a,
+                                                curve: Curves.easeOutCubic,
+                                              ),
+                                            ),
+                                        child: child,
+                                      ),
+                                  transitionDuration: const Duration(
+                                    milliseconds: 320,
+                                  ),
+                                ),
+                              ),
+                              child: Container(
+                                height: 52,
+                                color: AppColors.black,
+                                alignment: Alignment.center,
+                                child: Text(
+                                  'ДЕТАЛИ ЗАКАЗА',
+                                  style: GoogleFonts.oswald(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .animate()
+                            .fadeIn(duration: 400.ms, delay: 500.ms)
+                            .slideY(begin: 0.1),
+                        const SizedBox(height: 12),
+                      ],
 
-              const SizedBox(height: 12),
+                      // Buttons
+                      GestureDetector(
+                            onTap: () => context.go('/profile'),
+                            child: Container(
+                              height: 52,
+                              decoration: order == null
+                                  ? null
+                                  : BoxDecoration(
+                                      border: Border.all(
+                                        color: AppColors.grey200,
+                                      ),
+                                    ),
+                              color: order == null
+                                  ? AppColors.black
+                                  : AppColors.white,
+                              alignment: Alignment.center,
+                              child: Text(
+                                'МОИ ЗАКАЗЫ',
+                                style: GoogleFonts.oswald(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: order == null
+                                      ? Colors.white
+                                      : AppColors.black,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                          )
+                          .animate()
+                          .fadeIn(
+                            duration: 400.ms,
+                            delay: order == null ? 500.ms : 580.ms,
+                          )
+                          .slideY(begin: 0.1),
 
-              GestureDetector(
-                onTap: () => context.go('/'),
-                child: Container(
-                  height: 52,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.grey200),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'НА ГЛАВНУЮ',
-                    style: GoogleFonts.oswald(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.black,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-              ).animate().fadeIn(duration: 400.ms, delay: 580.ms).slideY(begin: 0.1),
+                      const SizedBox(height: 12),
+
+                      GestureDetector(
+                            onTap: () => context.go('/'),
+                            child: Container(
+                              height: 52,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.grey200),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'НА ГЛАВНУЮ',
+                                style: GoogleFonts.oswald(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.black,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                          )
+                          .animate()
+                          .fadeIn(duration: 400.ms, delay: 580.ms)
+                          .slideY(begin: 0.1),
                     ],
                   ),
                 ),
@@ -142,32 +213,41 @@ class _InfoCard extends StatelessWidget {
     final data = order.checkoutData;
     final deliveryLine = data.deliveryType == DeliveryType.pickup
         ? 'г. Москва, ул. Спортивная, 5'
-        : [data.city, data.street, data.house]
-            .where((s) => s != null && s.isNotEmpty)
-            .join(', ');
+        : [
+            data.city,
+            data.street,
+            data.house,
+          ].where((s) => s != null && s.isNotEmpty).join(', ');
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.grey200),
-      ),
+      decoration: BoxDecoration(border: Border.all(color: AppColors.grey200)),
       child: Column(
         children: [
-          _Row(label: 'Сумма заказа',
-              value: '${order.total.toInt()} ₽'),
+          _Row(label: 'Сумма заказа', value: '${order.total.toInt()} ₽'),
           const Divider(height: 20),
-          _Row(label: 'Доставка',
-              value: OrderProvider.deliveryLabel(data.deliveryType)),
+          _Row(
+            label: 'Доставка',
+            value: OrderProvider.deliveryLabel(data.deliveryType),
+          ),
           const SizedBox(height: 4),
-          _Row(label: '', value: deliveryLine,
-              small: true, valueColor: AppColors.grey600),
+          _Row(
+            label: '',
+            value: deliveryLine,
+            small: true,
+            valueColor: AppColors.grey600,
+          ),
           const Divider(height: 20),
-          _Row(label: 'Оплата',
-              value: OrderProvider.paymentLabel(data.paymentType)),
+          _Row(
+            label: 'Оплата',
+            value: OrderProvider.paymentLabel(data.paymentType),
+          ),
           const Divider(height: 20),
-          _Row(label: 'Статус',
-              value: OrderProvider.statusLabel(order.status),
-              valueColor: AppColors.black),
+          _Row(
+            label: 'Статус',
+            value: OrderProvider.statusLabel(order.status),
+            valueColor: AppColors.black,
+          ),
         ],
       ),
     );
@@ -194,9 +274,10 @@ class _Row extends StatelessWidget {
         if (label.isNotEmpty)
           SizedBox(
             width: 110,
-            child: Text(label,
-                style: const TextStyle(
-                    fontSize: 13, color: AppColors.grey600)),
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: AppColors.grey600),
+            ),
           ),
         Expanded(
           child: Text(

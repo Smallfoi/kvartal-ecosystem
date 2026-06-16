@@ -17,20 +17,21 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
+  late final TextEditingController _profileCityCtrl;
 
   // Change password
-  final _oldPassCtrl  = TextEditingController();
-  final _newPassCtrl  = TextEditingController();
+  final _oldPassCtrl = TextEditingController();
+  final _newPassCtrl = TextEditingController();
   final _confPassCtrl = TextEditingController();
   bool _showPassSection = false;
 
   // Add address inline form
   bool _showAddressForm = false;
-  final _labelCtrl  = TextEditingController();
-  final _cityCtrl   = TextEditingController();
+  final _labelCtrl = TextEditingController();
+  final _addressCityCtrl = TextEditingController();
   final _streetCtrl = TextEditingController();
-  final _houseCtrl  = TextEditingController();
-  final _aptCtrl    = TextEditingController();
+  final _houseCtrl = TextEditingController();
+  final _aptCtrl = TextEditingController();
   final _postalCtrl = TextEditingController();
   String? _addressError;
 
@@ -42,17 +43,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     final user = context.read<AuthProvider>().user!;
-    _nameCtrl  = TextEditingController(text: user.name);
+    _nameCtrl = TextEditingController(text: user.name);
     _phoneCtrl = TextEditingController(text: user.phone ?? '');
+    _profileCityCtrl = TextEditingController(text: user.city ?? '');
   }
 
   @override
   void dispose() {
     for (final c in [
-      _nameCtrl, _phoneCtrl,
-      _oldPassCtrl, _newPassCtrl, _confPassCtrl,
-      _labelCtrl, _cityCtrl, _streetCtrl,
-      _houseCtrl, _aptCtrl, _postalCtrl,
+      _nameCtrl,
+      _phoneCtrl,
+      _profileCityCtrl,
+      _oldPassCtrl,
+      _newPassCtrl,
+      _confPassCtrl,
+      _labelCtrl,
+      _addressCityCtrl,
+      _streetCtrl,
+      _houseCtrl,
+      _aptCtrl,
+      _postalCtrl,
     ]) {
       c.dispose();
     }
@@ -79,7 +89,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // ── Address ──────────────────────────────────────────────────────────────────
 
   void _submitAddress() {
-    if (_cityCtrl.text.trim().isEmpty) {
+    if (_addressCityCtrl.text.trim().isEmpty) {
       setState(() => _addressError = 'Введите город');
       return;
     }
@@ -91,23 +101,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() => _addressError = 'Введите номер дома');
       return;
     }
-    context.read<AuthProvider>().addAddress(SavedAddress(
-      label:      _labelCtrl.text.trim(),
-      city:       _cityCtrl.text.trim(),
-      street:     _streetCtrl.text.trim(),
-      house:      _houseCtrl.text.trim(),
-      apartment:  _aptCtrl.text.trim().isNotEmpty ? _aptCtrl.text.trim() : null,
-      postalCode: _postalCtrl.text.trim().isNotEmpty ? _postalCtrl.text.trim() : null,
-    ));
+    context.read<AuthProvider>().addAddress(
+      SavedAddress(
+        label: _labelCtrl.text.trim(),
+        city: _addressCityCtrl.text.trim(),
+        street: _streetCtrl.text.trim(),
+        house: _houseCtrl.text.trim(),
+        apartment: _aptCtrl.text.trim().isNotEmpty
+            ? _aptCtrl.text.trim()
+            : null,
+        postalCode: _postalCtrl.text.trim().isNotEmpty
+            ? _postalCtrl.text.trim()
+            : null,
+      ),
+    );
     // clear form
     for (final c in [
-      _labelCtrl, _cityCtrl, _streetCtrl, _houseCtrl, _aptCtrl, _postalCtrl
+      _labelCtrl,
+      _addressCityCtrl,
+      _streetCtrl,
+      _houseCtrl,
+      _aptCtrl,
+      _postalCtrl,
     ]) {
       c.clear();
     }
     setState(() {
       _showAddressForm = false;
-      _addressError    = null;
+      _addressError = null;
     });
   }
 
@@ -122,7 +143,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (_showPassSection && _oldPassCtrl.text.isNotEmpty) {
       final err = await auth.changePassword(
-        _oldPassCtrl.text, _newPassCtrl.text, _confPassCtrl.text);
+        _oldPassCtrl.text,
+        _newPassCtrl.text,
+        _confPassCtrl.text,
+      );
       if (!mounted) return;
       if (err != null) {
         setState(() => _passError = err);
@@ -130,14 +154,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     }
 
-    final err =
-        await auth.updateProfile(name: _nameCtrl.text, phone: _phoneCtrl.text);
+    final err = await auth.updateProfile(
+      name: _nameCtrl.text,
+      phone: _phoneCtrl.text,
+      city: _profileCityCtrl.text,
+    );
     if (!mounted) return;
     if (err != null) {
       setState(() => _error = err);
       return;
     }
-    setState(() { _error = null; _passError = null; _saved = true; });
+    setState(() {
+      _error = null;
+      _passError = null;
+      _saved = true;
+    });
 
     await Future.delayed(const Duration(milliseconds: 800));
     if (mounted) Navigator.of(context).pop();
@@ -162,7 +193,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-
                   // ── Avatar ─────────────────────────────────────────────────
                   Center(
                     child: Column(
@@ -198,10 +228,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     color: Colors.white,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: AppColors.grey200),
+                                      color: AppColors.grey200,
+                                    ),
                                   ),
-                                  child: const Icon(Icons.camera_alt,
-                                      size: 15, color: AppColors.black),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    size: 15,
+                                    color: AppColors.black,
+                                  ),
                                 ),
                               ),
                             ],
@@ -223,9 +257,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ),
                             ),
                             if (user.avatarPath != null) ...[
-                              const Text(' · ',
-                                  style: TextStyle(
-                                      color: AppColors.grey400)),
+                              const Text(
+                                ' · ',
+                                style: TextStyle(color: AppColors.grey400),
+                              ),
                               GestureDetector(
                                 onTap: _removeAvatar,
                                 child: const Text(
@@ -242,22 +277,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ],
                     ),
-                  ).animate().scale(
-                      duration: 400.ms, curve: Curves.easeOut),
+                  ).animate().scale(duration: 400.ms, curve: Curves.easeOut),
 
                   if (!isEmail) ...[
                     const SizedBox(height: 10),
                     Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 5),
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
                         color: AppColors.grey100,
                         child: Text(
                           user.provider == LoginProvider.google
                               ? 'Аккаунт Google'
                               : 'Аккаунт Apple',
                           style: const TextStyle(
-                              fontSize: 12, color: AppColors.grey600),
+                            fontSize: 12,
+                            color: AppColors.grey600,
+                          ),
                         ),
                       ),
                     ),
@@ -266,20 +304,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 28),
 
                   // ── Main fields ────────────────────────────────────────────
-                  _Field(ctrl: _nameCtrl, label: 'Имя',
-                      hint: 'Иван Иванов', icon: Icons.person_outline,
-                      cap: TextCapitalization.words)
-                      .animate().fadeIn(duration: 350.ms, delay: 80.ms)
+                  _Field(
+                        ctrl: _nameCtrl,
+                        label: 'Имя',
+                        hint: 'Иван Иванов',
+                        icon: Icons.person_outline,
+                        cap: TextCapitalization.words,
+                      )
+                      .animate()
+                      .fadeIn(duration: 350.ms, delay: 80.ms)
                       .slideY(begin: 0.08),
                   const SizedBox(height: 14),
-                  _Field(ctrl: _phoneCtrl, label: 'Телефон',
-                      hint: '+7 (999) 000-00-00', icon: Icons.phone_outlined,
-                      type: TextInputType.phone)
-                      .animate().fadeIn(duration: 350.ms, delay: 140.ms)
+                  _Field(
+                        ctrl: _phoneCtrl,
+                        label: 'Телефон',
+                        hint: '+7 (999) 000-00-00',
+                        icon: Icons.phone_outlined,
+                        type: TextInputType.phone,
+                      )
+                      .animate()
+                      .fadeIn(duration: 350.ms, delay: 140.ms)
+                      .slideY(begin: 0.08),
+                  const SizedBox(height: 14),
+                  _Field(
+                        ctrl: _profileCityCtrl,
+                        label: 'Город',
+                        hint: 'Якутск',
+                        icon: Icons.location_city_outlined,
+                        cap: TextCapitalization.words,
+                      )
+                      .animate()
+                      .fadeIn(duration: 350.ms, delay: 170.ms)
                       .slideY(begin: 0.08),
                   const SizedBox(height: 14),
                   _LockedField(label: 'Email', value: user.email)
-                      .animate().fadeIn(duration: 350.ms, delay: 200.ms)
+                      .animate()
+                      .fadeIn(duration: 350.ms, delay: 200.ms)
                       .slideY(begin: 0.08),
 
                   if (_error != null) ...[
@@ -291,20 +351,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   if (isEmail) ...[
                     const SizedBox(height: 24),
                     GestureDetector(
-                      onTap: () => setState(
-                          () => _showPassSection = !_showPassSection),
+                      onTap: () =>
+                          setState(() => _showPassSection = !_showPassSection),
                       child: Row(
                         children: [
-                          Text('СМЕНИТЬ ПАРОЛЬ',
-                              style: GoogleFonts.oswald(
-                                fontSize: 14, fontWeight: FontWeight.w600,
-                                letterSpacing: 1.5, color: AppColors.black)),
+                          Text(
+                            'СМЕНИТЬ ПАРОЛЬ',
+                            style: GoogleFonts.oswald(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.5,
+                              color: AppColors.black,
+                            ),
+                          ),
                           const Spacer(),
                           Icon(
                             _showPassSection
                                 ? Icons.keyboard_arrow_up
                                 : Icons.keyboard_arrow_down,
-                            color: AppColors.grey600),
+                            color: AppColors.grey600,
+                          ),
                         ],
                       ),
                     ),
@@ -316,14 +382,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       firstChild: Column(
                         children: [
                           const SizedBox(height: 14),
-                          _PasswordField(ctrl: _oldPassCtrl,
-                              label: 'Текущий пароль'),
+                          _PasswordField(
+                            ctrl: _oldPassCtrl,
+                            label: 'Текущий пароль',
+                          ),
                           const SizedBox(height: 14),
-                          _PasswordField(ctrl: _newPassCtrl,
-                              label: 'Новый пароль'),
+                          _PasswordField(
+                            ctrl: _newPassCtrl,
+                            label: 'Новый пароль',
+                          ),
                           const SizedBox(height: 14),
-                          _PasswordField(ctrl: _confPassCtrl,
-                              label: 'Подтвердите пароль'),
+                          _PasswordField(
+                            ctrl: _confPassCtrl,
+                            label: 'Подтвердите пароль',
+                          ),
                           if (_passError != null) ...[
                             const SizedBox(height: 12),
                             _ErrorBanner(_passError!),
@@ -341,20 +413,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       Text(
                         'АДРЕСА ДОСТАВКИ',
                         style: GoogleFonts.oswald(
-                          fontSize: 14, fontWeight: FontWeight.w600,
-                          letterSpacing: 1.5, color: AppColors.black),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.5,
+                          color: AppColors.black,
+                        ),
                       ),
                       if (user.addresses.isNotEmpty) ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           color: AppColors.black,
-                          child: Text('${user.addresses.length}',
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
+                          child: Text(
+                            '${user.addresses.length}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ],
                     ],
@@ -364,8 +444,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   if (user.addresses.isEmpty && !_showAddressForm)
                     const Text(
                       'Нет сохранённых адресов',
-                      style: TextStyle(
-                          fontSize: 13, color: AppColors.grey600),
+                      style: TextStyle(fontSize: 13, color: AppColors.grey600),
                     ),
 
                   // Address list
@@ -375,8 +454,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Container(
-                        padding:
-                            const EdgeInsets.fromLTRB(14, 12, 8, 12),
+                        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
                         decoration: BoxDecoration(
                           border: Border.all(color: AppColors.grey200),
                         ),
@@ -385,53 +463,61 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           children: [
                             const Padding(
                               padding: EdgeInsets.only(top: 1),
-                              child: Icon(Icons.location_on_outlined,
-                                  size: 18, color: AppColors.grey600),
+                              child: Icon(
+                                Icons.location_on_outlined,
+                                size: 18,
+                                color: AppColors.grey600,
+                              ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (addr.label.isNotEmpty)
-                                    Text(addr.label,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.grey600,
-                                          letterSpacing: 0.5,
-                                        )),
-                                  Text(addr.displayLine,
+                                    Text(
+                                      addr.label,
                                       style: const TextStyle(
-                                          fontSize: 13,
-                                          color: AppColors.black,
-                                          height: 1.4)),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.grey600,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  Text(
+                                    addr.displayLine,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.black,
+                                      height: 1.4,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                             GestureDetector(
                               onTap: () =>
-                                  context.read<AuthProvider>()
-                                      .removeAddress(i),
+                                  context.read<AuthProvider>().removeAddress(i),
                               child: const Padding(
                                 padding: EdgeInsets.all(6),
-                                child: Icon(Icons.close,
-                                    size: 16, color: AppColors.grey400),
+                                child: Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: AppColors.grey400,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ).animate(delay: (i * 50).ms)
-                          .fadeIn(duration: 250.ms),
+                      ).animate(delay: (i * 50).ms).fadeIn(duration: 250.ms),
                     );
                   }),
 
                   // Add address button
                   const SizedBox(height: 8),
                   GestureDetector(
-                    onTap: () => setState(
-                        () => _showAddressForm = !_showAddressForm),
+                    onTap: () =>
+                        setState(() => _showAddressForm = !_showAddressForm),
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
@@ -447,17 +533,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            _showAddressForm
-                                ? Icons.remove
-                                : Icons.add,
+                            _showAddressForm ? Icons.remove : Icons.add,
                             size: 16,
                             color: AppColors.grey600,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            _showAddressForm
-                                ? 'Отмена'
-                                : 'Добавить адрес',
+                            _showAddressForm ? 'Отмена' : 'Добавить адрес',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -479,41 +561,57 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 16),
-                        _Field(ctrl: _labelCtrl,
-                            label: 'Название (необязательно)',
-                            hint: 'Дом, Работа...',
-                            icon: Icons.label_outline),
+                        _Field(
+                          ctrl: _labelCtrl,
+                          label: 'Название (необязательно)',
+                          hint: 'Дом, Работа...',
+                          icon: Icons.label_outline,
+                        ),
                         const SizedBox(height: 12),
-                        _Field(ctrl: _cityCtrl, label: 'Город',
-                            hint: 'Москва',
-                            icon: Icons.location_city_outlined),
+                        _Field(
+                          ctrl: _addressCityCtrl,
+                          label: 'Город',
+                          hint: 'Москва',
+                          icon: Icons.location_city_outlined,
+                        ),
                         const SizedBox(height: 12),
-                        _Field(ctrl: _streetCtrl, label: 'Улица',
-                            hint: 'ул. Ленина',
-                            icon: Icons.signpost_outlined),
+                        _Field(
+                          ctrl: _streetCtrl,
+                          label: 'Улица',
+                          hint: 'ул. Ленина',
+                          icon: Icons.signpost_outlined,
+                        ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
                             Expanded(
                               flex: 2,
-                              child: _Field(ctrl: _houseCtrl,
-                                  label: 'Дом', hint: '12А',
-                                  icon: Icons.home_outlined),
+                              child: _Field(
+                                ctrl: _houseCtrl,
+                                label: 'Дом',
+                                hint: '12А',
+                                icon: Icons.home_outlined,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: _Field(ctrl: _aptCtrl,
-                                  label: 'Кв.', hint: '45',
-                                  icon: Icons.door_front_door_outlined),
+                              child: _Field(
+                                ctrl: _aptCtrl,
+                                label: 'Кв.',
+                                hint: '45',
+                                icon: Icons.door_front_door_outlined,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        _Field(ctrl: _postalCtrl,
-                            label: 'Индекс (необязательно)',
-                            hint: '101000',
-                            icon: Icons.markunread_mailbox_outlined,
-                            type: TextInputType.number),
+                        _Field(
+                          ctrl: _postalCtrl,
+                          label: 'Индекс (необязательно)',
+                          hint: '101000',
+                          icon: Icons.markunread_mailbox_outlined,
+                          type: TextInputType.number,
+                        ),
                         if (_addressError != null) ...[
                           const SizedBox(height: 10),
                           _ErrorBanner(_addressError!),
@@ -545,50 +643,61 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                   // ── Save button ────────────────────────────────────────────
                   Consumer<AuthProvider>(
-                    builder: (context, a, _) => GestureDetector(
-                      onTap: a.isLoading || _saved ? null : _save,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        height: 52,
-                        color: _saved
-                            ? const Color(0xFF2E7D32)
-                            : a.isLoading
+                        builder: (context, a, _) => GestureDetector(
+                          onTap: a.isLoading || _saved ? null : _save,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            height: 52,
+                            color: _saved
+                                ? const Color(0xFF2E7D32)
+                                : a.isLoading
                                 ? AppColors.grey800
                                 : AppColors.black,
-                        alignment: Alignment.center,
-                        child: _saved
-                            ? const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.check,
-                                      color: Colors.white, size: 18),
-                                  SizedBox(width: 8),
-                                  Text('СОХРАНЕНО',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
+                            alignment: Alignment.center,
+                            child: _saved
+                                ? const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.check,
                                         color: Colors.white,
-                                        letterSpacing: 2,
-                                      )),
-                                ],
-                              )
-                            : a.isLoading
+                                        size: 18,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'СОХРАНЕНО',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : a.isLoading
                                 ? const SizedBox(
-                                    width: 22, height: 22,
+                                    width: 22,
+                                    height: 22,
                                     child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2))
-                                : Text('СОХРАНИТЬ',
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    'СОХРАНИТЬ',
                                     style: GoogleFonts.oswald(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
                                       letterSpacing: 2,
-                                    )),
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 350.ms, delay: 260.ms)
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 350.ms, delay: 260.ms)
                       .slideY(begin: 0.08),
                 ],
               ),
@@ -604,13 +713,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final initials = parts.length >= 2
         ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
         : name.isNotEmpty
-            ? name[0].toUpperCase()
-            : '?';
+        ? name[0].toUpperCase()
+        : '?';
     return Center(
       child: Text(
         initials,
         style: GoogleFonts.oswald(
-          fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white),
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -632,18 +744,21 @@ class _Header extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
           child: Row(
             children: [
-              Text('РЕДАКТИРОВАТЬ ПРОФИЛЬ',
-                      style: GoogleFonts.oswald(
-                        fontSize: 18, fontWeight: FontWeight.w700,
-                        color: Colors.white, letterSpacing: 2))
-                  .animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
+              Text(
+                'РЕДАКТИРОВАТЬ ПРОФИЛЬ',
+                style: GoogleFonts.oswald(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
+              ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
               const Spacer(),
               GestureDetector(
                 onTap: onClose,
                 child: Container(
                   padding: const EdgeInsets.all(6),
-                  child: const Icon(Icons.close,
-                      color: Colors.white, size: 22),
+                  child: const Icon(Icons.close, color: Colors.white, size: 22),
                 ),
               ),
             ],
@@ -666,10 +781,15 @@ class _LockedField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700,
-              letterSpacing: 1.2, color: AppColors.grey600)),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: AppColors.grey600,
+          ),
+        ),
         const SizedBox(height: 6),
         Container(
           height: 52,
@@ -680,20 +800,29 @@ class _LockedField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(
             children: [
-              const Icon(Icons.lock_outline,
-                  size: 18, color: AppColors.grey400),
+              const Icon(
+                Icons.lock_outline,
+                size: 18,
+                color: AppColors.grey400,
+              ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(value,
-                    style: const TextStyle(
-                        fontSize: 15, color: AppColors.grey600)),
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.grey600,
+                  ),
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 4),
-        const Text('Email привязан к аккаунту и не может быть изменён',
-            style: TextStyle(fontSize: 11, color: AppColors.grey400)),
+        const Text(
+          'Email привязан к аккаунту и не может быть изменён',
+          style: TextStyle(fontSize: 11, color: AppColors.grey400),
+        ),
       ],
     );
   }
@@ -710,9 +839,12 @@ class _Field extends StatefulWidget {
   final TextCapitalization cap;
 
   const _Field({
-    required this.ctrl, required this.label,
-    required this.hint, required this.icon,
-    this.type, this.cap = TextCapitalization.none,
+    required this.ctrl,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.type,
+    this.cap = TextCapitalization.none,
   });
 
   @override
@@ -727,10 +859,15 @@ class _FieldState extends State<_Field> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700,
-              letterSpacing: 1.2, color: AppColors.grey600)),
+        Text(
+          widget.label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: AppColors.grey600,
+          ),
+        ),
         const SizedBox(height: 6),
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -750,9 +887,14 @@ class _FieldState extends State<_Field> {
               decoration: InputDecoration(
                 hintText: widget.hint,
                 hintStyle: const TextStyle(
-                    color: AppColors.grey400, fontSize: 14),
-                prefixIcon: Icon(widget.icon, size: 18,
-                    color: _focused ? AppColors.black : AppColors.grey400),
+                  color: AppColors.grey400,
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  widget.icon,
+                  size: 18,
+                  color: _focused ? AppColors.black : AppColors.grey400,
+                ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -786,10 +928,15 @@ class _PasswordFieldState extends State<_PasswordField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700,
-              letterSpacing: 1.2, color: AppColors.grey600)),
+        Text(
+          widget.label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: AppColors.grey600,
+          ),
+        ),
         const SizedBox(height: 6),
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -808,9 +955,14 @@ class _PasswordFieldState extends State<_PasswordField> {
               decoration: InputDecoration(
                 hintText: '••••••••',
                 hintStyle: const TextStyle(
-                    color: AppColors.grey400, fontSize: 14),
-                prefixIcon: Icon(Icons.lock_outline, size: 18,
-                    color: _focused ? AppColors.black : AppColors.grey400),
+                  color: AppColors.grey400,
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  Icons.lock_outline,
+                  size: 18,
+                  color: _focused ? AppColors.black : AppColors.grey400,
+                ),
                 suffixIcon: Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: GestureDetector(
@@ -819,7 +971,9 @@ class _PasswordFieldState extends State<_PasswordField> {
                       _obscure
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
-                      size: 20, color: AppColors.grey400),
+                      size: 20,
+                      color: AppColors.grey400,
+                    ),
                   ),
                 ),
                 border: InputBorder.none,
@@ -851,8 +1005,10 @@ class _ErrorBanner extends StatelessWidget {
           const Icon(Icons.error_outline, size: 16, color: AppColors.red),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(message,
-                style: const TextStyle(fontSize: 13, color: AppColors.red)),
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 13, color: AppColors.red),
+            ),
           ),
         ],
       ),

@@ -25,15 +25,15 @@ class AuthProvider extends ChangeNotifier {
 
   /// backend пока не хранит адреса/локальный аватар — сохраняем их при синке.
   AuthUser _mergeKeepingLocal(AuthUser fresh) => AuthUser(
-        id: fresh.id,
-        name: fresh.name,
-        email: fresh.email,
-        phone: fresh.phone,
-        provider: fresh.provider,
-        addresses:
-            fresh.addresses.isNotEmpty ? fresh.addresses : _user!.addresses,
-        avatarPath: fresh.avatarPath ?? _user!.avatarPath,
-      );
+    id: fresh.id,
+    name: fresh.name,
+    email: fresh.email,
+    phone: fresh.phone,
+    city: fresh.city,
+    provider: fresh.provider,
+    addresses: fresh.addresses.isNotEmpty ? fresh.addresses : _user!.addresses,
+    avatarPath: fresh.avatarPath ?? _user!.avatarPath,
+  );
 
   /// Обновить профиль из backend (GET /auth/me). Тихо игнорирует офлайн/mock.
   Future<void> refreshFromServer() async {
@@ -95,7 +95,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<String?> register(
-      String name, String email, String password, String confirm) async {
+    String name,
+    String email,
+    String password,
+    String confirm,
+  ) async {
     if (name.trim().isEmpty || email.trim().isEmpty || password.isEmpty) {
       return 'Заполните все поля';
     }
@@ -124,7 +128,10 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> completeSocialSignUp(
-      OAuthPendingData data, String name, String? phone) async {
+    OAuthPendingData data,
+    String name,
+    String? phone,
+  ) async {
     _setLoading(true);
     _user = await _repo.completeSocialSignUp(data, name, phone);
     _save();
@@ -150,13 +157,17 @@ class AuthProvider extends ChangeNotifier {
     return null;
   }
 
-  Future<String?> updateProfile({required String name, String? phone}) async {
+  Future<String?> updateProfile({
+    required String name,
+    String? phone,
+    String? city,
+  }) async {
     if (_user == null) return 'Не авторизован';
     if (name.trim().isEmpty) return 'Введите имя';
     _setLoading(true);
     try {
       _user = _mergeKeepingLocal(
-        await _repo.updateProfile(_user!, name: name, phone: phone),
+        await _repo.updateProfile(_user!, name: name, phone: phone, city: city),
       );
       _save();
       return null;
@@ -175,6 +186,7 @@ class AuthProvider extends ChangeNotifier {
       email: _user!.email,
       phone: _user!.phone,
       provider: _user!.provider,
+      city: _user!.city,
       addresses: _user!.addresses,
       avatarPath: path,
     );
@@ -193,6 +205,7 @@ class AuthProvider extends ChangeNotifier {
       email: _user!.email,
       phone: _user!.phone,
       provider: _user!.provider,
+      city: _user!.city,
       addresses: list,
       avatarPath: _user!.avatarPath,
     );
@@ -209,6 +222,7 @@ class AuthProvider extends ChangeNotifier {
       email: _user!.email,
       phone: _user!.phone,
       provider: _user!.provider,
+      city: _user!.city,
       addresses: list,
       avatarPath: _user!.avatarPath,
     );
@@ -217,7 +231,10 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<String?> changePassword(
-      String oldPass, String newPass, String confirm) async {
+    String oldPass,
+    String newPass,
+    String confirm,
+  ) async {
     if (oldPass.isEmpty || newPass.isEmpty || confirm.isEmpty) {
       return 'Заполните все поля';
     }

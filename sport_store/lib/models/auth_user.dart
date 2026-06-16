@@ -26,22 +26,22 @@ class SavedAddress {
   String get displayTitle => label.isNotEmpty ? label : displayLine;
 
   Map<String, dynamic> toJson() => {
-        'label': label,
-        'city': city,
-        'street': street,
-        'house': house,
-        'apartment': apartment,
-        'postalCode': postalCode,
-      };
+    'label': label,
+    'city': city,
+    'street': street,
+    'house': house,
+    'apartment': apartment,
+    'postalCode': postalCode,
+  };
 
   factory SavedAddress.fromJson(Map<String, dynamic> j) => SavedAddress(
-        label: j['label'] as String? ?? '',
-        city: j['city'] as String? ?? '',
-        street: j['street'] as String? ?? '',
-        house: j['house'] as String? ?? '',
-        apartment: j['apartment'] as String?,
-        postalCode: j['postalCode'] as String?,
-      );
+    label: j['label'] as String? ?? '',
+    city: j['city'] as String? ?? '',
+    street: j['street'] as String? ?? '',
+    house: j['house'] as String? ?? '',
+    apartment: j['apartment'] as String?,
+    postalCode: j['postalCode'] as String?,
+  );
 }
 
 class AuthUser {
@@ -49,6 +49,7 @@ class AuthUser {
   final String name;
   final String email;
   final String? phone;
+  final String? city;
   final LoginProvider provider;
   final List<SavedAddress> addresses;
   final String? avatarPath;
@@ -58,35 +59,38 @@ class AuthUser {
     required this.name,
     required this.email,
     this.phone,
+    this.city,
     this.provider = LoginProvider.email,
     this.addresses = const [],
     this.avatarPath,
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'provider': provider.name,
-        'addresses': addresses.map((a) => a.toJson()).toList(),
-        'avatarPath': avatarPath,
-      };
+    'id': id,
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'city': city,
+    'provider': provider.name,
+    'addresses': addresses.map((a) => a.toJson()).toList(),
+    'avatarPath': avatarPath,
+  };
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
-        id: j['id'] as String?,
-        name: j['name'] as String,
-        email: j['email'] as String,
-        phone: j['phone'] as String?,
-        provider: LoginProvider.values.firstWhere(
-          (e) => e.name == j['provider'],
-          orElse: () => LoginProvider.email,
-        ),
-        addresses: (j['addresses'] as List? ?? [])
-            .map((a) => SavedAddress.fromJson(a as Map<String, dynamic>))
-            .toList(),
-        avatarPath: j['avatarPath'] as String?,
-      );
+    id: j['id'] as String?,
+    name: j['name'] as String,
+    email: j['email'] as String,
+    phone: j['phone'] as String?,
+    city: j['city'] as String?,
+    provider: LoginProvider.values.firstWhere(
+      (e) => e.name == j['provider'],
+      orElse: () => LoginProvider.email,
+    ),
+    addresses: (j['addresses'] as List? ?? [])
+        .map((a) => SavedAddress.fromJson(a as Map<String, dynamic>))
+        .toList(),
+    avatarPath: j['avatarPath'] as String?,
+  );
 }
 
 class OAuthPendingData {
