@@ -89,11 +89,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (_, __) =>
                 const NoTransitionPage(child: ProfileScreen()),
           ),
-          // История баллов — маршрут внутри шелла, чтобы таб-бар её переключал
-          // (раньше открывалась Navigator.push и «залипала» поверх вкладок).
+          // Под-экраны профиля — маршруты внутри шелла, чтобы таб-бар их переключал
+          // (раньше открывались Navigator.push и «залипали» поверх вкладок).
           GoRoute(
             path: '/profile/points',
             builder: (_, __) => const PointsHistoryScreen(),
+          ),
+          GoRoute(
+            path: '/profile/edit',
+            builder: (_, __) => const EditProfileScreen(),
+          ),
+          GoRoute(
+            path: '/profile/settings',
+            builder: (_, __) => const SettingsScreen(),
           ),
         ],
       ),
