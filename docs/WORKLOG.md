@@ -16,6 +16,15 @@
 ---
 
 
+## 2026-06-16 — Claude — тех-долг: убрал legacy FastAPI, CI-джоба на Django, .gitignore
+**Сделано:**
+- **Удалил FastAPI** (`backend/main.py`, `backend/requirements.txt`) — миграция на Django завершена и проверена (D-12). Ничто больше на них не ссылалось. README бэка обновил под Django+Docker.
+- **CI:** джоба `Backend · FastAPI` → **`Backend · Django`** (working-dir `backend/django_api`, `pip install -r requirements.txt`, `python manage.py check`). Проверено в контейнере: «System check identified no issues».
+- **Ruleset `protect-main`:** синхронно заменил required-проверку `Backend · FastAPI` → `Backend · Django` (иначе PR бы заблокировались на отсутствующей проверке).
+- **.gitignore:** `**/devtools_options.yaml` (IDE-генерится, висел в untracked).
+**Грабли:** при переименовании CI-джобы, которая в required status checks, ОБЯЗАТЕЛЬНО обновить контексты в ruleset через `gh api PATCH /rulesets/<id>` — иначе мерж блокируется навсегда.
+**Дальше:** по D-13 — Store-магазин на бэке (каталог/заказы/списание баллов); либо доводка территорий/награды.
+
 ## 2026-06-16 — Claude — фоновая геолокация: онбординг + настойчивый запрос + обход «убийц фона»
 **Контекст:** на устройстве проверил — `ACCESS_BACKGROUND_LOCATION granted=false`, appop `FINE: foreground`, не в whitelist батареи; Infinix агрессивно убивает фон. Поэтому трек вставал при блокировке экрана.
 **Сделано (новая фича `features/permissions/`):**

@@ -19,6 +19,9 @@
 *.sqlite3
 backend/ecosystem.db
 
+# === Flutter devtools (генерится IDE, не нужен в репо) ===
+**/devtools_options.yaml
+
 # === Отдельный инструмент со своим git-репозиторием ===
 /higgsfield_mcp/
 

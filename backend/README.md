@@ -8,16 +8,18 @@
 инкрементально.
 
 ## Стек
-- FastAPI + uvicorn
-- JWT и хэш паролей — стандартная библиотека (без компилируемых зависимостей)
-- БД — SQLite (`ecosystem.db`, создаётся при старте). Для прод — PostgreSQL (точка замены: `connect()`).
+- **Django 5 + DRF** (каталог приложения — `django_api/`). Контракт API совместим с прежним
+  (auth/profile/loyalty/clubs/leaderboard), JWT/хэш паролей — байт-в-байт как раньше.
+- БД — **PostgreSQL + PostGIS** (территории на гео-запросах), через Docker.
+- Прежний прототип на FastAPI (`main.py`) удалён после завершения миграции (см. D-12 в `../docs/DECISIONS.md`).
+  Историческая SQLite-база `ecosystem.db` использовалась только для разовой миграции данных.
 
-## Запуск
+## Запуск (Docker)
 ```bash
-pip install -r requirements.txt
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
+cd backend
+docker compose up -d        # db (postgis) + web (Django) на :8000
 ```
-Swagger-доки: http://localhost:8000/docs
+После перезагрузки сначала запустить Docker Desktop. Проверка: http://localhost:8000/v1/health
 
 ## Эндпоинты
 | Метод | Путь | Назначение |
@@ -54,7 +56,7 @@ Dev mobile setup:
 
 ```powershell
 cd D:\MyProjectsCLAUDE\backend
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
+docker compose up -d
 adb reverse tcp:8000 tcp:8000
 ```
 

@@ -1,4 +1,0 @@
-fastapi
-uvicorn
-# JWT и хэш паролей — на стандартной библиотеке (без bcrypt/pyjwt).
-# БД — sqlite3 (stdlib). Для прод заменить на PostgreSQL.
