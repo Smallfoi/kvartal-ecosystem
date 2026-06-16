@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from datetime import timezone as dt_tz
 
+from django.db import connection
 from django.db.models import Sum
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ from accounts.models import Account
 from clubs.models import Club, ClubMember
 from common.security import user_id_from_request
 from loyalty.models import LoyaltyTransaction
+from territories.views import HOLD_HOURS
 
 
 def _period_start(period: str):
@@ -102,3 +104,46 @@ def clubs(request):
     top = [{**c, "rank": i + 1, "isMine": c["id"] == my_club} for i, c in enumerate(result[:limit])]
     my_rank = next((i + 1 for i, c in enumerate(result) if c["id"] == my_club), None)
     return Response({"period": period, "top": top, "myRank": my_rank})
+
+
+@api_view(["GET"])
+def districts(request):
+    """Контроль территорий (D-09): клубы по суммарной площади удерживаемых
+    территорий (только активные, < 72ч). Источник — таблица territories (PostGIS)."""
+    me = user_id_from_request(request)
+    if not me:
+        return Response({"detail": "Нет токена"}, status=401)
+    limit = int(request.query_params.get("limit", 50) or 50)
+    mm = ClubMember.objects.filter(user_id=me).first()
+    my_club = mm.club_id if mm else None
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT club_id, SUM(ST_Area(geom::geography)) AS area, COUNT(*) AS pieces "
+            "FROM territories "
+            "WHERE club_id IS NOT NULL "
+            "AND captured_at > now() - make_interval(hours => %s) "
+            "GROUP BY club_id",
+            [HOLD_HOURS],
+        )
+        rows = cur.fetchall()
+    result = []
+    for club_id, area, pieces in rows:
+        c = Club.objects.filter(id=club_id).only("name", "logo").first()
+        if not c:
+            continue
+        result.append(
+            {
+                "id": club_id,
+                "name": c.name,
+                "logo": c.logo,
+                "areaM2": round(area or 0),
+                "pieces": int(pieces),
+            }
+        )
+    result.sort(key=lambda x: x["areaM2"], reverse=True)
+    top = [
+        {**c, "rank": i + 1, "isMine": c["id"] == my_club}
+        for i, c in enumerate(result[:limit])
+    ]
+    my_rank = next((i + 1 for i, c in enumerate(result) if c["id"] == my_club), None)
+    return Response({"top": top, "myRank": my_rank})
