@@ -79,7 +79,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ref.listen(positionStreamProvider, (_, next) {
       final pos = next.valueOrNull;
       if (!_followUser || pos == null) return;
+      if (ref.read(runProvider).status != RunStatus.idle) return;
       _mapController.move(pos.toLatLng, _mapController.camera.zoom);
+    });
+    ref.listen(runProvider, (previous, next) {
+      if (!_followUser || next.status == RunStatus.idle || next.route.isEmpty) {
+        return;
+      }
+      final point = next.route.last;
+      final previousPoint = previous?.route.isNotEmpty == true
+          ? previous!.route.last
+          : null;
+      if (previousPoint == point) return;
+      _mapController.move(point, _mapController.camera.zoom);
     });
     return Scaffold(
       backgroundColor: AppColors.bgDark,
@@ -185,7 +197,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               // Вне бега — текущая позиция из потока.
               Builder(
                 builder: (_) {
-                  final running = runState.status != RunStatus.idle &&
+                  final running =
+                      runState.status != RunStatus.idle &&
                       runState.route.isNotEmpty;
                   final point = running
                       ? runState.route.last
@@ -380,13 +393,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         color: AppColors.electricBlue,
                         onTap: () {
                           setState(() => _followUser = true);
-                          posAsync.whenData((p) {
-                            if (p == null) return;
-                            _mapController.move(
-                              p.toLatLng,
-                              _mapController.camera.zoom,
-                            );
-                          });
+                          final point =
+                              runState.status != RunStatus.idle &&
+                                  runState.route.isNotEmpty
+                              ? runState.route.last
+                              : posAsync.valueOrNull?.toLatLng;
+                          if (point == null) return;
+                          _mapController.move(
+                            point,
+                            _mapController.camera.zoom,
+                          );
                         },
                       ),
                     ),
