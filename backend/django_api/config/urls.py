@@ -24,4 +24,6 @@ urlpatterns = [
     # Территории (PostGIS, D-09)
     path("v1/territories/capture", territories_views.capture),
     path("v1/territories", territories_views.list_territories),
+    # Вечный личный след (для профиля «исследовано км²»)
+    path("v1/footprint", territories_views.footprint),
 ]

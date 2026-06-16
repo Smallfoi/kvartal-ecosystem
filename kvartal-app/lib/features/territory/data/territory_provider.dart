@@ -216,7 +216,7 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
           isCapturing: false,
           lastAreaM2: area,
           message: area != null
-              ? 'Территория захвачена: ${_areaLabel(area)}'
+              ? 'Территория захвачена: ${formatAreaM2(area)}'
               : 'Территория захвачена',
           clearError: true,
         );
@@ -253,7 +253,8 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
   }
 }
 
-String _areaLabel(double areaM2) {
+/// Человекочитаемая площадь: м² → га → км².
+String formatAreaM2(double areaM2) {
   if (areaM2 >= 1000000) {
     return '${(areaM2 / 1000000).toStringAsFixed(2)} км²';
   }
@@ -274,3 +275,27 @@ final territoryProvider =
       });
       return notifier;
     });
+
+/// Вечный личный след: суммарная исследованная площадь (м²), не уменьшается.
+/// Для профиля «исследовано N км²» (живой слой территорий — отдельно, распадается).
+final footprintAreaProvider = FutureProvider.autoDispose<double>((ref) async {
+  final token = ref.watch(authProvider).token;
+  if (token == null || token.isEmpty) return 0;
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: ApiConfig.baseUrl,
+      connectTimeout: ApiConfig.connectTimeout,
+      receiveTimeout: ApiConfig.receiveTimeout,
+      headers: const {'Content-Type': 'application/json', 'Connection': 'close'},
+    ),
+  );
+  try {
+    final res = await dio.get<Map<String, dynamic>>(
+      '/footprint',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+    return (res.data?['areaM2'] as num?)?.toDouble() ?? 0;
+  } catch (_) {
+    return 0;
+  }
+});

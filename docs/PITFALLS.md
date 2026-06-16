@@ -8,6 +8,7 @@
   UTF-8-тексты писать файловым инструментом (Write) или через Python с `encoding='utf-8'`. Не писать кириллицу через PowerShell here-string.
 - **PowerShell помечает stderr нативных команд как «ошибку»** (git/gh пишут прогресс в stderr). Это НЕ всегда падение — смотреть фактический результат, а не только «красный» вывод.
 - **`/tmp` различается** для git-bash и Windows-python: файл, записанный bash в `/tmp`, Windows-python по `/tmp/...` не находит. Не передавать пути `/tmp` между ними; использовать абсолютные Windows-пути или один интерпретатор.
+- **Docker: web перестаёт резолвить host `db`** (`failed to resolve host 'db'`) после нескольких `docker compose restart` — DNS в compose-сети отваливается, хотя сам db healthy. Лечится `docker compose up -d --force-recreate web` (просто restart не помогает). GitHub API/git тоже периодически моргают (EOF/SSL handshake) — повторять с ретраями.
 
 ## Backend (FastAPI dev)
 - **Бек часто падает / его убивают** (фоновый процесс умирает, exit 4/127). Симптомы в приложении:

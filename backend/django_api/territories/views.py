@@ -3,8 +3,10 @@
 - захват по реальному маршруту: своя территория растёт через ST_Union (расширение),
   у чужих вычитается пересечение через ST_Difference (перехват);
 - сглаживание/чистка GPS при фиксации: ST_SimplifyPreserveTopology + ST_MakeValid;
-- 72ч-удержание (D-09): территория живёт 72ч от последнего захвата; новый забег
-  по ней обновляет captured_at и продлевает удержание; протухшие удаляются лениво;
+- ЖИВОЙ слой (карта/рейтинг/клубы): территория живёт LIVE_TTL_HOURS (7 дней) от
+  последнего забега; забег обновляет captured_at и продлевает; протухшие удаляются лениво;
+- ВЕЧНЫЙ личный след (footprints): объединение всего, что юзер когда-либо пробежал —
+  растёт и НЕ уменьшается (ни временем, ни перехватом). Для профиля (исследовано км²);
 - античит: скорость (если клиент прислал дистанцию/время), мин/макс площадь, кулдаун;
 - загрузка по видимой области (bbox), отметка mine/club/enemy.
 Один владелец = одна (мульти)территория (owner_id UNIQUE).
@@ -26,8 +28,9 @@ _CAP = (
     "ST_MakeValid(ST_SimplifyPreserveTopology(ST_GeomFromText(%s,4326),0.00005)),3))"
 )
 
-# 72ч-удержание.
-HOLD_HOURS = 72
+# Живой слой территорий держится 7 дней без подтверждения забегом (мягкий распад).
+# (имя HOLD_HOURS сохраняем — его импортирует leaderboard для фильтра свежести.)
+HOLD_HOURS = 168
 # Античит.
 MIN_CAPTURE_AREA_M2 = 100  # меньше — это не реальная петля, а дрожь GPS
 MAX_CAPTURE_AREA_M2 = 2_000_000  # 2 км² за один забег — неправдоподобно (спуфинг/телепорт)
@@ -127,6 +130,21 @@ def capture(request):
                     f"VALUES (%s,%s,%s,{_CAP},now())",
                     [f"t_{secrets.token_hex(8)}", uid, club_id, wkt],
                 )
+            # 5) вечный личный след: union в footprints (растёт, никогда не уменьшается)
+            cur.execute("SELECT 1 FROM footprints WHERE owner_id=%s", [uid])
+            if cur.fetchone():
+                cur.execute(
+                    f"UPDATE footprints SET "
+                    f"geom = ST_Multi(ST_CollectionExtract(ST_Union(geom, {_CAP}),3)), "
+                    f"updated_at=now() WHERE owner_id=%s",
+                    [wkt, uid],
+                )
+            else:
+                cur.execute(
+                    f"INSERT INTO footprints (owner_id,geom,updated_at) "
+                    f"VALUES (%s,{_CAP},now())",
+                    [uid, wkt],
+                )
             cur.execute(
                 "SELECT ST_AsGeoJSON(geom), ST_Area(geom::geography) "
                 "FROM territories WHERE owner_id=%s",
@@ -191,3 +209,26 @@ def list_territories(request):
             }
         )
     return Response({"territories": out})
+
+
+@api_view(["GET"])
+def footprint(request):
+    """Вечный личный след: вся когда-либо пробежанная площадь (не уменьшается).
+    Для профиля — «исследовано N км²». geojson — упрощённый контур для будущей heatmap."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT ST_Area(geom::geography), "
+            "ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.00005)) "
+            "FROM footprints WHERE owner_id=%s",
+            [uid],
+        )
+        row = cur.fetchone()
+    if not row:
+        return Response({"areaM2": 0, "geojson": None})
+    area, gj = row
+    return Response(
+        {"areaM2": round(area or 0), "geojson": json.loads(gj) if gj else None}
+    )
