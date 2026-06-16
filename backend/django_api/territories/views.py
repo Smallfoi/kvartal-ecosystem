@@ -3,6 +3,9 @@
 - захват по реальному маршруту: своя территория растёт через ST_Union (расширение),
   у чужих вычитается пересечение через ST_Difference (перехват);
 - сглаживание/чистка GPS при фиксации: ST_SimplifyPreserveTopology + ST_MakeValid;
+- 72ч-удержание (D-09): территория живёт 72ч от последнего захвата; новый забег
+  по ней обновляет captured_at и продлевает удержание; протухшие удаляются лениво;
+- античит: скорость (если клиент прислал дистанцию/время), мин/макс площадь, кулдаун;
 - загрузка по видимой области (bbox), отметка mine/club/enemy.
 Один владелец = одна (мульти)территория (owner_id UNIQUE).
 """
@@ -23,6 +26,14 @@ _CAP = (
     "ST_MakeValid(ST_SimplifyPreserveTopology(ST_GeomFromText(%s,4326),0.00005)),3))"
 )
 
+# 72ч-удержание.
+HOLD_HOURS = 72
+# Античит.
+MIN_CAPTURE_AREA_M2 = 100  # меньше — это не реальная петля, а дрожь GPS
+MAX_CAPTURE_AREA_M2 = 2_000_000  # 2 км² за один забег — неправдоподобно (спуфинг/телепорт)
+MAX_SPEED_MS = 11.2  # ~40 км/ч — серверный потолок скорости (см. CLAUDE.md)
+CAPTURE_COOLDOWN_S = 30  # защита от спама захватами
+
 
 def _club_of(uid):
     m = ClubMember.objects.filter(user_id=uid).first()
@@ -37,6 +48,22 @@ def capture(request):
     pts = request.data.get("points") or []
     if len(pts) < 3:
         return Response({"detail": "Маршрут слишком короткий для территории"}, status=400)
+
+    # Античит по скорости: клиент опционально шлёт дистанцию и время забега.
+    distance = request.data.get("distanceMeters")
+    elapsed = request.data.get("elapsedSeconds")
+    try:
+        if distance is not None and elapsed is not None:
+            distance = float(distance)
+            elapsed = float(elapsed)
+            if elapsed > 0 and distance / elapsed > MAX_SPEED_MS:
+                return Response(
+                    {"detail": "Слишком высокая скорость для забега — захват отклонён."},
+                    status=400,
+                )
+    except (TypeError, ValueError):
+        pass  # некорректные числа просто игнорируем, не блокируем легитимный захват
+
     ring = [(float(p[1]), float(p[0])) for p in pts]  # (lng, lat)
     if ring[0] != ring[-1]:
         ring.append(ring[0])
@@ -44,7 +71,39 @@ def capture(request):
     club_id = _club_of(uid)
     with transaction.atomic():
         with connection.cursor() as cur:
-            # 1) перехват: вычесть наш полигон у чужих территорий
+            # 0) лениво убираем протухшие (>72ч без обновления) — освобождаем карту
+            cur.execute(
+                "DELETE FROM territories WHERE captured_at <= now() - make_interval(hours => %s)",
+                [HOLD_HOURS],
+            )
+            # 1) античит по площади захватываемого контура
+            cur.execute(f"SELECT ST_Area({_CAP}::geography)", [wkt])
+            cap_area = (cur.fetchone() or [0])[0] or 0
+            if cap_area < MIN_CAPTURE_AREA_M2:
+                return Response(
+                    {
+                        "detail": f"Слишком маленькая территория ({round(cap_area)} м²). "
+                        f"Замкни контур побольше."
+                    },
+                    status=400,
+                )
+            if cap_area > MAX_CAPTURE_AREA_M2:
+                return Response(
+                    {"detail": "Слишком большая территория за один забег — захват отклонён."},
+                    status=400,
+                )
+            # 2) кулдаун: не чаще раза в CAPTURE_COOLDOWN_S секунд
+            cur.execute(
+                "SELECT 1 FROM territories WHERE owner_id=%s "
+                "AND captured_at > now() - make_interval(secs => %s)",
+                [uid, CAPTURE_COOLDOWN_S],
+            )
+            if cur.fetchone():
+                return Response(
+                    {"detail": "Слишком частый захват — подожди немного."},
+                    status=429,
+                )
+            # 3) перехват: вычесть наш полигон у чужих территорий
             cur.execute(
                 f"UPDATE territories SET geom = "
                 f"ST_Multi(ST_CollectionExtract(ST_Difference(geom, {_CAP}),3)) "
@@ -52,7 +111,8 @@ def capture(request):
                 [wkt, uid, wkt],
             )
             cur.execute("DELETE FROM territories WHERE ST_IsEmpty(geom) OR ST_Area(geom)=0")
-            # 2) своя территория: union с существующей или создать
+            # 4) своя территория: union с существующей или создать
+            #    (captured_at=now → продлили 72ч-удержание на всю территорию)
             cur.execute("SELECT 1 FROM territories WHERE owner_id=%s", [uid])
             if cur.fetchone():
                 cur.execute(
@@ -73,7 +133,14 @@ def capture(request):
                 [uid],
             )
             gj, area = cur.fetchone()
-    return Response({"ok": True, "areaM2": round(area or 0), "geojson": json.loads(gj)})
+    return Response(
+        {
+            "ok": True,
+            "areaM2": round(area or 0),
+            "geojson": json.loads(gj),
+            "holdHoursLeft": HOLD_HOURS,
+        }
+    )
 
 
 @api_view(["GET"])
@@ -85,6 +152,13 @@ def list_territories(request):
     bbox = request.query_params.get("bbox")
     # На отдалённом виде упрощаем геометрию сильнее (легче и быстрее).
     simplify = "ST_SimplifyPreserveTopology(geom,0.00003)"
+    # Остаток удержания в часах (для UI «защищено ещё Nч»).
+    hold_left = (
+        "EXTRACT(EPOCH FROM (captured_at + make_interval(hours => %s) - now())) / 3600.0"
+    )
+    cols = f"owner_id, club_id, ST_AsGeoJSON({simplify}), {hold_left}"
+    # Активны только территории, удерживаемые < 72ч назад.
+    fresh = "captured_at > now() - make_interval(hours => %s)"
     with connection.cursor() as cur:
         if bbox:
             try:
@@ -92,17 +166,28 @@ def list_territories(request):
             except Exception:
                 return Response({"detail": "bbox=minLng,minLat,maxLng,maxLat"}, status=400)
             cur.execute(
-                f"SELECT owner_id, club_id, ST_AsGeoJSON({simplify}) FROM territories "
-                f"WHERE geom && ST_MakeEnvelope(%s,%s,%s,%s,4326)",
-                [a, b, c, d],
+                f"SELECT {cols} FROM territories "
+                f"WHERE {fresh} AND geom && ST_MakeEnvelope(%s,%s,%s,%s,4326)",
+                [HOLD_HOURS, HOLD_HOURS, a, b, c, d],
             )
         else:
-            cur.execute(f"SELECT owner_id, club_id, ST_AsGeoJSON({simplify}) FROM territories")
+            cur.execute(
+                f"SELECT {cols} FROM territories WHERE {fresh}",
+                [HOLD_HOURS, HOLD_HOURS],
+            )
         rows = cur.fetchall()
     out = []
-    for owner_id, club_id, gj in rows:
+    for owner_id, club_id, gj, hours_left in rows:
         rel = "mine" if owner_id == uid else (
             "club" if club_id and club_id == my_club else "enemy"
         )
-        out.append({"ownerId": owner_id, "clubId": club_id, "rel": rel, "geojson": json.loads(gj)})
+        out.append(
+            {
+                "ownerId": owner_id,
+                "clubId": club_id,
+                "rel": rel,
+                "holdHoursLeft": round(max(0.0, float(hours_left or 0)), 1),
+                "geojson": json.loads(gj),
+            }
+        )
     return Response({"territories": out})
