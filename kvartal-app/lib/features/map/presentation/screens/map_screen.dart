@@ -148,10 +148,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 if (e is MapEventMove && e.source == MapEventSource.onDrag) {
                   if (_followUser) setState(() => _followUser = false);
                 }
-                if (e is MapEventMoveEnd ||
-                    e is MapEventFlingAnimationEnd ||
-                    e is MapEventDoubleTapZoomEnd ||
-                    e is MapEventScrollWheelZoom) {
+                // Перезагружаем территории только на РУЧНЫЕ жесты (пан/зум),
+                // но не на программное авто-слежение во время бега — иначе
+                // дёргали бы бэк каждую секунду забега (на улице связи нет).
+                if ((e is MapEventMoveEnd ||
+                        e is MapEventFlingAnimationEnd ||
+                        e is MapEventDoubleTapZoomEnd ||
+                        e is MapEventScrollWheelZoom) &&
+                    e.source != MapEventSource.mapController) {
                   _scheduleTerritoryLoad();
                 }
               },
