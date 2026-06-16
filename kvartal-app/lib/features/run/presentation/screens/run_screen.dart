@@ -510,11 +510,18 @@ class _ActiveRunView extends ConsumerWidget {
                     final captured = zoneNotifier.checkAndCaptureLoop(
                       run.route,
                     );
-                    // Реальный захват на PostGIS-бэке (D-09): отправляем маршрут.
+                    // Реальный захват на PostGIS-бэке (D-09): отправляем маршрут
+                    // + дистанцию/время для серверного античита по скорости.
                     // Карта подписана на territoryProvider и обновится сама,
                     // как только сервер вернёт обновлённую территорию.
                     unawaited(
-                      ref.read(territoryProvider.notifier).capture(run.route),
+                      ref
+                          .read(territoryProvider.notifier)
+                          .capture(
+                            run.route,
+                            distanceMeters: run.distanceMeters,
+                            elapsedSeconds: run.elapsed.inSeconds,
+                          ),
                     );
                     ref
                         .read(runProvider.notifier)

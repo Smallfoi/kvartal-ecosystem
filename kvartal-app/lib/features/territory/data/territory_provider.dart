@@ -25,6 +25,9 @@ class ServerTerritory {
   final String? clubId;
   final TerritoryRel rel;
 
+  /// Сколько часов осталось до конца 72ч-удержания (для UI «защищено ещё Nч»).
+  final double? holdHoursLeft;
+
   /// Внешние кольца полигонов (для MultiPolygon — по кольцу на полигон).
   final List<List<LatLng>> rings;
 
@@ -33,6 +36,7 @@ class ServerTerritory {
     required this.clubId,
     required this.rel,
     required this.rings,
+    this.holdHoursLeft,
   });
 
   factory ServerTerritory.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,7 @@ class ServerTerritory {
       ownerId: json['ownerId']?.toString() ?? '',
       clubId: json['clubId']?.toString(),
       rel: _relFromString(json['rel']?.toString()),
+      holdHoursLeft: (json['holdHoursLeft'] as num?)?.toDouble(),
       rings: geojson is Map<String, dynamic>
           ? ringsFromGeoJson(geojson)
           : const [],
@@ -169,8 +174,13 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
   }
 
   /// Отправить замкнутый маршрут на сервер для захвата территории.
+  /// distanceMeters/elapsedSeconds — для серверного античита по скорости.
   /// Возвращает площадь моей территории (м²) или null при ошибке.
-  Future<double?> capture(List<LatLng> route) async {
+  Future<double?> capture(
+    List<LatLng> route, {
+    double? distanceMeters,
+    int? elapsedSeconds,
+  }) async {
     final token = _token;
     if (token == null || route.length < 3) return null;
     state = state.copyWith(isCapturing: true, clearError: true, clearMessage: true);
@@ -181,6 +191,8 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
           'points': [
             for (final p in route) [p.latitude, p.longitude],
           ],
+          if (distanceMeters != null) 'distanceMeters': distanceMeters,
+          if (elapsedSeconds != null) 'elapsedSeconds': elapsedSeconds,
         },
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
@@ -193,6 +205,7 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
           ownerId: 'me',
           clubId: null,
           rel: TerritoryRel.mine,
+          holdHoursLeft: (data['holdHoursLeft'] as num?)?.toDouble(),
           rings: ringsFromGeoJson(geojson),
         );
         final others = state.territories
