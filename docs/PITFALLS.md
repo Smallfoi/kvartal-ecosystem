@@ -10,6 +10,9 @@
 - **`/tmp` различается** для git-bash и Windows-python: файл, записанный bash в `/tmp`, Windows-python по `/tmp/...` не находит. Не передавать пути `/tmp` между ними; использовать абсолютные Windows-пути или один интерпретатор.
 - **Docker: web перестаёт резолвить host `db`** (`failed to resolve host 'db'`) после нескольких `docker compose restart` — DNS в compose-сети отваливается, хотя сам db healthy. Лечится `docker compose up -d --force-recreate web` (просто restart не помогает). GitHub API/git тоже периодически моргают (EOF/SSL handshake) — повторять с ретраями.
 
+## CI / branch protection
+- **Переименование CI-джобы, которая в required status checks, блокирует мерж.** Имя job (`name:` в ci.yml) = контекст в ruleset `protect-main`. Если поменять имя (напр. `Backend · FastAPI`→`Backend · Django`), старый контекст в required больше не появится → PR висит «Expected». Решение: синхронно обновить контексты в ruleset через `gh api -X PUT repos/<owner>/<repo>/rulesets/<id> --input body.json` (тело с `rules[].required_status_checks` писать ФАЙЛОМ — там «·» не-ASCII, PowerShell бьёт). ID правила: `gh api .../rulesets`.
+
 ## Backend (FastAPI dev)
 - **Бек часто падает / его убивают** (фоновый процесс умирает, exit 4/127). Симптомы в приложении:
   `DioException`, `Connection closed before full header`, `Connection refused`. ПЕРВЫМ делом проверить
