@@ -19,6 +19,9 @@ class MainActivity : FlutterActivity() {
                     stopLocationService()
                     result.success(true)
                 }
+                "getManufacturer" -> {
+                    result.success(android.os.Build.MANUFACTURER ?: "")
+                }
                 else -> result.notImplemented()
             }
         }

@@ -16,6 +16,17 @@
 ---
 
 
+## 2026-06-16 — Claude — фоновая геолокация: онбординг + настойчивый запрос + обход «убийц фона»
+**Контекст:** на устройстве проверил — `ACCESS_BACKGROUND_LOCATION granted=false`, appop `FINE: foreground`, не в whitelist батареи; Infinix агрессивно убивает фон. Поэтому трек вставал при блокировке экрана.
+**Сделано (новая фича `features/permissions/`):**
+- `location_access.dart` — обёртка permission_handler: уровень (denied/whenInUse/always), запрос whenInUse→always, батарея (`ignoreBatteryOptimizations`), бренд через канал; список агрессивных OEM (Transsion/Infinix/Tecno/Itel, Xiaomi, Huawei, Oppo/Vivo/Realme/OnePlus, Samsung…) + брендовые подсказки (dontkillmyapp).
+- `location_access_provider.dart` — Riverpod-состояние (`fullyReady` = always + батарея).
+- `location_setup_sheet.dart` — онбординг-лист с объяснением «зачем» и 3 шагами (доступ → «Разрешить всё время» → отключить экономию) + жёлтый блок-инструкция для агрессивных брендов; + `LocationWarningBanner` (постоянное предупреждение).
+- MainActivity: метод канала `getManufacturer`.
+- Экран Бег (`_IdleView` → ConsumerStatefulWidget): при первом запуске авто-показ листа (флаг `kvartal.loc_setup_shown.v1`), сверху постоянный баннер пока доступ не настроен.
+**Проверено:** устройство = INFINIX (детектится как агрессивный OEM → показывается инструкция). analyze+test зелёные, собрал release, поставил.
+**Дальше:** живой тест — выдать «Всегда» + снять экономию, пробежать с блокировкой экрана, убедиться что трек догоняется.
+
 ## 2026-06-16 — Claude — GPS: убрал дрожь маршрута 2–3 м (фильтр дистанции + точность)
 **Сделано (по фидбэку владельца — трек рисовался с мелкими скачками 2–3 м на месте):**
 - Корень: после удаления EMA осталась только грубая отбраковка (точность ≤50 м, шаг ≥2 м, `distanceFilter:0`) — GPS «дышит» на месте, каждая дрожащая точка попадала в трек.
