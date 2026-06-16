@@ -16,6 +16,19 @@
 ---
 
 
+## 2026-06-16 — Claude — клиент территорий в Квартале (D-09, клиентская часть)
+**Сделано:**
+- Привёл общий tree в порядок: GPS-фикс Codex (PR #26) и привязка SportStore к Django-аккаунту (PR #27, работа Codex) влиты в main; все CI зелёные.
+- Новый `kvartal-app/lib/features/territory/data/territory_provider.dart` (Riverpod, паттерн как у club_provider):
+  - `loadBbox(...)` → `GET /v1/territories?bbox=minLng,minLat,maxLng,maxLat` с Bearer-токеном, парсит GeoJSON (Polygon/MultiPolygon → внешние кольца LatLng), отношение mine/club/enemy с сервера.
+  - `capture(route)` → `POST /v1/territories/capture {points:[[lat,lng],...]}`, сразу мёржит вернувшуюся свою территорию в стейт (показ без ожидания bbox).
+- `map_screen.dart`: PolygonLayer реальных серверных территорий (mine=hexOwned / club=success / enemy=hexEnemy, та же палитра, дизайн не трогал); загрузка по видимой области с дебаунсом 600мс (init + onMapEvent move/zoom end).
+- `run_screen.dart`: при подтверждении «Захватить» маршрут уходит на сервер (`territoryProvider.capture`), карта обновляется реактивно (она `watch`-ит territoryProvider). Локальный демо-захват оставлен (офлайн-фолбэк).
+**Пробовали — не вышло:** `notifier.state = ...` из `ref.listen` — protected-варнинг; сделал публичный `reset()`.
+**Проверено:** `flutter analyze` (No issues) + `flutter test` (зелено). Живой round-trip против :8000 НЕ гонял в этот раз — Docker в момент работы был выключен; контракт совпадает с ранее проверенным на сервере (порядок lat/lng в points, bbox minLng,minLat,maxLng,maxLat, форма ответа).
+**Состояние:** территории работают сквозно client↔Django: захват по замкнутой петле шлётся на PostGIS, карта рисует mine/club/enemy по bbox. Дизайн не трогал.
+**Дальше:** проверить на устройстве (adb reverse tcp:8000 + Docker up); затем серверный 72ч-холд + античит (скорость/площадь/cooldown); затем оживить вкладку «Районы» в рейтинге.
+
 ## 2026-06-15 — Claude — D-13 + бэкенд территорий на PostGIS (D-09, серверная часть)
 **Сделано:** зафиксировал **D-13** (экосистема: единый бэк, контракт-first, подключаем поверхности постепенно;
 порядок: территории → Store-магазин → сайт). Начал **территории на PostGIS** (raw SQL, без GeoDjango/GDAL):

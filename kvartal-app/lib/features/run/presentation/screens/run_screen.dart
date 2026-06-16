@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../map/data/zone_provider.dart';
+import '../../../territory/data/territory_provider.dart';
 import '../../data/run_provider.dart';
 import '../../data/completed_runs_provider.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
@@ -506,6 +509,12 @@ class _ActiveRunView extends ConsumerWidget {
                 ? () {
                     final captured = zoneNotifier.checkAndCaptureLoop(
                       run.route,
+                    );
+                    // Реальный захват на PostGIS-бэке (D-09): отправляем маршрут.
+                    // Карта подписана на territoryProvider и обновится сама,
+                    // как только сервер вернёт обновлённую территорию.
+                    unawaited(
+                      ref.read(territoryProvider.notifier).capture(run.route),
                     );
                     ref
                         .read(runProvider.notifier)

@@ -1,3 +1,4 @@
+import 'dart:async' show Timer;
 import 'dart:math' show max;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/cupertino.dart';
@@ -9,6 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../data/location_provider.dart';
 import '../../data/zone_provider.dart';
 import '../../../run/data/run_provider.dart';
+import '../../../territory/data/territory_provider.dart';
 import '../../../offline_maps/data/offline_maps_provider.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
 
@@ -27,6 +29,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _baseMapFailed = false;
   int _tileErrorCount = 0;
   int _tileLayerReloadId = 0;
+  Timer? _territoryDebounce;
+
+  /// Подгрузить реальные территории (PostGIS) для видимой области карты.
+  void _scheduleTerritoryLoad() {
+    _territoryDebounce?.cancel();
+    _territoryDebounce = Timer(
+      const Duration(milliseconds: 600),
+      _loadTerritories,
+    );
+  }
+
+  void _loadTerritories() {
+    if (!mounted) return;
+    final LatLngBounds bounds;
+    try {
+      bounds = _mapController.camera.visibleBounds;
+    } catch (_) {
+      return; // камера ещё не готова
+    }
+    ref
+        .read(territoryProvider.notifier)
+        .loadBbox(
+          minLng: bounds.west,
+          minLat: bounds.south,
+          maxLng: bounds.east,
+          maxLat: bounds.north,
+        );
+  }
 
   void _handleTileError() {
     _tileErrorCount++;
@@ -50,15 +80,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _centerOnCurrentLocation(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerOnCurrentLocation();
+      _scheduleTerritoryLoad();
+    });
+  }
+
+  @override
+  void dispose() {
+    _territoryDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _centerOnCurrentLocation() async {
     final pos = await ref.read(currentPositionProvider.future);
     if (!mounted || pos == null) return;
     _mapController.move(pos.toLatLng, max(_mapController.camera.zoom, 15));
+    _scheduleTerritoryLoad();
   }
 
   @override
@@ -66,6 +104,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final zonesAsync = ref.watch(zoneProvider);
     final zones = zonesAsync.valueOrNull ?? const <BlockZone>[];
     final capturedAreas = ref.watch(capturedAreasProvider);
+    final territories = ref.watch(territoryProvider).territories;
     final posAsync = ref.watch(positionStreamProvider);
     final runState = ref.watch(runProvider);
     final offlineMap = ref.watch(offlineMapsProvider);
@@ -108,6 +147,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               onMapEvent: (e) {
                 if (e is MapEventMove && e.source == MapEventSource.onDrag) {
                   if (_followUser) setState(() => _followUser = false);
+                }
+                if (e is MapEventMoveEnd ||
+                    e is MapEventFlingAnimationEnd ||
+                    e is MapEventDoubleTapZoomEnd ||
+                    e is MapEventScrollWheelZoom) {
+                  _scheduleTerritoryLoad();
                 }
               },
             ),
@@ -160,6 +205,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   );
                 }).toList(),
               ),
+
+              // Реальные территории с сервера (PostGIS, D-09): мои/клуб/чужие.
+              if (territories.isNotEmpty)
+                PolygonLayer(
+                  polygons: [
+                    for (final t in territories)
+                      for (final ring in t.rings)
+                        Polygon(
+                          points: ring,
+                          color: _territoryFill(t.rel),
+                          borderColor: _territoryBorder(t.rel),
+                          borderStrokeWidth: 1.6,
+                        ),
+                  ],
+                ),
 
               // Run route line
               if (runState.status != RunStatus.idle &&
@@ -439,6 +499,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ZoneOwner.free => Colors.white.withValues(alpha: 0.08),
     };
   }
+
+  // Реальные территории с сервера — та же палитра, чуть плотнее заливка,
+  // чтобы захваченные маршрутом области читались поверх демо-сетки.
+  Color _territoryFill(TerritoryRel rel) => switch (rel) {
+    TerritoryRel.mine => AppColors.hexOwned.withValues(alpha: 0.28),
+    TerritoryRel.club => AppColors.success.withValues(alpha: 0.24),
+    TerritoryRel.enemy => AppColors.hexEnemy.withValues(alpha: 0.24),
+  };
+
+  Color _territoryBorder(TerritoryRel rel) => switch (rel) {
+    TerritoryRel.mine => AppColors.hexOwned.withValues(alpha: 0.85),
+    TerritoryRel.club => AppColors.success.withValues(alpha: 0.75),
+    TerritoryRel.enemy => AppColors.hexEnemy.withValues(alpha: 0.70),
+  };
 }
 
 // ── Markers ───────────────────────────────────────────────────────────────────
