@@ -68,7 +68,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     const _BadgesGrid(),
                     const SizedBox(height: 24),
                     Text(
@@ -77,7 +77,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     const _ActivityHeatmap(),
                     const SizedBox(height: 24),
                     const _SettingsTiles(),
@@ -1058,7 +1058,7 @@ class _BadgesGrid extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      childAspectRatio: 0.9,
+      childAspectRatio: 1.02,
       children: badges
           .map(
             (b) => _BadgeTile(
@@ -1088,7 +1088,7 @@ class _BadgeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: unlocked ? color.withValues(alpha: 0.12) : AppColors.bgCard,
         borderRadius: BorderRadius.circular(16),
@@ -1101,10 +1101,10 @@ class _BadgeTile extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: 32,
+            size: 28,
             color: unlocked ? color : AppColors.textDisabled,
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
             child: FittedBox(

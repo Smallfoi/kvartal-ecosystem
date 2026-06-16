@@ -138,6 +138,10 @@ class _FitText extends StatelessWidget {
   );
 }
 
+/// Человекочитаемый пробег: «12.5 км», «124 км».
+String _kmLabel(double km) =>
+    '${km >= 100 ? km.round() : km.toStringAsFixed(1)} км';
+
 class _ClubSliverHeader extends ConsumerWidget {
   final Club? club;
   const _ClubSliverHeader({required this.club});
@@ -211,10 +215,12 @@ class _ClubSliverHeader extends ConsumerWidget {
                   Row(
                     children: [
                       _ClubMetricCard(
-                        icon: CupertinoIcons.star_fill,
+                        icon: CupertinoIcons.location_north_fill,
                         label:
                             '\u0410\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c',
-                        value: hasClub ? '${club!.totalPoints}' : '0',
+                        value: hasClub
+                            ? _kmLabel(club!.totalKm)
+                            : '0 \u043a\u043c',
                         color: AppColors.warning,
                       ),
                       const SizedBox(width: 8),
@@ -641,8 +647,10 @@ class _ClubInviteSheet extends StatelessWidget {
             // \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u00ab\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u00bb (\u043a\u043e\u0434 \u043a\u043b\u0443\u0431\u0430 \u0443\u0431\u0440\u0430\u043b\u0438 \u0437\u0430 \u043d\u0435\u043d\u0430\u0434\u043e\u0431\u043d\u043e\u0441\u0442\u044c\u044e).
             _InviteValueCard(
               icon: CupertinoIcons.link,
-              title: '\u0421\u0441\u044b\u043b\u043a\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f',
-              value: '\u041d\u0430\u0436\u043c\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c',
+              title:
+                  '\u0421\u0441\u044b\u043b\u043a\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f',
+              value:
+                  '\u041d\u0430\u0436\u043c\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c',
               copyText: _link,
             ),
           ],
@@ -667,7 +675,9 @@ class _InviteValueCard extends StatelessWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e'),
+        content: Text(
+          '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e',
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -757,7 +767,7 @@ class _ClubListTile extends ConsumerWidget {
                 ),
                 const SizedBox(height: 3),
                 _FitText(
-                  '${club.city ?? '\u0411\u0435\u0437 \u0433\u043e\u0440\u043e\u0434\u0430'} - ${club.memberCount} \u0447\u0435\u043b. - ${club.totalPoints} \u0431.',
+                  '${club.city ?? '\u0411\u0435\u0437 \u0433\u043e\u0440\u043e\u0434\u0430'} - ${club.memberCount} \u0447\u0435\u043b. - ${_kmLabel(club.totalKm)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -825,7 +835,7 @@ class _MemberTile extends StatelessWidget {
             ),
           ),
           Text(
-            '${member.points}',
+            _kmLabel(member.km),
             style: const TextStyle(
               color: AppColors.electricBlue,
               fontSize: 14,
