@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +25,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
+  /// Pull-to-refresh: тянем баланс/профиль/статистику с бэка прямо на экране.
+  /// (обновление между переходами экранов остаётся — это в дополнение к нему).
+  Future<void> _refresh() async {
+    await Future.wait([
+      ref.read(loyaltyProvider.notifier).refresh(),
+      ref.read(authProvider.notifier).restoreSession(),
+      ref.read(completedRunsProvider.notifier).load(),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
@@ -33,46 +42,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,
-      body: CustomScrollView(
-        slivers: [
-          _ProfileAppBar(user: user),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _PointsCard(),
-                  const SizedBox(height: 12),
-                  const _StatsRow(),
-                  const SizedBox(height: 12),
-                  _AccountCard(user: user),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Достижения',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  const _BadgesGrid(),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Активность',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  const _ActivityHeatmap(),
-                  const SizedBox(height: 24),
-                  const _SettingsTiles(),
-                  const SizedBox(height: 8),
-                ],
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        color: AppColors.electricBlue,
+        backgroundColor: AppColors.bgCard,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            _ProfileAppBar(user: user),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _PointsCard(),
+                    const SizedBox(height: 12),
+                    const _StatsRow(),
+                    const SizedBox(height: 12),
+                    _AccountCard(user: user),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Достижения',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const _BadgesGrid(),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Активность',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const _ActivityHeatmap(),
+                    const SizedBox(height: 24),
+                    const _SettingsTiles(),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -84,8 +99,12 @@ class _ProfileAppBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = user?.name.trim().isNotEmpty == true ? user!.name : 'Бегун КВАРТАЛ';
-    final city = user?.city?.trim().isNotEmpty == true ? user!.city! : 'Город не выбран';
+    final name = user?.name.trim().isNotEmpty == true
+        ? user!.name
+        : 'Бегун КВАРТАЛ';
+    final city = user?.city?.trim().isNotEmpty == true
+        ? user!.city!
+        : 'Город не выбран';
 
     return SliverAppBar(
       expandedHeight: 228,
@@ -95,9 +114,7 @@ class _ProfileAppBar extends ConsumerWidget {
         IconButton(
           tooltip: 'Настройки',
           icon: const Icon(CupertinoIcons.settings, size: 20),
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          ),
+          onPressed: () => context.push('/profile/settings'),
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -115,9 +132,7 @@ class _ProfileAppBar extends ConsumerWidget {
               children: [
                 const SizedBox(height: 18),
                 GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                  ),
+                  onTap: () => context.push('/profile/edit'),
                   child: Stack(
                     children: [
                       _Avatar(name: name, size: 84),
@@ -146,12 +161,15 @@ class _ProfileAppBar extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [AppColors.gradientStart, AppColors.gradientEnd],
@@ -173,7 +191,10 @@ class _ProfileAppBar extends ConsumerWidget {
           ),
         ),
       ),
-      title: Text('\u041f\u0440\u043e\u0444\u0438\u043b\u044c', style: Theme.of(context).textTheme.titleLarge),
+      title: Text(
+        '\u041f\u0440\u043e\u0444\u0438\u043b\u044c',
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
     );
   }
 }
@@ -185,7 +206,11 @@ class _Avatar extends StatelessWidget {
   const _Avatar({required this.name, required this.size});
 
   String get _initials {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     return parts.isNotEmpty ? parts.first[0].toUpperCase() : '?';
   }
@@ -237,22 +262,40 @@ class _AccountCard extends ConsumerWidget {
             children: [
               Text(
                 'Аккаунт',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const Spacer(),
               IconButton(
                 tooltip: 'Редактировать',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                ),
+                onPressed: () => context.push('/profile/edit'),
                 icon: const Icon(CupertinoIcons.pencil, size: 18),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          _InfoLine(icon: CupertinoIcons.phone, label: 'Телефон', value: user?.phone ?? 'Не указан'),
-          _InfoLine(icon: CupertinoIcons.mail, label: 'Email', value: (user?.email.isNotEmpty == true && !user!.email.endsWith('@kvartal.local')) ? user!.email : '\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d'),
-          _InfoLine(icon: CupertinoIcons.location, label: '\u0413\u043e\u0440\u043e\u0434', value: user?.city?.isNotEmpty == true ? user!.city! : '\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d'),
+          _InfoLine(
+            icon: CupertinoIcons.phone,
+            label: 'Телефон',
+            value: user?.phone ?? 'Не указан',
+          ),
+          _InfoLine(
+            icon: CupertinoIcons.mail,
+            label: 'Email',
+            value:
+                (user?.email.isNotEmpty == true &&
+                    !user!.email.endsWith('@kvartal.local'))
+                ? user!.email
+                : '\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d',
+          ),
+          _InfoLine(
+            icon: CupertinoIcons.location,
+            label: '\u0413\u043e\u0440\u043e\u0434',
+            value: user?.city?.isNotEmpty == true
+                ? user!.city!
+                : '\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d',
+          ),
         ],
       ),
     );
@@ -264,7 +307,11 @@ class _InfoLine extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoLine({required this.icon, required this.label, required this.value});
+  const _InfoLine({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -282,7 +329,9 @@ class _InfoLine extends StatelessWidget {
               textAlign: TextAlign.right,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -309,9 +358,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void initState() {
     super.initState();
     final user = ref.read(authProvider).user;
-    _nameCtrl = TextEditingController(text: user?.name == 'Runner' ? '' : user?.name ?? '');
-    _phoneCtrl = TextEditingController(text: user?.phone ?? ref.read(authProvider).phone);
-    _emailCtrl = TextEditingController(text: user?.email.endsWith('@kvartal.local') == true ? '' : user?.email ?? '');
+    _nameCtrl = TextEditingController(
+      text: user?.name == 'Runner' ? '' : user?.name ?? '',
+    );
+    _phoneCtrl = TextEditingController(
+      text: user?.phone ?? ref.read(authProvider).phone,
+    );
+    _emailCtrl = TextEditingController(
+      text: user?.email.endsWith('@kvartal.local') == true
+          ? ''
+          : user?.email ?? '',
+    );
     _cityCtrl = TextEditingController(text: user?.city ?? 'Якутск');
   }
 
@@ -326,11 +383,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _save() async {
     if (_nameCtrl.text.trim().isEmpty) {
-      setState(() => _error = '\u0412\u0432\u0435\u0434\u0438 \u0438\u043c\u044f \u0438\u043b\u0438 \u043d\u0438\u043a');
+      setState(
+        () => _error =
+            '\u0412\u0432\u0435\u0434\u0438 \u0438\u043c\u044f \u0438\u043b\u0438 \u043d\u0438\u043a',
+      );
       return;
     }
 
-    final ok = await ref.read(authProvider.notifier).updateProfile(
+    final ok = await ref
+        .read(authProvider.notifier)
+        .updateProfile(
           name: _nameCtrl.text.trim(),
           phone: _phoneCtrl.text.trim(),
           email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
@@ -338,9 +400,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         );
     if (!mounted) return;
     if (ok) {
-      Navigator.of(context).pop();
+      context.pop();
     } else {
-      setState(() => _error = ref.read(authProvider).error ?? 'Не удалось сохранить профиль');
+      setState(
+        () => _error =
+            ref.read(authProvider).error ?? 'Не удалось сохранить профиль',
+      );
     }
   }
 
@@ -360,15 +425,40 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(child: _Avatar(name: _nameCtrl.text.trim().isEmpty ? 'КВАРТАЛ' : _nameCtrl.text, size: 92)),
+              Center(
+                child: _Avatar(
+                  name: _nameCtrl.text.trim().isEmpty
+                      ? 'КВАРТАЛ'
+                      : _nameCtrl.text,
+                  size: 92,
+                ),
+              ),
               const SizedBox(height: 20),
-              _EditField(controller: _nameCtrl, label: 'Имя, фамилия или ник', icon: CupertinoIcons.person),
+              _EditField(
+                controller: _nameCtrl,
+                label: 'Имя, фамилия или ник',
+                icon: CupertinoIcons.person,
+              ),
               const SizedBox(height: 12),
-              _EditField(controller: _phoneCtrl, label: '\u0422\u0435\u043b\u0435\u0444\u043e\u043d', icon: CupertinoIcons.phone, keyboardType: TextInputType.phone),
+              _EditField(
+                controller: _phoneCtrl,
+                label: '\u0422\u0435\u043b\u0435\u0444\u043e\u043d',
+                icon: CupertinoIcons.phone,
+                keyboardType: TextInputType.phone,
+              ),
               const SizedBox(height: 12),
-              _EditField(controller: _emailCtrl, label: 'Email', icon: CupertinoIcons.mail, keyboardType: TextInputType.emailAddress),
+              _EditField(
+                controller: _emailCtrl,
+                label: 'Email',
+                icon: CupertinoIcons.mail,
+                keyboardType: TextInputType.emailAddress,
+              ),
               const SizedBox(height: 12),
-              _EditField(controller: _cityCtrl, label: '\u0413\u043e\u0440\u043e\u0434', icon: CupertinoIcons.location),
+              _EditField(
+                controller: _cityCtrl,
+                label: '\u0413\u043e\u0440\u043e\u0434',
+                icon: CupertinoIcons.location,
+              ),
               if (_error != null) ...[
                 const SizedBox(height: 14),
                 Text(_error!, style: const TextStyle(color: AppColors.error)),
@@ -379,7 +469,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: FilledButton(
                   onPressed: auth.isLoading ? null : _save,
                   child: auth.isLoading
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('Сохранить'),
                 ),
               ),
@@ -397,7 +491,12 @@ class _EditField extends StatelessWidget {
   final IconData icon;
   final TextInputType? keyboardType;
 
-  const _EditField({required this.controller, required this.label, required this.icon, this.keyboardType});
+  const _EditField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.keyboardType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -410,8 +509,14 @@ class _EditField extends StatelessWidget {
         prefixIcon: Icon(icon, size: 18),
         filled: true,
         fillColor: AppColors.bgCard,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.separator)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.separator)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.separator),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.separator),
+        ),
       ),
     );
   }
@@ -424,22 +529,59 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.bgDark,
-      appBar: AppBar(backgroundColor: AppColors.bgDark, title: const Text('Настройки')),
+      appBar: AppBar(
+        backgroundColor: AppColors.bgDark,
+        title: const Text('Настройки'),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _SettingsTile(icon: CupertinoIcons.person_crop_circle, label: '\u041f\u0440\u043e\u0444\u0438\u043b\u044c', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditProfileScreen()))),
-            _SettingsTile(icon: CupertinoIcons.map, label: '\u041e\u0444\u043b\u0430\u0439\u043d-\u043a\u0430\u0440\u0442\u044b', onTap: () => context.push('/offline-maps')),
-            _SettingsTile(icon: CupertinoIcons.location_solid, label: '\u0413\u0435\u043e\u043b\u043e\u043a\u0430\u0446\u0438\u044f \u0438 \u0444\u043e\u043d\u043e\u0432\u044b\u0439 \u0440\u0435\u0436\u0438\u043c', onTap: () {}),
-            _SettingsTile(icon: CupertinoIcons.bell_fill, label: '\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f', onTap: () {}),
-            _SettingsTile(icon: CupertinoIcons.lock_fill, label: '\u041a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u044c', onTap: () {}),
-            _SettingsTile(icon: CupertinoIcons.question_circle_fill, label: '\u041f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430', onTap: () {}),
-            _SettingsTile(icon: CupertinoIcons.info_circle_fill, label: '\u041e \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0438', onTap: () {}),
+            _SettingsTile(
+              icon: CupertinoIcons.person_crop_circle,
+              label: '\u041f\u0440\u043e\u0444\u0438\u043b\u044c',
+              onTap: () => context.push('/profile/edit'),
+            ),
+            _SettingsTile(
+              icon: CupertinoIcons.map,
+              label:
+                  '\u041e\u0444\u043b\u0430\u0439\u043d-\u043a\u0430\u0440\u0442\u044b',
+              onTap: () => context.push('/offline-maps'),
+            ),
+            _SettingsTile(
+              icon: CupertinoIcons.location_solid,
+              label:
+                  '\u0413\u0435\u043e\u043b\u043e\u043a\u0430\u0446\u0438\u044f \u0438 \u0444\u043e\u043d\u043e\u0432\u044b\u0439 \u0440\u0435\u0436\u0438\u043c',
+              onTap: () {},
+            ),
+            _SettingsTile(
+              icon: CupertinoIcons.bell_fill,
+              label:
+                  '\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f',
+              onTap: () {},
+            ),
+            _SettingsTile(
+              icon: CupertinoIcons.lock_fill,
+              label:
+                  '\u041a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u044c',
+              onTap: () {},
+            ),
+            _SettingsTile(
+              icon: CupertinoIcons.question_circle_fill,
+              label: '\u041f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430',
+              onTap: () {},
+            ),
+            _SettingsTile(
+              icon: CupertinoIcons.info_circle_fill,
+              label:
+                  '\u041e \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0438',
+              onTap: () {},
+            ),
             const SizedBox(height: 16),
             _SettingsTile(
               icon: CupertinoIcons.square_arrow_right,
-              label: '\u0412\u044b\u0439\u0442\u0438 \u0438\u0437 \u0430\u043a\u043a\u0430\u0443\u043d\u0442\u0430',
+              label:
+                  '\u0412\u044b\u0439\u0442\u0438 \u0438\u0437 \u0430\u043a\u043a\u0430\u0443\u043d\u0442\u0430',
               destructive: true,
               onTap: () async {
                 await ref.read(authProvider.notifier).logout();
@@ -459,7 +601,12 @@ class _SettingsTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool destructive;
 
-  const _SettingsTile({required this.icon, required this.label, required this.onTap, this.destructive = false});
+  const _SettingsTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -473,8 +620,15 @@ class _SettingsTile extends StatelessWidget {
       ),
       child: ListTile(
         leading: Icon(icon, color: color, size: 20),
-        title: Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color)),
-        trailing: const Icon(CupertinoIcons.chevron_right, color: AppColors.textDisabled, size: 16),
+        title: Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+        ),
+        trailing: const Icon(
+          CupertinoIcons.chevron_right,
+          color: AppColors.textDisabled,
+          size: 16,
+        ),
         onTap: onTap,
       ),
     );
@@ -499,7 +653,9 @@ class _PointsCard extends ConsumerWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.electricBlue.withValues(alpha: 0.35)),
+          border: Border.all(
+            color: AppColors.electricBlue.withValues(alpha: 0.35),
+          ),
         ),
         child: Row(
           children: [
@@ -510,7 +666,11 @@ class _PointsCard extends ConsumerWidget {
                 color: AppColors.warning.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(CupertinoIcons.star_fill, color: AppColors.warning, size: 24),
+              child: const Icon(
+                CupertinoIcons.star_fill,
+                color: AppColors.warning,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -519,15 +679,19 @@ class _PointsCard extends ConsumerWidget {
                 children: [
                   Text(
                     'Баллы экосистемы',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    loyalty.isLoading && !loyalty.loaded ? '…' : '${loyalty.balance}',
+                    loyalty.isLoading && !loyalty.loaded
+                        ? '…'
+                        : '${loyalty.balance}',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
@@ -548,7 +712,11 @@ class _PointsCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 6),
-            const Icon(CupertinoIcons.chevron_right, color: AppColors.textTertiary, size: 18),
+            const Icon(
+              CupertinoIcons.chevron_right,
+              color: AppColors.textTertiary,
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -589,7 +757,8 @@ class PointsHistoryScreen extends ConsumerStatefulWidget {
   const PointsHistoryScreen({super.key});
 
   @override
-  ConsumerState<PointsHistoryScreen> createState() => _PointsHistoryScreenState();
+  ConsumerState<PointsHistoryScreen> createState() =>
+      _PointsHistoryScreenState();
 }
 
 class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
@@ -623,26 +792,49 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                   colors: [Color(0xFF0A1628), AppColors.bgCard],
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.electricBlue.withValues(alpha: 0.35)),
+                border: Border.all(
+                  color: AppColors.electricBlue.withValues(alpha: 0.35),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(CupertinoIcons.star_fill, color: AppColors.warning, size: 28),
+                  const Icon(
+                    CupertinoIcons.star_fill,
+                    color: AppColors.warning,
+                    size: 28,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     '${loyalty.balance}',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Text('баллов', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    'баллов',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.warning.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(loyalty.levelTitle, style: const TextStyle(color: AppColors.warning, fontWeight: FontWeight.w800, fontSize: 13)),
+                    child: Text(
+                      loyalty.levelTitle,
+                      style: const TextStyle(
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -651,8 +843,12 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
               Expanded(
                 child: Center(
                   child: Text(
-                    loyalty.isLoading ? 'Загрузка…' : 'Пока нет операций с баллами',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
+                    loyalty.isLoading
+                        ? 'Загрузка…'
+                        : 'Пока нет операций с баллами',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
                   ),
                 ),
               )
@@ -666,7 +862,9 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                     final t = txns[i];
                     final meta = _loyaltySourceMeta(t.source);
                     final positive = t.amount >= 0;
-                    final accent = positive ? AppColors.success : AppColors.error;
+                    final accent = positive
+                        ? AppColors.success
+                        : AppColors.error;
                     return Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -691,8 +889,11 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  t.description.isNotEmpty ? t.description : meta.label,
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  t.description.isNotEmpty
+                                      ? t.description
+                                      : meta.label,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
                                         color: AppColors.textPrimary,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -700,7 +901,8 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   _formatTxnDate(t.createdAt),
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary),
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(color: AppColors.textTertiary),
                                 ),
                               ],
                             ),
@@ -708,7 +910,8 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                           const SizedBox(width: 8),
                           Text(
                             '${positive ? '+' : ''}${t.amount}',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
                                   color: accent,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -736,8 +939,9 @@ class _StatsRow extends ConsumerWidget {
     final totalKm = runs.fold<double>(0, (s, r) => s + r.distanceKm);
     final zones = runs.fold<int>(0, (s, r) => s + r.capturedZones);
     final wins = runs.where((r) => r.capturedTerritory).length;
-    final kmText =
-        totalKm >= 100 ? totalKm.round().toString() : totalKm.toStringAsFixed(1);
+    final kmText = totalKm >= 100
+        ? totalKm.round().toString()
+        : totalKm.toStringAsFixed(1);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -752,7 +956,10 @@ class _StatsRow extends ConsumerWidget {
           _Div(),
           _ProfileStat(value: '$zones', label: '\u0437\u043e\u043d'),
           _Div(),
-          _ProfileStat(value: '${runs.length}', label: '\u043f\u0440\u043e\u0431\u0435\u0436\u0435\u043a'),
+          _ProfileStat(
+            value: '${runs.length}',
+            label: '\u043f\u0440\u043e\u0431\u0435\u0436\u0435\u043a',
+          ),
           _Div(),
           _ProfileStat(value: '$wins', label: '\u043f\u043e\u0431\u0435\u0434'),
         ],
@@ -773,11 +980,15 @@ class _ProfileStat extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.electricBlue,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: AppColors.electricBlue,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-          Text(label, style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -788,7 +999,8 @@ class _Div extends StatelessWidget {
   const _Div();
 
   @override
-  Widget build(BuildContext context) => Container(width: 1, height: 32, color: AppColors.separator);
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 32, color: AppColors.separator);
 }
 
 class _BadgesGrid extends ConsumerWidget {
@@ -802,12 +1014,42 @@ class _BadgesGrid extends ConsumerWidget {
     final runsCount = runs.length;
     final captures = runs.where((r) => r.capturedTerritory).length;
     final badges = [
-      (CupertinoIcons.snow, '\u0410\u0440\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439', AppColors.info, runsCount >= 1),
-      (CupertinoIcons.bolt_fill, '\u0421\u043f\u0440\u0438\u043d\u0442\u0435\u0440', AppColors.warning, totalKm >= 5),
-      (CupertinoIcons.flame_fill, '\u0421\u0435\u0440\u0438\u044f 7', AppColors.error, runsCount >= 7),
-      (CupertinoIcons.moon_stars_fill, '\u042f\u043a\u0443\u0442\u0441\u043a', AppColors.textSecondary, totalKm >= 10),
-      (CupertinoIcons.star_fill, '\u041b\u0435\u0433\u0435\u043d\u0434\u0430', AppColors.warning, loyalty.balance >= 500),
-      (CupertinoIcons.location_north_fill, '\u0412\u044b\u0441\u043e\u0442\u043d\u0438\u043a', AppColors.success, captures >= 3),
+      (
+        CupertinoIcons.snow,
+        '\u0410\u0440\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439',
+        AppColors.info,
+        runsCount >= 1,
+      ),
+      (
+        CupertinoIcons.bolt_fill,
+        '\u0421\u043f\u0440\u0438\u043d\u0442\u0435\u0440',
+        AppColors.warning,
+        totalKm >= 5,
+      ),
+      (
+        CupertinoIcons.flame_fill,
+        '\u0421\u0435\u0440\u0438\u044f 7',
+        AppColors.error,
+        runsCount >= 7,
+      ),
+      (
+        CupertinoIcons.moon_stars_fill,
+        '\u042f\u043a\u0443\u0442\u0441\u043a',
+        AppColors.textSecondary,
+        totalKm >= 10,
+      ),
+      (
+        CupertinoIcons.star_fill,
+        '\u041b\u0435\u0433\u0435\u043d\u0434\u0430',
+        AppColors.warning,
+        loyalty.balance >= 500,
+      ),
+      (
+        CupertinoIcons.location_north_fill,
+        '\u0412\u044b\u0441\u043e\u0442\u043d\u0438\u043a',
+        AppColors.success,
+        captures >= 3,
+      ),
     ];
 
     return GridView.count(
@@ -817,7 +1059,16 @@ class _BadgesGrid extends ConsumerWidget {
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
       childAspectRatio: 0.9,
-      children: badges.map((b) => _BadgeTile(icon: b.$1, label: b.$2, color: b.$3, unlocked: b.$4)).toList(),
+      children: badges
+          .map(
+            (b) => _BadgeTile(
+              icon: b.$1,
+              label: b.$2,
+              color: b.$3,
+              unlocked: b.$4,
+            ),
+          )
+          .toList(),
     );
   }
 }
@@ -827,7 +1078,12 @@ class _BadgeTile extends StatelessWidget {
   final String label;
   final Color color;
   final bool unlocked;
-  const _BadgeTile({required this.icon, required this.label, required this.color, required this.unlocked});
+  const _BadgeTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.unlocked,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -836,12 +1092,18 @@ class _BadgeTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: unlocked ? color.withValues(alpha: 0.12) : AppColors.bgCard,
         borderRadius: BorderRadius.circular(16),
-        border: unlocked ? Border.all(color: color.withValues(alpha: 0.3)) : Border.all(color: AppColors.separator),
+        border: unlocked
+            ? Border.all(color: color.withValues(alpha: 0.3))
+            : Border.all(color: AppColors.separator),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 32, color: unlocked ? color : AppColors.textDisabled),
+          Icon(
+            icon,
+            size: 32,
+            color: unlocked ? color : AppColors.textDisabled,
+          ),
           const SizedBox(height: 7),
           SizedBox(
             width: double.infinity,
@@ -851,7 +1113,11 @@ class _BadgeTile extends StatelessWidget {
                 label,
                 maxLines: 1,
                 softWrap: false,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: unlocked ? AppColors.textPrimary : AppColors.textDisabled),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: unlocked
+                      ? AppColors.textPrimary
+                      : AppColors.textDisabled,
+                ),
               ),
             ),
           ),
@@ -865,8 +1131,18 @@ class _ActivityHeatmap extends ConsumerWidget {
   const _ActivityHeatmap();
 
   static const _months = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+    'Январь',
+    'Февраль',
+    'Март',
+    'Апрель',
+    'Май',
+    'Июнь',
+    'Июль',
+    'Август',
+    'Сентябрь',
+    'Октябрь',
+    'Ноябрь',
+    'Декабрь',
   ];
 
   @override
@@ -893,8 +1169,16 @@ class _ActivityHeatmap extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${_months[now.month - 1]} ${now.year}', style: Theme.of(context).textTheme.labelMedium),
-              Text('${activeDays.length} \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u0434\u043d\u0435\u0439', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary)),
+              Text(
+                '${_months[now.month - 1]} ${now.year}',
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+              Text(
+                '${activeDays.length} \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u0434\u043d\u0435\u0439',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -941,10 +1225,34 @@ class _SettingsTiles extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _SettingTile(icon: CupertinoIcons.bell_fill, label: '\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f', iconBg: const Color(0xFFFF453A), onTap: () {}),
-          _SettingTile(icon: CupertinoIcons.lock_fill, label: '\u041a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u044c', iconBg: const Color(0xFF636366), onTap: () {}),
-          _SettingTile(icon: CupertinoIcons.star_fill, label: '\u041a\u0412\u0410\u0420\u0422\u0410\u041b PRO', iconBg: AppColors.warning, badge: 'PRO', onTap: () {}),
-          _SettingTile(icon: CupertinoIcons.square_arrow_right, label: '\u0412\u044b\u0439\u0442\u0438', iconBg: AppColors.error, isDestructive: true, onTap: () {}),
+          _SettingTile(
+            icon: CupertinoIcons.bell_fill,
+            label:
+                '\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f',
+            iconBg: const Color(0xFFFF453A),
+            onTap: () {},
+          ),
+          _SettingTile(
+            icon: CupertinoIcons.lock_fill,
+            label:
+                '\u041a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u044c',
+            iconBg: const Color(0xFF636366),
+            onTap: () {},
+          ),
+          _SettingTile(
+            icon: CupertinoIcons.star_fill,
+            label: '\u041a\u0412\u0410\u0420\u0422\u0410\u041b PRO',
+            iconBg: AppColors.warning,
+            badge: 'PRO',
+            onTap: () {},
+          ),
+          _SettingTile(
+            icon: CupertinoIcons.square_arrow_right,
+            label: '\u0412\u044b\u0439\u0442\u0438',
+            iconBg: AppColors.error,
+            isDestructive: true,
+            onTap: () {},
+          ),
         ],
       ),
     );
@@ -959,7 +1267,14 @@ class _SettingTile extends StatelessWidget {
   final bool isDestructive;
   final VoidCallback onTap;
 
-  const _SettingTile({required this.icon, required this.label, required this.iconBg, required this.onTap, this.badge, this.isDestructive = false});
+  const _SettingTile({
+    required this.icon,
+    required this.label,
+    required this.iconBg,
+    required this.onTap,
+    this.badge,
+    this.isDestructive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -968,20 +1283,41 @@ class _SettingTile extends StatelessWidget {
       leading: Container(
         width: 32,
         height: 32,
-        decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: iconBg,
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Icon(icon, color: Colors.white, size: 16),
       ),
-      title: Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textColor)),
+      title: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: textColor),
+      ),
       trailing: badge != null
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [AppColors.gradientStart, AppColors.gradientEnd]),
+                gradient: const LinearGradient(
+                  colors: [AppColors.gradientStart, AppColors.gradientEnd],
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(badge!, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+              child: Text(
+                badge!,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             )
-          : const Icon(CupertinoIcons.chevron_right, color: AppColors.textDisabled, size: 16),
+          : const Icon(
+              CupertinoIcons.chevron_right,
+              color: AppColors.textDisabled,
+              size: 16,
+            ),
       onTap: onTap,
     );
   }
