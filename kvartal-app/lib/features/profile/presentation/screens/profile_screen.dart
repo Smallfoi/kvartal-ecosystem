@@ -489,9 +489,7 @@ class _PointsCard extends ConsumerWidget {
     final loyalty = ref.watch(loyaltyProvider);
 
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PointsHistoryScreen()),
-      ),
+      onTap: () => context.push('/profile/points'),
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(

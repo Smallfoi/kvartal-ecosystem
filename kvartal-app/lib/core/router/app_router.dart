@@ -89,6 +89,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (_, __) =>
                 const NoTransitionPage(child: ProfileScreen()),
           ),
+          // История баллов — маршрут внутри шелла, чтобы таб-бар её переключал
+          // (раньше открывалась Navigator.push и «залипала» поверх вкладок).
+          GoRoute(
+            path: '/profile/points',
+            builder: (_, __) => const PointsHistoryScreen(),
+          ),
         ],
       ),
     ],

@@ -637,17 +637,12 @@ class _ClubInviteSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _InviteValueCard(
-              icon: CupertinoIcons.number,
-              title: '\u041a\u043e\u0434 \u043a\u043b\u0443\u0431\u0430',
-              value: club.id,
-              copyText: club.id,
-            ),
-            const SizedBox(height: 10),
+            // \u0414\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e QR-\u043a\u043e\u0434\u0430 \u0438 \u0441\u0441\u044b\u043b\u043a\u0438. \u0421\u0430\u043c\u0443 \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0435 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u043c \u2014 \u0442\u043e\u043b\u044c\u043a\u043e
+            // \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u00ab\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u00bb (\u043a\u043e\u0434 \u043a\u043b\u0443\u0431\u0430 \u0443\u0431\u0440\u0430\u043b\u0438 \u0437\u0430 \u043d\u0435\u043d\u0430\u0434\u043e\u0431\u043d\u043e\u0441\u0442\u044c\u044e).
             _InviteValueCard(
               icon: CupertinoIcons.link,
-              title: '\u0421\u0441\u044b\u043b\u043a\u0430',
-              value: _link,
+              title: '\u0421\u0441\u044b\u043b\u043a\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f',
+              value: '\u041d\u0430\u0436\u043c\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c',
               copyText: _link,
             ),
           ],
@@ -667,58 +662,65 @@ class _InviteValueCard extends StatelessWidget {
     required this.copyText,
   });
 
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: copyText));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: AppColors.bgCard,
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () => _copy(context),
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: AppColors.separator),
-    ),
-    child: Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.electricBlue),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.textTertiary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              _FitText(
-                value,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
+      child: Ink(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.separator),
         ),
-        IconButton.filledTonal(
-          tooltip:
-              '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c',
-          icon: const Icon(CupertinoIcons.doc_on_doc, size: 18),
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: copyText));
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e',
-                ),
-                behavior: SnackBarBehavior.floating,
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: AppColors.electricBlue),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  _FitText(
+                    value,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
+            ),
+            IconButton.filledTonal(
+              tooltip:
+                  '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c',
+              icon: const Icon(CupertinoIcons.doc_on_doc, size: 18),
+              onPressed: () => _copy(context),
+            ),
+          ],
         ),
-      ],
+      ),
     ),
   );
 }
