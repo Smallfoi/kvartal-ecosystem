@@ -65,7 +65,7 @@ class KvartalLocationService : Service(), LocationListener {
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 1000L,
-                0f,
+                MIN_PROVIDER_DISTANCE_METERS,
                 this,
             )
         } catch (_: Exception) {
@@ -187,6 +187,8 @@ class KvartalLocationService : Service(), LocationListener {
         private const val MAX_RUN_SPEED_MS = 11.1
         private const val MIN_POINT_DISTANCE_METERS = 2.0
         private const val MAX_POINT_GAP_METERS = 80.0
-        private const val MAX_ACCEPTED_ACCURACY_METERS = 50f
+        // Жёстче по точности + фильтр дистанции на уровне провайдера — убираем дрожь 2–3 м.
+        private const val MAX_ACCEPTED_ACCURACY_METERS = 35f
+        private const val MIN_PROVIDER_DISTANCE_METERS = 5f
     }
 }
