@@ -662,50 +662,132 @@ class _ClubsTab extends ConsumerWidget {
   }
 }
 
-// ── Районы (заглушка до территорий на сервере, D-09) ──────────────────────────
+// ── Районы: контроль территорий клубами (D-09, реальные данные с PostGIS) ─────
 
-class _DistrictsTab extends StatelessWidget {
+class _DistrictsTab extends ConsumerWidget {
   const _DistrictsTab();
 
+  static const _rankColors = [
+    AppColors.warning,
+    Color(0xFFB0BEC5),
+    Color(0xFFCD7F32),
+  ];
+
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 40, 28, 0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(leaderboardDistrictsProvider);
+    return async.when(
+      loading: () => const _Loading(),
+      error: (_, __) => const _Empty('Не удалось загрузить контроль территорий'),
+      data: (board) {
+        if (board.top.isEmpty) {
+          return const _Empty(
+            'Пока никто не удерживает территории.\n'
+            'Замкни маршрут на карте и захвати квартал за свой клуб!',
+          );
+        }
+        final maxArea = board.top
+            .map((c) => c.areaM2)
+            .fold<double>(0, (m, v) => v > m ? v : m);
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          itemCount: board.top.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, idx) {
+            if (idx == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6, top: 2, left: 2),
+                child: Text(
+                  'Контроль территорий · удержание 72 ч',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textTertiary),
+                ),
+              );
+            }
+            final c = board.top[idx - 1];
+            final color = (idx - 1) < 3
+                ? _rankColors[idx - 1]
+                : AppColors.textSecondary;
+            return Container(
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.electricBlue.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+                color: c.isMine
+                    ? AppColors.electricBlue.withValues(alpha: 0.10)
+                    : AppColors.bgCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: c.isMine
+                      ? AppColors.electricBlue.withValues(alpha: 0.35)
+                      : AppColors.separator,
+                ),
               ),
-              child: const Icon(
-                CupertinoIcons.map_fill,
-                color: AppColors.electricBlue,
-                size: 30,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${c.rank}',
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              c.isMine ? '${c.name} · ваш клуб' : c.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              c.pieces == 1
+                                  ? '1 территория'
+                                  : '${c.pieces} территорий',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        c.areaLabel,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: maxArea > 0 ? c.areaM2 / maxArea : 0,
+                      minHeight: 4,
+                      backgroundColor: AppColors.bgElevated,
+                      valueColor: AlwaysStoppedAnimation(color),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Рейтинг районов скоро',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Появится, когда захват территорий будет считаться на сервере: '
-              'покажем, какой клуб контролирует больше зон в каждом районе Якутска.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: AppColors.textTertiary),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }

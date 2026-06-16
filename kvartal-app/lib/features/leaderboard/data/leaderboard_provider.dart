@@ -77,6 +77,51 @@ class ClubsBoard {
   const ClubsBoard({required this.top, this.myRank});
 }
 
+/// Контроль территорий (D-09): клуб по суммарной площади удерживаемых территорий.
+class LeaderDistrictClub {
+  final String id;
+  final String name;
+  final String? logo;
+  final double areaM2;
+  final int pieces;
+  final int rank;
+  final bool isMine;
+
+  const LeaderDistrictClub({
+    required this.id,
+    required this.name,
+    required this.areaM2,
+    required this.pieces,
+    required this.rank,
+    required this.isMine,
+    this.logo,
+  });
+
+  factory LeaderDistrictClub.fromJson(Map<String, dynamic> j) =>
+      LeaderDistrictClub(
+        id: j['id']?.toString() ?? '',
+        name: j['name']?.toString() ?? '—',
+        logo: j['logo']?.toString(),
+        areaM2: (j['areaM2'] as num?)?.toDouble() ?? 0,
+        pieces: (j['pieces'] as num?)?.toInt() ?? 0,
+        rank: (j['rank'] as num?)?.toInt() ?? 0,
+        isMine: j['isMine'] == true,
+      );
+
+  /// Человекочитаемая площадь: м² → га → км².
+  String get areaLabel {
+    if (areaM2 >= 1000000) return '${(areaM2 / 1000000).toStringAsFixed(2)} км²';
+    if (areaM2 >= 10000) return '${(areaM2 / 10000).toStringAsFixed(2)} га';
+    return '${areaM2.round()} м²';
+  }
+}
+
+class DistrictsBoard {
+  final List<LeaderDistrictClub> top;
+  final int? myRank;
+  const DistrictsBoard({required this.top, this.myRank});
+}
+
 final _leaderboardDio = Dio(
   BaseOptions(
     baseUrl: ApiConfig.baseUrl,
@@ -133,3 +178,22 @@ final leaderboardClubsProvider = FutureProvider.autoDispose<ClubsBoard>((ref) as
       .toList();
   return ClubsBoard(top: top, myRank: (data['myRank'] as num?)?.toInt());
 });
+
+/// Рейтинг контроля территорий (D-09). Не зависит от периода — это снимок «сейчас».
+final leaderboardDistrictsProvider =
+    FutureProvider.autoDispose<DistrictsBoard>((ref) async {
+      final token = ref.watch(authProvider).token;
+      if (token == null || token.isEmpty) {
+        return const DistrictsBoard(top: []);
+      }
+      final res = await _leaderboardDio.get<Map<String, dynamic>>(
+        '/leaderboard/districts',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final data = res.data ?? {};
+      final top = (data['top'] as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(LeaderDistrictClub.fromJson)
+          .toList();
+      return DistrictsBoard(top: top, myRank: (data['myRank'] as num?)?.toInt());
+    });
