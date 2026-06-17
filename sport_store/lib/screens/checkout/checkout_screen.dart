@@ -176,7 +176,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
     cart.clear();
 
-    if (redeem > 0) loyalty.redeem(redeem, order.id);
+    if (redeem > 0) {
+      // Трата баллов авторитетно идёт через общий backend (если он включён).
+      final err = await loyalty.redeem(redeem, order.id);
+      if (err != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
+    if (!mounted) return;
     // Начисляем за фактически оплаченную сумму (order.total уже со скидкой)
     loyalty.earnForPurchase(
       order.total,

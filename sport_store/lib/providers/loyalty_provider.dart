@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/api/api_client.dart';
 import '../data/repositories/loyalty_repository.dart';
 import '../models/loyalty.dart';
 
@@ -167,11 +168,40 @@ class LoyaltyProvider extends ChangeNotifier {
     return base + (isFirstOrder ? 50 : 0);
   }
 
-  /// Списание баллов при оформлении заказа.
-  void redeem(int points, String orderId) {
-    if (points <= 0) return;
+  /// Списание баллов при оформлении заказа. Возвращает null при успехе,
+  /// иначе текст ошибки (например, «Недостаточно баллов»).
+  /// При serverBacked баланс авторитетно считает backend (нельзя уйти в минус,
+  /// списание идемпотентно по orderId); после успеха перечитываем баланс с сервера.
+  Future<String?> redeem(int points, String orderId) async {
+    if (points <= 0) return null;
+    if (serverBacked) {
+      try {
+        await _repo.redeem(
+          points: points,
+          orderId: orderId,
+          description: 'Оплата баллами заказа №$orderId',
+        );
+        await load();
+        return null;
+      } catch (e) {
+        return _redeemError(e);
+      }
+    }
+    // Офлайн-прототип — списываем локально.
     _add(-points, LoyaltySource.redeem, 'Оплата баллами заказа №$orderId',
         orderId: orderId);
+    return null;
+  }
+
+  String _redeemError(Object e) {
+    if (e is ApiException) {
+      try {
+        final detail = (jsonDecode(e.message) as Map)['detail'];
+        if (detail is String && detail.isNotEmpty) return detail;
+      } catch (_) {}
+      if (e.statusCode == 400) return 'Недостаточно баллов';
+    }
+    return 'Не удалось списать баллы. Попробуйте ещё раз.';
   }
 
   int maxRedeemable(double orderTotal) => account.maxRedeemable(orderTotal);
