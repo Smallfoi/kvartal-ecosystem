@@ -58,7 +58,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
     if (st.fullyReady) return;
     await prefs.setBool(_locSetupShownKey, true);
     if (!mounted) return;
-    await showLocationSetupSheet(context);
+    openLocationSetup(context);
   }
 
   @override
