@@ -9,12 +9,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import org.json.JSONArray
@@ -29,6 +31,7 @@ import kotlin.math.sqrt
 class KvartalLocationService : Service(), LocationListener {
     private lateinit var locationManager: LocationManager
     private lateinit var prefs: SharedPreferences
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -45,7 +48,8 @@ class KvartalLocationService : Service(), LocationListener {
                 return START_NOT_STICKY
             }
             else -> {
-                startForeground(NOTIFICATION_ID, buildNotification())
+                startInForeground()
+                acquireWakeLock()
                 startTracking()
                 return START_STICKY
             }
@@ -54,7 +58,48 @@ class KvartalLocationService : Service(), LocationListener {
 
     override fun onDestroy() {
         stopTracking()
+        releaseWakeLock()
         super.onDestroy()
+    }
+
+    /// На Android 10+ указываем тип FGS явно — иначе на 14+ запуск может отклониться.
+    private fun startInForeground() {
+        val notification = buildNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    /// Partial wake-lock: держим CPU, чтобы GPS писался при выключенном экране.
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "kvartal:gps_tracking",
+            ).apply {
+                setReferenceCounted(false)
+                acquire(MAX_WAKELOCK_MS)
+            }
+        } catch (_: Exception) {
+            // Wake-lock — best-effort; без него фон менее надёжен, но сервис всё равно работает.
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) wakeLock?.release()
+        } catch (_: Exception) {
+            // already released
+        }
+        wakeLock = null
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -190,5 +235,7 @@ class KvartalLocationService : Service(), LocationListener {
         // Жёстче по точности + фильтр дистанции на уровне провайдера — убираем дрожь 2–3 м.
         private const val MAX_ACCEPTED_ACCURACY_METERS = 35f
         private const val MIN_PROVIDER_DISTANCE_METERS = 5f
+        // Предохранитель: авто-снятие wake-lock через 6 ч (на случай зависшего сервиса).
+        private const val MAX_WAKELOCK_MS = 6L * 60 * 60 * 1000
     }
 }

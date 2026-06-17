@@ -4,6 +4,10 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Чтобы CPU не засыпал с выключенным экраном и GPS продолжал писать трек -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Чтобы показать системный диалог «не экономить батарею» (иначе кнопка — пустышка) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
