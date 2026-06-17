@@ -16,6 +16,13 @@
 ---
 
 
+## 2026-06-18 — Claude — Store на бэке: трата баллов (D-13) — серверный redeem
+**Сделано (замкнули петлю «заработал бегом → потратил в магазине»):**
+- **Бэк** `POST /v1/loyalty/redeem` {amount, orderId, description}: авторитетно проверяет баланс (нельзя в минус), идемпотентен по orderId+source=redeem (нет двойного списания), пишет −amount source=redeem, возвращает новый balance/level.
+- **SportStore:** `LoyaltyRepository.redeem()` (Api → /loyalty/redeem), `LoyaltyProvider.redeem` стал async server-authoritative (serverBacked: списывает на сервере → `load()` перечитывает реальный баланс; ошибку «Недостаточно баллов» возвращает текстом; офлайн-прототип — как было локально). Чекаут `_confirm` ждёт redeem и показывает ошибку в SnackBar.
+**Проверено вживую :8000:** redeem 30 (161→131), повтор того же заказа → deduped (без двойного списания), 999999 → 400 «Недостаточно баллов», 0 → 400. analyze+test sport_store зелёные.
+**Дальше по D-13:** каталог + заказы Store на бэке; начисление за покупку через сервер (сейчас earn идёт через generic /loyalty/transactions).
+
 ## 2026-06-18 — Claude — фикс залипания: экран доступа к геолокации → маршрут шелла
 **Контекст:** владелец заметил, что экран «фоновой работы» (настройка геолокации на экране Бег) залипает — открыт как `showModalBottomSheet`, и таб-бар не переключает экраны. Та же ошибка, что чинили у истории баллов/редактирования профиля/настроек.
 **Сделано:** `location_setup_sheet.dart` → `LocationSetupScreen` (Scaffold) + маршрут `/run/location-access` внутри ShellRoute; `openLocationSetup(context)=context.push(...)`, закрытие `context.pop()`. Баннер и авто-онбординг зовут `openLocationSetup`. Теперь таб-бар переключает.
