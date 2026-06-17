@@ -6,6 +6,7 @@ import '../../features/auth/presentation/screens/phone_screen.dart';
 import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/map/presentation/screens/map_screen.dart';
 import '../../features/run/presentation/screens/run_screen.dart';
+import '../../features/permissions/presentation/location_setup_sheet.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
 import '../../features/club/presentation/screens/club_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -69,6 +70,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/run',
             pageBuilder: (_, __) => const NoTransitionPage(child: RunScreen()),
+          ),
+          // Настройка доступа к геолокации — маршрут внутри шелла, чтобы таб-бар
+          // продолжал переключать экраны (а не модальный лист, который залипал).
+          GoRoute(
+            path: '/run/location-access',
+            builder: (_, __) => const LocationSetupScreen(),
           ),
           GoRoute(
             path: '/leaderboard',
