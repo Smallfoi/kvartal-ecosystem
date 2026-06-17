@@ -16,6 +16,18 @@
 ---
 
 
+## 2026-06-17 — Claude — фон-добивка: wake-lock + разрешение на батарею + тип FGS
+**Контекст:** владелец дал «Всегда» (ACCESS_BACKGROUND_LOCATION granted=true), но трек при выключенном экране всё равно не писался, а кнопка «отключить экономию батареи» не срабатывала.
+**Причины (подтверждено adb):**
+- В манифесте НЕ было `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` → `Permission.ignoreBatteryOptimizations.request()` — пустышка (кнопка «не нажималась»).
+- В манифесте НЕ было `WAKE_LOCK`, и нативный сервис не держал wake-lock → CPU засыпал с выключенным экраном → GPS переставал писать.
+- На Android 14+ `startForeground` без явного типа может отклоняться.
+**Сделано:**
+- Манифест: + `WAKE_LOCK`, + `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`.
+- `KvartalLocationService`: partial wake-lock (acquire на старте, release на стопе/destroy, авто-таймаут 6 ч) + `startForeground(..., FOREGROUND_SERVICE_TYPE_LOCATION)` на API 29+.
+- Проверено: оба разрешения в установленном APK granted=true.
+**Дальше (живой тест владельца):** в листе нажать «Отключить экономию» (теперь покажет системный диалог) → разрешить; на Infinix вручную включить Автозапуск; пробежать с заблокированным экраном → трек должен догоняться.
+
 ## 2026-06-16 — Claude — тех-долг: убрал legacy FastAPI, CI-джоба на Django, .gitignore
 **Сделано:**
 - **Удалил FastAPI** (`backend/main.py`, `backend/requirements.txt`) — миграция на Django завершена и проверена (D-12). Ничто больше на них не ссылалось. README бэка обновил под Django+Docker.
