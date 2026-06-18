@@ -16,7 +16,7 @@ class ApiConfig {
   /// Per-service rollout. true → реальный API, false → mock.
   static const bool useApiAuth = true;
   static const bool useApiLoyalty = true;
-  static const bool useApiCatalog = false;
+  static const bool useApiCatalog = true;
   static const bool useApiOrder = false;
 
   /// Нужен ли вообще HTTP-клиент (хотя бы один сервис на API).
