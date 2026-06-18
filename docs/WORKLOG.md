@@ -16,6 +16,14 @@
 ---
 
 
+## 2026-06-18 — Claude — Store на бэке: заказы (D-13)
+**Сделано:** заказы SportStore сохраняются на Django.
+- Новый app `orders` (Order: user_id, order_id, total, status, points_redeemed, payload JSON; миграция 0001; unique (user_id, order_id) — идемпотентность). `POST /v1/orders` (Bearer) сохраняет заказ пользователя и возвращает его; `GET /v1/orders` — заказы пользователя (новые сверху). Контракт payload = как у SportStore Order.toJson/fromJson.
+- Клиент: `useApiOrder=true` (ApiOrderRepository уже был готов; `OrderProvider.placeOrder` шлёт `submitOrder` на бэк — заказ персистится на сервере).
+**Проверено вживую :8000:** POST заказа → 200 (возвращает полный заказ), повтор того же id → идемпотентно (1 в списке), GET → список, без токена → 401. Release-сборка на устройстве грузит каталог (сеть ок). analyze+test зелёные.
+**Прим.:** показ истории в приложении пока локальный (live-таймеры статусов в OrderProvider); серверный список (`fetchOrders`) готов для кросс-девайс синка — подключим при необходимости. Начисление за покупку уже идёт на сервер через `/loyalty/transactions`.
+**Дальше по D-13:** (опц.) кросс-девайс синк заказов/статусов + идемпотентное начисление за покупку через сервер; затем сайт STAW.
+
 ## 2026-06-18 — Claude — РЕШЕНО: SportStore release не имел INTERNET-permission
 **Корень найден:** в main-манифесте SportStore НЕ было `android.permission.INTERNET`. Flutter добавляет INTERNET сам только в debug/profile-манифест, в release — нет. Поэтому RELEASE-сборка вообще не имела доступа к сети (пустой каталог; ломались ВСЕ API Store: auth/loyalty/catalog). Квартал работал, т.к. в его main-манифесте INTERNET есть (это была НЕ разница package:http vs dio).
 **Фикс:** добавил `<uses-permission android:name="android.permission.INTERNET"/>` в main-манифест SportStore.
