@@ -16,6 +16,13 @@
 ---
 
 
+## 2026-06-18 — Claude — РЕШЕНО: SportStore release не имел INTERNET-permission
+**Корень найден:** в main-манифесте SportStore НЕ было `android.permission.INTERNET`. Flutter добавляет INTERNET сам только в debug/profile-манифест, в release — нет. Поэтому RELEASE-сборка вообще не имела доступа к сети (пустой каталог; ломались ВСЕ API Store: auth/loyalty/catalog). Квартал работал, т.к. в его main-манифесте INTERNET есть (это была НЕ разница package:http vs dio).
+**Фикс:** добавил `<uses-permission android:name="android.permission.INTERNET"/>` в main-манифест SportStore.
+**Проверено на устройстве:** RELEASE-сборка тянет каталог с бэка — categories/products/banners/brands/sizes/price-range → 200. Каталог отображается. Релиз рабочий (без debug-ленты).
+**Итог:** Store-на-бэке (каталог + трата баллов) полностью работает в release на устройстве.
+**Дальше по D-13:** заказы Store на бэке + начисление за покупку через сервер; затем сайт STAW.
+
 ## 2026-06-18 — Claude — SportStore: cleartext в release + находка про release-сеть
 **Контекст:** владелец: «каталог пустой» на устройстве после включения API-каталога.
 **Найдено (adb + screenshot + сравнение debug/release):**
