@@ -16,6 +16,15 @@
 ---
 
 
+## 2026-06-18 — Claude — SportStore: cleartext в release + находка про release-сеть
+**Контекст:** владелец: «каталог пустой» на устройстве после включения API-каталога.
+**Найдено (adb + screenshot + сравнение debug/release):**
+- В release HTTP по `http://` блокировался: cleartext был только в `debug/AndroidManifest`. Добавил `usesCleartextTraffic="true"` в main-манифест SportStore; заодно `EnableImpeller=false` (как в Квартале — на Mediatek/Infinix release падал/глючил).
+- **DEBUG-сборка SportStore работает**: устройство тянет каталог с бэка (categories/products/banners/brands/sizes/price-range → 200), товары/категории отображаются.
+- **RELEASE-сборка SportStore НЕ шлёт запросы** на этом устройстве (процесс жив, foreground, cleartext в APK подтверждён, Impeller off — не помогло). Квартал (release, dio) сеть работает; SportStore использует `package:http` — вероятно, в этом разница. Затрагивает ВСЕ API-фичи Store (auth/loyalty/catalog), не только каталог. **Не дорешено.**
+**Сейчас:** на устройство поставлена рабочая DEBUG-сборка SportStore (каталог грузится). Релизную сеть добиваем отдельно.
+**Дальше:** разобраться с release-networking SportStore (package:http vs dio / возможно сетевой клиент); потом заказы Store на бэке.
+
 ## 2026-06-18 — Claude — Store на бэке: каталог (D-13)
 **Сделано:** каталог SportStore переехал с mock на Django.
 - Новый app `catalog` (Category/Product/Banner, JSONField для списков; миграция 0001). Сид `seed_catalog` = 1:1 с прежним mock_data.dart (7 категорий / 16 товаров / 3 баннера; картинки — бандл-ассеты приложения, бэк отдаёт пути).

@@ -4,7 +4,14 @@
     <application
         android:label="sport_store"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"><!-- dev: backend по http://127.0.0.1 (adb reverse). Для прод — https/убрать -->
+        <!-- Impeller выключен: на части устройств (Mediatek/Infinix) release-сборка
+             с Impeller/Vulkan падает на старте. Как в Квартале. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
