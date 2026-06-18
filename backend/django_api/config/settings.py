@@ -10,7 +10,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-change-in-prod")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = ["*"]  # dev
+
+# Прод: DJANGO_ALLOWED_HOSTS="api.staw.ru,staw.ru". Dev (по умолчанию) — "*".
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -73,8 +77,22 @@ DATABASES = {
     }
 }
 
-# CORS — dev: разрешаем всё (приложения ходят с устройства).
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS. Прод: DJANGO_CORS_ORIGINS="https://staw.ru,https://www.staw.ru" — тогда
+# разрешаем только их. Dev (переменная пуста) — разрешаем всё (приложения и сайт
+# ходят с устройства/localhost).
+_cors_origins = [
+    o.strip() for o in os.environ.get("DJANGO_CORS_ORIGINS", "").split(",") if o.strip()
+]
+if _cors_origins:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = _cors_origins
+    # CSRF для Django-admin за HTTPS (нужны со схемой).
+    CSRF_TRUSTED_ORIGINS = _cors_origins
+else:
+    CORS_ALLOW_ALL_ORIGINS = True
+
+# За HTTPS-прокси (nginx/traefik): доверяем заголовку схемы. Безопасно и в dev.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],

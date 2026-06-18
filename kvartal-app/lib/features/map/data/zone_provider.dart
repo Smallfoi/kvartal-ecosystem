@@ -78,7 +78,12 @@ double distMeters(LatLng a, LatLng b) {
   return sqrt(dlat * dlat + dlng * dlng);
 }
 
-const _backendUrl = 'http://localhost:3000/api/zones';
+// Источник полигонов кварталов (отдельный zones-сервис, не общий API).
+// Прод/иной хост: --dart-define=KVARTAL_ZONES_URL=https://.../api/zones
+const _backendUrl = String.fromEnvironment(
+  'KVARTAL_ZONES_URL',
+  defaultValue: 'http://localhost:3000/api/zones',
+);
 const _capturedZoneIdsKey = 'kvartal.captured_zone_ids.v1';
 const _capturedAreasKey = 'kvartal.captured_areas.v1';
 const _mapCleanupOnceKey = 'kvartal.map_cleanup_2026_06_11.v1';
