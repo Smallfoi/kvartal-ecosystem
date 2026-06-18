@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "clubs",
     "leaderboard",
     "territories",
+    "catalog",
 ]
 
 MIDDLEWARE = [

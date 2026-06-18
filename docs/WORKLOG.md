@@ -16,6 +16,15 @@
 ---
 
 
+## 2026-06-18 — Claude — Store на бэке: каталог (D-13)
+**Сделано:** каталог SportStore переехал с mock на Django.
+- Новый app `catalog` (Category/Product/Banner, JSONField для списков; миграция 0001). Сид `seed_catalog` = 1:1 с прежним mock_data.dart (7 категорий / 16 товаров / 3 баннера; картинки — бандл-ассеты приложения, бэк отдаёт пути).
+- Эндпоинты (публичные, контракт как у `ApiProductRepository`): `GET /v1/categories`, `/v1/products` (+category,featured,new), `/v1/products/search?q=`, `/v1/products/price-range`, `/v1/products/<id>`, `/v1/brands`, `/v1/sizes`, `/v1/banners`. Порядок в urls: search/price-range раньше `<pid>`.
+- Клиент: `useApiCatalog=true` (репозиторий ApiProductRepository уже был готов под эти эндпоинты — экраны не трогал).
+**Проверено вживую :8000:** categories 7, products 16 (camelCase ключи), category=shoes 3, featured 7, new 7, search «куртка» 3, price-range 1490..16990, /products/3 ок, /999 404, brands 4, sizes, banners 3. analyze+test sport_store зелёные, собрал+поставил.
+**Прим.:** на устройстве визуальное подтверждение за владельцем (Infinix агрессивно переключал фокус приложений при моих скриптовых запусках; механизм 127.0.0.1+adb reverse тот же, что у Квартала — он на устройстве подтверждён).
+**Дальше по D-13:** заказы Store на бэке (useApiOrder); начисление за покупку через сервер; затем сайт.
+
 ## 2026-06-18 — Claude — Store на бэке: трата баллов (D-13) — серверный redeem
 **Сделано (замкнули петлю «заработал бегом → потратил в магазине»):**
 - **Бэк** `POST /v1/loyalty/redeem` {amount, orderId, description}: авторитетно проверяет баланс (нельзя в минус), идемпотентен по orderId+source=redeem (нет двойного списания), пишет −amount source=redeem, возвращает новый balance/level.
