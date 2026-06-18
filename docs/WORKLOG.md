@@ -16,6 +16,15 @@
 ---
 
 
+## 2026-06-18 — Claude — Прод-конфиг API (env/флаги, dev-дефолты не трогаем) [D-15]
+**Сделано:** подготовил переключение dev↔prod без правок кода (хостинга ещё нет — домены подставит владелец).
+- **Backend** `settings.py`: `ALLOWED_HOSTS` и CORS теперь из env. `DJANGO_ALLOWED_HOSTS` (дефолт `*`), `DJANGO_CORS_ORIGINS` (пуста→CORS открыт для dev; задана→только эти + `CSRF_TRUSTED_ORIGINS`). Добавил `SECURE_PROXY_SSL_HEADER` (за HTTPS-прокси). `SECRET_KEY`/`DEBUG` уже были из env.
+- **Приложения:** база API уже через `--dart-define` (`SPORT_STORE_API_BASE_URL`, `KVARTAL_API_BASE_URL`). Последний хардкод-URL (`zone_provider.dart`, zones-сервис :3000) перевёл в `String.fromEnvironment('KVARTAL_ZONES_URL', …)` с тем же дефолтом.
+- **Сайт** `ecosystem.js`: API-база авто — `localhost`→dev `:8000`, иначе `PROD_API` (плейсхолдер `https://api.staw.ru/v1`) или `window.STAW_API_BASE`.
+- **Доки:** новый `docs/DEPLOY.md` (чеклист деплоя), обновил `.env.example` (прод-блок), `DECISIONS.md` D-15.
+**Проверено:** backend перезапущен — health ok, CORS в dev по-прежнему `*`; `node --check ecosystem.js` ok; `flutter analyze` kvartal чисто. Dev-поведение не изменилось.
+**Дальше:** при появлении хостинга — завести домены, выставить env/флаги по `docs/DEPLOY.md`, заменить `PROD_API`. Затем «красота» — за владельцем.
+
 ## 2026-06-18 — Claude — Экономика: идемпотентное начисление за покупку (финал Store-на-бэке)
 **Сделано:** закрыл последний пробел экономики — начисление баллов за покупку теперь идемпотентно по заказу (как и трата).
 - Бэк `/v1/loyalty/transactions`: добавил дедуп по `(user, orderId, source)` (раньше только по `(user, runId, source)`). Повторный пост того же заказа не дублирует баллы.
