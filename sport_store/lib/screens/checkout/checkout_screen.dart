@@ -186,10 +186,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     }
     if (!mounted) return;
-    // Начисляем за фактически оплаченную сумму (order.total уже со скидкой)
+    // Начисляем за фактически оплаченную сумму (order.total уже со скидкой).
+    // orderId → идемпотентность на сервере (без двойного начисления).
     loyalty.earnForPurchase(
       order.total,
       isFirstOrder: orders.orders.length == 1,
+      orderId: order.id,
     );
 
     // Save delivery address to profile

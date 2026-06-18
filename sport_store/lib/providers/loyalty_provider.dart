@@ -157,13 +157,17 @@ class LoyaltyProvider extends ChangeNotifier {
   }
 
   /// Начисление за покупку: +1 балл за каждые 10 ₽ (+50 за первый заказ).
-  int earnForPurchase(double orderTotal, {required bool isFirstOrder}) {
+  /// orderId → серверная идемпотентность (повторный пост того же заказа не дублирует).
+  int earnForPurchase(double orderTotal,
+      {required bool isFirstOrder, String? orderId}) {
     final base = (orderTotal / 10).floor();
     if (base > 0) {
-      _add(base, LoyaltySource.purchase, 'Покупка на ${orderTotal.toInt()} ₽');
+      _add(base, LoyaltySource.purchase, 'Покупка на ${orderTotal.toInt()} ₽',
+          orderId: orderId);
     }
     if (isFirstOrder) {
-      _add(50, LoyaltySource.registration, 'Бонус за первый заказ');
+      _add(50, LoyaltySource.registration, 'Бонус за первый заказ',
+          orderId: orderId);
     }
     return base + (isFirstOrder ? 50 : 0);
   }
