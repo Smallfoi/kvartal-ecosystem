@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "leaderboard",
     "territories",
     "catalog",
+    "orders",
 ]
 
 MIDDLEWARE = [

@@ -17,7 +17,7 @@ class ApiConfig {
   static const bool useApiAuth = true;
   static const bool useApiLoyalty = true;
   static const bool useApiCatalog = true;
-  static const bool useApiOrder = false;
+  static const bool useApiOrder = true;
 
   /// Нужен ли вообще HTTP-клиент (хотя бы один сервис на API).
   static bool get anyApi =>
