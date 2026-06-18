@@ -11,19 +11,58 @@ import 'notifications_provider.dart';
 class OrderProvider extends ChangeNotifier {
   final SharedPreferences _prefs;
   final OrderRepository _repo;
+
+  /// true → история заказов синхронизируется с общим backend (по JWT).
+  final bool serverBacked;
+
   static const _key = 'orders';
 
   final List<Order> _orders = [];
   final List<Timer> _timers = [];
   NotificationsProvider? _notifier;
+  bool _lastLoggedIn = false;
 
-  OrderProvider(this._prefs, this._repo) {
+  OrderProvider(this._prefs, this._repo, {this.serverBacked = false}) {
     _load();
   }
 
   /// Подключается из main.dart через ProxyProvider.
   void attachNotifier(NotificationsProvider notifier) {
     _notifier = notifier;
+  }
+
+  /// Вызывается из ProxyProvider при изменении авторизации.
+  Future<void> syncAuth(bool loggedIn) async {
+    if (!serverBacked) return;
+    if (loggedIn && !_lastLoggedIn) {
+      _lastLoggedIn = true;
+      await refresh();
+    } else if (!loggedIn && _lastLoggedIn) {
+      _lastLoggedIn = false;
+    }
+  }
+
+  /// Подтянуть историю заказов с сервера и слить с локальными.
+  /// Локальные заказы (с «живыми» статусами текущей сессии) имеют приоритет;
+  /// серверные добавляются (история с других устройств / прошлых сессий).
+  Future<void> refresh() async {
+    if (!serverBacked) return;
+    try {
+      final server = await _repo.fetchOrders();
+      final byId = <String, Order>{for (final o in _orders) o.id: o};
+      for (final o in server) {
+        byId.putIfAbsent(o.id, () => o);
+      }
+      final merged = byId.values.toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      _orders
+        ..clear()
+        ..addAll(merged);
+      _save();
+      notifyListeners();
+    } catch (_) {
+      // backend недоступен — остаёмся на локальной истории
+    }
   }
 
   List<Order> get orders => List.unmodifiable(_orders);

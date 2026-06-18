@@ -16,6 +16,12 @@
 ---
 
 
+## 2026-06-18 — Claude — Store: кросс-девайс история заказов + грабля «спящий экран»
+**Сделано:** `OrderProvider` синхронизирует историю заказов с бэком (как `LoyaltyProvider`).
+- `OrderProvider(serverBacked)` + `syncAuth(loggedIn)` → при логине `refresh()` тянет `GET /v1/orders` и сливает с локальными (у локальных приоритет — живые статусы текущей сессии, серверные добавляются как история). main.dart: `ChangeNotifierProxyProvider2<AuthProvider, NotificationsProvider, OrderProvider>` (serverBacked=useApiOrder, syncAuth по auth).
+**Грабля (важно, в памяти reference-android-device-testing):** долго ловил «чёрный экран / нет запросов» на устройстве — оказалось **экран был Dozing** (Flutter на спящем экране не рендерит и не шлёт запросы → ложная тревога, НЕ баг). Перед проверкой будить: `input keyevent KEYCODE_WAKEUP` + `wm dismiss-keyguard`, проверять `dumpsys power | grep mWakefulness=Awake`.
+**Проверено:** /orders POST/GET (раньше), analyze+test зелёные, release на разбуженном устройстве рендерит + грузит каталог (200). История заказов с сервера подтянется после логина (auth-gated) — визуально за владельцем.
+
 ## 2026-06-18 — Claude — Сайт STAW подключён к экосистеме (D-13, последняя поверхность)
 **Сделано:** статический сайт `САЙТ STAW/` подключён к общему аккаунту + баллам.
 - Новый самодостаточный модуль `ecosystem.js`: сам инжектит виджет в шапку + свои стили (классы `.eco-*`) + всю логику. Вход по телефону (`POST /v1/auth/phone/verify`, dev-код 1234) → JWT в localStorage → показывает имя + общий баланс баллов (`GET /v1/loyalty/account`), кнопка «Выйти». Дизайн сайта (index/styles/script) НЕ трогал — только 1 строка `<script src="ecosystem.js">` в index.html. Владелец наведёт красоту позже, виджет легко перенести/перестилизовать.

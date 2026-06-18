@@ -66,9 +66,15 @@ void main() async {
           },
         ),
         ChangeNotifierProvider(create: (_) => CatalogProvider(productRepo)),
-        ChangeNotifierProxyProvider<NotificationsProvider, OrderProvider>(
-          create: (_) => OrderProvider(prefs, orderRepo),
-          update: (_, notifier, order) => order!..attachNotifier(notifier),
+        ChangeNotifierProxyProvider2<AuthProvider, NotificationsProvider,
+            OrderProvider>(
+          create: (_) => OrderProvider(prefs, orderRepo,
+              serverBacked: ApiConfig.useApiOrder),
+          update: (_, auth, notifier, order) {
+            order!.attachNotifier(notifier);
+            order.syncAuth(auth.isLoggedIn);
+            return order;
+          },
         ),
         ChangeNotifierProvider(create: (_) => TabNotifier(4)),
       ],
