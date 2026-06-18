@@ -72,10 +72,16 @@ def transactions(request):
         return Response({"detail": "Нет токена"}, status=401)
     d = request.data
     run_id = d.get("runId")
+    order_id = d.get("orderId")
     source = d.get("source")
-    # Идемпотентность по (user, runId, source) — как в FastAPI.
+    # Идемпотентность: по (user, runId, source) для забегов и
+    # по (user, orderId, source) для покупок/начислений за заказ — без дублей.
     if run_id and LoyaltyTransaction.objects.filter(
         user_id=uid, run_id=run_id, source=source
+    ).exists():
+        return Response({"ok": True, "deduped": True})
+    if order_id and LoyaltyTransaction.objects.filter(
+        user_id=uid, order_id=order_id, source=source
     ).exists():
         return Response({"ok": True, "deduped": True})
     add_txn(
@@ -83,7 +89,7 @@ def transactions(request):
         int(d.get("amount") or 0),
         source,
         d.get("description") or "",
-        d.get("orderId"),
+        order_id,
         run_id,
     )
     return Response({"ok": True})
