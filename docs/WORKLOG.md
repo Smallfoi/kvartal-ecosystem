@@ -16,6 +16,15 @@
 ---
 
 
+## 2026-06-18 — Claude — Сайт STAW подключён к экосистеме (D-13, последняя поверхность)
+**Сделано:** статический сайт `САЙТ STAW/` подключён к общему аккаунту + баллам.
+- Новый самодостаточный модуль `ecosystem.js`: сам инжектит виджет в шапку + свои стили (классы `.eco-*`) + всю логику. Вход по телефону (`POST /v1/auth/phone/verify`, dev-код 1234) → JWT в localStorage → показывает имя + общий баланс баллов (`GET /v1/loyalty/account`), кнопка «Выйти». Дизайн сайта (index/styles/script) НЕ трогал — только 1 строка `<script src="ecosystem.js">` в index.html. Владелец наведёт красоту позже, виджет легко перенести/перестилизовать.
+- CORS на бэке уже открыт (`CORS_ALLOW_ALL_ORIGINS`), Authorization-заголовок разрешён — браузер ходит в API.
+**Проверено:** node --check ecosystem.js OK; CORS preflight /loyalty/account → 200 (allow-origin *, allow authorization); auth/phone/verify с Origin браузера → token+user; сайт отдаётся `python -m http.server` и подключает ecosystem.js (200). Визуальный клик-через — за владельцем (открыть сайт по http, не file://).
+**Как запустить (dev):** backend `cd backend && docker compose up -d`; сайт `cd "САЙТ STAW" && python -m http.server 5577` → открыть http://localhost:5577 (на том же ПК, где backend на :8000). Не открывать как file:// (браузер заблокирует запросы).
+**ИТОГ:** все 3 поверхности D-13 на общем бэке — Квартал, SportStore, Сайт STAW (единый аккаунт + общие баллы).
+**Дальше:** прод-конфиг API (https/домен вместо 127.0.0.1) для сайта; (опц.) корзина/заказы сайта на бэке; полировка/«красота» — за владельцем.
+
 ## 2026-06-18 — Claude — Store на бэке: заказы (D-13)
 **Сделано:** заказы SportStore сохраняются на Django.
 - Новый app `orders` (Order: user_id, order_id, total, status, points_redeemed, payload JSON; миграция 0001; unique (user_id, order_id) — идемпотентность). `POST /v1/orders` (Bearer) сохраняет заказ пользователя и возвращает его; `GET /v1/orders` — заказы пользователя (новые сверху). Контракт payload = как у SportStore Order.toJson/fromJson.
