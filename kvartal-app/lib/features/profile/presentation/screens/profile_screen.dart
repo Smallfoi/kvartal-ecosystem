@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../loyalty/data/loyalty_provider.dart';
 import '../../../run/data/completed_runs_provider.dart';
+import '../../../shoes/data/shoes_provider.dart';
 import '../../../territory/data/territory_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // Всегда подтягиваем актуальный баланс из общего бека при показе профиля.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(loyaltyProvider.notifier).refresh();
+      ref.read(shoesProvider.notifier).refresh();
     });
   }
 
@@ -32,6 +34,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     ref.invalidate(footprintAreaProvider);
     await Future.wait([
       ref.read(loyaltyProvider.notifier).refresh(),
+      ref.read(shoesProvider.notifier).refresh(),
       ref.read(authProvider.notifier).restoreSession(),
       ref.read(completedRunsProvider.notifier).load(),
     ]);
@@ -63,6 +66,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const _StatsRow(),
                     const SizedBox(height: 12),
                     const _FootprintCard(),
+                    const SizedBox(height: 12),
+                    const _ShoesCard(),
                     const SizedBox(height: 12),
                     _AccountCard(user: user),
                     const SizedBox(height: 24),
@@ -1067,6 +1072,97 @@ class _FootprintCard extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Кроссовки из Store: остаток ресурса активной пары. Тап → трекер износа.
+class _ShoesCard extends ConsumerWidget {
+  const _ShoesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final st = ref.watch(shoesProvider);
+    final active = st.active;
+    final String subtitle;
+    final String? value;
+    if (!st.hasShoes) {
+      subtitle = 'купи в магазине STAW';
+      value = null;
+    } else if (active != null) {
+      subtitle = 'активная пара · износ ${active.wearPercent}%';
+      value = '${active.remainingKm.toStringAsFixed(0)} км';
+    } else {
+      subtitle = 'ресурс исчерпан — пора заменить';
+      value = null;
+    }
+
+    return GestureDetector(
+      onTap: () => context.push('/profile/shoes'),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.separator),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.electricBlue.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.directions_run,
+                color: AppColors.electricBlue,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Кроссовки',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            if (value != null) ...[
+              Text(
+                value,
+                style: const TextStyle(
+                  color: AppColors.electricBlue,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+            const Icon(
+              CupertinoIcons.chevron_right,
+              color: AppColors.textTertiary,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }

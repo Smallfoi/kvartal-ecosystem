@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../loyalty/data/loyalty_provider.dart';
+import '../../shoes/data/shoes_provider.dart';
 import 'completed_runs_provider.dart';
 
 enum RunStatus { idle, active, paused }
@@ -288,6 +289,17 @@ class RunNotifier extends StateNotifier<RunState> {
     );
     await _ref.read(completedRunsProvider.notifier).add(run);
     await _awardLoyaltyPoints(run);
+    await _applyShoeWear(run);
+  }
+
+  /// Списать пробег с активной пары кроссовок (связка Store↔Квартал).
+  /// Идемпотентно по runId; офлайн уходит в очередь и долетит позже.
+  Future<void> _applyShoeWear(CompletedRun run) async {
+    if (run.distanceKm <= 0) return;
+    await _ref.read(shoesProvider.notifier).applyRunDistance(
+          km: run.distanceKm,
+          runId: run.id,
+        );
   }
 
   /// Начисление баллов в общий счёт экосистемы за пробежку и захват территории.
