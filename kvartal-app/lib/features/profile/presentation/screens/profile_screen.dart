@@ -1087,7 +1087,13 @@ class _ShoesCard extends ConsumerWidget {
     final active = st.active;
     final String subtitle;
     final String? value;
-    if (!st.hasShoes) {
+    if (st.hasPending) {
+      final n = st.pending.length;
+      subtitle = n == 1
+          ? 'новая пара — подтвердите'
+          : '$n новых пар — подтвердите';
+      value = null;
+    } else if (!st.hasShoes) {
       subtitle = 'купи в магазине STAW';
       value = null;
     } else if (active != null) {

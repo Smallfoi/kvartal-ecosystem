@@ -10,12 +10,21 @@ import '../../auth/data/auth_provider.dart';
 /// Кроссовки пользователя — связка экосистемы Store ↔ Квартал (ECOSYSTEM_API §2.5).
 /// Куплены в Store (сервер создаёт ресурс при заказе), Квартал убавляет
 /// километраж после пробежек: `GET /shoes`, `POST /shoes/{id}/distance`.
+/// Относительный путь фото от бэка ('/media/products/X.jpg') → абсолютный URL,
+/// который загрузит Image.network (origin берём из baseUrl без '/v1').
+String resolveShoeImageUrl(String url) {
+  if (url.isEmpty || url.startsWith('http')) return url;
+  final origin = ApiConfig.baseUrl.replaceFirst(RegExp(r'/v1/?$'), '');
+  return url.startsWith('/') ? '$origin$url' : '$origin/$url';
+}
+
 class ShoeAsset {
   final String id;
   final String productId;
   final String orderId;
   final String model;
   final String imageUrl;
+  final String status; // pending | active | declined
   final double totalKm;
   final double maxKm;
   final double remainingKm;
@@ -28,6 +37,7 @@ class ShoeAsset {
     required this.orderId,
     required this.model,
     required this.imageUrl,
+    required this.status,
     required this.totalKm,
     required this.maxKm,
     required this.remainingKm,
@@ -43,7 +53,8 @@ class ShoeAsset {
       productId: j['productId']?.toString() ?? '',
       orderId: j['orderId']?.toString() ?? '',
       model: j['model']?.toString() ?? 'Кроссовки',
-      imageUrl: j['imageUrl']?.toString() ?? '',
+      imageUrl: resolveShoeImageUrl(j['imageUrl']?.toString() ?? ''),
+      status: j['status']?.toString() ?? 'active',
       totalKm: total,
       maxKm: max,
       remainingKm:
@@ -56,13 +67,15 @@ class ShoeAsset {
 }
 
 class ShoesState {
-  final List<ShoeAsset> shoes;
+  final List<ShoeAsset> shoes; // подтверждённые (трекер)
+  final List<ShoeAsset> pending; // купленные, ждут решения «добавить?»
   final bool isLoading;
   final bool loaded;
   final String? error;
 
   const ShoesState({
     this.shoes = const [],
+    this.pending = const [],
     this.isLoading = false,
     this.loaded = false,
     this.error,
@@ -70,6 +83,7 @@ class ShoesState {
 
   ShoesState copyWith({
     List<ShoeAsset>? shoes,
+    List<ShoeAsset>? pending,
     bool? isLoading,
     bool? loaded,
     String? error,
@@ -77,6 +91,7 @@ class ShoesState {
   }) =>
       ShoesState(
         shoes: shoes ?? this.shoes,
+        pending: pending ?? this.pending,
         isLoading: isLoading ?? this.isLoading,
         loaded: loaded ?? this.loaded,
         error: clearError ? null : error ?? this.error,
@@ -91,6 +106,7 @@ class ShoesState {
   }
 
   bool get hasShoes => shoes.isNotEmpty;
+  bool get hasPending => pending.isNotEmpty;
 }
 
 class ShoesNotifier extends StateNotifier<ShoesState> {
@@ -117,19 +133,21 @@ class ShoesNotifier extends StateNotifier<ShoesState> {
       return;
     }
     state = state.copyWith(isLoading: true, clearError: true);
-    // Сначала досылаем накопленные «пробежки», затем читаем актуальный список.
+    // Сначала досылаем накопленные «пробежки», затем читаем актуальные списки.
     await _flushPending(token);
+    final opts = Options(headers: {'Authorization': 'Bearer $token'});
     try {
-      final response = await _dio.get<List<dynamic>>(
-        '/shoes',
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-      final shoes = (response.data ?? [])
+      final results = await Future.wait([
+        _dio.get<List<dynamic>>('/shoes', options: opts),
+        _dio.get<List<dynamic>>('/shoes/pending', options: opts),
+      ]);
+      List<ShoeAsset> parse(Response<List<dynamic>> r) => (r.data ?? [])
           .whereType<Map<String, dynamic>>()
           .map(ShoeAsset.fromJson)
           .toList();
       state = state.copyWith(
-        shoes: shoes,
+        shoes: parse(results[0]),
+        pending: parse(results[1]),
         isLoading: false,
         loaded: true,
         clearError: true,
@@ -139,6 +157,24 @@ class ShoesNotifier extends StateNotifier<ShoesState> {
         isLoading: false,
         error: 'Не удалось загрузить кроссовки',
       );
+    }
+  }
+
+  /// Решение пользователя по купленной паре: добавить в трекер (add=true) или нет.
+  /// Интерактивное онлайн-действие; возвращает true при успехе.
+  Future<bool> confirm({required String shoeId, required bool add}) async {
+    final token = ref.read(authProvider).token;
+    if (token == null || token.isEmpty) return false;
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/shoes/$shoeId/confirm',
+        data: {'add': add},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      await refresh();
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

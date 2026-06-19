@@ -6,7 +6,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../data/shoes_provider.dart';
 
 /// Трекер износа кроссовок: купленные в Store пары и остаток их ресурса.
-/// Километраж убавляется автоматически после пробежек (см. ShoesNotifier).
+/// Перед добавлением в трекер у пользователя спрашиваем подтверждение (мог купить
+/// в подарок / не для бега). Километраж убавляется автоматически после пробежек.
 class ShoesScreen extends ConsumerStatefulWidget {
   const ShoesScreen({super.key});
 
@@ -15,17 +16,95 @@ class ShoesScreen extends ConsumerStatefulWidget {
 }
 
 class _ShoesScreenState extends ConsumerState<ShoesScreen> {
+  bool _prompting = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(shoesProvider.notifier).refresh();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
+  }
+
+  Future<void> _init() async {
+    await ref.read(shoesProvider.notifier).refresh();
+    if (mounted) await _promptPending();
+  }
+
+  /// Всплывающее окно: по каждой новой паре спрашиваем «добавить в трекер?».
+  Future<void> _promptPending() async {
+    if (_prompting) return;
+    _prompting = true;
+    // снимок: confirm() обновит state, поэтому идём по копии списка
+    final pending = [...ref.read(shoesProvider).pending];
+    for (final shoe in pending) {
+      if (!mounted) break;
+      final add = await _askAddDialog(shoe);
+      if (add == null) break; // закрыл без выбора — остальные спросим позже
+      final ok = await ref
+          .read(shoesProvider.notifier)
+          .confirm(shoeId: shoe.id, add: add);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Нет связи — попробуйте позже')),
+        );
+        break;
+      }
+    }
+    _prompting = false;
+  }
+
+  Future<bool?> _askAddDialog(ShoeAsset shoe) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Добавить в трекер?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ShoeImage(url: shoe.imageUrl, size: 96),
+            const SizedBox(height: 12),
+            Text(
+              shoe.model,
+              textAlign: TextAlign.center,
+              style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Вы купили эти кроссовки. Добавить их в трекер бега, '
+              'чтобы считать пробег и износ?',
+              textAlign: TextAlign.center,
+              style: Theme.of(ctx)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppColors.textTertiary),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Не для бега',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Добавить'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final st = ref.watch(shoesProvider);
+    final empty = st.shoes.isEmpty && st.pending.isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,
@@ -38,19 +117,62 @@ class _ShoesScreenState extends ConsumerState<ShoesScreen> {
           onRefresh: () => ref.read(shoesProvider.notifier).refresh(),
           color: AppColors.electricBlue,
           backgroundColor: AppColors.bgCard,
-          child: st.shoes.isEmpty
+          child: empty
               ? _Empty(loading: st.isLoading && !st.loaded)
-              : ListView.separated(
+              : ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(16),
-                  itemCount: st.shoes.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (_, i) => _ShoeTile(shoe: st.shoes[i]),
+                  children: [
+                    if (st.pending.isNotEmpty) ...[
+                      _SectionTitle('Новые покупки — добавить?'),
+                      const SizedBox(height: 10),
+                      for (final s in st.pending) ...[
+                        _PendingTile(
+                          shoe: s,
+                          onDecide: (add) async {
+                            final ok = await ref
+                                .read(shoesProvider.notifier)
+                                .confirm(shoeId: s.id, add: add);
+                            if (!ok && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Нет связи — попробуйте позже')),
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      const SizedBox(height: 8),
+                    ],
+                    if (st.shoes.isNotEmpty) ...[
+                      _SectionTitle('Трекер износа'),
+                      const SizedBox(height: 10),
+                      for (final s in st.shoes) ...[
+                        _ShoeTile(shoe: s),
+                        const SizedBox(height: 12),
+                      ],
+                    ],
+                  ],
                 ),
         ),
       ),
     );
   }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: Theme.of(context)
+            .textTheme
+            .titleMedium
+            ?.copyWith(fontWeight: FontWeight.w700),
+      );
 }
 
 class _Empty extends StatelessWidget {
@@ -59,7 +181,6 @@ class _Empty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ListView чтобы pull-to-refresh работал и при пустом списке.
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
@@ -84,8 +205,8 @@ class _Empty extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              'Купи кроссовки в магазине STAW — они появятся здесь, '
-              'и трекер будет считать их пробег и износ.',
+              'Купи кроссовки в магазине STAW — мы спросим, добавить ли их '
+              'в трекер, и будем считать пробег и износ.',
               textAlign: TextAlign.center,
               style: Theme.of(context)
                   .textTheme
@@ -95,6 +216,84 @@ class _Empty extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Карточка купленной, но не подтверждённой пары: фото + кнопки решения.
+class _PendingTile extends StatelessWidget {
+  final ShoeAsset shoe;
+  final void Function(bool add) onDecide;
+  const _PendingTile({required this.shoe, required this.onDecide});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.electricBlue.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _ShoeImage(url: shoe.imageUrl),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      shoe.model,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Новая покупка · добавить в трекер?',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: AppColors.textTertiary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => onDecide(false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                    side: BorderSide(color: AppColors.separator),
+                  ),
+                  child: const Text('Не для бега'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => onDecide(true),
+                  child: const Text('Добавить'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -186,11 +385,11 @@ class _ShoeTile extends StatelessWidget {
 
 class _ShoeImage extends StatelessWidget {
   final String url;
-  const _ShoeImage({required this.url});
+  final double size;
+  const _ShoeImage({required this.url, this.size = 54});
 
   @override
   Widget build(BuildContext context) {
-    const size = 54.0;
     final placeholder = Container(
       width: size,
       height: size,
@@ -198,14 +397,12 @@ class _ShoeImage extends StatelessWidget {
         color: AppColors.electricBlue.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.directions_run,
         color: AppColors.electricBlue,
-        size: 26,
+        size: size * 0.48,
       ),
     );
-    // Картинки товаров — это ассеты внутри Store; по сети их часто нет, поэтому
-    // спокойный фолбэк на иконку (errorBuilder), не ломая верстку.
     if (!url.startsWith('http')) return placeholder;
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),

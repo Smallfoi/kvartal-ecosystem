@@ -6,11 +6,19 @@ from django.utils import timezone
 
 
 class ShoeAsset(models.Model):
+    # pending — куплены, но пользователь ещё не подтвердил, что носит их для бега
+    #           (мог купить в подарок / не для бега); active — подтверждены, считаем
+    #           километраж; declined — пользователь отказался добавлять в трекер.
+    STATUS_PENDING = "pending"
+    STATUS_ACTIVE = "active"
+    STATUS_DECLINED = "declined"
+
     user_id = models.CharField(max_length=40, db_index=True)
     product_id = models.CharField(max_length=40)
     order_id = models.CharField(max_length=40, blank=True, default="")
     model = models.CharField(max_length=200, blank=True, default="")
     image_url = models.CharField(max_length=400, blank=True, default="")
+    status = models.CharField(max_length=12, default=STATUS_PENDING, db_index=True)
     total_km = models.FloatField(default=0)
     max_km = models.FloatField(default=600)
     retired = models.BooleanField(default=False)
@@ -33,6 +41,7 @@ class ShoeAsset(models.Model):
             "orderId": self.order_id,
             "model": self.model,
             "imageUrl": self.image_url,
+            "status": self.status,
             "purchasedAt": self.created_at.isoformat(),
             "totalKm": round(self.total_km, 1),
             "maxKm": self.max_km,
