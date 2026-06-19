@@ -16,6 +16,16 @@
 ---
 
 
+## 2026-06-19 — Claude — Shoes: трекер износа кроссовок (бэк) — флагманская связка Store↔Квартал
+**Сделано:** реализовал `ShoeAsset` (ECOSYSTEM_API §2.5/§4.3, идея из IDEAS.md) — купил кроссовки → ресурс износа; Квартал убавляет километраж.
+- Новое приложение `backend/django_api/shoes/`: модель `ShoeAsset` (user_id, product_id, order_id, model, image_url, total_km, max_km=600, retired; db_table `store_shoes`; idемпотентность по (user, order, product); to_json с `remainingKm`/`wearPercent` для UI).
+- Эндпоинты: `GET /v1/shoes` (кроссовки пользователя), `POST /v1/shoes/<id>/distance {km}` (добавить пробег, авто-`retired` при ≥ max_km).
+- **Серверное авто-создание**: `POST /v1/orders` → для каждой обуви (категория `shoes`) заводит `ShoeAsset` (через `shoes.views.create_for_order`, идемпотентно, обёрнуто в try — заказ важнее). Store менять не пришлось.
+- Зарегистрировал app в settings, маршруты в config/urls, миграция `0001`.
+- Обновил `MODULES.md` (он устарел — привёл статусы к реальности: каталог/заказы ✅, территории/рейтинг/сайт/инфра 🟡, Shoes 🟡) и `ECOSYSTEM_API.md` §6 (Shoes backend done).
+**Проверено вживую :8000:** логин → заказ с кроссовками (200) → `GET /shoes` создан ресурс (0/600) → +120км (remaining 480, wear 20%) → +500км (retired=True) → повторный заказ не задвоил (1 ресурс) → distance на чужой id = 404. Тестовые данные за Михаила удалил. `manage.py check` чисто, миграция применена.
+**Дальше:** UI трекера в Квартале (`GET /shoes` карточка + начисление км после пробежки `POST /shoes/:id/distance`). Затем — реальная оплата/SMS/Admin-панель/Redis-Celery (см. аудит остатков).
+
 ## 2026-06-18 — Claude — Прод-конфиг API (env/флаги, dev-дефолты не трогаем) [D-15]
 **Сделано:** подготовил переключение dev↔prod без правок кода (хостинга ещё нет — домены подставит владелец).
 - **Backend** `settings.py`: `ALLOWED_HOSTS` и CORS теперь из env. `DJANGO_ALLOWED_HOSTS` (дефолт `*`), `DJANGO_CORS_ORIGINS` (пуста→CORS открыт для dev; задана→только эти + `CSRF_TRUSTED_ORIGINS`). Добавил `SECURE_PROXY_SSL_HEADER` (за HTTPS-прокси). `SECRET_KEY`/`DEBUG` уже были из env.
