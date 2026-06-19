@@ -1,0 +1,96 @@
+"""Shoes API (ECOSYSTEM_API §2.5/§4.3) — трекер износа кроссовок.
+GET  /v1/shoes                  → список кроссовок пользователя
+POST /v1/shoes/<shoe_id>/distance {km} → добавить км после пробежки (Квартал)
+Создание ресурса — серверное: при оформлении заказа с обувью (см. create_for_order,
+вызывается из orders.views). Требуется Bearer-токен."""
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+from common.security import user_id_from_request
+
+from .models import ShoeAsset
+
+
+def _pk_from_shoe_id(shoe_id: str):
+    """Принимает 'shoe_5' или '5' → int pk (или None)."""
+    s = str(shoe_id or "").strip()
+    if s.startswith("shoe_"):
+        s = s[len("shoe_"):]
+    try:
+        return int(s)
+    except (TypeError, ValueError):
+        return None
+
+
+def create_for_order(uid: str, order_id: str, items: list) -> int:
+    """Создаёт ShoeAsset для каждой пары обуви в заказе. Идемпотентно по
+    (user, order, product). Возвращает число созданных. Никогда не бросает —
+    оформление заказа не должно падать из-за трекера."""
+    created = 0
+    try:
+        from catalog.models import Product
+
+        for it in items or []:
+            pid = str(it.get("productId") or "").strip()
+            if not pid:
+                continue
+            prod = Product.objects.filter(pk=pid).first()
+            # Только обувь (категория 'shoes'); неизвестный товар пропускаем.
+            if not prod or prod.category_id != "shoes":
+                continue
+            qty = int(it.get("quantity") or 1)
+            image = ""
+            if prod.image_urls:
+                image = prod.image_urls[0]
+            elif it.get("imageUrl"):
+                image = it.get("imageUrl")
+            model = prod.name or it.get("productName") or "Кроссовки"
+            for _ in range(max(1, qty)):
+                # update_or_create по (user, order, product) → без дублей при
+                # повторном POST того же заказа.
+                _, was_created = ShoeAsset.objects.get_or_create(
+                    user_id=uid,
+                    order_id=order_id,
+                    product_id=pid,
+                    defaults={"model": model, "image_url": image},
+                )
+                if was_created:
+                    created += 1
+    except Exception:
+        # трекер — не критичный путь, заказ важнее
+        pass
+    return created
+
+
+@api_view(["GET"])
+def shoes(request):
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    rows = ShoeAsset.objects.filter(user_id=uid)
+    return Response([s.to_json() for s in rows])
+
+
+@api_view(["POST"])
+def shoe_distance(request, shoe_id):
+    """Добавить пробег к ресурсу кроссовок: body {km}. Возвращает обновлённый ShoeAsset."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    pk = _pk_from_shoe_id(shoe_id)
+    if pk is None:
+        return Response({"detail": "Некорректный id"}, status=400)
+    shoe = ShoeAsset.objects.filter(pk=pk, user_id=uid).first()
+    if not shoe:
+        return Response({"detail": "Кроссовки не найдены"}, status=404)
+    try:
+        km = float(request.data.get("km") or 0)
+    except (TypeError, ValueError):
+        km = 0
+    if km < 0:
+        return Response({"detail": "Некорректный километраж"}, status=400)
+    shoe.total_km += km
+    if shoe.total_km >= shoe.max_km:
+        shoe.retired = True
+    shoe.save(update_fields=["total_km", "retired"])
+    return Response(shoe.to_json())

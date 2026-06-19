@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "territories",
     "catalog",
     "orders",
+    "shoes",
 ]
 
 MIDDLEWARE = [

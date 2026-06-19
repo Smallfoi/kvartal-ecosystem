@@ -5,6 +5,7 @@ from accounts import views as account_views
 from catalog import views as catalog_views
 from clubs import views as clubs_views
 from orders import views as orders_views
+from shoes import views as shoes_views
 from territories import views as territories_views
 
 urlpatterns = [
@@ -40,4 +41,7 @@ urlpatterns = [
     path("v1/banners", catalog_views.banners),
     # Заказы Store (D-13)
     path("v1/orders", orders_views.orders),
+    # Кроссовки — трекер износа (связка Store ↔ Квартал, ECOSYSTEM_API §2.5)
+    path("v1/shoes", shoes_views.shoes),
+    path("v1/shoes/<str:shoe_id>/distance", shoes_views.shoe_distance),
 ]

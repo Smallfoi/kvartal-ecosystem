@@ -29,6 +29,11 @@ def orders(request):
                 "payload": d,
             },
         )
+        # Связка экосистемы: для каждой пары обуви в заказе заводим ресурс
+        # «износа кроссовок» (Квартал затем убавляет километраж). Идемпотентно.
+        from shoes.views import create_for_order
+
+        create_for_order(uid, oid, d.get("items") or [])
         return Response(obj.to_json())
 
     # GET — заказы текущего пользователя
