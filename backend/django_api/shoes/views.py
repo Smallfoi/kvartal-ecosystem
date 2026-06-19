@@ -73,7 +73,8 @@ def shoes(request):
 
 @api_view(["POST"])
 def shoe_distance(request, shoe_id):
-    """Добавить пробег к ресурсу кроссовок: body {km}. Возвращает обновлённый ShoeAsset."""
+    """Добавить пробег к ресурсу кроссовок: body {km, runId?}. Идемпотентно по
+    runId (повтор той же пробежки из офлайн-очереди не задвоит). Возвращает ShoeAsset."""
     uid = user_id_from_request(request)
     if not uid:
         return Response({"detail": "Нет токена"}, status=401)
@@ -83,6 +84,9 @@ def shoe_distance(request, shoe_id):
     shoe = ShoeAsset.objects.filter(pk=pk, user_id=uid).first()
     if not shoe:
         return Response({"detail": "Кроссовки не найдены"}, status=404)
+    run_id = str(request.data.get("runId") or "").strip()
+    if run_id and run_id in (shoe.applied_runs or []):
+        return Response({**shoe.to_json(), "deduped": True})
     try:
         km = float(request.data.get("km") or 0)
     except (TypeError, ValueError):
@@ -92,5 +96,9 @@ def shoe_distance(request, shoe_id):
     shoe.total_km += km
     if shoe.total_km >= shoe.max_km:
         shoe.retired = True
-    shoe.save(update_fields=["total_km", "retired"])
+    fields = ["total_km", "retired"]
+    if run_id:
+        shoe.applied_runs = (shoe.applied_runs or []) + [run_id]
+        fields.append("applied_runs")
+    shoe.save(update_fields=fields)
     return Response(shoe.to_json())

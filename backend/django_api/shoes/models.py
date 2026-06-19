@@ -14,6 +14,9 @@ class ShoeAsset(models.Model):
     total_km = models.FloatField(default=0)
     max_km = models.FloatField(default=600)
     retired = models.BooleanField(default=False)
+    # runId уже учтённых пробежек — идемпотентность distance (офлайн-очередь
+    # Квартала может переслать одну пробежку повторно; повтор не задвоит км).
+    applied_runs = models.JSONField(default=list)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

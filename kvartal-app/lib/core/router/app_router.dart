@@ -10,6 +10,7 @@ import '../../features/permissions/presentation/location_setup_sheet.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
 import '../../features/club/presentation/screens/club_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/shoes/presentation/screens/shoes_screen.dart';
 import '../../features/offline_maps/presentation/screens/offline_maps_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
@@ -101,6 +102,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile/points',
             builder: (_, __) => const PointsHistoryScreen(),
+          ),
+          GoRoute(
+            path: '/profile/shoes',
+            builder: (_, __) => const ShoesScreen(),
           ),
           GoRoute(
             path: '/profile/edit',
