@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -154,6 +155,13 @@ class _ClubSliverHeader extends ConsumerWidget {
       pinned: true,
       backgroundColor: AppColors.bgDark,
       actions: [
+        // Отдельная кнопка скана QR в углу (как в Тинькофф/Taobao) — для вступления.
+        if (!hasClub)
+          IconButton(
+            tooltip: 'Сканировать QR клуба',
+            icon: const Icon(CupertinoIcons.qrcode_viewfinder, size: 22),
+            onPressed: () => context.push('/club/scan'),
+          ),
         IconButton(
           tooltip: 'Обновить',
           icon: const Icon(CupertinoIcons.refresh, size: 20),
@@ -548,18 +556,37 @@ class _InviteCodeCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: FilledButton.icon(
-              onPressed: state.isMutating ? null : () => _submit(context, ref),
-              icon: const Icon(CupertinoIcons.person_badge_plus, size: 18),
-              label: Text(
-                state.isMutating
-                    ? '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c...'
-                    : '\u0412\u0441\u0442\u0443\u043f\u0438\u0442\u044c \u043f\u043e \u043a\u043e\u0434\u0443',
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: FilledButton.icon(
+                    onPressed:
+                        state.isMutating ? null : () => _submit(context, ref),
+                    icon: const Icon(CupertinoIcons.person_badge_plus, size: 18),
+                    label: Text(
+                      state.isMutating
+                          ? '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c...'
+                          : '\u0412\u0441\u0442\u0443\u043f\u0438\u0442\u044c',
+                    ),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              SizedBox(
+                height: 46,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('/club/scan'),
+                  icon: const Icon(CupertinoIcons.qrcode_viewfinder, size: 18),
+                  label: const Text('\u0421\u043a\u0430\u043d QR'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.electricBlue,
+                    side: const BorderSide(color: AppColors.electricBlue),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

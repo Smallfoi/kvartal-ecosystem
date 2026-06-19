@@ -9,6 +9,7 @@ import '../../features/run/presentation/screens/run_screen.dart';
 import '../../features/permissions/presentation/location_setup_sheet.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
 import '../../features/club/presentation/screens/club_screen.dart';
+import '../../features/club/presentation/screens/club_scan_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/shoes/presentation/screens/shoes_screen.dart';
 import '../../features/offline_maps/presentation/screens/offline_maps_screen.dart';
@@ -60,6 +61,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/offline-onboarding',
         pageBuilder: (_, __) =>
             const NoTransitionPage(child: OfflineMapsScreen(onboarding: true)),
+      ),
+      // Скан QR приглашения — полноэкранный (вне шелла), как камера в Тинькофф.
+      GoRoute(
+        path: '/club/scan',
+        builder: (_, __) => const ClubScanScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => MainScaffold(child: child),
