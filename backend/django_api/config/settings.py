@@ -107,4 +107,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+# Медиа: фото товаров для экосистемы (Квартал тянет мини-фото кроссовок по сети).
+# В dev файлы примонтированы из sport_store/assets (см. docker-compose: web → /srv/media).
+# Прод — отдаёт реальный веб-сервер/CDN.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", "/srv/media")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

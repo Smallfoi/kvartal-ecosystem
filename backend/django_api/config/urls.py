@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
@@ -41,7 +43,13 @@ urlpatterns = [
     path("v1/banners", catalog_views.banners),
     # Заказы Store (D-13)
     path("v1/orders", orders_views.orders),
-    # Кроссовки — трекер износа (связка Store ↔ Квартал, ECOSYSTEM_API §2.5)
+    # Кроссовки — трекер износа (связка Store ↔ Квартал, ECOSYSTEM_API §2.5).
+    # Порядок: 'pending' раньше generic '<id>/...'.
     path("v1/shoes", shoes_views.shoes),
+    path("v1/shoes/pending", shoes_views.shoes_pending),
+    path("v1/shoes/<str:shoe_id>/confirm", shoes_views.shoe_confirm),
     path("v1/shoes/<str:shoe_id>/distance", shoes_views.shoe_distance),
 ]
+
+# Фото товаров по сети (dev: из примонтированной папки sport_store; прод — CDN).
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

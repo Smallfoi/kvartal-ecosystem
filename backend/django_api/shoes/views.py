@@ -22,10 +22,22 @@ def _pk_from_shoe_id(shoe_id: str):
         return None
 
 
+def _media_url(image_path: str) -> str:
+    """Путь-ассет Store ('assets/images/products/X.jpg') → URL бэка
+    ('/media/products/X.jpg'), который Квартал может загрузить по сети.
+    Бэк отдаёт эти файлы из примонтированной папки sport_store (см. docker-compose)."""
+    p = str(image_path or "").strip()
+    if not p:
+        return ""
+    if p.startswith("http") or p.startswith("/media/"):
+        return p
+    return f"/media/products/{p.split('/')[-1]}"
+
+
 def create_for_order(uid: str, order_id: str, items: list) -> int:
-    """Создаёт ShoeAsset для каждой пары обуви в заказе. Идемпотентно по
-    (user, order, product). Возвращает число созданных. Никогда не бросает —
-    оформление заказа не должно падать из-за трекера."""
+    """Создаёт ShoeAsset (статус 'pending' — ждёт подтверждения пользователя) для
+    каждой пары обуви в заказе. Идемпотентно по (user, order, product). Возвращает
+    число созданных. Никогда не бросает — оформление заказа не должно падать из-за трекера."""
     created = 0
     try:
         from catalog.models import Product
@@ -39,15 +51,12 @@ def create_for_order(uid: str, order_id: str, items: list) -> int:
             if not prod or prod.category_id != "shoes":
                 continue
             qty = int(it.get("quantity") or 1)
-            image = ""
-            if prod.image_urls:
-                image = prod.image_urls[0]
-            elif it.get("imageUrl"):
-                image = it.get("imageUrl")
+            raw = (prod.image_urls or [None])[0] or it.get("imageUrl")
+            image = _media_url(raw or "")
             model = prod.name or it.get("productName") or "Кроссовки"
             for _ in range(max(1, qty)):
                 # update_or_create по (user, order, product) → без дублей при
-                # повторном POST того же заказа.
+                # повторном POST того же заказа. Статус по умолчанию 'pending'.
                 _, was_created = ShoeAsset.objects.get_or_create(
                     user_id=uid,
                     order_id=order_id,
@@ -64,11 +73,41 @@ def create_for_order(uid: str, order_id: str, items: list) -> int:
 
 @api_view(["GET"])
 def shoes(request):
+    """Трекер: только подтверждённые (active) кроссовки пользователя."""
     uid = user_id_from_request(request)
     if not uid:
         return Response({"detail": "Нет токена"}, status=401)
-    rows = ShoeAsset.objects.filter(user_id=uid)
+    rows = ShoeAsset.objects.filter(user_id=uid, status=ShoeAsset.STATUS_ACTIVE)
     return Response([s.to_json() for s in rows])
+
+
+@api_view(["GET"])
+def shoes_pending(request):
+    """Купленные пары, ждущие решения пользователя «добавить в трекер?»."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    rows = ShoeAsset.objects.filter(user_id=uid, status=ShoeAsset.STATUS_PENDING)
+    return Response([s.to_json() for s in rows])
+
+
+@api_view(["POST"])
+def shoe_confirm(request, shoe_id):
+    """Решение пользователя по pending-паре: body {add: true|false}.
+    add=true → active (попадает в трекер, считаем км); add=false → declined (скрыта)."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    pk = _pk_from_shoe_id(shoe_id)
+    if pk is None:
+        return Response({"detail": "Некорректный id"}, status=400)
+    shoe = ShoeAsset.objects.filter(pk=pk, user_id=uid).first()
+    if not shoe:
+        return Response({"detail": "Кроссовки не найдены"}, status=404)
+    add = request.data.get("add")
+    shoe.status = ShoeAsset.STATUS_ACTIVE if add else ShoeAsset.STATUS_DECLINED
+    shoe.save(update_fields=["status"])
+    return Response(shoe.to_json())
 
 
 @api_view(["POST"])
@@ -84,6 +123,9 @@ def shoe_distance(request, shoe_id):
     shoe = ShoeAsset.objects.filter(pk=pk, user_id=uid).first()
     if not shoe:
         return Response({"detail": "Кроссовки не найдены"}, status=404)
+    # Километраж идёт только на подтверждённые пары.
+    if shoe.status != ShoeAsset.STATUS_ACTIVE:
+        return Response({"detail": "Кроссовки не активны"}, status=409)
     run_id = str(request.data.get("runId") or "").strip()
     if run_id and run_id in (shoe.applied_runs or []):
         return Response({**shoe.to_json(), "deduped": True})
