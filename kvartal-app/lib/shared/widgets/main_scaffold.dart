@@ -1,14 +1,26 @@
 ﻿import 'dart:ui' show ImageFilter;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_colors.dart';
+import '../../features/shoes/data/shoes_provider.dart';
+import '../../features/shoes/presentation/shoe_prompt.dart';
 import 'kvartal_logo.dart';
 
-class MainScaffold extends StatelessWidget {
+class MainScaffold extends ConsumerStatefulWidget {
   final Widget child;
   const MainScaffold({super.key, required this.child});
+
+  @override
+  ConsumerState<MainScaffold> createState() => _MainScaffoldState();
+}
+
+class _MainScaffoldState extends ConsumerState<MainScaffold> {
+  // Спрашиваем про новые покупки один раз за запуск приложения.
+  bool _askedPending = false;
+  bool _asking = false;
 
   int _locationToIndex(String location) {
     if (location.startsWith('/map')) return 0;
@@ -24,14 +36,35 @@ class MainScaffold extends StatelessWidget {
     context.go(routes[index]);
   }
 
+  /// При открытии приложения, как только подгрузились купленные кроссовки,
+  /// всплывает окно «Добавить кроссовки в приложение?» — глобально, на любом табе.
+  Future<void> _maybeAskPending() async {
+    if (_askedPending || _asking) return;
+    final st = ref.read(shoesProvider);
+    if (!st.loaded || st.pending.isEmpty) return;
+    _asking = true;
+    _askedPending = true;
+    await promptPendingShoes(context, ref);
+    _asking = false;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskPending());
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Новые покупки могли подгрузиться позже первого кадра — реагируем на это.
+    ref.listen<ShoesState>(shoesProvider, (_, __) => _maybeAskPending());
+
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _locationToIndex(location);
 
     return Scaffold(
       extendBody: true,
-      body: child,
+      body: widget.child,
       bottomNavigationBar: _KvartalNavBar(
         currentIndex: currentIndex,
         onTap: (i) => _onTap(context, i),
