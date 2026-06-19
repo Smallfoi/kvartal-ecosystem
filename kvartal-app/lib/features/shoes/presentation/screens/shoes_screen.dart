@@ -16,89 +16,14 @@ class ShoesScreen extends ConsumerStatefulWidget {
 }
 
 class _ShoesScreenState extends ConsumerState<ShoesScreen> {
-  bool _prompting = false;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
-  }
-
-  Future<void> _init() async {
-    await ref.read(shoesProvider.notifier).refresh();
-    if (mounted) await _promptPending();
-  }
-
-  /// Всплывающее окно: по каждой новой паре спрашиваем «добавить в трекер?».
-  Future<void> _promptPending() async {
-    if (_prompting) return;
-    _prompting = true;
-    // снимок: confirm() обновит state, поэтому идём по копии списка
-    final pending = [...ref.read(shoesProvider).pending];
-    for (final shoe in pending) {
-      if (!mounted) break;
-      final add = await _askAddDialog(shoe);
-      if (add == null) break; // закрыл без выбора — остальные спросим позже
-      final ok = await ref
-          .read(shoesProvider.notifier)
-          .confirm(shoeId: shoe.id, add: add);
-      if (!ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Нет связи — попробуйте позже')),
-        );
-        break;
-      }
-    }
-    _prompting = false;
-  }
-
-  Future<bool?> _askAddDialog(ShoeAsset shoe) {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text('Добавить в трекер?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _ShoeImage(url: shoe.imageUrl, size: 96),
-            const SizedBox(height: 12),
-            Text(
-              shoe.model,
-              textAlign: TextAlign.center,
-              style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Вы купили эти кроссовки. Добавить их в трекер бега, '
-              'чтобы считать пробег и износ?',
-              textAlign: TextAlign.center,
-              style: Theme.of(ctx)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.textTertiary),
-            ),
-          ],
-        ),
-        actionsAlignment: MainAxisAlignment.spaceBetween,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Не для бега',
-                style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Добавить'),
-          ),
-        ],
-      ),
-    );
+    // Только обновляем список. Всплывающее окно про новые покупки показывается
+    // глобально при открытии приложения (MainScaffold), а не здесь.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(shoesProvider.notifier).refresh();
+    });
   }
 
   @override
@@ -259,7 +184,7 @@ class _PendingTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Новая покупка · добавить в трекер?',
+                      'Новая покупка · добавить в приложение?',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
@@ -280,14 +205,14 @@ class _PendingTile extends StatelessWidget {
                     foregroundColor: AppColors.textSecondary,
                     side: BorderSide(color: AppColors.separator),
                   ),
-                  child: const Text('Не для бега'),
+                  child: const Text('Нет'),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: FilledButton(
                   onPressed: () => onDecide(true),
-                  child: const Text('Добавить'),
+                  child: const Text('Да'),
                 ),
               ),
             ],
@@ -385,8 +310,8 @@ class _ShoeTile extends StatelessWidget {
 
 class _ShoeImage extends StatelessWidget {
   final String url;
-  final double size;
-  const _ShoeImage({required this.url, this.size = 54});
+  static const double size = 54;
+  const _ShoeImage({required this.url});
 
   @override
   Widget build(BuildContext context) {
