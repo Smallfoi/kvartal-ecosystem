@@ -1,10 +1,11 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import ShoeAsset
 
 
 @admin.register(ShoeAsset)
-class ShoeAssetAdmin(admin.ModelAdmin):
+class ShoeAssetAdmin(ModelAdmin):
     list_display = (
         "id",
         "user_id",

@@ -16,6 +16,15 @@
 ---
 
 
+## 2026-06-20 — Claude — Admin v2, Фаза 1: django-unfold (красивая тема + структура)
+**Контекст:** ресёрч по админкам лидеров (Shopify/Stripe/Linear/Storyblok/Sanity/django-unfold). Решили взять лучшее: unfold-тема + структура (Фаза 1), затем Draft/Publish (2), live-preview сайта в iframe (3), live-preview приложения через Flutter Web (4). Выбор владельца по превью аппа — Flutter Web (пиксель-точно).
+**Сделано (Фаза 1):**
+- `django-unfold` в requirements; в INSTALLED_APPS перед `django.contrib.admin` (+ `unfold.contrib.filters/forms`).
+- `UNFOLD` в settings: брендовый primary = electric blue (#0A84FF), боковое меню с группами **Каталог / Магазин / Сообщество** (иконки Material Symbols), поиск в сайдбаре, тёмная тема.
+- Все ModelAdmin переведены на `unfold.admin.ModelAdmin`; стандартные `User`/`Group` перерегистрированы под тему.
+**Проверено вживую:** rebuild с unfold, `manage.py check` чисто; вход в админку 200 (тема `unfold` в HTML), список товаров 200; на устройстве — экран входа в новой тёмной теме с акцентом STAW Admin (electric blue), кнопка «Войти →».
+**Дальше:** Фаза 1b — дашборд с KPI (заказы/выручка/баллы/пользователи) и графиками; затем Draft/Publish и live-preview.
+
 ## 2026-06-20 — Claude — Admin-панель (Django admin) — владелец сам управляет каталогом/заказами/клубами/баллами
 **Сделано:** подключил Django-админку `/admin/` для управления данными экосистемы без кода.
 - `admin.py` во всех приложениях: catalog (Category/Product/Banner), orders (Order — статус правится прямо в списке), shoes (ShoeAsset), loyalty (LoyaltyTransaction), clubs (Club/ClubMember/ClubJoinRequest), accounts (Account). Удобные list_display/filter/search, превью фото.

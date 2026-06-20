@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin
 
 from .models import Banner, Category, Product
 
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(ModelAdmin):
     list_display = ("id", "name", "emoji", "sort")
     list_editable = ("sort",)
     search_fields = ("id", "name")
@@ -13,7 +14,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(ModelAdmin):
     list_display = (
         "preview",
         "id",
@@ -79,7 +80,7 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 @admin.register(Banner)
-class BannerAdmin(admin.ModelAdmin):
+class BannerAdmin(ModelAdmin):
     list_display = ("id", "title", "subtitle", "action", "sort")
     list_editable = ("sort",)
     search_fields = ("title", "subtitle")

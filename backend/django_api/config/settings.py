@@ -17,6 +17,10 @@ ALLOWED_HOSTS = [
 ]
 
 INSTALLED_APPS = [
+    # Unfold — современная тема админки. ДОЛЖНО идти ДО django.contrib.admin.
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -115,3 +119,74 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", "/srv/media")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ── Unfold (тема + структура админки) ───────────────────────────────────────
+from django.urls import reverse_lazy  # noqa: E402
+
+UNFOLD = {
+    "SITE_TITLE": "STAW Admin",
+    "SITE_HEADER": "STAW — администрирование",
+    "SITE_SUBHEADER": "Экосистема: Квартал · Store · Сайт",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": False,
+    "COLORS": {
+        # Брендовый electric blue (#0A84FF) как акцент — оттенки tailwind.
+        "primary": {
+            "50": "239 246 255",
+            "100": "219 234 254",
+            "200": "191 219 254",
+            "300": "147 197 253",
+            "400": "96 165 250",
+            "500": "10 132 255",
+            "600": "37 99 235",
+            "700": "29 78 216",
+            "800": "30 64 175",
+            "900": "30 58 138",
+            "950": "23 37 84",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Каталог",
+                "separator": True,
+                "items": [
+                    {"title": "Товары", "icon": "inventory_2",
+                     "link": reverse_lazy("admin:catalog_product_changelist")},
+                    {"title": "Категории", "icon": "category",
+                     "link": reverse_lazy("admin:catalog_category_changelist")},
+                    {"title": "Баннеры", "icon": "image",
+                     "link": reverse_lazy("admin:catalog_banner_changelist")},
+                ],
+            },
+            {
+                "title": "Магазин",
+                "separator": True,
+                "items": [
+                    {"title": "Заказы", "icon": "shopping_cart",
+                     "link": reverse_lazy("admin:orders_order_changelist")},
+                    {"title": "Баллы", "icon": "loyalty",
+                     "link": reverse_lazy("admin:loyalty_loyaltytransaction_changelist")},
+                    {"title": "Кроссовки", "icon": "directions_run",
+                     "link": reverse_lazy("admin:shoes_shoeasset_changelist")},
+                ],
+            },
+            {
+                "title": "Сообщество",
+                "separator": True,
+                "items": [
+                    {"title": "Клубы", "icon": "groups",
+                     "link": reverse_lazy("admin:clubs_club_changelist")},
+                    {"title": "Заявки в клуб", "icon": "how_to_reg",
+                     "link": reverse_lazy("admin:clubs_clubjoinrequest_changelist")},
+                    {"title": "Участники клубов", "icon": "badge",
+                     "link": reverse_lazy("admin:clubs_clubmember_changelist")},
+                    {"title": "Пользователи", "icon": "person",
+                     "link": reverse_lazy("admin:accounts_account_changelist")},
+                ],
+            },
+        ],
+    },
+}
