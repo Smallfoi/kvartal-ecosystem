@@ -43,6 +43,13 @@
 - **Прим.:** таксономия фильтров сайта (Бег/Верх/Низ) ≠ category_id бэка — это контент/дизайн, выравнивание оставил владельцу; «Все» показывает живой каталог.
 **Дальше:** Фаза 3b — админ-страница «Превью сайта» (iframe сайта в режиме `?preview=1` + кнопка обновить); затем Фаза 4 — превью приложения через Flutter Web.
 
+### Фаза 3b — админ-страница «Превью сайта» (iframe)
+- `config/admin_views.py` `preview_site` (`@staff_member_required`); URL `admin/preview-site/` (раньше generic `admin/`), имя `preview_site`; ссылка в сайдбаре unfold (группа «Превью (до прода)»).
+- `templates/admin/preview_site.html`: iframe витрины в режиме `?preview=1` (76vh) + «Обновить»/«Открыть в новой вкладке» + подсказка про dev-сервер сайта. Тема unfold.
+- Адрес сайта — `SITE_PREVIEW_URL` (env; dev = `http://localhost:5577`, прод — домен).
+- Проверено: `check` чисто; staff → страница 200 (iframe/preview=1/Обновить присутствуют), аноним → 302. Содержимое iframe (каталог сайта из API) подтверждено в Фазе 3a.
+- **Итог Фазы 3:** правишь товар/публикацию → «Превью сайта» → видишь витрину с черновиками до публикации. Дальше Фаза 4 (Flutter Web).
+
 ## 2026-06-20 — Claude — Admin-панель (Django admin) — владелец сам управляет каталогом/заказами/клубами/баллами
 **Сделано:** подключил Django-админку `/admin/` для управления данными экосистемы без кода.
 - `admin.py` во всех приложениях: catalog (Category/Product/Banner), orders (Order — статус правится прямо в списке), shoes (ShoeAsset), loyalty (LoyaltyTransaction), clubs (Club/ClubMember/ClubJoinRequest), accounts (Account). Удобные list_display/filter/search, превью фото.
