@@ -10,6 +10,7 @@ admin.site.index_title = "Управление: каталог, заказы, к
 from accounts import views as account_views
 from catalog import views as catalog_views
 from config.admin_views import preview_app, preview_site
+from notifications import views as notif_views
 from clubs import views as clubs_views
 from orders import views as orders_views
 from shoes import views as shoes_views
@@ -51,6 +52,9 @@ urlpatterns = [
     path("v1/banners", catalog_views.banners),
     # Заказы Store (D-13)
     path("v1/orders", orders_views.orders),
+    # Уведомления (лента экосистемы)
+    path("v1/notifications", notif_views.notifications),
+    path("v1/notifications/read", notif_views.notifications_read),
     # Кроссовки — трекер износа (связка Store ↔ Квартал, ECOSYSTEM_API §2.5).
     # Порядок: 'pending' раньше generic '<id>/...'.
     path("v1/shoes", shoes_views.shoes),

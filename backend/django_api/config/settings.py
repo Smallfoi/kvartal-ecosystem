@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "catalog",
     "orders",
     "shoes",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -196,6 +197,8 @@ UNFOLD = {
                      "link": reverse_lazy("admin:clubs_clubmember_changelist")},
                     {"title": "Пользователи", "icon": "person",
                      "link": reverse_lazy("admin:accounts_account_changelist")},
+                    {"title": "Уведомления", "icon": "notifications",
+                     "link": reverse_lazy("admin:notifications_notification_changelist")},
                 ],
             },
             {
