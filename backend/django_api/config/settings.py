@@ -118,6 +118,10 @@ STATIC_URL = "static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", "/srv/media")
 
+# URL сайта для админ-превью (iframe). Dev — локальный http.server сайта;
+# прод — реальный домен витрины (задаётся env). Сайт читает ?preview=1.
+SITE_PREVIEW_URL = os.environ.get("SITE_PREVIEW_URL", "http://localhost:5577")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ── Unfold (тема + структура админки) ───────────────────────────────────────
@@ -186,6 +190,14 @@ UNFOLD = {
                      "link": reverse_lazy("admin:clubs_clubmember_changelist")},
                     {"title": "Пользователи", "icon": "person",
                      "link": reverse_lazy("admin:accounts_account_changelist")},
+                ],
+            },
+            {
+                "title": "Превью (до прода)",
+                "separator": True,
+                "items": [
+                    {"title": "Превью сайта", "icon": "preview",
+                     "link": reverse_lazy("preview_site")},
                 ],
             },
         ],
