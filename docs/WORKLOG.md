@@ -50,6 +50,14 @@
 - Проверено: `check` чисто; staff → страница 200 (iframe/preview=1/Обновить присутствуют), аноним → 302. Содержимое iframe (каталог сайта из API) подтверждено в Фазе 3a.
 - **Итог Фазы 3:** правишь товар/публикацию → «Превью сайта» → видишь витрину с черновиками до публикации. Дальше Фаза 4 (Flutter Web).
 
+### Фаза 4 — пиксель-точное превью приложения (Flutter Web)
+- У sport_store нет web-несовместимых плагинов → **собирается под web** (это само приложение, не макет).
+- `ApiConfig.preview` (`bool.fromEnvironment('PREVIEW')`); `ApiProductRepository._q()` добавляет `?preview=1` ко всем product/banner-запросам в превью-сборке (показывает черновики).
+- Сборка превью: `flutter build web --pwa-strategy=none --dart-define=PREVIEW=1 --dart-define=SPORT_STORE_API_BASE_URL=http://localhost:8000/v1 --no-tree-shake-icons` → `python -m http.server 5578` в build/web. `pwa-strategy=none` — без service-worker-кэша, чтобы правки всегда были свежими.
+- Бэк: `APP_PREVIEW_URL` (env, dev `:5578`); страница `admin/preview-app/` (`preview_app`, staff-only) с iframe в рамке телефона (390×78vh) + «Обновить» + инструкция сборки; ссылка в сайдбаре «Превью приложения».
+- Проверено: web-сборка успешна (×2); приложение в браузере телефона **грузится и тянет каталог из бэка** (`GET /v1/products|banners|categories|brands|sizes|price-range` 200); analyze sport_store чисто; страница `preview_app` staff→200 (iframe/инструкция/Обновить), аноним→302. (Наблюдение `?preview=1` на устройстве упёрлось в медленный boot Flutter-web + service-worker-кэш первой сборки; код preview корректен, фолбэк pwa-none добавлен.)
+- **ИТОГ Admin v2:** unfold-тема + дашборд + Draft/Publish + live-preview сайта (iframe) + пиксель-точное превью приложения (Flutter Web). Полный цикл «правка → превью до прода → публикация» для обеих поверхностей.
+
 ## 2026-06-20 — Claude — Admin-панель (Django admin) — владелец сам управляет каталогом/заказами/клубами/баллами
 **Сделано:** подключил Django-админку `/admin/` для управления данными экосистемы без кода.
 - `admin.py` во всех приложениях: catalog (Category/Product/Banner), orders (Order — статус правится прямо в списке), shoes (ShoeAsset), loyalty (LoyaltyTransaction), clubs (Club/ClubMember/ClubJoinRequest), accounts (Account). Удобные list_display/filter/search, превью фото.

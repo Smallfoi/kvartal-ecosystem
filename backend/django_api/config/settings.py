@@ -122,6 +122,12 @@ MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", "/srv/media")
 # прод — реальный домен витрины (задаётся env). Сайт читает ?preview=1.
 SITE_PREVIEW_URL = os.environ.get("SITE_PREVIEW_URL", "http://localhost:5577")
 
+# URL web-сборки приложения (SportStore) для пиксель-точного превью.
+# Сборка: flutter build web --pwa-strategy=none --dart-define=PREVIEW=1
+#   --dart-define=SPORT_STORE_API_BASE_URL=http://localhost:8000/v1 --no-tree-shake-icons
+# затем: cd build/web && python -m http.server 5578
+APP_PREVIEW_URL = os.environ.get("APP_PREVIEW_URL", "http://localhost:5578")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ── Unfold (тема + структура админки) ───────────────────────────────────────
@@ -198,6 +204,8 @@ UNFOLD = {
                 "items": [
                     {"title": "Превью сайта", "icon": "preview",
                      "link": reverse_lazy("preview_site")},
+                    {"title": "Превью приложения", "icon": "smartphone",
+                     "link": reverse_lazy("preview_app")},
                 ],
             },
         ],

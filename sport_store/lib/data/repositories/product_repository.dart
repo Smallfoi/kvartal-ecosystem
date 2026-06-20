@@ -1,6 +1,7 @@
 import '../../models/category.dart';
 import '../../models/product.dart';
 import '../api/api_client.dart';
+import '../api/api_config.dart';
 import '../mock_data.dart';
 
 /// Диапазон цен для фильтра.
@@ -104,6 +105,13 @@ class ApiProductRepository implements ProductRepository {
   final ApiClient _client;
   ApiProductRepository(this._client);
 
+  /// В превью-сборке (ApiConfig.preview) добавляем ?preview=1 — каталог отдаёт
+  /// и черновики, чтобы видеть правки до публикации в админ-превью.
+  Map<String, dynamic>? _q([Map<String, dynamic>? base]) {
+    if (!ApiConfig.preview) return base;
+    return {...?base, 'preview': '1'};
+  }
+
   @override
   Future<List<Category>> getCategories() async {
     final data = await _client.get('/categories') as List;
@@ -112,20 +120,20 @@ class ApiProductRepository implements ProductRepository {
 
   @override
   Future<List<Product>> getProducts() async {
-    final data = await _client.get('/products') as List;
+    final data = await _client.get('/products', query: _q()) as List;
     return data.map((j) => Product.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   @override
   Future<List<Product>> getByCategory(String categoryId) async {
     final data = await _client
-        .get('/products', query: {'category': categoryId}) as List;
+        .get('/products', query: _q({'category': categoryId})) as List;
     return data.map((j) => Product.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   @override
   Future<Product?> getById(String id) async {
-    final data = await _client.get('/products/$id');
+    final data = await _client.get('/products/$id', query: _q());
     if (data == null) return null;
     return Product.fromJson(data as Map<String, dynamic>);
   }
@@ -133,20 +141,20 @@ class ApiProductRepository implements ProductRepository {
   @override
   Future<List<Product>> getFeatured() async {
     final data =
-        await _client.get('/products', query: {'featured': true}) as List;
+        await _client.get('/products', query: _q({'featured': true})) as List;
     return data.map((j) => Product.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   @override
   Future<List<Product>> getNew() async {
-    final data = await _client.get('/products', query: {'new': true}) as List;
+    final data = await _client.get('/products', query: _q({'new': true})) as List;
     return data.map((j) => Product.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   @override
   Future<List<Product>> search(String query) async {
     final data =
-        await _client.get('/products/search', query: {'q': query}) as List;
+        await _client.get('/products/search', query: _q({'q': query})) as List;
     return data.map((j) => Product.fromJson(j as Map<String, dynamic>)).toList();
   }
 
@@ -173,7 +181,7 @@ class ApiProductRepository implements ProductRepository {
 
   @override
   Future<List<Map<String, String>>> getBanners() async {
-    final data = await _client.get('/banners') as List;
+    final data = await _client.get('/banners', query: _q()) as List;
     return data
         .map((j) => (j as Map).map((k, v) => MapEntry('$k', '$v')))
         .toList();
