@@ -110,6 +110,21 @@ def shoe_confirm(request, shoe_id):
     return Response(shoe.to_json())
 
 
+@api_view(["DELETE"])
+def shoe_delete(request, shoe_id):
+    """Удалить пару кроссовок пользователя из приложения (корзина в трекере)."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    pk = _pk_from_shoe_id(shoe_id)
+    if pk is None:
+        return Response({"detail": "Некорректный id"}, status=400)
+    deleted, _ = ShoeAsset.objects.filter(pk=pk, user_id=uid).delete()
+    if not deleted:
+        return Response({"detail": "Кроссовки не найдены"}, status=404)
+    return Response({"ok": True})
+
+
 @api_view(["POST"])
 def shoe_distance(request, shoe_id):
     """Добавить пробег к ресурсу кроссовок: body {km, runId?}. Идемпотентно по
