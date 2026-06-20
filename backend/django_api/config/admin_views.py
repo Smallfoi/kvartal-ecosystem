@@ -13,3 +13,14 @@ def preview_site(request):
         "preview_url": base + "/?preview=1",
         "site_base": base,
     })
+
+
+@staff_member_required
+def preview_app(request):
+    """Пиксель-точное превью приложения (SportStore собран под web с PREVIEW=1):
+    реальные виджеты карточек/баннеров с данными из API (включая черновики)."""
+    base = getattr(settings, "APP_PREVIEW_URL", "http://localhost:5578").rstrip("/")
+    return render(request, "admin/preview_app.html", {
+        "preview_url": base + "/",
+        "app_base": base,
+    })

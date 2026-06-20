@@ -13,6 +13,10 @@ class ApiConfig {
     defaultValue: 'http://127.0.0.1:8000/v1',
   );
 
+  /// Превью-режим (сборка для админ-превью: flutter build web --dart-define=PREVIEW=1).
+  /// Каталог запрашивается с ?preview=1 — показываются и черновики (неопубликованные).
+  static const bool preview = bool.fromEnvironment('PREVIEW');
+
   /// Per-service rollout. true → реальный API, false → mock.
   static const bool useApiAuth = true;
   static const bool useApiLoyalty = true;

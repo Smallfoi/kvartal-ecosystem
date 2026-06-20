@@ -9,7 +9,7 @@ admin.site.index_title = "Управление: каталог, заказы, к
 
 from accounts import views as account_views
 from catalog import views as catalog_views
-from config.admin_views import preview_site
+from config.admin_views import preview_app, preview_site
 from clubs import views as clubs_views
 from orders import views as orders_views
 from shoes import views as shoes_views
@@ -18,6 +18,7 @@ from territories import views as territories_views
 urlpatterns = [
     # Кастомная страница админки — раньше generic admin/ роутинга.
     path("admin/preview-site/", preview_site, name="preview_site"),
+    path("admin/preview-app/", preview_app, name="preview_app"),
     path("admin/", admin.site.urls),
     path("v1/", include("core.urls")),
     path("v1/auth/", include("accounts.urls")),
