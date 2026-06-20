@@ -43,6 +43,9 @@ class Product(models.Model):
     rating = models.FloatField(default=0)
     review_count = models.IntegerField(default=0)
     in_stock = models.BooleanField(default=True)
+    # Draft→Publish: на витрине (сайт/приложение) видны только опубликованные;
+    # черновик виден в админ-превью (?preview=1). Существующие → опубликованы.
+    is_published = models.BooleanField(default=True, db_index=True)
     sort = models.IntegerField(default=0)
 
     class Meta:
@@ -86,6 +89,7 @@ class Banner(models.Model):
     subtitle = models.CharField(max_length=200, blank=True, default="")
     image_url = models.CharField(max_length=300, blank=True, default="")
     action = models.CharField(max_length=80, blank=True, default="")
+    is_published = models.BooleanField(default=True, db_index=True)
     sort = models.IntegerField(default=0)
 
     class Meta:

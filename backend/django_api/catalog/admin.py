@@ -5,6 +5,18 @@ from unfold.admin import ModelAdmin
 from .models import Banner, Category, Product
 
 
+@admin.action(description="Опубликовать (на витрину)")
+def make_published(modeladmin, request, queryset):
+    n = queryset.update(is_published=True)
+    modeladmin.message_user(request, f"Опубликовано: {n}")
+
+
+@admin.action(description="Снять с публикации (в черновик)")
+def make_draft(modeladmin, request, queryset):
+    n = queryset.update(is_published=False)
+    modeladmin.message_user(request, f"В черновик: {n}")
+
+
 @admin.register(Category)
 class CategoryAdmin(ModelAdmin):
     list_display = ("id", "name", "emoji", "sort")
@@ -24,6 +36,7 @@ class ProductAdmin(ModelAdmin):
         "price",
         "old_price",
         "in_stock",
+        "is_published",
         "is_featured",
         "is_new",
         "sort",
@@ -33,13 +46,15 @@ class ProductAdmin(ModelAdmin):
         "price",
         "old_price",
         "in_stock",
+        "is_published",
         "is_featured",
         "is_new",
         "sort",
     )
-    list_filter = ("category_id", "brand", "in_stock", "is_featured", "is_new")
+    list_filter = ("category_id", "brand", "in_stock", "is_published", "is_featured", "is_new")
     search_fields = ("id", "name", "brand", "description")
     ordering = ("sort",)
+    actions = [make_published, make_draft]
     fieldsets = (
         ("Основное", {
             "fields": ("id", "name", "brand", "category_id", "description"),
@@ -53,7 +68,10 @@ class ProductAdmin(ModelAdmin):
             "fields": ("price", "old_price", "in_stock", "sizes", "colors"),
         }),
         ("Витрина", {
-            "fields": ("is_new", "is_featured", "rating", "review_count", "sort"),
+            "fields": ("is_published", "is_new", "is_featured", "rating",
+                       "review_count", "sort"),
+            "description": "is_published — виден ли товар на витрине (сайт/приложение). "
+            "Снимите галочку, чтобы держать как черновик и смотреть в превью.",
         }),
     )
     readonly_fields = ("preview_large",)
@@ -81,7 +99,9 @@ class ProductAdmin(ModelAdmin):
 
 @admin.register(Banner)
 class BannerAdmin(ModelAdmin):
-    list_display = ("id", "title", "subtitle", "action", "sort")
-    list_editable = ("sort",)
+    list_display = ("id", "title", "subtitle", "action", "is_published", "sort")
+    list_editable = ("is_published", "sort")
+    list_filter = ("is_published",)
     search_fields = ("title", "subtitle")
     ordering = ("sort",)
+    actions = [make_published, make_draft]

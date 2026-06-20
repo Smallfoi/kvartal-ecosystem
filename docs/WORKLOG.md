@@ -30,6 +30,12 @@
 - `UNFOLD['DASHBOARD_CALLBACK']`; `templates/admin/index.html` (DIRS добавлен): 4 KPI-карточки + столбчатый график «Заказы за 7 дней» (CSS-бары, без JS) + блок доп-статистики. Tailwind/primary из темы unfold.
 - Проверено: `/admin/` рендерится 200, в HTML присутствуют «Обзор экосистемы», KPI, график, доп-статы. (Скрин дашборда — за владельцем в браузере; тема unfold уже снята на входе.)
 
+### Фаза 2 — Draft → Publish (тест до прода)
+- `Product.is_published` и `Banner.is_published` (BooleanField default True, миграция 0003). Существующие → опубликованы (ничего не ломается).
+- Каталог-эндпоинты (`products`, `search`, `product_detail`, `banners`): на витрину отдают только `is_published=True`; с `?preview=1` — включая черновики (источник для live-preview Фаз 3–4).
+- Админка: флаг публикации в списках Product/Banner (правится инлайн) + фильтр + действия «Опубликовать»/«В черновик»; в форме товара — секция с пояснением.
+- Проверено: снял товар с публикации → витрина 16→15, `?preview=1` = 16; вернул обратно. check чисто.
+
 ## 2026-06-20 — Claude — Admin-панель (Django admin) — владелец сам управляет каталогом/заказами/клубами/баллами
 **Сделано:** подключил Django-админку `/admin/` для управления данными экосистемы без кода.
 - `admin.py` во всех приложениях: catalog (Category/Product/Banner), orders (Order — статус правится прямо в списке), shoes (ShoeAsset), loyalty (LoyaltyTransaction), clubs (Club/ClubMember/ClubJoinRequest), accounts (Account). Удобные list_display/filter/search, превью фото.

@@ -9,6 +9,18 @@ from .models import Banner, Category, Product
 _TRUE = {"1", "true", "True", "yes"}
 
 
+def _is_preview(request) -> bool:
+    """preview=1 → отдаём и черновики (для админ-превью); иначе только опубликованное."""
+    return request.query_params.get("preview") in _TRUE
+
+
+def _visible_products(request):
+    qs = Product.objects.all()
+    if not _is_preview(request):
+        qs = qs.filter(is_published=True)
+    return qs
+
+
 @api_view(["GET"])
 def categories(request):
     return Response([c.to_json() for c in Category.objects.all()])
@@ -16,7 +28,7 @@ def categories(request):
 
 @api_view(["GET"])
 def products(request):
-    qs = Product.objects.all()
+    qs = _visible_products(request)
     cat = request.query_params.get("category")
     if cat and cat != "all":
         qs = qs.filter(category_id=cat)
@@ -30,7 +42,7 @@ def products(request):
 @api_view(["GET"])
 def product_search(request):
     q = (request.query_params.get("q") or "").strip()
-    qs = Product.objects.all()
+    qs = _visible_products(request)
     if q:
         qs = qs.filter(
             Q(name__icontains=q) | Q(description__icontains=q) | Q(brand__icontains=q)
@@ -49,7 +61,7 @@ def product_price_range(request):
 @api_view(["GET"])
 def product_detail(request, pid):
     p = Product.objects.filter(id=pid).first()
-    if not p:
+    if not p or (not p.is_published and not _is_preview(request)):
         return Response({"detail": "Товар не найден"}, status=404)
     return Response(p.to_json())
 
@@ -74,4 +86,7 @@ def sizes(request):
 
 @api_view(["GET"])
 def banners(request):
-    return Response([b.to_json() for b in Banner.objects.all()])
+    qs = Banner.objects.all()
+    if not _is_preview(request):
+        qs = qs.filter(is_published=True)
+    return Response([b.to_json() for b in qs])
