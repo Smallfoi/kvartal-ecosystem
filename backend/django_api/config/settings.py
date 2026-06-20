@@ -56,7 +56,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -129,6 +129,7 @@ UNFOLD = {
     "SITE_SUBHEADER": "Экосистема: Квартал · Store · Сайт",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,
+    "DASHBOARD_CALLBACK": "config.dashboard.dashboard_callback",
     "COLORS": {
         # Брендовый electric blue (#0A84FF) как акцент — оттенки tailwind.
         "primary": {

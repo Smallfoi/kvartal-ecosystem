@@ -1,0 +1,48 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="space-y-6">
+  <div>
+    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Обзор экосистемы</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400">Сводка по магазину, баллам и сообществу</p>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {% for k in kpis %}
+    <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ k.title }}</div>
+      <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ k.value }}</div>
+      <div class="mt-1 text-xs font-medium text-primary-600 dark:text-primary-400">{{ k.sub }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 lg:col-span-2">
+      <div class="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">Заказы за 7 дней</div>
+      <div class="flex h-40 items-end gap-3">
+        {% for d in orders_daily %}
+        <div class="flex flex-1 flex-col items-center gap-2">
+          <div class="flex w-full flex-1 items-end">
+            <div class="w-full rounded-t bg-primary-500"
+                 style="height: {{ d.pct }}%; min-height: 3px;" title="{{ d.value }}"></div>
+          </div>
+          <div class="text-[11px] text-gray-500 dark:text-gray-400">{{ d.label }}</div>
+          <div class="text-xs font-semibold text-gray-900 dark:text-white">{{ d.value }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      {% for s in extra_stats %}
+      <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+        <span class="text-sm text-gray-500 dark:text-gray-400">{{ s.title }}</span>
+        <span class="text-xl font-bold text-gray-900 dark:text-white">{{ s.value }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

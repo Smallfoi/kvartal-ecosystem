@@ -25,6 +25,11 @@
 **Проверено вживую:** rebuild с unfold, `manage.py check` чисто; вход в админку 200 (тема `unfold` в HTML), список товаров 200; на устройстве — экран входа в новой тёмной теме с акцентом STAW Admin (electric blue), кнопка «Войти →».
 **Дальше:** Фаза 1b — дашборд с KPI (заказы/выручка/баллы/пользователи) и графиками; затем Draft/Publish и live-preview.
 
+### Фаза 1b — дашборд-главная (KPI + график)
+- `config/dashboard.py` (`dashboard_callback`) считает KPI: заказов всего/сегодня, выручка (всего/за неделю), пользователи, баллы (начислено/потрачено), клубы, кроссовки в трекере, товары; + заказы по дням за 7 дней.
+- `UNFOLD['DASHBOARD_CALLBACK']`; `templates/admin/index.html` (DIRS добавлен): 4 KPI-карточки + столбчатый график «Заказы за 7 дней» (CSS-бары, без JS) + блок доп-статистики. Tailwind/primary из темы unfold.
+- Проверено: `/admin/` рендерится 200, в HTML присутствуют «Обзор экосистемы», KPI, график, доп-статы. (Скрин дашборда — за владельцем в браузере; тема unfold уже снята на входе.)
+
 ## 2026-06-20 — Claude — Admin-панель (Django admin) — владелец сам управляет каталогом/заказами/клубами/баллами
 **Сделано:** подключил Django-админку `/admin/` для управления данными экосистемы без кода.
 - `admin.py` во всех приложениях: catalog (Category/Product/Banner), orders (Order — статус правится прямо в списке), shoes (ShoeAsset), loyalty (LoyaltyTransaction), clubs (Club/ClubMember/ClubJoinRequest), accounts (Account). Удобные list_display/filter/search, превью фото.
