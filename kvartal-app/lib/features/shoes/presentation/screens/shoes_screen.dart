@@ -223,7 +223,7 @@ class _PendingTile extends StatelessWidget {
   }
 }
 
-class _ShoeTile extends StatelessWidget {
+class _ShoeTile extends ConsumerWidget {
   final ShoeAsset shoe;
   const _ShoeTile({required this.shoe});
 
@@ -233,8 +233,42 @@ class _ShoeTile extends StatelessWidget {
     return AppColors.electricBlue;
   }
 
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Удалить кроссовки?'),
+        content: Text(
+          'Убрать «${shoe.model}» из приложения?',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Отмена',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final done = await ref.read(shoesProvider.notifier).delete(shoe.id);
+    if (!done && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось удалить — попробуйте позже')),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final accent = _accent;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -290,6 +324,16 @@ class _ShoeTile extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
+              // Корзина — удалить пару из приложения.
+              IconButton(
+                tooltip: 'Удалить',
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.only(left: 6),
+                constraints: const BoxConstraints(),
+                icon: const Icon(CupertinoIcons.trash,
+                    size: 18, color: AppColors.textTertiary),
+                onPressed: () => _confirmDelete(context, ref),
+              ),
             ],
           ),
           const SizedBox(height: 12),

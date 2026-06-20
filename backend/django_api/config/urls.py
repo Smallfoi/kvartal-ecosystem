@@ -49,6 +49,7 @@ urlpatterns = [
     path("v1/shoes/pending", shoes_views.shoes_pending),
     path("v1/shoes/<str:shoe_id>/confirm", shoes_views.shoe_confirm),
     path("v1/shoes/<str:shoe_id>/distance", shoes_views.shoe_distance),
+    path("v1/shoes/<str:shoe_id>", shoes_views.shoe_delete),  # DELETE
 ]
 
 # Фото товаров по сети (dev: из примонтированной папки sport_store; прод — CDN).

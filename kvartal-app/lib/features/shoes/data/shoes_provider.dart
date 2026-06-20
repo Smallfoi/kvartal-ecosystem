@@ -178,6 +178,22 @@ class ShoesNotifier extends StateNotifier<ShoesState> {
     }
   }
 
+  /// Удалить пару кроссовок из приложения. Возвращает true при успехе.
+  Future<bool> delete(String shoeId) async {
+    final token = ref.read(authProvider).token;
+    if (token == null || token.isEmpty) return false;
+    try {
+      await _dio.delete<Map<String, dynamic>>(
+        '/shoes/$shoeId',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      await refresh();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// После пробежки списать [km] с активной пары. Идемпотентно по [runId]
   /// (офлайн-очередь может переслать одну пробежку повторно — сервер не задвоит).
   /// На улице связи с dev-беком нет → начисление кладётся в очередь и долетит
