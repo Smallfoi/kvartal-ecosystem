@@ -16,6 +16,15 @@
 ---
 
 
+## 2026-06-20 — Claude — Admin-панель (Django admin) — владелец сам управляет каталогом/заказами/клубами/баллами
+**Сделано:** подключил Django-админку `/admin/` для управления данными экосистемы без кода.
+- `admin.py` во всех приложениях: catalog (Category/Product/Banner), orders (Order — статус правится прямо в списке), shoes (ShoeAsset), loyalty (LoyaltyTransaction), clubs (Club/ClubMember/ClubJoinRequest), accounts (Account). Удобные list_display/filter/search, превью фото.
+- **Загрузка фото товаров:** добавил `Product.image` (ImageField, миграция 0002), Pillow в requirements, отдельный записываемый том `media_uploads:/srv/media/uploads`. Загруженное фото отдаётся по сети `/media/uploads/products/…` и приоритетнее старых бандл-ассетов; `Product.to_json` теперь отдаёт `imageUrl` (сетевой), трекер кроссовок Квартала берёт это фото.
+- Брендинг админки (site_header «STAW — администрирование экосистемы»).
+- Суперюзер для dev создаётся `createsuperuser --noinput` с env `DJANGO_SUPERUSER_USERNAME/PASSWORD/EMAIL` (креды НЕ коммитим; dev: admin / staw-admin-2026).
+**Проверено вживую:** rebuild с Pillow, миграция применена; вход в админку ОК; списки product/orders/accounts/clubs/shoes/loyalty отдаются 200; загрузка фото → файл в томе + отдаётся по сети 200. Тестовое фото убрал.
+**Дальше:** при желании — модерация/роли в админке, экспорт; либо следующее из аудита (пуш-уведомления, оплата/SMS, Redis-Celery).
+
 ## 2026-06-20 — Claude — Shoes: удаление пары (корзина) + редизайн попапа (анимация, кнопки по центру)
 **Сделано:** по правкам владельца — добавил удаление кроссовок и причесал всплывающее окно.
 - **Удаление:** бэк `DELETE /v1/shoes/<id>` (`shoe_delete`); провайдер `delete(shoeId)`; на карточке трекера — иконка-корзина (`CupertinoIcons.trash`) → диалог «Удалить кроссовки? Убрать «model» из приложения?» (Отмена/Удалить) → удаление + refresh.
