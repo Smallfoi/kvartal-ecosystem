@@ -36,6 +36,8 @@ services:
       # Фото товаров (dev): отдаём существующие ассеты Store по сети как /media/products/*,
       # чтобы Квартал показывал мини-фото кроссовок. Прод — реальный CDN/медиа-хранилище.
       - ../sport_store/assets/images/products:/srv/media/products:ro
+      # Загруженные через админку фото — отдельный записываемый том (/media/uploads/*).
+      - media_uploads:/srv/media/uploads
     ports:
       - "8000:8000"   # Django на хосте :8000 — приложения уже ходят сюда (adb reverse tcp:8000).
                        # FastAPI (backend/main.py) отключён; оставлен как legacy до полного удаления.
@@ -45,3 +47,4 @@ services:
 
 volumes:
   pgdata:
+  media_uploads:

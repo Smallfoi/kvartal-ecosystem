@@ -51,8 +51,8 @@ def create_for_order(uid: str, order_id: str, items: list) -> int:
             if not prod or prod.category_id != "shoes":
                 continue
             qty = int(it.get("quantity") or 1)
-            raw = (prod.image_urls or [None])[0] or it.get("imageUrl")
-            image = _media_url(raw or "")
+            # Фото: загруженное в админке (или старый ассет) → URL по сети.
+            image = prod.network_image_url() or _media_url(it.get("imageUrl") or "")
             model = prod.name or it.get("productName") or "Кроссовки"
             for _ in range(max(1, qty)):
                 # update_or_create по (user, order, product) → без дублей при

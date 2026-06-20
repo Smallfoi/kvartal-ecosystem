@@ -32,6 +32,9 @@ class Product(models.Model):
     price = models.FloatField()
     old_price = models.FloatField(null=True, blank=True)
     image_urls = models.JSONField(default=list)
+    # Загруженное в админке фото (приоритетнее image_urls). Отдаётся по сети как
+    # /media/uploads/products/... — видно в каталоге и трекере кроссовок Квартала.
+    image = models.ImageField(upload_to="uploads/products/", null=True, blank=True)
     description = models.TextField(blank=True, default="")
     sizes = models.JSONField(default=list)
     colors = models.JSONField(default=list)
@@ -46,6 +49,16 @@ class Product(models.Model):
         db_table = "catalog_products"
         ordering = ["sort"]
 
+    def network_image_url(self) -> str:
+        """Сетевой URL фото товара (для Квартала/сайта). Приоритет — загруженное
+        в админке фото; иначе первый из старых бандл-ассетов как /media/products/…"""
+        if self.image:
+            return self.image.url
+        imgs = self.image_urls or []
+        if imgs:
+            return f"/media/products/{str(imgs[0]).split('/')[-1]}"
+        return ""
+
     def to_json(self) -> dict:
         return {
             "id": self.id,
@@ -55,6 +68,7 @@ class Product(models.Model):
             "price": self.price,
             "oldPrice": self.old_price,
             "imageUrls": self.image_urls or [],
+            "imageUrl": self.network_image_url(),
             "description": self.description,
             "sizes": self.sizes or [],
             "colors": self.colors or [],
