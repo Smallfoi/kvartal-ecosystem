@@ -16,6 +16,13 @@
 ---
 
 
+## 2026-06-20 — Claude — Уведомления: серверная лента экосистемы (без FCM)
+**Сделано:** единая лента уведомлений (ECOSYSTEM_API §2.6) — основа для пушей, уже полезна как ин-апп лента. Без внешних аккаунтов.
+- Новое app `notifications`: модель `Notification` (user_id, title, body, type, order_id, read, created_at; миграция 0001) + `create_notification()`. Эндпоинты `GET /v1/notifications`, `POST /v1/notifications/read` ({ids:[]} или всё). Admin (unfold) + ссылка в сайдбаре.
+- **Авто-создание из событий:** сигнал на `Order` (`orders/signals.py`, регистрируется в `OrdersConfig.ready`) — оформление → «Заказ оформлен»; смена статуса (админка ИЛИ API) → «Заказ <статус>». Ловит и list-edit статуса в новой админке.
+- Проверено вживую: заказ → 1 уведомление; статус→shipped → 2-е; лента (новые сверху); mark-read = marked:1. `check` чисто, миграция применена, тест-данные убраны.
+**Дальше:** FCM-пуш поверх (нужен Firebase от владельца) + чтение ленты в приложениях (как loyalty/orders); опц. уведомления по заявкам в клуб/износу кроссовок.
+
 ## 2026-06-20 — Claude — Admin v2, Фаза 1: django-unfold (красивая тема + структура)
 **Контекст:** ресёрч по админкам лидеров (Shopify/Stripe/Linear/Storyblok/Sanity/django-unfold). Решили взять лучшее: unfold-тема + структура (Фаза 1), затем Draft/Publish (2), live-preview сайта в iframe (3), live-preview приложения через Flutter Web (4). Выбор владельца по превью аппа — Flutter Web (пиксель-точно).
 **Сделано (Фаза 1):**
