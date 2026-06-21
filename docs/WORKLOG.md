@@ -16,6 +16,14 @@
 ---
 
 
+## 2026-06-21 — Claude — Launch readiness, шаг 6 (UI SportStore): удаление + видимость
+**Сделано:** право на удаление аккаунта (§13) теперь во **всех** продуктах — добавил в SportStore.
+- `AuthRepository` (abstract/Mock/Api): `deleteAccount` (POST /account/delete), `getProfilePublic`/`setProfilePublic` (GET/PATCH /account/privacy). `AuthProvider.deleteAccount()` → repo + logout.
+- `screens/profile/account_data_screen.dart` («Конфиденциальность и данные»): тумблер «Открытый профиль» (общая настройка аккаунта) + «Удалить аккаунт» с подтверждением → при успехе logout → гостевой профиль. Примечание: видимость маршрутов/реального времени — в Квартале (аккаунт общий).
+- Точка входа: иконка privacy_tip в app-bar профиля (рядом с edit/logout).
+- **Проверено на устройстве:** экран грузит `GET /account/privacy 200`; PATCH/delete не дёргал на реальном аккаунте Михаила (идентичны проверенному флоу Квартала + E2E бэка). analyze чисто.
+**Дальше:** шаг 5 (экран согласий) — после текстов юриста; шаги 2-3 — за владельцем.
+
 ## 2026-06-21 — Claude — Launch readiness, шаг 6 (UI Квартала): приватность + удаление
 **Сделано:** подключил бэк шага 6 в приложение Квартал (профиль → Настройки → «Конфиденциальность и данные»).
 - `features/profile/data/account_provider.dart` (Riverpod): privacy state + `loadPrivacy`/`setPrivacy` (GET/PATCH) + `deleteAccount` (POST /account/delete {confirm:true}).

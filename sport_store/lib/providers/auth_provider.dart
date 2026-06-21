@@ -254,6 +254,35 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Видимость профиля (общая настройка приватности аккаунта).
+  Future<bool> getProfilePublic() async {
+    try {
+      return await _repo.getProfilePublic();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> setProfilePublic(bool value) async {
+    try {
+      return await _repo.setProfilePublic(value);
+    } catch (_) {
+      return value;
+    }
+  }
+
+  /// Необратимо удалить аккаунт; при успехе разлогинивает. true — успех.
+  Future<bool> deleteAccount() async {
+    if (_user == null) return false;
+    try {
+      await _repo.deleteAccount();
+      logout();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();

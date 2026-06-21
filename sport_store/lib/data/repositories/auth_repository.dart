@@ -29,6 +29,13 @@ abstract class AuthRepository {
 
   /// Профиль текущего пользователя по JWT (GET /auth/me).
   Future<AuthUser> fetchMe();
+
+  /// Видимость профиля (часть общих настроек приватности аккаунта).
+  Future<bool> getProfilePublic();
+  Future<bool> setProfilePublic(bool value);
+
+  /// Необратимое удаление аккаунта и всех персональных данных (152-ФЗ, §13).
+  Future<void> deleteAccount();
 }
 
 class MockAuthRepository implements AuthRepository {
@@ -134,6 +141,15 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<AuthUser> fetchMe() async =>
       throw UnimplementedError('Mock не имеет /auth/me');
+
+  @override
+  Future<bool> getProfilePublic() async => false;
+
+  @override
+  Future<bool> setProfilePublic(bool value) async => value;
+
+  @override
+  Future<void> deleteAccount() async {}
 }
 
 class ApiAuthRepository implements AuthRepository {
@@ -254,5 +270,22 @@ class ApiAuthRepository implements AuthRepository {
   Future<AuthUser> fetchMe() async {
     final data = await _client.get('/auth/me');
     return AuthUser.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<bool> getProfilePublic() async {
+    final data = await _client.get('/account/privacy');
+    return (data as Map<String, dynamic>)['profilePublic'] == true;
+  }
+
+  @override
+  Future<bool> setProfilePublic(bool value) async {
+    final data = await _client.patch('/account/privacy', body: {'profilePublic': value});
+    return (data as Map<String, dynamic>)['profilePublic'] == true;
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    await _client.post('/account/delete', body: {'confirm': true});
   }
 }
