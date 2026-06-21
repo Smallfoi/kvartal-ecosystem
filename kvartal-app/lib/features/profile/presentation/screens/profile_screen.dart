@@ -617,8 +617,8 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsTile(
               icon: CupertinoIcons.lock_fill,
               label:
-                  '\u041a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u044c',
-              onTap: () {},
+                  '\u041a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0438 \u0434\u0430\u043d\u043d\u044b\u0435',
+              onTap: () => context.push('/profile/privacy'),
             ),
             _SettingsTile(
               icon: CupertinoIcons.question_circle_fill,
