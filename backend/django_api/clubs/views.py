@@ -7,6 +7,8 @@ from accounts.models import Account
 from common.security import user_id_from_request
 from loyalty.models import LoyaltyTransaction
 
+from notifications.models import create_notification
+
 from .models import Club, ClubJoinRequest, ClubMember
 
 
@@ -166,6 +168,13 @@ def join_club(request, club_id):
         ClubJoinRequest.objects.create(
             id=f"r_{secrets.token_hex(8)}", club_id=club_id, user_id=uid, status="pending"
         )
+        # Уведомляем владельца клуба о новой заявке.
+        create_notification(
+            club.owner_id,
+            "Новая заявка в клуб",
+            f"{_name_of(uid)} хочет вступить в клуб «{club.name}»",
+            "system",
+        )
     return Response({"status": "requested"})
 
 
@@ -223,6 +232,12 @@ def approve_request(request, req_id):
     ClubMember.objects.create(club_id=req.club_id, user_id=req.user_id, role="member")
     req.status = "approved"
     req.save(update_fields=["status"])
+    create_notification(
+        req.user_id,
+        "Заявка одобрена",
+        f"Вы вступили в клуб «{club.name}»",
+        "system",
+    )
     return Response({"status": "approved"})
 
 
@@ -239,4 +254,10 @@ def reject_request(request, req_id):
         return Response({"detail": "Только владелец клуба"}, status=403)
     req.status = "rejected"
     req.save(update_fields=["status"])
+    create_notification(
+        req.user_id,
+        "Заявка отклонена",
+        f"Заявка на вступление в клуб «{club.name}» отклонена",
+        "system",
+    )
     return Response({"status": "rejected"})

@@ -16,6 +16,14 @@
 ---
 
 
+## 2026-06-21 — Claude — Квартал: лента уведомлений + клубные события (backend)
+**Сделано:** уведомления в Квартале (Riverpod) + осмысленный для бегового аппа контент.
+- **Backend (clubs/views.py):** `create_notification` на клубных событиях — заявка в клуб (policy=request) → владельцу «Новая заявка в клуб»; одобрение → заявителю «Заявка одобрена»; отклонение → «Заявка отклонена».
+- **Квартал:** `features/notifications/` — `notificationsProvider` (StateNotifier+Dio, GET /notifications, markAllRead → POST /notifications/read, рефреш по auth) + `NotificationsScreen` (тёмная тема, иконки по типу, relative-time, pull-to-refresh, помечает прочитанным при открытии). Роут `/profile/notifications` (в шелле). Колокольчик с бейджем непрочитанных в app-bar профиля.
+- **Проверено (API, 2 юзера):** B подаёт заявку → A (владелец) видит «Новая заявка»; A одобряет → B видит «Заявка одобрена». analyze чисто. Тест-данные убраны.
+- Аккаунт единый → в ленте Квартала видны и уведомления Store (заказы).
+**Дальше:** FCM-пуш (нужен Firebase) для пушей вне приложения.
+
 ## 2026-06-21 — Claude — SportStore: лента уведомлений из backend (замыкание цикла)
 **Сделано:** SportStore читает уведомления с общего бэкенда (бэк-часть — PR #64).
 - `NotificationsProvider` теперь serverBacked: `ApiClient` + `syncAuth(loggedIn)` → при логине `refresh()` тянет `GET /v1/notifications`; `markAllRead()` шлёт `POST /v1/notifications/read`. Локальный кэш сохранён как фолбэк. Флаг `ApiConfig.useApiNotifications`.
