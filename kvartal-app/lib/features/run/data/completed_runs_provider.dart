@@ -1,11 +1,16 @@
 import 'dart:async' show unawaited;
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/api/api_config.dart';
+import '../../auth/data/auth_provider.dart';
+
 const _completedRunsKey = 'kvartal.completed_runs.v1';
+const _runsSyncedKey = 'kvartal.runs_synced.v1';
 const _maxStoredRuns = 50;
 
 class CompletedRun {
@@ -99,23 +104,44 @@ class CompletedRun {
 }
 
 class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
-  CompletedRunsNotifier() : super(const []) {
+  final Ref ref;
+  CompletedRunsNotifier(this.ref) : super(const []) {
     unawaited(load());
+  }
+
+  /// id забегов, уже доставленных на бэк (чтобы не слать повторно).
+  Set<String> _synced = {};
+
+  final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: ApiConfig.baseUrl,
+      connectTimeout: ApiConfig.connectTimeout,
+      receiveTimeout: ApiConfig.receiveTimeout,
+      headers: {'Content-Type': 'application/json', 'Connection': 'close'},
+    ),
+  );
+
+  String? get _token {
+    final t = ref.read(authProvider).token;
+    return (t == null || t.isEmpty) ? null : t;
   }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
+    _synced = (prefs.getStringList(_runsSyncedKey) ?? const <String>[]).toSet();
     final raw = prefs.getString(_completedRunsKey);
-    if (raw == null) return;
-    final data = jsonDecode(raw) as List;
-    final runs =
-        data
-            .whereType<Map>()
-            .map((e) => CompletedRun.fromJson(Map<String, dynamic>.from(e)))
-            .whereType<CompletedRun>()
-            .toList()
-          ..sort((a, b) => b.finishedAt.compareTo(a.finishedAt));
-    state = runs.take(_maxStoredRuns).toList();
+    if (raw != null) {
+      final data = jsonDecode(raw) as List;
+      final runs =
+          data
+              .whereType<Map>()
+              .map((e) => CompletedRun.fromJson(Map<String, dynamic>.from(e)))
+              .whereType<CompletedRun>()
+              .toList()
+            ..sort((a, b) => b.finishedAt.compareTo(a.finishedAt));
+      state = runs.take(_maxStoredRuns).toList();
+    }
+    unawaited(syncPending());
   }
 
   Future<void> add(CompletedRun run) async {
@@ -123,6 +149,7 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
       ..sort((a, b) => b.finishedAt.compareTo(a.finishedAt));
     state = next.take(_maxStoredRuns).toList();
     await _save();
+    unawaited(_syncRun(run));
   }
 
   Future<void> _save() async {
@@ -132,9 +159,52 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
       jsonEncode([for (final run in state) run.toJson()]),
     );
   }
+
+  /// Отправить сводку забега на бэк (без сырого маршрута, приватность §2).
+  /// Идемпотентно по id; офлайн — отметится при следующем `syncPending`.
+  Future<void> _syncRun(CompletedRun run) async {
+    final token = _token;
+    if (token == null || _synced.contains(run.id)) return;
+    try {
+      await _dio.post<dynamic>(
+        '/runs',
+        data: {
+          'id': run.id,
+          'distanceMeters': run.distanceMeters,
+          'elapsedSeconds': run.elapsed.inSeconds,
+          'finishedAtMs': run.finishedAt.millisecondsSinceEpoch,
+          'capturedTerritory': run.capturedTerritory,
+          'capturedZones': run.capturedZones,
+        },
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      _synced.add(run.id);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_runsSyncedKey, _synced.toList());
+    } catch (_) {
+      // офлайн/ошибка — синхронизируем позже (старт/вход)
+    }
+  }
+
+  /// Досинхронизировать все ещё не отправленные забеги (старт приложения / вход).
+  Future<void> syncPending() async {
+    if (_token == null) return;
+    for (final run in state) {
+      if (!_synced.contains(run.id)) await _syncRun(run);
+    }
+  }
 }
 
 final completedRunsProvider =
-    StateNotifierProvider<CompletedRunsNotifier, List<CompletedRun>>(
-      (ref) => CompletedRunsNotifier(),
-    );
+    StateNotifierProvider<CompletedRunsNotifier, List<CompletedRun>>((ref) {
+      final notifier = CompletedRunsNotifier(ref);
+      // Появился токен (вход/восстановление) — досылаем накопленные забеги.
+      ref.listen<AuthState>(authProvider, (prev, next) {
+        if (next.token != null &&
+            next.token!.isNotEmpty &&
+            next.token != prev?.token) {
+          notifier.syncPending();
+        }
+      });
+      return notifier;
+    });

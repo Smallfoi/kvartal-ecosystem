@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "shoes",
     "notifications",
     "legal",
+    "runs",
 ]
 
 MIDDLEWARE = [

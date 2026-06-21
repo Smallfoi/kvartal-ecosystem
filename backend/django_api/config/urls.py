@@ -12,6 +12,7 @@ from catalog import views as catalog_views
 from config.admin_views import preview_app, preview_site
 from notifications import views as notif_views
 from legal import views as legal_views
+from runs import views as runs_views
 from clubs import views as clubs_views
 from orders import views as orders_views
 from shoes import views as shoes_views
@@ -59,6 +60,8 @@ urlpatterns = [
     # Уведомления (лента экосистемы)
     path("v1/notifications", notif_views.notifications),
     path("v1/notifications/read", notif_views.notifications_read),
+    # История пробежек (синхронизация с устройства, сводки — без сырого GPS).
+    path("v1/runs", runs_views.runs),
     # Документы и согласия (единые для всех продуктов, §3 LAUNCH_READINESS).
     # Порядок: 'consent/revoke' раньше generic 'consent'.
     path("v1/legal/documents", legal_views.documents),
