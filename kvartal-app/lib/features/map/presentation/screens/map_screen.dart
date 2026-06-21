@@ -33,6 +33,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   int _tileLayerReloadId = 0;
   Timer? _territoryDebounce;
 
+  /// Уровень 1 «живой карты» (D-09): пока экран открыт — периодически
+  /// перетягиваем видимую область, чтобы видеть чужие захваты своей территории.
+  /// Свой захват применяется мгновенно (territoryProvider.capture). При росте —
+  /// перейти на дельты/WebSocket (Уровень 2/3).
+  Timer? _territoryRefreshTimer;
+  static const _territoryRefreshInterval = Duration(seconds: 12);
+
   /// Векторный стиль OpenFreeMap Bright (D-19). Грузится один раз; пока null —
   /// показываем растровый фолбэк.
   Style? _mapStyle;
@@ -97,6 +104,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void initState() {
     super.initState();
     _loadMapStyle();
+    _territoryRefreshTimer = Timer.periodic(
+      _territoryRefreshInterval,
+      (_) => _loadTerritories(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerOnCurrentLocation();
       _scheduleTerritoryLoad();
@@ -106,6 +117,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void dispose() {
     _territoryDebounce?.cancel();
+    _territoryRefreshTimer?.cancel();
     super.dispose();
   }
 
