@@ -4,6 +4,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -257,30 +258,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
 
               // Маркер пользователя. Во время бега берём ПОСЛЕДНЮЮ точку
-              // сглаженного трека — тогда маркер и линия совпадают и не прыгают.
+              // сглаженного (Калман) трека — метка и линия совпадают. Метка
+              // плавно «скользит» между фиксами (анимация), а не прыгает.
               // Вне бега — текущая позиция из потока.
-              Builder(
-                builder: (_) {
-                  final running =
-                      runState.status != RunStatus.idle &&
-                      runState.route.isNotEmpty;
-                  final point = running
-                      ? runState.route.last
-                      : posAsync.valueOrNull?.toLatLng;
-                  if (point == null) return const MarkerLayer(markers: []);
-                  return MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: point,
-                        width: 26,
-                        height: 26,
-                        child: _UserMarker(
-                          isRunning: runState.status == RunStatus.active,
-                        ),
-                      ),
-                    ],
-                  );
-                },
+              _AnimatedUserMarker(
+                target:
+                    runState.status != RunStatus.idle &&
+                        runState.route.isNotEmpty
+                    ? runState.route.last
+                    : posAsync.valueOrNull?.toLatLng,
+                isRunning: runState.status == RunStatus.active,
               ),
             ],
           ),
@@ -684,6 +671,90 @@ class _NoticeButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Маркер пользователя, плавно «скользящий» к новой точке между GPS-фиксами.
+/// Сглаженная точка приходит из Калмана раз в ~секунду — анимация делает
+/// движение метки непрерывным (60fps), без рывков.
+class _AnimatedUserMarker extends StatefulWidget {
+  final LatLng? target;
+  final bool isRunning;
+  const _AnimatedUserMarker({required this.target, required this.isRunning});
+
+  @override
+  State<_AnimatedUserMarker> createState() => _AnimatedUserMarkerState();
+}
+
+class _AnimatedUserMarkerState extends State<_AnimatedUserMarker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..addListener(() => setState(() {}));
+
+  LatLng? _from;
+  LatLng? _to;
+
+  @override
+  void initState() {
+    super.initState();
+    _from = widget.target;
+    _to = widget.target;
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedUserMarker old) {
+    super.didUpdateWidget(old);
+    final t = widget.target;
+    if (t == null) {
+      _from = null;
+      _to = null;
+      return;
+    }
+    if (_to == null) {
+      setState(() {
+        _from = t;
+        _to = t;
+      });
+      return;
+    }
+    if (t.latitude != _to!.latitude || t.longitude != _to!.longitude) {
+      _from = _current ?? _to; // стартуем из текущей экранной позиции
+      _to = t;
+      _controller.forward(from: 0);
+    }
+  }
+
+  LatLng? get _current {
+    if (_from == null || _to == null) return null;
+    final v = Curves.easeOut.transform(_controller.value);
+    return LatLng(
+      _from!.latitude + (_to!.latitude - _from!.latitude) * v,
+      _from!.longitude + (_to!.longitude - _from!.longitude) * v,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _current;
+    if (p == null) return const MarkerLayer(markers: []);
+    return MarkerLayer(
+      markers: [
+        Marker(
+          point: p,
+          width: 26,
+          height: 26,
+          child: _UserMarker(isRunning: widget.isRunning),
+        ),
+      ],
     );
   }
 }
