@@ -13,13 +13,15 @@
 ## CI / branch protection
 - **Переименование CI-джобы, которая в required status checks, блокирует мерж.** Имя job (`name:` в ci.yml) = контекст в ruleset `protect-main`. Если поменять имя (напр. `Backend · FastAPI`→`Backend · Django`), старый контекст в required больше не появится → PR висит «Expected». Решение: синхронно обновить контексты в ruleset через `gh api -X PUT repos/<owner>/<repo>/rulesets/<id> --input body.json` (тело с `rules[].required_status_checks` писать ФАЙЛОМ — там «·» не-ASCII, PowerShell бьёт). ID правила: `gh api .../rulesets`.
 
-## Backend (FastAPI dev)
-- **Бек часто падает / его убивают** (фоновый процесс умирает, exit 4/127). Симптомы в приложении:
-  `DioException`, `Connection closed before full header`, `Connection refused`. ПЕРВЫМ делом проверить
-  `GET /v1/health` и при необходимости перезапустить: `cd backend && PYTHONUNBUFFERED=1 python -m uvicorn main:app --host 0.0.0.0 --port 8000`.
-- **Не диагностировать «обрыв соединения» как баг клиента, пока не проверил, что бек жив.** Однажды это был
-  именно упавший бек, а не код.
-- Логи uvicorn в файл **буферизуются** — запускать с `PYTHONUNBUFFERED=1`, иначе свежих строк не видно.
+## Backend (Django + Docker, dev)
+- **Docker Desktop в dev иногда сам останавливается** (`failed to connect to the docker API ... pipe`),
+  и тогда бек на :8000 недоступен. Симптомы в приложении: `DioException`, `Connection closed before full
+  header`, `Connection refused`, «нет товаров»/пустые экраны. ПЕРВЫМ делом проверить `GET /v1/health`;
+  если бек лежит — запустить Docker Desktop и `cd backend && docker compose up -d`.
+- **Не диагностировать «обрыв соединения»/«нет данных» как баг клиента, пока не проверил, что бек жив.**
+  Не раз это был упавший Docker/бек, а не код приложения.
+- Логи бэка: `cd backend && docker compose logs web` (свежие — `--since 30s`); `docker compose exec`
+  запускать ТОЛЬКО из папки `backend/` (иначе `no configuration file provided: not found`).
 
 ## Телефон / устройство
 - **Dev-бек доступен телефону только по USB** (`adb reverse tcp:8000 tcp:8000`) или по Wi-Fi (а там фаервол Windows).
@@ -37,11 +39,11 @@
 - CI пинит **Flutter 3.32.1** — держать локально ту же версию, иначе analyze может расходиться.
 
 ## Dio / сеть (Квартал)
-- **Dio + keep-alive поверх `adb reverse`** даёт `Connection closed before full header`, когда uvicorn закрывает idle keep-alive.
+- **Dio + keep-alive поверх `adb reverse`** даёт `Connection closed before full header`, когда dev-сервер закрывает idle keep-alive.
   Смягчение: заголовок `Connection: close` на запросах лояльности + не слать дубль-запросы разом. (Но чаще причина — упавший бек, см. выше.)
 
 ## GitHub
 - **Branch protection / rulesets на ПРИВАТНОМ репо бесплатного плана = HTTP 403** («Upgrade to Pro or make public»).
   Решение для этого проекта: репозиторий сделан публичным (см. DECISIONS D-05).
 - `gh` не в PATH текущих сессий после установки — звать по полному пути `C:\Program Files\GitHub CLI\gh.exe`.
-- Имена обязательных CI-проверок (с «·»): `Flutter · kvartal-app`, `Flutter · sport_store`, `Backend · FastAPI`.
+- Имена обязательных CI-проверок (с «·»): `Flutter · kvartal-app`, `Flutter · sport_store`, `Backend · Django`.
