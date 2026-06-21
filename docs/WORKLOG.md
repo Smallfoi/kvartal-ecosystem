@@ -16,6 +16,13 @@
 ---
 
 
+## 2026-06-21 — Claude — Тех-гэп S-08: JWT Квартала → secure storage
+**Сделано:** токен входа Квартала переехал из открытых SharedPreferences в защищённое хранилище (Android Keystore / iOS Keychain) — гэп C2 из DATA_INVENTORY, пункт launch-gate §13 «секреты вынесены».
+- `auth_provider`: `FlutterSecureStorage` (encryptedSharedPreferences) + `_readToken/_writeToken/_deleteToken`; restoreSession/_saveSession/logout используют их. Остальной кэш профиля (имя/город/аватар) остаётся в prefs (не секрет).
+- **Миграция:** при первом запуске после обновления старый токен из prefs переносится в secure и удаляется из prefs.
+- **Проверено на устройстве:** после установки Михаил остался залогинен — `GET /auth/me 200` (токен прочитан из secure storage, миграция сработала). analyze + flutter test (5) зелёные.
+**Дальше:** второй тех-гэп — локальные шрифты вместо рантайм Google Fonts (§12).
+
 ## 2026-06-21 — Claude — Launch readiness, шаг 6 (UI SportStore): удаление + видимость
 **Сделано:** право на удаление аккаунта (§13) теперь во **всех** продуктах — добавил в SportStore.
 - `AuthRepository` (abstract/Mock/Api): `deleteAccount` (POST /account/delete), `getProfilePublic`/`setProfilePublic` (GET/PATCH /account/privacy). `AuthProvider.deleteAccount()` → repo + logout.
