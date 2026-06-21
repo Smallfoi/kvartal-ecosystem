@@ -10,6 +10,7 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/loyalty_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/tab_notifier.dart';
+import 'account_data_screen.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_card.dart';
@@ -81,6 +82,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       icon: const Icon(Icons.edit_outlined, size: 20),
                       tooltip: 'Редактировать',
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AccountDataScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.privacy_tip_outlined, size: 20),
+                      tooltip: 'Конфиденциальность и данные',
                     ),
                     IconButton(
                       onPressed: () => _showLogoutDialog(context, auth),
