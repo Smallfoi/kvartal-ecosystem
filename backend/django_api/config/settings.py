@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "orders",
     "shoes",
     "notifications",
+    "legal",
 ]
 
 MIDDLEWARE = [
@@ -199,6 +200,15 @@ UNFOLD = {
                      "link": reverse_lazy("admin:accounts_account_changelist")},
                     {"title": "Уведомления", "icon": "notifications",
                      "link": reverse_lazy("admin:notifications_notification_changelist")},
+                ],
+            },
+            {
+                "title": "Право и согласия",
+                "items": [
+                    {"title": "Документы", "icon": "gavel",
+                     "link": reverse_lazy("admin:legal_legaldocument_changelist")},
+                    {"title": "Согласия", "icon": "fact_check",
+                     "link": reverse_lazy("admin:legal_userconsent_changelist")},
                 ],
             },
             {

@@ -11,6 +11,7 @@ from accounts import views as account_views
 from catalog import views as catalog_views
 from config.admin_views import preview_app, preview_site
 from notifications import views as notif_views
+from legal import views as legal_views
 from clubs import views as clubs_views
 from orders import views as orders_views
 from shoes import views as shoes_views
@@ -55,6 +56,12 @@ urlpatterns = [
     # Уведомления (лента экосистемы)
     path("v1/notifications", notif_views.notifications),
     path("v1/notifications/read", notif_views.notifications_read),
+    # Документы и согласия (единые для всех продуктов, §3 LAUNCH_READINESS).
+    # Порядок: 'consent/revoke' раньше generic 'consent'.
+    path("v1/legal/documents", legal_views.documents),
+    path("v1/legal/consent/revoke", legal_views.revoke),
+    path("v1/legal/consent", legal_views.accept),
+    path("v1/legal/consents", legal_views.my_consents),
     # Кроссовки — трекер износа (связка Store ↔ Квартал, ECOSYSTEM_API §2.5).
     # Порядок: 'pending' раньше generic '<id>/...'.
     path("v1/shoes", shoes_views.shoes),
