@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../loyalty/data/loyalty_provider.dart';
 import '../../shoes/data/shoes_provider.dart';
+import '../../weather/data/weather_provider.dart';
 import 'completed_runs_provider.dart';
 import 'gps_kalman.dart';
 
@@ -320,12 +321,16 @@ class RunNotifier extends StateNotifier<RunState> {
   /// Баллы становятся видны и в Store (общий аккаунт).
   Future<void> _awardLoyaltyPoints(CompletedRun run) async {
     final loyalty = _ref.read(loyaltyProvider.notifier);
-    final runPoints = (run.distanceKm * 10).round();
+    // Морозный коэффициент (якутская специфика): в мороз больше очков за км.
+    final mult = _ref.read(weatherProvider)?.multiplier ?? 1.0;
+    final runPoints = (run.distanceKm * 10 * mult).round();
     if (runPoints > 0) {
+      final frostNote = mult > 1.0 ? ' ×${mult.toStringAsFixed(1)} мороз' : '';
       await loyalty.award(
         amount: runPoints,
         source: 'runnerRun',
-        description: 'Пробежка ${run.distanceKm.toStringAsFixed(1)} км',
+        description:
+            'Пробежка ${run.distanceKm.toStringAsFixed(1)} км$frostNote',
         runId: run.id,
       );
     }
