@@ -6,7 +6,6 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'location_provider.dart';
 
 enum ZoneOwner { free, mine, club, enemy }
 
@@ -393,126 +392,6 @@ class ZoneNotifier extends StateNotifier<AsyncValue<List<BlockZone>>> {
       (middle.longitude * 10000).round(),
       polygon.length ~/ 8,
     ].join(':');
-  }
-
-  List<LatLng> buildDemoRunPath() {
-    final candidates =
-        zones
-            .where((z) => z.owner != ZoneOwner.mine && z.vertices.length >= 3)
-            .toList()
-          ..sort(
-            (a, b) => distMeters(
-              a.centroid,
-              yakutskCenter,
-            ).compareTo(distMeters(b.centroid, yakutskCenter)),
-          );
-
-    if (candidates.isEmpty) return _fallbackDemoRunPath;
-
-    final targetZones = candidates.take(6).toList();
-    var minLat = targetZones.first.centroid.latitude;
-    var maxLat = minLat;
-    var minLng = targetZones.first.centroid.longitude;
-    var maxLng = minLng;
-
-    for (final zone in targetZones) {
-      minLat = min(minLat, zone.centroid.latitude);
-      maxLat = max(maxLat, zone.centroid.latitude);
-      minLng = min(minLng, zone.centroid.longitude);
-      maxLng = max(maxLng, zone.centroid.longitude);
-    }
-
-    var latPadding = 0.0009;
-    var lngPadding = 0.0018;
-    var lat1 = minLat - latPadding;
-    var lat2 = maxLat + latPadding;
-    var lng1 = minLng - lngPadding;
-    var lng2 = maxLng + lngPadding;
-
-    while (_rectangleDistance(lat1, lat2, lng1, lng2) < 430) {
-      latPadding *= 1.25;
-      lngPadding *= 1.25;
-      lat1 = minLat - latPadding;
-      lat2 = maxLat + latPadding;
-      lng1 = minLng - lngPadding;
-      lng2 = maxLng + lngPadding;
-    }
-
-    return _rectanglePath(lat1, lat2, lng1, lng2);
-  }
-
-  double _rectangleDistance(
-    double lat1,
-    double lat2,
-    double lng1,
-    double lng2,
-  ) {
-    final a = LatLng(lat1, lng1);
-    final b = LatLng(lat1, lng2);
-    final c = LatLng(lat2, lng2);
-    final d = LatLng(lat2, lng1);
-    return distMeters(a, b) +
-        distMeters(b, c) +
-        distMeters(c, d) +
-        distMeters(d, a);
-  }
-
-  List<LatLng> _rectanglePath(
-    double lat1,
-    double lat2,
-    double lng1,
-    double lng2,
-  ) {
-    const n = 14;
-    final path = <LatLng>[];
-
-    void seg(LatLng a, LatLng b) {
-      for (int k = 0; k <= n; k++) {
-        final t = k / n;
-        path.add(
-          LatLng(
-            a.latitude + t * (b.latitude - a.latitude),
-            a.longitude + t * (b.longitude - a.longitude),
-          ),
-        );
-      }
-    }
-
-    seg(LatLng(lat1, lng1), LatLng(lat1, lng2));
-    seg(LatLng(lat1, lng2), LatLng(lat2, lng2));
-    seg(LatLng(lat2, lng2), LatLng(lat2, lng1));
-    seg(LatLng(lat2, lng1), LatLng(lat1, lng1));
-
-    return path;
-  }
-
-  List<LatLng> get _fallbackDemoRunPath {
-    const lat1 = 62.025;
-    const lat2 = 62.031;
-    const lng1 = 129.717;
-    const lng2 = 129.731;
-
-    const n = 14;
-    final path = <LatLng>[];
-
-    void seg(LatLng a, LatLng b) {
-      for (int k = 0; k <= n; k++) {
-        final t = k / n;
-        path.add(
-          LatLng(
-            a.latitude + t * (b.latitude - a.latitude),
-            a.longitude + t * (b.longitude - a.longitude),
-          ),
-        );
-      }
-    }
-
-    seg(LatLng(lat1, lng1), LatLng(lat1, lng2));
-    seg(LatLng(lat1, lng2), LatLng(lat2, lng2));
-    seg(LatLng(lat2, lng2), LatLng(lat2, lng1));
-    seg(LatLng(lat2, lng1), LatLng(lat1, lng1));
-
-    return path;
   }
 
   void reset() {
