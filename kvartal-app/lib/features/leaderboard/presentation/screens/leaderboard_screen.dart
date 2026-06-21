@@ -724,7 +724,7 @@ class _DistrictsTab extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6, top: 2, left: 2),
                 child: Text(
-                  'Контроль территорий · удержание 72 ч',
+                  'Контроль территорий · удержание 7 дней',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textTertiary,
                   ),
