@@ -1,5 +1,6 @@
 ﻿import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_config.dart';
@@ -110,9 +111,44 @@ class AuthNotifier extends StateNotifier<AuthState> {
     ),
   );
 
+  // Токен входа — в защищённом хранилище (Android Keystore / iOS Keychain),
+  // а не в открытых SharedPreferences (S-08, launch-gate §13).
+  final FlutterSecureStorage _secure = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+  static const _tokenSecureKey = 'kvartal.auth.token.secure.v1';
+
+  Future<String?> _readToken(SharedPreferences prefs) async {
+    try {
+      final secure = await _secure.read(key: _tokenSecureKey);
+      if (secure != null && secure.isNotEmpty) return secure;
+    } catch (_) {}
+    // Миграция со старого открытого ключа (одноразово после обновления).
+    final legacy = prefs.getString(_tokenPrefsKey);
+    if (legacy != null && legacy.isNotEmpty) {
+      await _writeToken(legacy);
+      await prefs.remove(_tokenPrefsKey);
+      return legacy;
+    }
+    return null;
+  }
+
+  Future<void> _writeToken(String token) async {
+    try {
+      await _secure.write(key: _tokenSecureKey, value: token);
+    } catch (_) {}
+  }
+
+  Future<void> _deleteToken(SharedPreferences prefs) async {
+    try {
+      await _secure.delete(key: _tokenSecureKey);
+    } catch (_) {}
+    await prefs.remove(_tokenPrefsKey); // на случай оставшегося старого значения
+  }
+
   Future<void> restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_tokenPrefsKey);
+    final token = await _readToken(prefs);
     if (token == null || token.isEmpty) return;
 
     final phone = prefs.getString(_phonePrefsKey) ?? '';
@@ -210,7 +246,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _saveSession(String token, AuthUser user, String phone) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenPrefsKey, token);
+    await _writeToken(token);
     await prefs.setString(_phonePrefsKey, phone);
     await prefs.setString(_userIdPrefsKey, user.id);
     await prefs.setString(_userNamePrefsKey, user.name);
@@ -286,7 +322,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenPrefsKey);
+    await _deleteToken(prefs);
     await prefs.remove(_phonePrefsKey);
     await prefs.remove(_userIdPrefsKey);
     await prefs.remove(_userNamePrefsKey);
