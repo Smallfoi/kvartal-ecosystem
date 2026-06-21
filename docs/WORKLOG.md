@@ -16,6 +16,14 @@
 ---
 
 
+## 2026-06-21 — Claude — Launch readiness, шаг 1: инвентаризация данных и SDK
+**Сделано:** по «Порядку работ» из `docs/LAUNCH_READINESS.md` (подготовил Codex) выполнил шаг 1 — `docs/DATA_INVENTORY.md` (аудит по факту кода).
+- **PII по бэку:** что и где хранится (accounts/loyalty/orders(payload c телефоном/адресом)/clubs/territories(PostGIS)/shoes/notifications); GPS — сырой трек локально, на сервер уходят производные (полигоны/дистанция).
+- **Реестр внешних сервисов (§12):** CARTO basemaps (тайлы), Google Fonts (рантайм), Unsplash (мок-фото); аналитики/crash/Firebase/Sentry **нет**; SMS/оплата ещё заглушки.
+- **Найденные гэпы → backlog:** нет хранения согласий; JWT в SharedPreferences (не secure storage, S-08); лицензия CARTO для прода (§10); шрифты бандлить локально (§12); срок хранения сырого GPS (§2); удаление аккаунта/экспорт не реализованы (§13).
+- **Замечание:** `docs/LAUNCH_READINESS.md` и `docs/STRATEGY_BACKLOG.md` пока в локальной ветке Codex `docs/launch-readiness-legal-cloud` (не на origin) — ссылки в инвентаризации разрешатся после их «закрепления» на main.
+**Дальше:** шаг 2 — оператор/возрастная модель (решение владельца); шаг 4 — модели документов/согласий в Django + API (могу строить); попутно закрыть secure-storage и локальные шрифты.
+
 ## 2026-06-21 — Claude — Чистка: добить legacy FastAPI в доках/конфиге
 **Сделано:** код FastAPI был удалён ещё при миграции (D-12), но в доках/комментариях он оставался «живым» — выровнял по факту (бэк = Django+PostGIS в Docker).
 - `CLAUDE.md` + `AGENTS.md` (зеркала): описание `backend/` → Django+PostGIS (Docker); команда запуска → `docker compose up -d` (вместо `uvicorn main:app`); раздел «Направление» → миграция на Django **готова**.
