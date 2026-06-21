@@ -86,7 +86,7 @@ const _backendUrl = String.fromEnvironment(
 );
 const _capturedZoneIdsKey = 'kvartal.captured_zone_ids.v1';
 const _capturedAreasKey = 'kvartal.captured_areas.v1';
-const _mapCleanupOnceKey = 'kvartal.map_cleanup_2026_06_11.v1';
+const _mapCleanupOnceKey = 'kvartal.map_cleanup_2026_06_21.v2';
 const _activeRunStorageKey = 'kvartal.active_run.v1';
 const _completedRunsKey = 'kvartal.completed_runs.v1';
 const _minCaptureLoopMeters = 50.0;
