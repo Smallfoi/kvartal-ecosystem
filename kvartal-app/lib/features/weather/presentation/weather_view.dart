@@ -172,7 +172,8 @@ class _WeatherBody extends StatelessWidget {
                                     fontSize: 36,
                                     fontWeight: FontWeight.w800,
                                     shadows: [
-                                      Shadow(color: Colors.black38, blurRadius: 6),
+                                      Shadow(color: Colors.black, blurRadius: 4),
+                                      Shadow(color: Colors.black54, blurRadius: 16),
                                     ],
                                   ),
                                 ),
@@ -182,7 +183,8 @@ class _WeatherBody extends StatelessWidget {
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                     shadows: [
-                                      Shadow(color: Colors.black38, blurRadius: 4),
+                                      Shadow(color: Colors.black, blurRadius: 3),
+                                      Shadow(color: Colors.black54, blurRadius: 10),
                                     ],
                                   ),
                                 ),
@@ -199,10 +201,11 @@ class _WeatherBody extends StatelessWidget {
                       Text(
                         'Ощущается как ${formatTemp(w.feelsLikeC)}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withValues(alpha: 0.95),
                           fontSize: 13,
                           shadows: const [
-                            Shadow(color: Colors.black38, blurRadius: 4),
+                            Shadow(color: Colors.black, blurRadius: 3),
+                            Shadow(color: Colors.black54, blurRadius: 10),
                           ],
                         ),
                       ),
