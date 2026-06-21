@@ -12,6 +12,7 @@ import '../../features/club/presentation/screens/club_screen.dart';
 import '../../features/club/presentation/screens/club_scan_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/profile/presentation/screens/privacy_screen.dart';
 import '../../features/shoes/presentation/screens/shoes_screen.dart';
 import '../../features/offline_maps/presentation/screens/offline_maps_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
@@ -125,6 +126,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile/notifications',
             builder: (_, __) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/profile/privacy',
+            builder: (_, __) => const PrivacyScreen(),
           ),
         ],
       ),
