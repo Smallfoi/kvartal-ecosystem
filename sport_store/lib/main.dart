@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
@@ -25,15 +26,29 @@ void main() async {
   // backend, часть на mock — см. ApiConfig. Общий ApiClient хранит JWT.
   final ApiClient? api = ApiConfig.anyApi ? ApiClient() : null;
   if (api != null) {
-    // Персист JWT: сохраняем при смене токена, восстанавливаем при старте.
+    // JWT — в защищённом хранилище (Android Keystore / iOS Keychain), не в
+    // открытых SharedPreferences (S-08). Сохраняем при смене токена, восстанавливаем
+    // при старте; одноразовая миграция со старого открытого ключа prefs['jwt'].
+    const secure = FlutterSecureStorage(
+      aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    );
     api.onTokenChanged = (t) {
       if (t == null) {
-        prefs.remove('jwt');
+        secure.delete(key: 'jwt');
       } else {
-        prefs.setString('jwt', t);
+        secure.write(key: 'jwt', value: t);
       }
     };
-    api.authToken = prefs.getString('jwt');
+    var token = await secure.read(key: 'jwt');
+    if (token == null) {
+      final legacy = prefs.getString('jwt');
+      if (legacy != null && legacy.isNotEmpty) {
+        await secure.write(key: 'jwt', value: legacy);
+        await prefs.remove('jwt');
+        token = legacy;
+      }
+    }
+    api.authToken = token;
   }
 
   final ProductRepository productRepo = ApiConfig.useApiCatalog
