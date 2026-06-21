@@ -1,0 +1,113 @@
+"""Юридические документы экосистемы и аудит согласий пользователей (§3, §13
+docs/LAUNCH_READINESS.md). Документы версионируются (тип + версия) и публикуются
+(published_at). UserConsent фиксирует, кто/когда/какую версию принял, из какого
+продукта и факт отзыва — этого требует launch-gate. Текст документов заполняет
+юрист позже; здесь — инфраструктура хранения и аудита."""
+from django.db import models
+from django.utils import timezone
+
+
+class LegalDocument(models.Model):
+    TERMS = "terms"            # Пользовательское соглашение
+    PRIVACY = "privacy"        # Политика конфиденциальности
+    PD_CONSENT = "pd_consent"  # Согласие на обработку персональных данных
+    MARKETING = "marketing"    # Согласие на рекламные коммуникации
+    OFFER = "offer"            # Публичная оферта (Store)
+    LOYALTY = "loyalty"        # Правила программы лояльности
+    CLUB = "club"              # Правила сообщества/клубов
+    TYPE_CHOICES = [
+        (TERMS, "Пользовательское соглашение"),
+        (PRIVACY, "Политика конфиденциальности"),
+        (PD_CONSENT, "Согласие на обработку ПД"),
+        (MARKETING, "Рекламные коммуникации"),
+        (OFFER, "Оферта (Store)"),
+        (LOYALTY, "Правила лояльности"),
+        (CLUB, "Правила сообщества"),
+    ]
+
+    doc_type = models.CharField(max_length=20, choices=TYPE_CHOICES, db_index=True)
+    version = models.CharField(max_length=20)  # напр. "1.0"
+    title = models.CharField(max_length=200)
+    body = models.TextField(blank=True, default="")  # текст документа (заполняет юрист)
+    is_required = models.BooleanField(default=False)  # обязателен к принятию для пользования
+    published_at = models.DateTimeField(null=True, blank=True)  # null = черновик
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "legal_documents"
+        unique_together = [("doc_type", "version")]
+        ordering = ["doc_type", "-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.get_doc_type_display()} v{self.version}"
+
+    @property
+    def is_published(self) -> bool:
+        return self.published_at is not None
+
+    def to_json(self, accepted=None) -> dict:
+        data = {
+            "id": str(self.pk),
+            "type": self.doc_type,
+            "version": self.version,
+            "title": self.title,
+            "body": self.body,
+            "required": self.is_required,
+            "publishedAt": self.published_at.isoformat() if self.published_at else None,
+        }
+        if accepted is not None:
+            data["accepted"] = accepted
+        return data
+
+    @classmethod
+    def current(cls):
+        """Последняя опубликованная версия каждого типа документа."""
+        latest = {}
+        for d in cls.objects.filter(published_at__isnull=False).order_by(
+            "doc_type", "-published_at"
+        ):
+            latest.setdefault(d.doc_type, d)  # первая на тип = самая свежая
+        return list(latest.values())
+
+
+class UserConsent(models.Model):
+    user_id = models.CharField(max_length=40, db_index=True)
+    document = models.ForeignKey(
+        LegalDocument, on_delete=models.PROTECT, related_name="consents"
+    )
+    accepted_at = models.DateTimeField(default=timezone.now)
+    source = models.CharField(max_length=30, blank=True, default="")  # kvartal|sport_store|site
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "user_consents"
+        ordering = ["-accepted_at"]
+
+    @property
+    def active(self) -> bool:
+        return self.revoked_at is None
+
+    def to_json(self) -> dict:
+        return {
+            "id": str(self.pk),
+            "type": self.document.doc_type,
+            "version": self.document.version,
+            "acceptedAt": self.accepted_at.isoformat(),
+            "source": self.source,
+            "revokedAt": self.revoked_at.isoformat() if self.revoked_at else None,
+            "active": self.active,
+        }
+
+
+def record_consent(user_id, document, source=""):
+    """Зафиксировать согласие (идемпотентно: повторное принятие той же версии не дублируется)."""
+    if not user_id or document is None:
+        return None
+    consent, _ = UserConsent.objects.get_or_create(
+        user_id=user_id,
+        document=document,
+        revoked_at=None,
+        defaults={"source": source},
+    )
+    return consent

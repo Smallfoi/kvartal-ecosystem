@@ -1,0 +1,36 @@
+from django.contrib import admin
+from django.utils import timezone
+from unfold.admin import ModelAdmin
+
+from .models import LegalDocument, UserConsent
+
+
+@admin.register(LegalDocument)
+class LegalDocumentAdmin(ModelAdmin):
+    list_display = (
+        "doc_type", "version", "title", "is_required", "published_at", "created_at",
+    )
+    list_filter = ("doc_type", "is_required")
+    search_fields = ("title", "body", "version")
+    date_hierarchy = "created_at"
+    actions = ["publish", "unpublish"]
+
+    @admin.action(description="Опубликовать выбранные")
+    def publish(self, request, queryset):
+        queryset.filter(published_at__isnull=True).update(published_at=timezone.now())
+
+    @admin.action(description="Снять с публикации (в черновик)")
+    def unpublish(self, request, queryset):
+        queryset.update(published_at=None)
+
+
+@admin.register(UserConsent)
+class UserConsentAdmin(ModelAdmin):
+    list_display = ("id", "user_id", "document", "source", "accepted_at", "revoked_at")
+    list_filter = ("source", "document__doc_type")
+    search_fields = ("user_id",)
+    date_hierarchy = "accepted_at"
+    # Аудит согласий не редактируем вручную — только просмотр.
+
+    def has_change_permission(self, request, obj=None):
+        return False

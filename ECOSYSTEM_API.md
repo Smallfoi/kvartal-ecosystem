@@ -153,6 +153,19 @@
   "read": false, "createdAt": "2026-06-05T14:00:00Z" }
 ```
 
+### 2.7 LegalDocument / UserConsent (Legal) — единые документы и аудит согласий
+Версионируемые документы (тип+версия) и факт согласия пользователя — для launch-gate
+(`docs/LAUNCH_READINESS.md` §3/§13). Текст документов заполняет юрист.
+```json
+// LegalDocument
+{ "id": "1", "type": "terms | privacy | pd_consent | marketing | offer | loyalty | club",
+  "version": "1.0", "title": "Пользовательское соглашение", "body": "…",
+  "required": true, "publishedAt": "2026-06-21T00:00:00Z", "accepted": false }
+// UserConsent (в /legal/consents)
+{ "id": "10", "type": "terms", "version": "1.0", "acceptedAt": "…",
+  "source": "kvartal", "revokedAt": null, "active": true }
+```
+
 ---
 
 ## 3. Эндпоинты
@@ -211,6 +224,14 @@ POST /shoes/:id/distance  { km }        → ShoeAsset              (Кварта
 GET  /notifications                     → Notification[]
 POST /notifications/read  { ids: [] }   → 200
 POST /devices  { fcmToken, platform }   → 200                    (регистрация устройства для пуша)
+```
+
+### Legal / Consents (единые документы и согласия)
+```
+GET  /legal/documents                   → LegalDocument[]   (текущие опубликованные; accepted — если Bearer)
+POST /legal/consent     { accept:[type], source } | { type, source } → { recorded }   (Bearer)
+GET  /legal/consents                    → UserConsent[]     (аудит согласий пользователя, Bearer)
+POST /legal/consent/revoke  { type }    → { revoked }       (отзыв необязательного согласия, Bearer)
 ```
 
 ---
