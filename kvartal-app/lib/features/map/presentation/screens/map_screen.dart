@@ -1010,6 +1010,10 @@ class _KvartalTopLogo extends StatelessWidget {
   }
 }
 
+/// Заглушка морозного бонуса: честно показывает, что фича в разработке
+/// (вместо прежних фейковых «−24°C ×1.4», которые вводили в заблуждение).
+/// Реальная реализация — погода Open-Meteo + серверная кривая «Средняя» +
+/// влияние на баллы — позже (D-20).
 class _WeatherChip extends StatelessWidget {
   const _WeatherChip();
 
@@ -1023,7 +1027,7 @@ class _WeatherChip extends StatelessWidget {
           const Icon(CupertinoIcons.snow, size: 12, color: AppColors.info),
           const SizedBox(width: 4),
           Text(
-            '−24°C',
+            'Мороз-бонус',
             style: Theme.of(
               context,
             ).textTheme.labelMedium?.copyWith(color: Colors.white),
@@ -1036,7 +1040,7 @@ class _WeatherChip extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              'x1.4',
+              'скоро',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
