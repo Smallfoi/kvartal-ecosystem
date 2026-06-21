@@ -72,8 +72,32 @@ def capture(request):
         ring.append(ring[0])
     wkt = "POLYGON((" + ", ".join(f"{lng} {lat}" for lng, lat in ring) + "))"
     club_id = _club_of(uid)
+    # Идемпотентность (S-04): клиент шлёт captureId; повтор (ретрай офлайн-очереди)
+    # не применяем заново — отдаём текущую территорию.
+    capture_id = (str(request.data.get("captureId") or "")).strip()[:64] or None
     with transaction.atomic():
         with connection.cursor() as cur:
+            # 0a) дедуп по captureId — ДО кулдауна и любых изменений
+            if capture_id:
+                cur.execute(
+                    "INSERT INTO processed_captures (capture_id, owner_id) "
+                    "VALUES (%s, %s) ON CONFLICT (capture_id) DO NOTHING",
+                    [capture_id, uid],
+                )
+                if cur.rowcount == 0:
+                    cur.execute(
+                        "SELECT ST_AsGeoJSON(geom), ST_Area(geom::geography) "
+                        "FROM territories WHERE owner_id=%s",
+                        [uid],
+                    )
+                    row = cur.fetchone()
+                    if row:
+                        gj, area = row
+                        return Response({
+                            "ok": True, "duplicate": True, "areaM2": area,
+                            "geojson": json.loads(gj), "holdHoursLeft": HOLD_HOURS,
+                        })
+                    return Response({"ok": True, "duplicate": True, "areaM2": 0, "geojson": None})
             # 0) лениво убираем протухшие (>72ч без обновления) — освобождаем карту
             cur.execute(
                 "DELETE FROM territories WHERE captured_at <= now() - make_interval(hours => %s)",
@@ -151,6 +175,11 @@ def capture(request):
                 [uid],
             )
             gj, area = cur.fetchone()
+            if capture_id:
+                cur.execute(
+                    "UPDATE processed_captures SET area_m2=%s WHERE capture_id=%s",
+                    [area, capture_id],
+                )
     return Response(
         {
             "ok": True,
