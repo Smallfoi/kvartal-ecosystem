@@ -56,7 +56,11 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (_) => CartProvider(prefs)),
         ChangeNotifierProvider(create: (_) => WishlistProvider(prefs)),
-        ChangeNotifierProvider(create: (_) => NotificationsProvider(prefs)),
+        ChangeNotifierProxyProvider<AuthProvider, NotificationsProvider>(
+          create: (_) => NotificationsProvider(prefs,
+              api: api, serverBacked: ApiConfig.useApiNotifications && api != null),
+          update: (_, auth, notif) => notif!..syncAuth(auth.isLoggedIn),
+        ),
         ChangeNotifierProxyProvider<AuthProvider, LoyaltyProvider>(
           create: (_) => LoyaltyProvider(prefs, loyaltyRepo,
               serverBacked: ApiConfig.useApiLoyalty),

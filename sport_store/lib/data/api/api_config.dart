@@ -22,10 +22,15 @@ class ApiConfig {
   static const bool useApiLoyalty = true;
   static const bool useApiCatalog = true;
   static const bool useApiOrder = true;
+  static const bool useApiNotifications = true;
 
   /// Нужен ли вообще HTTP-клиент (хотя бы один сервис на API).
   static bool get anyApi =>
-      useApiAuth || useApiLoyalty || useApiCatalog || useApiOrder;
+      useApiAuth ||
+      useApiLoyalty ||
+      useApiCatalog ||
+      useApiOrder ||
+      useApiNotifications;
 
   static const Duration timeout = Duration(seconds: 15);
 }
