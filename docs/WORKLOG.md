@@ -16,6 +16,14 @@
 ---
 
 
+## 2026-06-21 — Claude — SportStore: лента уведомлений из backend (замыкание цикла)
+**Сделано:** SportStore читает уведомления с общего бэкенда (бэк-часть — PR #64).
+- `NotificationsProvider` теперь serverBacked: `ApiClient` + `syncAuth(loggedIn)` → при логине `refresh()` тянет `GET /v1/notifications`; `markAllRead()` шлёт `POST /v1/notifications/read`. Локальный кэш сохранён как фолбэк. Флаг `ApiConfig.useApiNotifications`.
+- main.dart: `ChangeNotifierProxyProvider<AuthProvider, NotificationsProvider>` (syncAuth по auth). Модель `AppNotification.fromJson` 1:1 с бэком.
+- **Проверено на устройстве:** при логине приложение тянет `GET /notifications` (200); сменил статус заказа в БД (как в админке) → экран «Уведомления» показал «Заказ отправлен» и «Заказ оформлен» (SS-NDEMO). analyze чисто. Демо убрано.
+- **ИТОГ цикла:** правка статуса заказа в админке → бэкенд создаёт уведомление → SportStore показывает в ленте.
+**Дальше:** FCM-пуш (нужен Firebase) для уведомлений вне приложения; та же лента в Квартале.
+
 ## 2026-06-20 — Claude — Уведомления: серверная лента экосистемы (без FCM)
 **Сделано:** единая лента уведомлений (ECOSYSTEM_API §2.6) — основа для пушей, уже полезна как ин-апп лента. Без внешних аккаунтов.
 - Новое app `notifications`: модель `Notification` (user_id, title, body, type, order_id, read, created_at; миграция 0001) + `create_notification()`. Эндпоинты `GET /v1/notifications`, `POST /v1/notifications/read` ({ids:[]} или всё). Admin (unfold) + ссылка в сайдбаре.

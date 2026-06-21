@@ -1,21 +1,59 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/api/api_client.dart';
 import '../models/app_notification.dart';
 
 class NotificationsProvider extends ChangeNotifier {
   final SharedPreferences _prefs;
+
+  /// true → лента берётся с общего backend (GET /notifications), источник правды.
+  final ApiClient? api;
+  final bool serverBacked;
+
   static const _key = 'notifications';
 
   final List<AppNotification> _items = [];
+  bool _lastLoggedIn = false;
 
-  NotificationsProvider(this._prefs) {
+  NotificationsProvider(this._prefs, {this.api, this.serverBacked = false}) {
     _load();
   }
 
   List<AppNotification> get items => List.unmodifiable(_items);
   int get unreadCount => _items.where((n) => !n.read).length;
   bool get hasUnread => unreadCount > 0;
+
+  /// Вызывается из ProxyProvider при изменении авторизации.
+  Future<void> syncAuth(bool loggedIn) async {
+    if (!serverBacked) return;
+    if (loggedIn && !_lastLoggedIn) {
+      _lastLoggedIn = true;
+      await refresh();
+    } else if (!loggedIn && _lastLoggedIn) {
+      _lastLoggedIn = false;
+      _items.clear();
+      _save();
+      notifyListeners();
+    }
+  }
+
+  /// Лента уведомлений с общего бэкенда (статусы заказов и т.п.).
+  Future<void> refresh() async {
+    if (!serverBacked || api == null) return;
+    try {
+      final data = await api!.get('/notifications') as List;
+      _items
+        ..clear()
+        ..addAll(
+          data.whereType<Map<String, dynamic>>().map(AppNotification.fromJson),
+        );
+      _save();
+      notifyListeners();
+    } catch (_) {
+      // офлайн — остаёмся на локальном кэше
+    }
+  }
 
   void _load() {
     final raw = _prefs.getString(_key);
@@ -38,13 +76,20 @@ class NotificationsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void markAllRead() {
+  Future<void> markAllRead() async {
     if (!hasUnread) return;
     for (var i = 0; i < _items.length; i++) {
       if (!_items[i].read) _items[i] = _items[i].copyWith(read: true);
     }
     _save();
     notifyListeners();
+    if (serverBacked && api != null) {
+      try {
+        await api!.post('/notifications/read', body: const {});
+      } catch (_) {
+        // офлайн — отметятся при следующей синхронизации
+      }
+    }
   }
 
   void remove(String id) {
