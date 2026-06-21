@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:math' show Random;
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_config.dart';
 import '../../auth/data/auth_provider.dart';
@@ -183,50 +187,142 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
   }) async {
     final token = _token;
     if (token == null || route.length < 3) return null;
+    final captureId = _newCaptureId();
     state = state.copyWith(isCapturing: true, clearError: true, clearMessage: true);
+    final body = <String, dynamic>{
+      'points': [
+        for (final p in route) [p.latitude, p.longitude],
+      ],
+      'captureId': captureId, // идемпотентность (S-04): ретрай не задвоит
+      if (distanceMeters != null) 'distanceMeters': distanceMeters,
+      if (elapsedSeconds != null) 'elapsedSeconds': elapsedSeconds,
+    };
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/territories/capture',
-        data: {
-          'points': [
-            for (final p in route) [p.latitude, p.longitude],
-          ],
-          if (distanceMeters != null) 'distanceMeters': distanceMeters,
-          if (elapsedSeconds != null) 'elapsedSeconds': elapsedSeconds,
-        },
+        data: body,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
-      final data = response.data ?? const <String, dynamic>{};
-      final area = (data['areaM2'] as num?)?.toDouble();
-      final geojson = data['geojson'];
-      // Сразу показываем свою обновлённую территорию, не дожидаясь bbox-загрузки.
-      if (geojson is Map<String, dynamic>) {
-        final mine = ServerTerritory(
-          ownerId: 'me',
-          clubId: null,
-          rel: TerritoryRel.mine,
-          holdHoursLeft: (data['holdHoursLeft'] as num?)?.toDouble(),
-          rings: ringsFromGeoJson(geojson),
-        );
-        final others = state.territories
-            .where((t) => t.rel != TerritoryRel.mine)
-            .toList();
+      return _applyCaptureResponse(response.data ?? const <String, dynamic>{});
+    } on DioException catch (e) {
+      if (e.response == null) {
+        // Нет связи (улица/сбой сети): сохраняем в офлайн-очередь (S-07),
+        // отправим автоматически при подключении; captureId не даст задвоить.
+        await _enqueueCapture(body);
         state = state.copyWith(
-          territories: mine.rings.isEmpty ? others : [...others, mine],
           isCapturing: false,
-          lastAreaM2: area,
-          message: area != null
-              ? 'Территория захвачена: ${formatAreaM2(area)}'
-              : 'Территория захвачена',
           clearError: true,
+          message: 'Нет связи — территория сохранена, отправим автоматически.',
         );
-      } else {
-        state = state.copyWith(isCapturing: false, lastAreaM2: area);
+        return null;
       }
-      return area;
+      state = state.copyWith(isCapturing: false, error: _errorText(e));
+      return null;
     } catch (e) {
       state = state.copyWith(isCapturing: false, error: _errorText(e));
       return null;
+    }
+  }
+
+  /// Применить ответ сервера на захват к состоянию (своя территория сразу видна).
+  double? _applyCaptureResponse(Map<String, dynamic> data) {
+    final area = (data['areaM2'] as num?)?.toDouble();
+    final geojson = data['geojson'];
+    if (geojson is Map<String, dynamic>) {
+      final mine = ServerTerritory(
+        ownerId: 'me',
+        clubId: null,
+        rel: TerritoryRel.mine,
+        holdHoursLeft: (data['holdHoursLeft'] as num?)?.toDouble(),
+        rings: ringsFromGeoJson(geojson),
+      );
+      final others =
+          state.territories.where((t) => t.rel != TerritoryRel.mine).toList();
+      state = state.copyWith(
+        territories: mine.rings.isEmpty ? others : [...others, mine],
+        isCapturing: false,
+        lastAreaM2: area,
+        message: area != null
+            ? 'Территория захвачена: ${formatAreaM2(area)}'
+            : 'Территория захвачена',
+        clearError: true,
+      );
+    } else {
+      state = state.copyWith(isCapturing: false, lastAreaM2: area);
+    }
+    return area;
+  }
+
+  String _newCaptureId() =>
+      'cap_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}';
+
+  static const _captureQueueKey = 'kvartal.capture_queue.v1';
+
+  Future<void> _enqueueCapture(Map<String, dynamic> body) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList(_captureQueueKey) ?? <String>[];
+      list.add(jsonEncode(body));
+      await prefs.setStringList(_captureQueueKey, list);
+    } catch (_) {}
+  }
+
+  /// Отправить отложенные офлайн-захваты, когда появилась связь (S-07).
+  /// Идемпотентно (captureId): дубликаты сервер отсечёт. Успешные/отклонённые
+  /// убираем из очереди; на сетевой ошибке — оставляем остаток на потом.
+  Future<void> flushQueue() async {
+    final token = _token;
+    if (token == null) return;
+    List<String> list;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      list = prefs.getStringList(_captureQueueKey) ?? <String>[];
+    } catch (_) {
+      return;
+    }
+    if (list.isEmpty) return;
+
+    final remaining = <String>[];
+    var networkDown = false;
+    var deliveredAny = false;
+    for (final raw in list) {
+      if (networkDown) {
+        remaining.add(raw);
+        continue;
+      }
+      Map<String, dynamic> body;
+      try {
+        body = jsonDecode(raw) as Map<String, dynamic>;
+      } catch (_) {
+        continue; // битая запись — выбрасываем
+      }
+      try {
+        await _dio.post<Map<String, dynamic>>(
+          '/territories/capture',
+          data: body,
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+        deliveredAny = true; // успех (в т.ч. duplicate) → убираем из очереди
+      } on DioException catch (e) {
+        if (e.response == null) {
+          networkDown = true; // связи нет — остаток на потом
+          remaining.add(raw);
+        }
+        // сервер 4xx (отклонён/дубликат) → разрешено, убираем
+      } catch (_) {
+        remaining.add(raw);
+      }
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (remaining.isEmpty) {
+        await prefs.remove(_captureQueueKey);
+      } else {
+        await prefs.setStringList(_captureQueueKey, remaining);
+      }
+    } catch (_) {}
+    if (deliveredAny && remaining.isEmpty) {
+      state = state.copyWith(message: 'Офлайн-захваты отправлены.');
     }
   }
 
@@ -271,6 +367,10 @@ final territoryProvider =
       ref.listen<AuthState>(authProvider, (prev, next) {
         if (next.token != prev?.token) {
           notifier.reset();
+          // Появился токен (вход/восстановление) — досылаем офлайн-захваты.
+          if (next.token != null && next.token!.isNotEmpty) {
+            notifier.flushQueue();
+          }
         }
       });
       return notifier;
