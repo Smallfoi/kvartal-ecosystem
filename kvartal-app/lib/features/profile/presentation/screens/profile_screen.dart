@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../loyalty/data/loyalty_provider.dart';
+import '../../../notifications/data/notifications_provider.dart';
 import '../../../run/data/completed_runs_provider.dart';
 import '../../../shoes/data/shoes_provider.dart';
 import '../../../territory/data/territory_provider.dart';
@@ -102,6 +103,49 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
+class _NotificationsBell extends StatelessWidget {
+  final int unread;
+  const _NotificationsBell({required this.unread});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        IconButton(
+          tooltip: 'Уведомления',
+          icon: const Icon(CupertinoIcons.bell, size: 20),
+          onPressed: () => context.push('/profile/notifications'),
+        ),
+        if (unread > 0)
+          Positioned(
+            right: 6,
+            top: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              decoration: BoxDecoration(
+                color: AppColors.error,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.bgDark, width: 1.5),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                unread > 9 ? '9+' : '$unread',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _ProfileAppBar extends ConsumerWidget {
   final AuthUser? user;
   const _ProfileAppBar({required this.user});
@@ -120,6 +164,7 @@ class _ProfileAppBar extends ConsumerWidget {
       pinned: true,
       backgroundColor: AppColors.bgDark,
       actions: [
+        _NotificationsBell(unread: ref.watch(notificationsProvider).unread),
         IconButton(
           tooltip: 'Настройки',
           icon: const Icon(CupertinoIcons.settings, size: 20),
