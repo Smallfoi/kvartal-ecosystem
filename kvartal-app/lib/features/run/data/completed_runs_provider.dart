@@ -142,6 +142,7 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
       state = runs.take(_maxStoredRuns).toList();
     }
     unawaited(syncPending());
+    unawaited(pullFromServer());
   }
 
   Future<void> add(CompletedRun run) async {
@@ -193,6 +194,45 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
       if (!_synced.contains(run.id)) await _syncRun(run);
     }
   }
+
+  /// Подтянуть забеги с сервера (кросс-девайс/после переустановки). Серверные
+  /// забеги без маршрута (сырой GPS не хранится, §2) — карточки истории его и не
+  /// используют (иконка + метрики). Локальные забеги (с маршрутом) в приоритете.
+  Future<void> pullFromServer() async {
+    final token = _token;
+    if (token == null) return;
+    try {
+      final r = await _dio.get<List<dynamic>>(
+        '/runs',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final localIds = state.map((e) => e.id).toSet();
+      final serverOnly = <CompletedRun>[];
+      for (final item in (r.data ?? const [])) {
+        if (item is! Map) continue;
+        final m = Map<String, dynamic>.from(item);
+        final id = m['id']?.toString();
+        if (id == null || id.isEmpty || localIds.contains(id)) continue;
+        serverOnly.add(CompletedRun(
+          id: id,
+          finishedAt: DateTime.fromMillisecondsSinceEpoch(
+            (m['finishedAtMs'] as num? ?? 0).toInt(),
+          ),
+          route: const [], // сервер не хранит сырой маршрут (приватность §2)
+          elapsed: Duration(seconds: (m['elapsedSeconds'] as num? ?? 0).toInt()),
+          distanceMeters: (m['distanceMeters'] as num? ?? 0).toDouble(),
+          capturedZones: (m['capturedZones'] as num? ?? 0).toInt(),
+          capturedTerritory: m['capturedTerritory'] as bool? ?? false,
+        ));
+      }
+      if (serverOnly.isEmpty) return;
+      final merged = [...state, ...serverOnly]
+        ..sort((a, b) => b.finishedAt.compareTo(a.finishedAt));
+      state = merged.take(_maxStoredRuns).toList();
+    } catch (_) {
+      // офлайн/ошибка — покажем локальную историю
+    }
+  }
 }
 
 final completedRunsProvider =
@@ -204,6 +244,7 @@ final completedRunsProvider =
             next.token!.isNotEmpty &&
             next.token != prev?.token) {
           notifier.syncPending();
+          notifier.pullFromServer();
         }
       });
       return notifier;
