@@ -182,7 +182,14 @@ POST /auth/oauth/complete      { email, provider, name, phone } → { token, use
 POST /auth/password/forgot     { email }                 → 200
 POST /auth/password/reset      { password }              → 200
 PUT  /auth/password            { old, new }              → 200
-GET  /auth/me                                            → user
+GET  /auth/me                                            → user   (incl. privacy)
+```
+
+### Account (приватность и удаление, LAUNCH_READINESS §2/§13)
+```
+GET   /account/privacy                                   → { profilePublic, routePublic, realtimePublic }
+PATCH /account/privacy   { routePublic, ... }            → privacy   (по умолчанию всё закрыто)
+POST  /account/delete    { confirm: true }               → { ok, deleted{...} }  (необратимо, Bearer)
 ```
 
 ### Catalog

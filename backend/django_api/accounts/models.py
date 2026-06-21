@@ -13,8 +13,20 @@ class Account(models.Model):
     password_hash = models.CharField(max_length=200, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Приватность (privacy by design, LAUNCH_READINESS §2): по умолчанию закрыто.
+    profile_public = models.BooleanField(default=False)   # профиль виден другим
+    route_public = models.BooleanField(default=False)     # маршруты/территории видны другим
+    realtime_public = models.BooleanField(default=False)  # положение в реальном времени
+
     class Meta:
         db_table = "accounts"
+
+    def privacy_json(self) -> dict:
+        return {
+            "profilePublic": self.profile_public,
+            "routePublic": self.route_public,
+            "realtimePublic": self.realtime_public,
+        }
 
     def to_json(self) -> dict:
         return {
@@ -26,4 +38,5 @@ class Account(models.Model):
             "provider": self.provider or "email",
             "avatarPath": self.avatar_path,
             "addresses": [],
+            "privacy": self.privacy_json(),
         }
