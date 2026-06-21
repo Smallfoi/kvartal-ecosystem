@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../loyalty/data/loyalty_provider.dart';
 import '../../shoes/data/shoes_provider.dart';
 import 'completed_runs_provider.dart';
+import 'gps_kalman.dart';
 
 enum RunStatus { idle, active, paused }
 
@@ -87,9 +88,14 @@ class RunNotifier extends StateNotifier<RunState> {
   Timer? _timer;
   StreamSubscription<Position>? _foregroundPositionSub;
 
+  /// Сглаживание GPS — каждый забег со своим чистым фильтром.
+  final GpsKalman _kalman = GpsKalman();
+
   Future<void> start() async {
     debugPrint('KVARTAL_RUN_START_TAP');
     if (state.status == RunStatus.active) return;
+    // Новый забег (не resume) — сбрасываем фильтр сглаживания.
+    if (state.status == RunStatus.idle) _kalman.reset();
 
     final canTrack = await _ensureLocationReady();
     if (!canTrack) {
@@ -197,7 +203,14 @@ class RunNotifier extends StateNotifier<RunState> {
     if (!force && position.accuracy > _maxAcceptedAccuracyMeters) return;
     if (!force && position.speed > _maxRunSpeedMs) return;
 
-    final next = LatLng(position.latitude, position.longitude);
+    // Сглаживаем фикс фильтром Калмана: метку и линию рисуем по сглаженной
+    // точке, а не по «дрожащему» сырому GPS. Точность фикса = вес доверия.
+    final next = _kalman.process(
+      lat: position.latitude,
+      lng: position.longitude,
+      accuracy: position.accuracy,
+      timestampMs: DateTime.now().millisecondsSinceEpoch,
+    );
     final route = [...state.route];
     var distanceMeters = state.distanceMeters;
 
