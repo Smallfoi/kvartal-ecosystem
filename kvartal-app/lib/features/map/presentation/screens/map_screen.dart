@@ -104,10 +104,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void initState() {
     super.initState();
     _loadMapStyle();
-    _territoryRefreshTimer = Timer.periodic(
-      _territoryRefreshInterval,
-      (_) => _loadTerritories(),
-    );
+    _territoryRefreshTimer = Timer.periodic(_territoryRefreshInterval, (_) {
+      _loadTerritories();
+      // Досылаем отложенные офлайн-захваты, когда вернулась связь (S-07).
+      ref.read(territoryProvider.notifier).flushQueue();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerOnCurrentLocation();
       _scheduleTerritoryLoad();
