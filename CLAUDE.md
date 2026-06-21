@@ -12,7 +12,7 @@
 - `kvartal-app/` — «Квартал», Flutter + Riverpod. Бег, захват территорий, баллы, клубы.
 - `sport_store/` — SportStore, Flutter + Provider. Магазин.
 - `САЙТ STAW/` — сайт бренда (статика).
-- `backend/` — ОБЩИЙ бэкенд (сейчас FastAPI + SQLite, dev). Единый аккаунт + общие баллы для всех.
+- `backend/` — ОБЩИЙ бэкенд: **Django 5 + DRF + PostgreSQL/PostGIS в Docker** (`backend/django_api/`). Единый аккаунт + общие баллы для всех.
 - `ECOSYSTEM_API.md` — контракт API, единый источник правды по эндпоинтам для всех трёх продуктов.
 
 Это не три отдельных продукта, а одна система: единый пользователь (SSO по телефону),
@@ -51,8 +51,9 @@
 ## Окружение и команды (важное)
 - ОС: Windows. Оболочки: PowerShell (основная) и git-bash. **Кириллица в PowerShell бьётся** —
   UTF-8-тексты писать через файловый инструмент или Python, не через PowerShell heredoc.
-- Бэкенд: `cd backend && PYTHONUNBUFFERED=1 python -m uvicorn main:app --host 0.0.0.0 --port 8000`.
-  Бек в dev нестабилен/часто падает — **проверяй `GET /v1/health` перед тестами**.
+- Бэкенд (Docker): `cd backend && docker compose up -d` (db postgis + web Django на :8000).
+  После перезагрузки сначала запустить Docker Desktop. Docker в dev иногда сам останавливается —
+  **проверяй `GET /v1/health` перед тестами**, при падении перезапусти `docker compose up -d`.
 - Телефон ↔ бек: `adb reverse tcp:8000 tcp:8000` (по USB). На улице связи с dev-беком нет —
   начисления уходят в офлайн-очередь и долетают при возвращении.
 - GitHub: репозиторий **`Smallfoi/kvartal-ecosystem`** (public). `gh` лежит по
@@ -60,7 +61,7 @@
 
 ## Направление (куда движемся)
 1. Инфраструктура: Git/CI/защита `main` — **готово**.
-2. Фичи поверх рабочего FastAPI (общий аккаунт + баллы) — в процессе.
-3. Позже: миграция backend на Django + DRF (постепенно, рядом с FastAPI, контракты не ломать),
-   затем Docker (Postgres/PostGIS/Redis/Celery). См. `docs/DECISIONS.md` и
-   `kvartal-app/CLAUDE_HANDOFF_GITHUB_DJANGO_2026-06-13.md`.
+2. Миграция backend на **Django + DRF + PostgreSQL/PostGIS (Docker)** — **готово**; FastAPI удалён (D-12),
+   все 3 продукта работают на Django (контракты сохранены).
+3. Дальше: Redis/Celery (D-07); внешние интеграции (FCM-пуши, SMS, оплата — нужны аккаунты владельца);
+   прод-хостинг/домены. См. `docs/DECISIONS.md`.

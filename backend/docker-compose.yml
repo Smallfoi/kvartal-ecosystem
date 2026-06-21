@@ -1,8 +1,7 @@
-# Стек бэкенда экосистемы STAW (этап перехода на Django + PostGIS).
-# FastAPI (backend/main.py, порт 8000) пока работает рядом и обслуживает приложения —
-# Django поднимаем параллельно на 8001, переключим приложения после паритета (D-06).
+# Стек бэкенда экосистемы STAW: Django 5 + DRF + PostgreSQL/PostGIS.
+# Единый общий бэкенд для всех 3 продуктов на :8000 (прежний FastAPI удалён, D-12).
 #
-# Запуск (когда Docker Desktop работает):  cd backend && docker compose up --build
+# Запуск (когда Docker Desktop работает):  cd backend && docker compose up -d
 services:
   db:
     image: postgis/postgis:16-3.4
@@ -39,8 +38,7 @@ services:
       # Загруженные через админку фото — отдельный записываемый том (/media/uploads/*).
       - media_uploads:/srv/media/uploads
     ports:
-      - "8000:8000"   # Django на хосте :8000 — приложения уже ходят сюда (adb reverse tcp:8000).
-                       # FastAPI (backend/main.py) отключён; оставлен как legacy до полного удаления.
+      - "8000:8000"   # Django на хосте :8000 — приложения ходят сюда (adb reverse tcp:8000).
     depends_on:
       db:
         condition: service_healthy

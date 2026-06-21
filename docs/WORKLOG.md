@@ -16,6 +16,16 @@
 ---
 
 
+## 2026-06-21 — Claude — Чистка: добить legacy FastAPI в доках/конфиге
+**Сделано:** код FastAPI был удалён ещё при миграции (D-12), но в доках/комментариях он оставался «живым» — выровнял по факту (бэк = Django+PostGIS в Docker).
+- `CLAUDE.md` + `AGENTS.md` (зеркала): описание `backend/` → Django+PostGIS (Docker); команда запуска → `docker compose up -d` (вместо `uvicorn main:app`); раздел «Направление» → миграция на Django **готова**.
+- `docs/PITFALLS.md`: секция «Backend (FastAPI dev)» → «Backend (Django + Docker, dev)»; имя обяз. CI-проверки исправлено `Backend · FastAPI`→`Backend · Django` (факт в ci.yml).
+- `backend/docker-compose.yml`: убраны устаревшие комментарии про «FastAPI рядом / Django на 8001 / legacy».
+- Удалён одноразовый `core/management/commands/import_sqlite.py` (миграция SQLite→Postgres завершена, D-12) + локальный остаток `backend/ecosystem.db` (был в .gitignore).
+- **Не понадобилось:** `sport_store/IDEAS.md` оказался НЕ битым — правка не нужна. Историю FastAPI в WORKLOG/DECISIONS/handoff не трогал (летопись).
+**Состояние:** агент-доки больше не вводят в заблуждение; FastAPI упоминается только как «удалён (D-12)» и в исторических записях.
+**Дальше:** Redis/Celery (D-07); внешние интеграции (нужны аккаунты владельца).
+
 ## 2026-06-21 — Claude — Квартал: сглаживание GPS (Калман) + анимация метки
 **Сделано:** маршрут перестал «прыгать» — сглаживаем GPS в приложении (D-16, выбор владельца — вариант A).
 - **Причина прыжков:** в `_applyPosition` принятые фиксы клались в маршрут *сырыми*, а GPS дрожит ±3-10 м.
