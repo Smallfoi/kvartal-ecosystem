@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../data/weather_provider.dart';
+import 'weather_background.dart';
 
 // ── WMO weather code → иконка / подпись ──────────────────────────────────────
 
@@ -141,32 +142,76 @@ class _WeatherBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(weatherIcon(w.weatherCode), size: 44, color: AppColors.info),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        // Живой анимированный баннер-«штрих» по текущему условию (солнце/облака/
+        // дождь/снег/туман/гроза). Текст поверх — белый с тенью для контраста.
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            height: 150,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Text(
-                  formatTemp(w.tempC),
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
+                WeatherBackground(weatherCode: w.weatherCode, height: 150),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  formatTemp(w.tempC),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.w800,
+                                    shadows: [
+                                      Shadow(color: Colors.black38, blurRadius: 6),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  weatherLabel(w.weatherCode),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    shadows: [
+                                      Shadow(color: Colors.black38, blurRadius: 4),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            weatherIcon(w.weatherCode),
+                            size: 40,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Ощущается как ${formatTemp(w.feelsLikeC)}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 13,
+                          shadows: const [
+                            Shadow(color: Colors.black38, blurRadius: 4),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  weatherLabel(w.weatherCode),
-                  style: const TextStyle(color: AppColors.textSecondary),
                 ),
               ],
             ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Ощущается как ${formatTemp(w.feelsLikeC)}',
-          style: const TextStyle(color: AppColors.textTertiary, fontSize: 13),
+          ),
         ),
         const SizedBox(height: 18),
         Row(
