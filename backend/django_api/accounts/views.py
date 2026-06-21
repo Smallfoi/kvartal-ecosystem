@@ -112,3 +112,83 @@ def update_profile(request):
     except IntegrityError:
         return Response({"detail": "Email already belongs to another account"}, status=409)
     return Response(acc.to_json())
+
+
+@api_view(["GET", "PATCH"])
+def account_privacy(request):
+    """Настройки приватности (LAUNCH_READINESS §2). GET → текущие; PATCH → меняет
+    {profilePublic, routePublic, realtimePublic}. По умолчанию всё закрыто."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    acc = Account.objects.filter(id=uid).first()
+    if not acc:
+        return Response({"detail": "User not found"}, status=404)
+    if request.method == "PATCH":
+        d = request.data
+        if d.get("profilePublic") is not None:
+            acc.profile_public = bool(d.get("profilePublic"))
+        if d.get("routePublic") is not None:
+            acc.route_public = bool(d.get("routePublic"))
+        if d.get("realtimePublic") is not None:
+            acc.realtime_public = bool(d.get("realtimePublic"))
+        acc.save(update_fields=["profile_public", "route_public", "realtime_public"])
+    return Response(acc.privacy_json())
+
+
+@api_view(["POST"])
+def delete_account(request):
+    """Удаление аккаунта и всех персональных данных пользователя (152-ФЗ, LR §13).
+    Требует Bearer + тело {"confirm": true}. Необратимо."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    acc = Account.objects.filter(id=uid).first()
+    if not acc:
+        return Response({"detail": "User not found"}, status=404)
+    if request.data.get("confirm") is not True:
+        return Response({"detail": "Требуется подтверждение: {confirm: true}"}, status=400)
+
+    from django.db import connection
+    from clubs.models import Club, ClubJoinRequest, ClubMember
+    from legal.models import UserConsent
+    from loyalty.models import LoyaltyTransaction
+    from notifications.models import Notification
+    from orders.models import Order
+    from shoes.models import ShoeAsset
+
+    # Клуб во владении с другими участниками — нельзя удалить «молча».
+    owned = Club.objects.filter(owner_id=uid)
+    for club in owned:
+        others = ClubMember.objects.filter(club_id=club.id).exclude(user_id=uid).exists()
+        if others:
+            return Response(
+                {"detail": "Вы владелец клуба с участниками — передайте или распустите клуб"},
+                status=409,
+            )
+
+    deleted = {}
+    # Клубы во владении (без чужих участников) — распускаем целиком.
+    owned_ids = list(owned.values_list("id", flat=True))
+    if owned_ids:
+        ClubMember.objects.filter(club_id__in=owned_ids).delete()
+        ClubJoinRequest.objects.filter(club_id__in=owned_ids).delete()
+        deleted["clubs"] = owned.delete()[0]
+    # Членство/заявки пользователя в чужих клубах.
+    deleted["clubMemberships"] = ClubMember.objects.filter(user_id=uid).delete()[0]
+    deleted["clubRequests"] = ClubJoinRequest.objects.filter(user_id=uid).delete()[0]
+    # Личные данные по сервисам.
+    deleted["loyalty"] = LoyaltyTransaction.objects.filter(user_id=uid).delete()[0]
+    deleted["orders"] = Order.objects.filter(user_id=uid).delete()[0]
+    deleted["shoes"] = ShoeAsset.objects.filter(user_id=uid).delete()[0]
+    deleted["notifications"] = Notification.objects.filter(user_id=uid).delete()[0]
+    deleted["consents"] = UserConsent.objects.filter(user_id=uid).delete()[0]
+    # Гео (PostGIS, raw SQL): территории + вечный след.
+    with connection.cursor() as cur:
+        cur.execute("DELETE FROM territories WHERE owner_id=%s", [uid])
+        deleted["territories"] = cur.rowcount
+        cur.execute("DELETE FROM footprints WHERE owner_id=%s", [uid])
+        deleted["footprints"] = cur.rowcount
+    # Сам аккаунт.
+    acc.delete()
+    return Response({"ok": True, "deleted": deleted})
