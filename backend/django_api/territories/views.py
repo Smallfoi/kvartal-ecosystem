@@ -31,6 +31,9 @@ _CAP = (
 # Живой слой территорий держится 7 дней без подтверждения забегом (мягкий распад).
 # (имя HOLD_HOURS сохраняем — его импортирует leaderboard для фильтра свежести.)
 HOLD_HOURS = 168
+# Защита свежего захвата (Вариант Б, D-14): кусок, захваченный за последние
+# PROTECT_HOURS, нельзя перехватить. Окно подкрутим по живому тесту.
+PROTECT_HOURS = 24
 # Античит.
 MIN_CAPTURE_AREA_M2 = 100  # меньше — это не реальная петля, а дрожь GPS
 MAX_CAPTURE_AREA_M2 = 2_000_000  # 2 км² за один забег — неправдоподобно (спуфинг/телепорт)
@@ -103,8 +106,13 @@ def capture(request):
                 "DELETE FROM territories WHERE captured_at <= now() - make_interval(hours => %s)",
                 [HOLD_HOURS],
             )
-            # 1) античит по площади захватываемого контура
-            cur.execute(f"SELECT ST_Area({_CAP}::geography)", [wkt])
+            # 1) материализуем валидный сглаженный контур ОДИН раз (переиспользуем)
+            cur.execute(f"SELECT ST_AsEWKT({_CAP})", [wkt])
+            cap_ewkt = (cur.fetchone() or [None])[0]
+            if not cap_ewkt:
+                return Response({"detail": "Не удалось обработать контур забега."}, status=400)
+            # 2) античит по площади контура (по полному контуру забега)
+            cur.execute("SELECT ST_Area(ST_GeomFromEWKT(%s)::geography)", [cap_ewkt])
             cap_area = (cur.fetchone() or [0])[0] or 0
             if cap_area < MIN_CAPTURE_AREA_M2:
                 return Response(
@@ -119,7 +127,7 @@ def capture(request):
                     {"detail": "Слишком большая территория за один забег — захват отклонён."},
                     status=400,
                 )
-            # 2) кулдаун: не чаще раза в CAPTURE_COOLDOWN_S секунд
+            # 3) кулдаун: не чаще раза в CAPTURE_COOLDOWN_S секунд
             cur.execute(
                 "SELECT 1 FROM territories WHERE owner_id=%s "
                 "AND captured_at > now() - make_interval(secs => %s)",
@@ -130,51 +138,74 @@ def capture(request):
                     {"detail": "Слишком частый захват — подожди немного."},
                     status=429,
                 )
-            # 3) перехват: вычесть наш полигон у чужих территорий
+            # 4) защита 24ч (Вариант Б): из контура вычитаем ЧУЖИЕ защищённые куски
+            #    (recent_captures моложе PROTECT_HOURS) → effective = что реально берём.
             cur.execute(
-                f"UPDATE territories SET geom = "
-                f"ST_Multi(ST_CollectionExtract(ST_Difference(geom, {_CAP}),3)) "
-                f"WHERE owner_id <> %s AND ST_Intersects(geom, {_CAP})",
-                [wkt, uid, wkt],
+                "DELETE FROM recent_captures WHERE captured_at <= now() - make_interval(hours => %s)",
+                [PROTECT_HOURS],
             )
-            cur.execute("DELETE FROM territories WHERE ST_IsEmpty(geom) OR ST_Area(geom)=0")
-            # 4) своя территория: union с существующей или создать
-            #    (captured_at=now → продлили 72ч-удержание на всю территорию)
-            cur.execute("SELECT 1 FROM territories WHERE owner_id=%s", [uid])
-            if cur.fetchone():
+            cur.execute(
+                "SELECT ST_AsEWKT(ST_Multi(ST_CollectionExtract(ST_Difference("
+                "  ST_GeomFromEWKT(%s),"
+                "  COALESCE((SELECT ST_Union(geom) FROM recent_captures "
+                "    WHERE owner_id <> %s AND captured_at > now() - make_interval(hours => %s) "
+                "      AND ST_Intersects(geom, ST_GeomFromEWKT(%s))),"
+                "    'SRID=4326;GEOMETRYCOLLECTION EMPTY'::geometry)"
+                "),3)))",
+                [cap_ewkt, uid, PROTECT_HOURS, cap_ewkt],
+            )
+            eff_ewkt = (cur.fetchone() or [None])[0]
+            has_gain = bool(eff_ewkt) and "EMPTY" not in eff_ewkt.upper()
+            # 5) перехват: срезаем у чужих ТОЛЬКО незащищённую часть (effective)
+            if has_gain:
                 cur.execute(
-                    f"UPDATE territories SET "
-                    f"geom = ST_Multi(ST_CollectionExtract(ST_Union(geom, {_CAP}),3)), "
-                    f"club_id=%s, captured_at=now() WHERE owner_id=%s",
-                    [wkt, club_id, uid],
+                    "UPDATE territories SET geom = ST_Multi(ST_CollectionExtract("
+                    "ST_Difference(geom, ST_GeomFromEWKT(%s)),3)) "
+                    "WHERE owner_id <> %s AND ST_Intersects(geom, ST_GeomFromEWKT(%s))",
+                    [eff_ewkt, uid, eff_ewkt],
                 )
-            else:
+                cur.execute("DELETE FROM territories WHERE ST_IsEmpty(geom) OR ST_Area(geom)=0")
+                # 6) своя территория: union с тем, что реально взяли (effective)
+                cur.execute("SELECT 1 FROM territories WHERE owner_id=%s", [uid])
+                if cur.fetchone():
+                    cur.execute(
+                        "UPDATE territories SET geom = ST_Multi(ST_CollectionExtract("
+                        "ST_Union(geom, ST_GeomFromEWKT(%s)),3)), club_id=%s, captured_at=now() "
+                        "WHERE owner_id=%s",
+                        [eff_ewkt, club_id, uid],
+                    )
+                else:
+                    cur.execute(
+                        "INSERT INTO territories (id,owner_id,club_id,geom,captured_at) "
+                        "VALUES (%s,%s,%s,ST_GeomFromEWKT(%s),now())",
+                        [f"t_{secrets.token_hex(8)}", uid, club_id, eff_ewkt],
+                    )
+                # 6a) свежий кусок под защиту 24ч (recent_captures = что реально взяли)
                 cur.execute(
-                    f"INSERT INTO territories (id,owner_id,club_id,geom,captured_at) "
-                    f"VALUES (%s,%s,%s,{_CAP},now())",
-                    [f"t_{secrets.token_hex(8)}", uid, club_id, wkt],
+                    "INSERT INTO recent_captures (owner_id, geom) VALUES (%s, ST_GeomFromEWKT(%s))",
+                    [uid, eff_ewkt],
                 )
-            # 5) вечный личный след: union в footprints (растёт, никогда не уменьшается)
+            # 7) вечный личный след: union ПОЛНОГО контура (бежал везде, даже где не взял)
             cur.execute("SELECT 1 FROM footprints WHERE owner_id=%s", [uid])
             if cur.fetchone():
                 cur.execute(
-                    f"UPDATE footprints SET "
-                    f"geom = ST_Multi(ST_CollectionExtract(ST_Union(geom, {_CAP}),3)), "
-                    f"updated_at=now() WHERE owner_id=%s",
-                    [wkt, uid],
+                    "UPDATE footprints SET geom = ST_Multi(ST_CollectionExtract("
+                    "ST_Union(geom, ST_GeomFromEWKT(%s)),3)), updated_at=now() WHERE owner_id=%s",
+                    [cap_ewkt, uid],
                 )
             else:
                 cur.execute(
-                    f"INSERT INTO footprints (owner_id,geom,updated_at) "
-                    f"VALUES (%s,{_CAP},now())",
-                    [uid, wkt],
+                    "INSERT INTO footprints (owner_id,geom,updated_at) "
+                    "VALUES (%s,ST_GeomFromEWKT(%s),now())",
+                    [uid, cap_ewkt],
                 )
             cur.execute(
                 "SELECT ST_AsGeoJSON(geom), ST_Area(geom::geography) "
                 "FROM territories WHERE owner_id=%s",
                 [uid],
             )
-            gj, area = cur.fetchone()
+            row = cur.fetchone()
+            gj, area = (row[0], row[1]) if row else (None, 0)
             if capture_id:
                 cur.execute(
                     "UPDATE processed_captures SET area_m2=%s WHERE capture_id=%s",
@@ -184,7 +215,7 @@ def capture(request):
         {
             "ok": True,
             "areaM2": round(area or 0),
-            "geojson": json.loads(gj),
+            "geojson": json.loads(gj) if gj else None,
             "holdHoursLeft": HOLD_HOURS,
         }
     )
