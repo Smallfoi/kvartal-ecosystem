@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -31,6 +32,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   int _tileErrorCount = 0;
   int _tileLayerReloadId = 0;
   Timer? _territoryDebounce;
+
+  /// Векторный стиль OpenFreeMap Bright (D-19). Грузится один раз; пока null —
+  /// показываем растровый фолбэк.
+  Style? _mapStyle;
+  static const _styleUrl = 'https://tiles.openfreemap.org/styles/bright';
+
+  Future<void> _loadMapStyle() async {
+    try {
+      final style = await StyleReader(uri: _styleUrl).read();
+      if (mounted) setState(() => _mapStyle = style);
+    } catch (_) {
+      // стиль не загрузился — остаёмся на растровом фолбэке
+    }
+  }
 
   /// Подгрузить реальные территории (PostGIS) для видимой области карты.
   void _scheduleTerritoryLoad() {
@@ -81,6 +96,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void initState() {
     super.initState();
+    _loadMapStyle();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerOnCurrentLocation();
       _scheduleTerritoryLoad();
@@ -162,26 +178,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               },
             ),
             children: [
-              TileLayer(
-                key: ValueKey(_tileLayerReloadId),
-                // CartoDB Voyager — лёгкий, чистый и красивый стиль на быстром CDN.
-                // БЕЗ retina/@2x — карта грузится легко и плавно. {s} (a–d) —
-                // параллельная загрузка тайлов = быстрее. (Voyager — чистый стиль,
-                // номера домов почти не показывает; приоритет — скорость/лёгкость.)
-                // Прод-нагрузка — свой/платный тайл-провайдер.
-                urlTemplate:
-                    offlineTileTemplate ??
-                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
-                tileProvider: useOfflineBaseMap ? FileTileProvider() : null,
-                userAgentPackageName: 'com.kvartal.kvartal_app',
-                // Офлайн-тайлы скачаны только до z15.
-                maxNativeZoom: useOfflineBaseMap ? 15 : 19,
-                errorTileCallback: (_, __, ___) {
-                  if (!useOfflineBaseMap) _handleTileError();
-                },
-              ),
+              // Подложка (D-19): онлайн — векторный OpenFreeMap Bright;
+              // офлайн (скачанный город) или пока стиль грузится — растровый фолбэк.
+              if (_mapStyle != null && !useOfflineBaseMap)
+                VectorTileLayer(
+                  theme: _mapStyle!.theme,
+                  sprites: _mapStyle!.sprites,
+                  tileProviders: _mapStyle!.providers,
+                  maximumZoom: 18,
+                )
+              else
+                TileLayer(
+                  key: ValueKey(_tileLayerReloadId),
+                  // Растровый фолбэк: офлайн-кэш (FileTileProvider) либо CARTO,
+                  // пока грузится векторный Bright / если он недоступен.
+                  urlTemplate:
+                      offlineTileTemplate ??
+                      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c', 'd'],
+                  tileProvider: useOfflineBaseMap ? FileTileProvider() : null,
+                  userAgentPackageName: 'com.kvartal.kvartal_app',
+                  maxNativeZoom: useOfflineBaseMap ? 15 : 19,
+                  errorTileCallback: (_, __, ___) {
+                    if (!useOfflineBaseMap) _handleTileError();
+                  },
+                ),
 
+              // Атрибуция обязательна (D-19): OpenFreeMap / OpenMapTiles / OSM.
+              if (_mapStyle != null && !useOfflineBaseMap)
+                const RichAttributionWidget(
+                  alignment: AttributionAlignment.bottomLeft,
+                  attributions: [
+                    TextSourceAttribution('OpenFreeMap'),
+                    TextSourceAttribution('OpenMapTiles'),
+                    TextSourceAttribution('© OpenStreetMap'),
+                  ],
+                ),
               if (capturedAreas.isNotEmpty)
                 PolygonLayer(
                   polygons: capturedAreas
