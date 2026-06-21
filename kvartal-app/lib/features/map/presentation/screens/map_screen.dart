@@ -14,6 +14,8 @@ import '../../data/zone_provider.dart';
 import '../../../run/data/run_provider.dart';
 import '../../../territory/data/territory_provider.dart';
 import '../../../offline_maps/data/offline_maps_provider.dart';
+import '../../../weather/data/weather_provider.dart';
+import '../../../weather/presentation/weather_view.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
@@ -1010,40 +1012,49 @@ class _KvartalTopLogo extends StatelessWidget {
   }
 }
 
-class _WeatherChip extends StatelessWidget {
+/// Чип погоды: реальные данные Open-Meteo (температура + иконка состояния).
+/// Тап → подробное мини-окно (ветер, осадки, влажность).
+/// Морозный бонус к баллам тут НЕ показывается — это отдельная фича (D-20).
+class _WeatherChip extends ConsumerWidget {
   const _WeatherChip();
 
   @override
-  Widget build(BuildContext context) {
-    return _Glass(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(CupertinoIcons.snow, size: 12, color: AppColors.info),
-          const SizedBox(width: 4),
-          Text(
-            '−24°C',
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: Colors.white),
-          ),
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.electricBlue.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(6),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(weatherProvider);
+    final w = async.valueOrNull;
+    final tempText = async.when(
+      data: (d) => formatTemp(d.tempC),
+      loading: () => '…',
+      error: (_, __) => '—',
+    );
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => showWeatherDetailSheet(context),
+      child: _Glass(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              w == null ? CupertinoIcons.cloud : weatherIcon(w.weatherCode),
+              size: 13,
+              color: AppColors.info,
             ),
-            child: Text(
-              'x1.4',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
+            const SizedBox(width: 5),
+            Text(
+              tempText,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: Colors.white),
             ),
-          ),
-        ],
+            const SizedBox(width: 4),
+            const Icon(
+              CupertinoIcons.chevron_down,
+              size: 10,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
       ),
     );
   }
