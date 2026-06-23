@@ -18,6 +18,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _profileCityCtrl;
+  late final TextEditingController _emailCtrl;
 
   // Change password
   final _oldPassCtrl = TextEditingController();
@@ -46,6 +47,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameCtrl = TextEditingController(text: user.name);
     _phoneCtrl = TextEditingController(text: user.phone ?? '');
     _profileCityCtrl = TextEditingController(text: user.city ?? '');
+    // Синтетический email телефонных аккаунтов (…@kvartal.local) не показываем —
+    // даём поле пустым, чтобы человек ввёл свою настоящую почту.
+    final em = user.email;
+    _emailCtrl = TextEditingController(
+      text: em.endsWith('@kvartal.local') ? '' : em,
+    );
   }
 
   @override
@@ -54,6 +61,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _nameCtrl,
       _phoneCtrl,
       _profileCityCtrl,
+      _emailCtrl,
       _oldPassCtrl,
       _newPassCtrl,
       _confPassCtrl,
@@ -158,6 +166,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       name: _nameCtrl.text,
       phone: _phoneCtrl.text,
       city: _profileCityCtrl.text,
+      email: _emailCtrl.text,
     );
     if (!mounted) return;
     if (err != null) {
@@ -335,7 +344,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       .fadeIn(duration: 350.ms, delay: 170.ms)
                       .slideY(begin: 0.08),
                   const SizedBox(height: 14),
-                  _LockedField(label: 'Email', value: user.email)
+                  _Field(
+                        ctrl: _emailCtrl,
+                        label: 'Email',
+                        hint: 'example@mail.ru',
+                        icon: Icons.mail_outline,
+                        type: TextInputType.emailAddress,
+                      )
                       .animate()
                       .fadeIn(duration: 350.ms, delay: 200.ms)
                       .slideY(begin: 0.08),
@@ -768,63 +783,6 @@ class _Header extends StatelessWidget {
 }
 
 // ─── Locked field ─────────────────────────────────────────────────────────────
-
-class _LockedField extends StatelessWidget {
-  final String label;
-  final String value;
-  const _LockedField({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-            color: AppColors.grey600,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 52,
-          decoration: BoxDecoration(
-            color: AppColors.grey100,
-            border: Border.all(color: AppColors.grey200),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.lock_outline,
-                size: 18,
-                color: AppColors.grey400,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.grey600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Email привязан к аккаунту и не может быть изменён',
-          style: TextStyle(fontSize: 11, color: AppColors.grey400),
-        ),
-      ],
-    );
-  }
-}
 
 // ─── Editable field ───────────────────────────────────────────────────────────
 

@@ -136,13 +136,18 @@ class AuthProvider extends ChangeNotifier {
     required String name,
     String? phone,
     String? city,
+    String? email,
   }) async {
     if (_user == null) return 'Не авторизован';
     if (name.trim().isEmpty) return 'Введите имя';
+    if (email != null && email.trim().isNotEmpty && !email.contains('@')) {
+      return 'Введите корректный email';
+    }
     _setLoading(true);
     try {
       _user = _mergeKeepingLocal(
-        await _repo.updateProfile(_user!, name: name, phone: phone, city: city),
+        await _repo.updateProfile(_user!,
+            name: name, phone: phone, city: city, email: email),
       );
       _save();
       return null;
