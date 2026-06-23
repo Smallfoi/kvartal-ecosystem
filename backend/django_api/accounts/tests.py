@@ -1,8 +1,54 @@
-"""Регрессии безопасности входа: rate-limit на /auth (анти-брутфорс кода/пароля)."""
+"""Регрессии входа/профиля: rate-limit (анти-брутфорс) + базовые потоки auth."""
 import json
 
 from django.core.cache import cache
 from django.test import TestCase
+
+from common.testutils import ApiTestCase
+
+
+class AuthFlowTests(ApiTestCase):
+    phone = "+79990004001"
+
+    def test_me_returns_profile(self):
+        r = self.api_get("/v1/auth/me")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["id"], self.uid)
+
+    def test_me_without_token_401(self):
+        r = self.client.get("/v1/auth/me")
+        self.assertEqual(r.status_code, 401)
+
+    def test_update_profile_changes_name(self):
+        r = self.api_patch("/v1/profile", {"name": "Новое Имя"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["name"], "Новое Имя")
+        self.assertEqual(self.api_get("/v1/auth/me").json()["name"], "Новое Имя")
+
+    def test_register_then_login(self):
+        body = {"email": "reg@test.dev", "password": "p@ss12345", "name": "Рег"}
+        r = self.client.post("/v1/auth/register", data=json.dumps(body),
+                             content_type="application/json")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()["token"])
+        ok = self.client.post("/v1/auth/login",
+                              data=json.dumps({"email": "reg@test.dev",
+                                               "password": "p@ss12345"}),
+                              content_type="application/json")
+        self.assertEqual(ok.status_code, 200)
+        bad = self.client.post("/v1/auth/login",
+                               data=json.dumps({"email": "reg@test.dev",
+                                                "password": "wrong"}),
+                               content_type="application/json")
+        self.assertEqual(bad.status_code, 401)
+
+    def test_blocked_account_cannot_login(self):
+        from accounts.models import Account
+        Account.objects.filter(id=self.uid).update(is_blocked=True)
+        r = self.client.post("/v1/auth/phone/verify",
+                             data=json.dumps({"phone": self.phone, "code": "1234"}),
+                             content_type="application/json")
+        self.assertEqual(r.status_code, 403)
 
 
 class AuthThrottleTests(TestCase):

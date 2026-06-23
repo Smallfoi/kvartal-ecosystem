@@ -16,6 +16,10 @@
 ---
 
 
+## 2026-06-23 — Claude — Расширение тестов: auth + clubs (надёжность)
+**Сделано:** +10 тестов критпути (всего 29 в CI). `accounts/tests.py` — me/профиль, register→login, неверный пароль → 401, забаненный → 403. `clubs/tests.py` — один клуб на человека (409), my_club, вступление/дубль/выход, имя обязательно. В `ApiTestCase` добавлены `api_get/api_patch/new_user`. Чисто тесты — поведение рантайма не меняю (live-тест владельца не трогаю).
+**Дальше:** shoes/leaderboard/profile-privacy тесты; затем отзыв токенов (is_blocked на запрос) и агрегат баланса.
+
 ## 2026-06-23 — Claude — Безопасность P0: rate-limiting + payload-лимит + прод-hardening
 **Сделано (бэкенд, к продакшну):** закрыты первые P0 из `docs/PRODUCTION_HARDENING.md` (новый чеклист безопасности+техники).
 - **Rate-limiting (DRF throttling):** `common/throttling.py` — по JWT (`user` 300/мин), по IP для анонимных (`anon` 120/мин), жёстко на `/auth` register/login/phone_verify (`AuthEndpointThrottle`, `auth` 20/мин — анти-брутфорс кода/пароля). Лимиты щедрые → активное приложение не упирается. _Прод: счётчики в Redis (D-07)._
