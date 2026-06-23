@@ -19,16 +19,28 @@ def orders(request):
         oid = str(d.get("id") or "").strip()
         if not oid:
             return Response({"detail": "Нет id заказа"}, status=400)
-        obj, _ = Order.objects.update_or_create(
+        total = float(d.get("total") or 0)
+        obj, created = Order.objects.update_or_create(
             user_id=uid,
             order_id=oid,
             defaults={
-                "total": float(d.get("total") or 0),
+                "total": total,
                 "status": (d.get("status") or "pending"),
                 "points_redeemed": int(d.get("pointsRedeemed") or 0),
                 "payload": d,
             },
         )
+        # Начисление за покупку считает СЕРВЕР (анти-чит S-04 Phase 2), не клиент:
+        # +1 балл за каждые 10 ₽ фактической суммы + 50 за первый заказ. Только при
+        # создании (created) → повторный POST того же id не задваивает баллы.
+        if created:
+            from loyalty.models import add_txn
+
+            base = int(total // 10)
+            if base > 0:
+                add_txn(uid, base, "purchase", f"Покупка на {int(total)} ₽", oid)
+            if Order.objects.filter(user_id=uid).count() == 1:  # это первый заказ юзера
+                add_txn(uid, 50, "registration", "Бонус за первый заказ", oid)
         # Связка экосистемы: для каждой пары обуви в заказе заводим ресурс
         # «износа кроссовок» (Квартал затем убавляет километраж). Идемпотентно.
         from shoes.views import create_for_order

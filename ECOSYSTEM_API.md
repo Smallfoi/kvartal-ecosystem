@@ -217,8 +217,10 @@ GET  /orders/:id                                         → Order
 ### Loyalty (единый баланс)
 ```
 GET  /loyalty/account                   → { balance, level, transactions: LoyaltyTransaction[] }
-POST /loyalty/transactions  LoyaltyTransaction → 200   (Store — покупки/списания; территории Квартала — пока тут)
-                            source=runnerRun → 403         (очки за бег считает сервер: POST /runs, анти-чит S-04)
+POST /loyalty/transactions  LoyaltyTransaction → 200   (только redeem/прочее; начисления — серверные)
+                            source ∈ {runnerRun, runnerTerritory, purchase, registration} → 403
+                            (анти-чит S-04 D-23: начисление считает сервер —
+                             бег→/runs, территория→/territories/capture, покупка/рег→/orders)
 ```
 
 ### Runs (история пробежек + серверный расчёт очков — анти-чит S-04)

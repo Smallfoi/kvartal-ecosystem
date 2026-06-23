@@ -186,14 +186,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     }
     if (!mounted) return;
-    // Начисляем за фактически оплаченную сумму (order.total уже со скидкой).
-    // orderId → идемпотентность на сервере (без двойного начисления).
-    loyalty.earnForPurchase(
-      order.total,
-      isFirstOrder: orders.orders.length == 1,
-      orderId: order.id,
-    );
+    // Начисление за покупку считает СЕРВЕР при создании заказа (/orders, анти-чит
+    // S-04 Phase 2). При serverBacked клиент не минтит — дожидаемся отправки заказа
+    // и перечитываем баланс с сервера; в mock-режиме начисляем локально для демо.
+    if (loyalty.serverBacked) {
+      try {
+        await orders.lastSubmit;
+      } catch (_) {}
+      await loyalty.load();
+    } else {
+      loyalty.earnForPurchase(
+        order.total,
+        isFirstOrder: orders.orders.length == 1,
+        orderId: order.id,
+      );
+    }
 
+    if (!mounted) return;
     // Save delivery address to profile
     final auth = context.read<AuthProvider>();
     if (auth.isLoggedIn &&
