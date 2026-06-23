@@ -155,15 +155,8 @@ class _ClubSliverHeader extends ConsumerWidget {
       expandedHeight: 218,
       pinned: true,
       backgroundColor: AppColors.bgDark,
-      actions: [
-        // Отдельная кнопка скана QR в углу (как в Тинькофф/Taobao) — для вступления.
-        if (!hasClub)
-          IconButton(
-            tooltip: 'Сканировать QR клуба',
-            icon: const Icon(CupertinoIcons.qrcode_viewfinder, size: 22),
-            onPressed: () => context.push('/club/scan'),
-          ),
-      ],
+      // Никаких кнопок в шапке: обновление — свайпом вниз (pull-to-refresh),
+      // скан QR — кнопкой «Скан QR» в карточке приглашения.
       title: Text('Клуб', style: Theme.of(context).textTheme.titleLarge),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
