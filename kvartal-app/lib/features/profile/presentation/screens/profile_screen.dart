@@ -89,9 +89,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(height: 10),
                     const _ActivityHeatmap(),
-                    const SizedBox(height: 24),
-                    const _SettingsTiles(),
-                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -606,13 +603,13 @@ class SettingsScreen extends ConsumerWidget {
               icon: CupertinoIcons.location_solid,
               label:
                   '\u0413\u0435\u043e\u043b\u043e\u043a\u0430\u0446\u0438\u044f \u0438 \u0444\u043e\u043d\u043e\u0432\u044b\u0439 \u0440\u0435\u0436\u0438\u043c',
-              onTap: () {},
+              onTap: () => context.push('/run/location-access'),
             ),
             _SettingsTile(
               icon: CupertinoIcons.bell_fill,
               label:
                   '\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f',
-              onTap: () {},
+              onTap: () => context.push('/profile/notifications'),
             ),
             _SettingsTile(
               icon: CupertinoIcons.lock_fill,
@@ -1424,117 +1421,6 @@ class _ActivityHeatmap extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SettingsTiles extends StatelessWidget {
-  const _SettingsTiles();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.separator),
-      ),
-      child: Column(
-        children: [
-          _SettingTile(
-            icon: CupertinoIcons.bell_fill,
-            label:
-                '\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f',
-            iconBg: const Color(0xFFFF453A),
-            onTap: () {},
-          ),
-          _SettingTile(
-            icon: CupertinoIcons.lock_fill,
-            label:
-                '\u041a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u044c',
-            iconBg: const Color(0xFF636366),
-            onTap: () {},
-          ),
-          _SettingTile(
-            icon: CupertinoIcons.star_fill,
-            label: '\u041a\u0412\u0410\u0420\u0422\u0410\u041b PRO',
-            iconBg: AppColors.warning,
-            badge: 'PRO',
-            onTap: () {},
-          ),
-          _SettingTile(
-            icon: CupertinoIcons.square_arrow_right,
-            label: '\u0412\u044b\u0439\u0442\u0438',
-            iconBg: AppColors.error,
-            isDestructive: true,
-            onTap: () {},
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color iconBg;
-  final String? badge;
-  final bool isDestructive;
-  final VoidCallback onTap;
-
-  const _SettingTile({
-    required this.icon,
-    required this.label,
-    required this.iconBg,
-    required this.onTap,
-    this.badge,
-    this.isDestructive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textColor = isDestructive ? AppColors.error : AppColors.textPrimary;
-    return ListTile(
-      leading: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: iconBg,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: Colors.white, size: 16),
-      ),
-      title: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: textColor),
-      ),
-      trailing: badge != null
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.gradientStart, AppColors.gradientEnd],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                badge!,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            )
-          : const Icon(
-              CupertinoIcons.chevron_right,
-              color: AppColors.textDisabled,
-              size: 16,
-            ),
-      onTap: onTap,
     );
   }
 }

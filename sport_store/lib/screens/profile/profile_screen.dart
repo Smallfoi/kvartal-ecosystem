@@ -10,14 +10,13 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/loyalty_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/tab_notifier.dart';
-import 'account_data_screen.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../auth/auth_screen.dart';
 import '../loyalty/loyalty_screen.dart';
-import 'edit_profile_screen.dart';
 import 'order_detail_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -62,40 +61,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             actions: auth.isLoggedIn
                 ? [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).push(
-                        PageRouteBuilder(
-                          pageBuilder: (_, a, b) =>
-                              const EditProfileScreen(),
-                          transitionsBuilder: (_, a, b, child) =>
-                              SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 1),
-                              end: Offset.zero,
-                            ).animate(CurvedAnimation(
-                                parent: a, curve: Curves.easeOutCubic)),
-                            child: child,
-                          ),
-                          transitionDuration:
-                              const Duration(milliseconds: 350),
-                        ),
-                      ),
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      tooltip: 'Редактировать',
-                    ),
+                    // Единая шестерёнка настроек профиля (как в Квартале) — внутри
+                    // редактирование, уведомления, конфиденциальность, выход.
                     IconButton(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const AccountDataScreen(),
+                          builder: (_) => const SettingsScreen(),
                         ),
                       ),
-                      icon: const Icon(Icons.privacy_tip_outlined, size: 20),
-                      tooltip: 'Конфиденциальность и данные',
-                    ),
-                    IconButton(
-                      onPressed: () => _showLogoutDialog(context, auth),
-                      icon: const Icon(Icons.logout, size: 20),
-                      tooltip: 'Выйти',
+                      icon: const Icon(Icons.settings_outlined, size: 22),
+                      tooltip: 'Настройки',
                     ),
                   ]
                 : null,
@@ -114,31 +89,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context, AuthProvider auth) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: const Text('Выйти из аккаунта?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Отмена',
-                style: TextStyle(color: AppColors.grey600)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              auth.logout();
-            },
-            child: const Text('Выйти',
-                style: TextStyle(color: AppColors.red)),
-          ),
-        ],
-      ),
     );
   }
 }
