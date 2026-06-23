@@ -4,6 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_config.dart';
 import '../../auth/data/auth_provider.dart';
 
+/// Относительный media-URL логотипа клуба → абсолютный для Image.network
+/// (origin из baseUrl без '/v1'). Буква/эмодзи возвращаем как есть.
+String resolveClubMediaUrl(String url) {
+  if (url.isEmpty || url.startsWith('http')) return url;
+  final origin = ApiConfig.baseUrl.replaceFirst(RegExp(r'/v1/?$'), '');
+  return url.startsWith('/') ? '$origin$url' : '$origin/$url';
+}
+
+bool clubLogoIsPhoto(String logo) =>
+    logo.startsWith('http') || logo.startsWith('/media');
+
 class ClubMember {
   final String userId, name, role;
 
@@ -240,6 +251,24 @@ class ClubNotifier extends StateNotifier<ClubState> {
         message:
             '\u041a\u043b\u0443\u0431 \u043e\u0431\u043d\u043e\u0432\u043b\u0451\u043d',
       );
+      await refresh();
+    });
+  }
+
+  /// Загрузка фото-логотипа клуба (multipart, поле image). Только владелец.
+  Future<void> uploadLogo(String filePath) async {
+    final club = state.myClub;
+    if (club == null) return;
+    await _mutate(() async {
+      final form = FormData.fromMap({
+        'image': await MultipartFile.fromFile(filePath),
+      });
+      await _dio.post<Map<String, dynamic>>(
+        '/clubs/${club.id}/logo',
+        data: form,
+        options: _authOptions(),
+      );
+      state = state.copyWith(message: 'Фото клуба обновлено');
       await refresh();
     });
   }

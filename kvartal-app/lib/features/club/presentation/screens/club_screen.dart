@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -960,6 +961,22 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
     super.dispose();
   }
 
+  /// Выбрать фото из галереи и загрузить как логотип клуба (только в режиме
+  /// редактирования — нужен уже созданный клуб).
+  Future<void> _pickAndUploadLogo() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    await ref.read(clubProvider.notifier).uploadLogo(picked.path);
+    // Фото уже сохранено на бэке; синхронизируем локальное поле, чтобы «Сохранить»
+    // не перезаписало фото буквой.
+    final updated = ref.read(clubProvider).myClub;
+    if (mounted && updated != null) setState(() => _logo = updated.logo);
+  }
+
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -1046,6 +1063,17 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
               value: _logo,
               onChanged: (value) => setState(() => _logo = value),
             ),
+            if (_isEdit) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: state.isMutating ? null : _pickAndUploadLogo,
+                  icon: const Icon(CupertinoIcons.photo, size: 18),
+                  label: const Text('Загрузить фото клуба'),
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
             CupertinoSlidingSegmentedControl<String>(
               groupValue: _joinPolicy,
@@ -1316,8 +1344,26 @@ class _ClubLogo extends StatelessWidget {
   final String logo;
   final double size;
   const _ClubLogo({required this.logo, required this.size});
+
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    // Фото-логотип (загружен владельцем) рисуем картинкой; иначе — буква/эмодзи.
+    if (clubLogoIsPhoto(logo)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.28),
+        child: Image.network(
+          resolveClubMediaUrl(logo),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _letter(context),
+        ),
+      );
+    }
+    return _letter(context);
+  }
+
+  Widget _letter(BuildContext context) => Container(
     width: size,
     height: size,
     decoration: BoxDecoration(
@@ -1327,7 +1373,7 @@ class _ClubLogo extends StatelessWidget {
     ),
     alignment: Alignment.center,
     child: Text(
-      logo,
+      logo.isEmpty ? 'K' : logo,
       style: TextStyle(
         fontSize: size * 0.32,
         fontWeight: FontWeight.w900,

@@ -261,3 +261,33 @@ def reject_request(request, req_id):
         "system",
     )
     return Response({"status": "rejected"})
+
+
+@api_view(["POST"])
+def club_logo(request, club_id):
+    """Загрузка фото-логотипа клуба (multipart, поле `image`). Только владелец.
+    Файл кладём в media, в `club.logo` — URL (клиент покажет фото вместо буквы)."""
+    uid = _uid(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    club = Club.objects.filter(id=club_id).first()
+    if not club:
+        return Response({"detail": "Клуб не найден"}, status=404)
+    if club.owner_id != uid:
+        return Response({"detail": "Только владелец клуба"}, status=403)
+    f = request.FILES.get("image")
+    if not f:
+        return Response({"detail": "Нет файла"}, status=400)
+    if f.size > 5 * 1024 * 1024:
+        return Response({"detail": "Файл слишком большой (макс 5 МБ)"}, status=400)
+    if not (f.content_type or "").startswith("image/"):
+        return Response({"detail": "Нужен файл-изображение"}, status=400)
+    from django.core.files.storage import default_storage
+
+    ext = (f.name.rsplit(".", 1)[-1] if "." in f.name else "jpg").lower()[:5]
+    saved = default_storage.save(
+        f"uploads/clubs/{club_id}_{secrets.token_hex(4)}.{ext}", f
+    )
+    club.logo = f"/media/{saved}"
+    club.save(update_fields=["logo"])
+    return Response(_detail(club, uid))
