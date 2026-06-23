@@ -1,7 +1,12 @@
-"""Регрессии анти-чита бега (S-04 Phase 1): сервер сам считает очки, чит → flagged/0."""
+"""Регрессии анти-чита бега (S-04): сервер сам считает очки, чит/реплей → flagged/0."""
+import time
+
 from common.testutils import ApiTestCase
 
-_OK = {"distanceMeters": 5000, "elapsedSeconds": 1800, "finishedAtMs": 1750000000000}
+_NOW_MS = int(time.time() * 1000)
+_DAY_MS = 86_400_000
+# Базовый правдоподобный забег: 5 км за 30 мин (10 км/ч), завершён только что.
+_OK = {"distanceMeters": 5000, "elapsedSeconds": 1800, "finishedAtMs": _NOW_MS}
 
 
 class RunAntiCheatTests(ApiTestCase):
@@ -23,7 +28,7 @@ class RunAntiCheatTests(ApiTestCase):
         r = self.api_post(
             "/v1/runs",
             {"id": "r2", "distanceMeters": 5000, "elapsedSeconds": 10,
-             "finishedAtMs": 1750000000000},
+             "finishedAtMs": _NOW_MS},
         ).json()
         self.assertTrue(r["flagged"])
         self.assertEqual(r["pointsAwarded"], 0)
@@ -33,7 +38,25 @@ class RunAntiCheatTests(ApiTestCase):
         r = self.api_post(
             "/v1/runs",
             {"id": "r3", "distanceMeters": 500000, "elapsedSeconds": 200000,
-             "finishedAtMs": 1750000000000},
+             "finishedAtMs": _NOW_MS},
+        ).json()
+        self.assertTrue(r["flagged"])
+        self.assertEqual(self.balance(), 0)
+
+    def test_future_run_flagged(self):
+        r = self.api_post(
+            "/v1/runs",
+            {"id": "r4", "distanceMeters": 5000, "elapsedSeconds": 1800,
+             "finishedAtMs": _NOW_MS + 2 * _DAY_MS},
+        ).json()
+        self.assertTrue(r["flagged"])
+        self.assertEqual(self.balance(), 0)
+
+    def test_old_run_flagged_replay(self):
+        r = self.api_post(
+            "/v1/runs",
+            {"id": "r5", "distanceMeters": 5000, "elapsedSeconds": 1800,
+             "finishedAtMs": _NOW_MS - 40 * _DAY_MS},
         ).json()
         self.assertTrue(r["flagged"])
         self.assertEqual(self.balance(), 0)
