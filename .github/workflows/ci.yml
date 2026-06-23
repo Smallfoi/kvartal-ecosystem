@@ -48,6 +48,26 @@ jobs:
   backend:
     name: Backend · Django
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: kvartal
+          POSTGRES_USER: kvartal
+          POSTGRES_PASSWORD: kvartal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: '5432'
+      POSTGRES_DB: kvartal
+      POSTGRES_USER: kvartal
+      POSTGRES_PASSWORD: kvartal
     defaults:
       run:
         working-directory: backend/django_api
@@ -63,3 +83,6 @@ jobs:
 
       - name: Django system check
         run: python manage.py check
+
+      - name: Tests (анти-чит + эндпоинты)
+        run: python manage.py test --verbosity 2
