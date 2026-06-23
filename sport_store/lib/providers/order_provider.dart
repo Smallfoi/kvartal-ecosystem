@@ -22,6 +22,10 @@ class OrderProvider extends ChangeNotifier {
   NotificationsProvider? _notifier;
   bool _lastLoggedIn = false;
 
+  /// Future последней отправки заказа на backend — чекаут его дожидается, чтобы
+  /// затем перечитать баланс (сервер начисляет очки за покупку при создании заказа).
+  Future<void>? lastSubmit;
+
   OrderProvider(this._prefs, this._repo, {this.serverBacked = false}) {
     _load();
   }
@@ -136,8 +140,10 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
 
     // Оптимистичная отправка на backend (в проде — реальный POST /orders).
-    // UI не ждёт ответа: заказ уже сохранён локально.
-    unawaited(_repo.submitOrder(order));
+    // UI не ждёт ответа: заказ уже сохранён локально. Future сохраняем в lastSubmit,
+    // чтобы чекаут мог дождаться и перечитать баланс (сервер начислит очки за покупку).
+    lastSubmit = _repo.submitOrder(order).then<void>((_) {}).catchError((_) {});
+    unawaited(lastSubmit!);
 
     // Первое уведомление + имитация прогресса доставки
     _notifier?.push(AppNotification(

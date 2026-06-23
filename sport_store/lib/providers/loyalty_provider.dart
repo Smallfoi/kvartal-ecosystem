@@ -157,9 +157,14 @@ class LoyaltyProvider extends ChangeNotifier {
   }
 
   /// Начисление за покупку: +1 балл за каждые 10 ₽ (+50 за первый заказ).
-  /// orderId → серверная идемпотентность (повторный пост того же заказа не дублирует).
+  /// При serverBacked очки начисляет СЕРВЕР при создании заказа (/orders, анти-чит
+  /// S-04 Phase 2) — клиент не минтит (иначе задвоит); возвращаем лишь ожидаемую
+  /// сумму для UI, баланс подтянется через load() после заказа.
   int earnForPurchase(double orderTotal,
       {required bool isFirstOrder, String? orderId}) {
+    if (serverBacked) {
+      return (orderTotal / 10).floor() + (isFirstOrder ? 50 : 0);
+    }
     final base = (orderTotal / 10).floor();
     if (base > 0) {
       _add(base, LoyaltySource.purchase, 'Покупка на ${orderTotal.toInt()} ₽',

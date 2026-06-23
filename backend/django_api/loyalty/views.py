@@ -66,10 +66,11 @@ def redeem(request):
 
 
 # Источники, которые СЕРВЕР начисляет сам (анти-чит S-04) — клиент их слать не может,
-# иначе очки (= деньги в Store) подделываются. runnerRun считается в /v1/runs.
-# Phase 2 перенесёт сюда же runnerTerritory (→/territories/capture) и
-# purchase/registration (→/orders).
-_SERVER_ONLY_SOURCES = {"runnerRun"}
+# иначе очки (= деньги в Store) подделываются:
+#   runnerRun       → /v1/runs (расчёт по дистанции/времени);
+#   runnerTerritory → /v1/territories/capture (после валидной геометрии захвата);
+#   purchase/registration → /v1/orders (по сумме заказа / первому заказу).
+_SERVER_ONLY_SOURCES = {"runnerRun", "runnerTerritory", "purchase", "registration"}
 
 
 @api_view(["POST"])

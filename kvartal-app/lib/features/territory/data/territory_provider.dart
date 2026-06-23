@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'dart:math' show Random;
 
@@ -8,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_config.dart';
 import '../../auth/data/auth_provider.dart';
+import '../../loyalty/data/loyalty_provider.dart';
 
 /// Отношение территории к текущему пользователю (приходит с сервера).
 enum TerritoryRel { mine, club, enemy }
@@ -227,6 +229,10 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
   /// Применить ответ сервера на захват к состоянию (своя территория сразу видна).
   double? _applyCaptureResponse(Map<String, dynamic> data) {
     final area = (data['areaM2'] as num?)?.toDouble();
+    // Сервер начислил очки за захват (анти-чит S-04 Phase 2) — обновляем баланс.
+    if (area != null) {
+      unawaited(ref.read(loyaltyProvider.notifier).refresh());
+    }
     final geojson = data['geojson'];
     if (geojson is Map<String, dynamic>) {
       final mine = ServerTerritory(
@@ -321,8 +327,12 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
         await prefs.setStringList(_captureQueueKey, remaining);
       }
     } catch (_) {}
-    if (deliveredAny && remaining.isEmpty) {
-      state = state.copyWith(message: 'Офлайн-захваты отправлены.');
+    if (deliveredAny) {
+      // Сервер начислил очки за отправленные захваты — обновляем баланс.
+      unawaited(ref.read(loyaltyProvider.notifier).refresh());
+      if (remaining.isEmpty) {
+        state = state.copyWith(message: 'Офлайн-захваты отправлены.');
+      }
     }
   }
 

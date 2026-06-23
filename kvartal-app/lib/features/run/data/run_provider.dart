@@ -9,7 +9,6 @@ import 'package:permission_handler/permission_handler.dart' as permissions;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../loyalty/data/loyalty_provider.dart';
 import '../../shoes/data/shoes_provider.dart';
 import 'completed_runs_provider.dart';
 import 'gps_kalman.dart';
@@ -301,7 +300,6 @@ class RunNotifier extends StateNotifier<RunState> {
       capturedTerritory: capturedTerritory,
     );
     await _ref.read(completedRunsProvider.notifier).add(run);
-    await _awardLoyaltyPoints(run);
     await _applyShoeWear(run);
   }
 
@@ -315,25 +313,10 @@ class RunNotifier extends StateNotifier<RunState> {
         );
   }
 
-  /// Начисление баллов за захват территории.
-  /// Очки ЗА БЕГ (10/км) теперь считает СЕРВЕР при синке забега (`POST /runs`,
-  /// анти-чит S-04) — клиент их больше не присылает; баланс обновляется после
-  /// успешного синка (см. completed_runs_provider). Территория (+50) пока остаётся
-  /// клиентской (Phase 2 перенесёт её в `/territories/capture`).
-  Future<void> _awardLoyaltyPoints(CompletedRun run) async {
-    final loyalty = _ref.read(loyaltyProvider.notifier);
-    if (run.capturedTerritory) {
-      final zonesNote = run.capturedZones > 0
-          ? ' (${run.capturedZones} зон)'
-          : '';
-      await loyalty.award(
-        amount: 50,
-        source: 'runnerTerritory',
-        description: 'Захват территории$zonesNote',
-        runId: run.id,
-      );
-    }
-  }
+  // Очки за бег и за захват территории теперь начисляет СЕРВЕР (анти-чит S-04):
+  // бег — при синке забега (POST /runs), территория — при захвате
+  // (POST /territories/capture). Клиент их больше не шлёт; баланс обновляется
+  // после соответствующего сетевого вызова (completed_runs / territory_provider).
 
   Future<void> _restoreSavedRun() async {
     try {
