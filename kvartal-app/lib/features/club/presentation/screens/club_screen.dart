@@ -390,18 +390,18 @@ class _MyClubBody extends ConsumerWidget {
         const SizedBox(height: 10),
         const _FutureModuleCard(
           icon: CupertinoIcons.flag_fill,
-          title: 'Вызовы подключим следующим этапом',
+          title: 'Челленджи — следующим этапом',
           subtitle:
-              'Нужен backend для челленджей и синк пробежек, чтобы считать реальные километры клуба.',
+              'Километры клуба уже считаются по реальным пробежкам участников. Общие цели и награды (челленджи) добавим дальше.',
         ),
         const SizedBox(height: 24),
         _SectionHeader(title: 'Захваченные районы'),
         const SizedBox(height: 10),
         const _FutureModuleCard(
           icon: CupertinoIcons.map_fill,
-          title: 'Территории клуба ждут серверную геометрию',
+          title: 'Территории клуба — на карте',
           subtitle:
-              'По D-09 владение территориями переносим на PostGIS: тогда клубные зоны станут настоящими.',
+              'Захваты участников считаются на сервере (PostGIS) и видны на карте. Рейтинг клубов по площади — во вкладке Рейтинг → «Районы».',
         ),
         const SizedBox(height: 18),
         SizedBox(

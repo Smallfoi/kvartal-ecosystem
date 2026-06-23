@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/shoes/data/shoes_provider.dart';
 import '../../features/shoes/presentation/shoe_prompt.dart';
@@ -33,6 +34,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
   void _onTap(BuildContext context, int index) {
     const routes = ['/map', '/run', '/leaderboard', '/club', '/profile'];
+    // Закрываем открытый модальный лист (погода, выбор кроссовок и т.п.) на текущей
+    // вкладке — иначе он висит поверх новой вкладки при переключении.
+    final shellNav = shellNavigatorKey.currentState;
+    if (shellNav != null && shellNav.canPop()) shellNav.pop();
     context.go(routes[index]);
   }
 
