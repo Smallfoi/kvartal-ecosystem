@@ -61,6 +61,11 @@ class _IdleViewState extends ConsumerState<_IdleView> {
     openLocationSetup(context);
   }
 
+  /// Pull-to-refresh: перезагрузить историю забегов (синк push+pull обновит и баланс).
+  Future<void> _refresh() async {
+    await ref.read(completedRunsProvider.notifier).load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final recentRuns = ref.watch(completedRunsProvider);
@@ -79,9 +84,12 @@ class _IdleViewState extends ConsumerState<_IdleView> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _RunHeader(),
@@ -142,6 +150,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                   ...recentRuns.take(3).map((r) => _RunTile(run: r)),
               ],
             ),
+          ),
           ),
         ),
       ),
