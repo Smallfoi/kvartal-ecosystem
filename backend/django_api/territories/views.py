@@ -56,6 +56,10 @@ def capture(request):
     pts = request.data.get("points") or []
     if len(pts) < 3:
         return Response({"detail": "Маршрут слишком короткий для территории"}, status=400)
+    # Лимит на размер payload (P0 безопасность): защита от DoS-полигона. Даже ультра-забег
+    # после клиентской фильтрации (точка/5м) — тысячи точек, не десятки тысяч.
+    if len(pts) > 20_000:
+        return Response({"detail": "Слишком много точек в маршруте"}, status=400)
 
     # Античит по скорости: клиент опционально шлёт дистанцию и время забега.
     distance = request.data.get("distanceMeters")

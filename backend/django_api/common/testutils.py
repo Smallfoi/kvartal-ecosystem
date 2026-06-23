@@ -2,6 +2,7 @@
 Каждый тест: логинимся по телефону (dev-код 1234), чистим демо-баллы, считаем баланс."""
 import json
 
+from django.core.cache import cache
 from django.test import TestCase
 
 from accounts.models import Account
@@ -12,6 +13,8 @@ class ApiTestCase(TestCase):
     phone = "+79990002000"  # переопредели в подклассе, чтобы тесты не пересекались
 
     def setUp(self):
+        # Счётчики rate-limit живут в кэше — чистим, чтобы тесты не штрафовали друг друга.
+        cache.clear()
         r = self.client.post(
             "/v1/auth/phone/verify",
             data=json.dumps({"phone": self.phone, "code": "1234"}),
