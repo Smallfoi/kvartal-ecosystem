@@ -64,6 +64,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
   @override
   Widget build(BuildContext context) {
     final recentRuns = ref.watch(completedRunsProvider);
+    final stats = _RunStats.from(recentRuns);
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,
@@ -86,7 +87,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                 _RunHeader(),
                 const SizedBox(height: 16),
                 const LocationWarningBanner(),
-                _QuickStatsRow(),
+                _QuickStatsRow(stats: stats),
                 const SizedBox(height: 20),
                 _StartCard(),
                 const SizedBox(height: 24),
@@ -100,7 +101,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                       ),
                     ),
                     Text(
-                      '42%',
+                      '${(stats.weekProgress * 100).round()}%',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -110,7 +111,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _WeeklyGoalCard(),
+                _WeeklyGoalCard(weekKm: stats.weekKm),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -188,28 +189,76 @@ class _RunHeader extends StatelessWidget {
   }
 }
 
+/// Реальная статистика бега из истории забегов (completedRunsProvider, синк с
+/// сервером push+pull). Один источник правды — без зашитых заглушек.
+class _RunStats {
+  final double todayKm;
+  final double weekKm;
+  final int streakDays;
+  final int totalZones;
+  const _RunStats({
+    required this.todayKm,
+    required this.weekKm,
+    required this.streakDays,
+    required this.totalZones,
+  });
+
+  static const weeklyGoalKm = 40.0;
+  double get weekProgress => (weekKm / weeklyGoalKm).clamp(0.0, 1.0);
+
+  factory _RunStats.from(List<CompletedRun> runs) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekStart = today.subtract(Duration(days: today.weekday - 1)); // пн
+    double todayKm = 0, weekKm = 0;
+    int zones = 0;
+    final days = <DateTime>{};
+    for (final r in runs) {
+      final d = DateTime(r.finishedAt.year, r.finishedAt.month, r.finishedAt.day);
+      if (d == today) todayKm += r.distanceKm;
+      if (!d.isBefore(weekStart)) weekKm += r.distanceKm;
+      zones += r.capturedZones;
+      days.add(d);
+    }
+    // Дней подряд: считаем назад от сегодня (или со вчера, если сегодня ещё не бегал).
+    int streak = 0;
+    var probe = today;
+    if (!days.contains(probe)) probe = probe.subtract(const Duration(days: 1));
+    while (days.contains(probe)) {
+      streak++;
+      probe = probe.subtract(const Duration(days: 1));
+    }
+    return _RunStats(
+      todayKm: todayKm, weekKm: weekKm, streakDays: streak, totalZones: zones,
+    );
+  }
+}
+
 class _QuickStatsRow extends StatelessWidget {
+  final _RunStats stats;
+  const _QuickStatsRow({required this.stats});
+
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: const [
+      children: [
         _QuickStat(
           icon: CupertinoIcons.flame_fill,
-          value: '5.4',
+          value: stats.todayKm.toStringAsFixed(1),
           label: 'км сегодня',
           color: AppColors.error,
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         _QuickStat(
           icon: CupertinoIcons.bolt_fill,
-          value: '7',
+          value: '${stats.streakDays}',
           label: 'дней подряд',
           color: AppColors.warning,
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         _QuickStat(
           icon: CupertinoIcons.location_fill,
-          value: '12',
+          value: '${stats.totalZones}',
           label: 'зон моих',
           color: AppColors.warning,
         ),
@@ -724,11 +773,14 @@ class _EmptyRunsHint extends StatelessWidget {
 }
 
 class _WeeklyGoalCard extends StatelessWidget {
+  final double weekKm;
+  const _WeeklyGoalCard({required this.weekKm});
+
   @override
   Widget build(BuildContext context) {
-    const current = 16.7;
-    const goal = 40.0;
-    final progress = current / goal;
+    final current = weekKm;
+    const goal = _RunStats.weeklyGoalKm;
+    final progress = (current / goal).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -769,7 +821,9 @@ class _WeeklyGoalCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Осталось ${(goal - current).toStringAsFixed(1)} км до цели',
+            current >= goal
+                ? 'Цель недели выполнена 🎉'
+                : 'Осталось ${(goal - current).toStringAsFixed(1)} км до цели',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),

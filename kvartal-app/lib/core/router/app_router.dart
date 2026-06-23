@@ -40,6 +40,11 @@ class _RouterNotifier extends ChangeNotifier {
   }
 }
 
+// Ключ навигатора шелла (под таб-баром). Нужен, чтобы при переключении вкладок
+// закрывать открытые модальные листы (погода, выбор кроссовок и т.п.) — иначе они
+// висят поверх новой вкладки (см. [[feedback-no-repeat-fixed-bugs]]).
+final shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
+
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier(ref);
   return GoRouter(
@@ -70,6 +75,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const ClubScanScreen(),
       ),
       ShellRoute(
+        navigatorKey: shellNavigatorKey,
         builder: (context, state, child) => MainScaffold(child: child),
         routes: [
           GoRoute(
