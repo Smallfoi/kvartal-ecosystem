@@ -41,6 +41,8 @@ def login(request):
     acc = Account.objects.filter(email=email).first()
     if not acc or not verify_password(d.get("password") or "", acc.password_hash or ""):
         return Response({"detail": "Неверный email или пароль"}, status=401)
+    if acc.is_blocked:
+        return Response({"detail": "Аккаунт заблокирован"}, status=403)
     return Response({"token": make_token(acc.id), "user": acc.to_json()})
 
 
@@ -67,6 +69,8 @@ def phone_verify(request):
             password_hash=hash_password(f"phone:{phone}"),
         )
         seed_runner_points(acc.id)
+    if acc.is_blocked:
+        return Response({"detail": "Аккаунт заблокирован"}, status=403)
     return Response({"token": make_token(acc.id), "user": acc.to_json()})
 
 

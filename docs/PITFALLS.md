@@ -8,6 +8,8 @@
   UTF-8-тексты писать файловым инструментом (Write) или через Python с `encoding='utf-8'`. Не писать кириллицу через PowerShell here-string.
 - **PowerShell помечает stderr нативных команд как «ошибку»** (git/gh пишут прогресс в stderr). Это НЕ всегда падение — смотреть фактический результат, а не только «красный» вывод.
 - **`/tmp` различается** для git-bash и Windows-python: файл, записанный bash в `/tmp`, Windows-python по `/tmp/...` не находит. Не передавать пути `/tmp` между ними; использовать абсолютные Windows-пути или один интерпретатор.
+- **`curl -d '{...кириллица...}'` в git-bash бьёт UTF-8** — тело уходит мусором, запрос молча падает (юзер не создаётся, токен пустой). Для API-проверок с кириллицей использовать Django **test Client** (UTF-8 гарантирован) или `curl --data @файл`.
+- **`docker compose exec ... /tmp/x.py` — MSYS конвертит `/tmp` в win-путь** (`C:/Users/.../Temp/x.py`) → «No such file». Ставить `MSYS_NO_PATHCONV=1` перед командой. И скрипт для Django класть в **`/app`** (а не `/tmp`): python добавляет в `sys.path` каталог скрипта, а `config` лежит в `/app` → иначе `ModuleNotFoundError: config`.
 - **Docker: web перестаёт резолвить host `db`** (`failed to resolve host 'db'`) после нескольких `docker compose restart` — DNS в compose-сети отваливается, хотя сам db healthy. Лечится `docker compose up -d --force-recreate web` (просто restart не помогает). GitHub API/git тоже периодически моргают (EOF/SSL handshake) — повторять с ретраями.
 
 ## CI / branch protection

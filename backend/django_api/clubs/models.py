@@ -11,6 +11,8 @@ class Club(models.Model):
     owner_id = models.CharField(max_length=40)
     join_policy = models.CharField(max_length=20, default="open")  # 'open' | 'request'
     created_at = models.DateTimeField(default=timezone.now)
+    # Модерация (S-10): скрытый клуб не виден в списке и в него нельзя вступить.
+    is_hidden = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         db_table = "clubs"
