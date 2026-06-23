@@ -38,6 +38,7 @@ urlpatterns = [
     path("v1/clubs/<str:club_id>", clubs_views.club_detail_or_update),
     path("v1/clubs/<str:club_id>/join", clubs_views.join_club),
     path("v1/clubs/<str:club_id>/leave", clubs_views.leave_club),
+    path("v1/clubs/<str:club_id>/logo", clubs_views.club_logo),
     path("v1/clubs/<str:club_id>/requests", clubs_views.club_requests),
     path("v1/leaderboard/", include("leaderboard.urls")),
     # Территории (PostGIS, D-09)
