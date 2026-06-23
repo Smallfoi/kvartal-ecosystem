@@ -5,7 +5,7 @@ import '../data/repositories/auth_repository.dart';
 import '../models/auth_user.dart';
 
 // Re-export, чтобы существующие `import '.../auth_provider.dart'` по-прежнему
-// видели AuthUser/SavedAddress/LoginProvider/OAuthPendingData.
+// видели AuthUser/SavedAddress/LoginProvider.
 export '../models/auth_user.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -111,31 +111,6 @@ class AuthProvider extends ChangeNotifier {
     _save();
     _setLoading(false);
     return null;
-  }
-
-  Future<OAuthPendingData> startGoogleSignIn() async {
-    _setLoading(true);
-    final data = await _repo.startGoogleSignIn();
-    _setLoading(false);
-    return data;
-  }
-
-  Future<OAuthPendingData> startAppleSignIn() async {
-    _setLoading(true);
-    final data = await _repo.startAppleSignIn();
-    _setLoading(false);
-    return data;
-  }
-
-  Future<void> completeSocialSignUp(
-    OAuthPendingData data,
-    String name,
-    String? phone,
-  ) async {
-    _setLoading(true);
-    _user = await _repo.completeSocialSignUp(data, name, phone);
-    _save();
-    _setLoading(false);
   }
 
   Future<String?> sendPasswordReset(String email) async {

@@ -289,9 +289,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         color: AppColors.grey100,
                         child: Text(
-                          user.provider == LoginProvider.google
-                              ? 'Аккаунт Google'
-                              : 'Аккаунт Apple',
+                          'Вход по номеру телефона',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.grey600,

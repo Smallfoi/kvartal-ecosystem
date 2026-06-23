@@ -16,6 +16,16 @@
 ---
 
 
+## 2026-06-23 — Claude — Убрал соцвход (Google/Apple): регистрация только email+телефон (D-24)
+**Сделано (SportStore):** по требованию владельца (РФ-комплаенс) убран вход через Google/Apple.
+- `LoginProvider {email, phone}` (было +google/apple); удалён `OAuthPendingData` и экран `social_signup_screen.dart`.
+- `auth_screen.dart`: убраны кнопки Google/Apple, хендлеры `_handleGoogle/_handleApple`, дивайдеры; остались Email-вход, Email-регистрация, вход по телефону.
+- `auth_provider.dart` / `auth_repository.dart` (abstract+Mock+Api): удалены `startGoogleSignIn/startAppleSignIn/completeSocialSignUp` (бэкенд oauth-эндпоинтов и не имел).
+- `edit_profile_screen`: бейдж «Аккаунт Google/Apple» → «Вход по номеру телефона».
+- `flutter analyze` чисто; тесты Store соцвход не используют.
+- **Решение записано — D-24** (+ пуши/краши переведены на НЕ-Google: RuStore/VK Push, Sentry/AppMetrica; SMS-провайдер и Яндекс Cloud отложены).
+**Дальше:** собрать новый APK Store и поставить владельцу на проверку экрана входа.
+
 ## 2026-06-23 — Claude — Расширение тестов: auth + clubs (надёжность)
 **Сделано:** +10 тестов критпути (всего 29 в CI). `accounts/tests.py` — me/профиль, register→login, неверный пароль → 401, забаненный → 403. `clubs/tests.py` — один клуб на человека (409), my_club, вступление/дубль/выход, имя обязательно. В `ApiTestCase` добавлены `api_get/api_patch/new_user`. Чисто тесты — поведение рантайма не меняю (live-тест владельца не трогаю).
 **Дальше:** shoes/leaderboard/profile-privacy тесты; затем отзыв токенов (is_blocked на запрос) и агрегат баланса.

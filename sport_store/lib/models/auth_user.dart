@@ -1,4 +1,6 @@
-enum LoginProvider { email, phone, google, apple }
+// Только почта и телефон. Вход через Google/Apple/соцсети убран намеренно
+// (соответствие требованиям РФ к идентификации — см. D-24).
+enum LoginProvider { email, phone }
 
 class SavedAddress {
   final String label;
@@ -93,14 +95,3 @@ class AuthUser {
   );
 }
 
-class OAuthPendingData {
-  final String name;
-  final String email;
-  final LoginProvider provider;
-
-  const OAuthPendingData({
-    required this.name,
-    required this.email,
-    required this.provider,
-  });
-}
