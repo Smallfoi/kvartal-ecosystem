@@ -73,3 +73,7 @@ desktop.ini
 # === Прочее ===
 *.log
 .obsidian/
+
+# Артефакты сборки/инструментов, не для репо
+**/android/.kotlin/
+output/
