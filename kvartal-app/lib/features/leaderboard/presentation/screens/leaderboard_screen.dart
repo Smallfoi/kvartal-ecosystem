@@ -251,19 +251,23 @@ class _PersonalTab extends ConsumerWidget {
         final hasPodium = board.top.length >= 3;
         final podium = board.top.take(3).toList();
         final rest = board.top.skip(hasPodium ? 3 : 0).toList();
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          children: [
-            if (hasPodium) ...[
-              _PodiumCard(players: podium),
-              const SizedBox(height: 10),
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(leaderboardUsersProvider.future),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              if (hasPodium) ...[
+                _PodiumCard(players: podium),
+                const SizedBox(height: 10),
+              ],
+              if (board.myRank != null) ...[
+                _MyPositionBanner(rank: board.myRank!, km: board.myKm),
+                const SizedBox(height: 12),
+              ],
+              ...rest.map((p) => _PlayerTile(player: p)),
             ],
-            if (board.myRank != null) ...[
-              _MyPositionBanner(rank: board.myRank!, km: board.myKm),
-              const SizedBox(height: 12),
-            ],
-            ...rest.map((p) => _PlayerTile(player: p)),
-          ],
+          ),
         );
       },
     );
@@ -598,11 +602,14 @@ class _ClubsTab extends ConsumerWidget {
         final maxKm = board.top
             .map((c) => c.km)
             .fold<double>(0, (m, v) => v > m ? v : m);
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          itemCount: board.top.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, i) {
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(leaderboardClubsProvider.future),
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            itemCount: board.top.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, i) {
             final c = board.top[i];
             final color = i < 3 ? _rankColors[i] : AppColors.textSecondary;
             return Container(
@@ -681,7 +688,7 @@ class _ClubsTab extends ConsumerWidget {
               ),
             );
           },
-        );
+        ));
       },
     );
   }
@@ -715,11 +722,14 @@ class _DistrictsTab extends ConsumerWidget {
         final maxArea = board.top
             .map((c) => c.areaM2)
             .fold<double>(0, (m, v) => v > m ? v : m);
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          itemCount: board.top.length + 1,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, idx) {
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(leaderboardDistrictsProvider.future),
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            itemCount: board.top.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, idx) {
             if (idx == 0) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6, top: 2, left: 2),
@@ -813,7 +823,7 @@ class _DistrictsTab extends ConsumerWidget {
               ),
             );
           },
-        );
+        ));
       },
     );
   }

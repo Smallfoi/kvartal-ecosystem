@@ -162,11 +162,6 @@ class _ClubSliverHeader extends ConsumerWidget {
             icon: const Icon(CupertinoIcons.qrcode_viewfinder, size: 22),
             onPressed: () => context.push('/club/scan'),
           ),
-        IconButton(
-          tooltip: 'Обновить',
-          icon: const Icon(CupertinoIcons.refresh, size: 20),
-          onPressed: () => ref.read(clubProvider.notifier).refresh(),
-        ),
       ],
       title: Text('Клуб', style: Theme.of(context).textTheme.titleLarge),
       flexibleSpace: FlexibleSpaceBar(
