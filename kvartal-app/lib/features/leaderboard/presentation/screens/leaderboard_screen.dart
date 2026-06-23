@@ -248,17 +248,26 @@ class _PersonalTab extends ConsumerWidget {
             'Пока нет пробежек за период.\nПробегись — и попадёшь в рейтинг!',
           );
         }
-        final hasPodium = board.top.length >= 3;
-        final podium = board.top.take(3).toList();
-        final rest = board.top.skip(hasPodium ? 3 : 0).toList();
+        // Пьедестал показываем всегда, когда есть хоть один бегун (топ-1..3);
+        // пустые места рисуются заглушкой. Остальные (4+) — списком ниже.
+        final podiumEntries = board.top
+            .take(3)
+            .map((p) => _PodiumEntry(
+                  rank: p.rank,
+                  name: p.name,
+                  value: '${p.km.toStringAsFixed(1)} км',
+                  isMe: p.isMe,
+                ))
+            .toList();
+        final rest = board.top.skip(3).toList();
         return RefreshIndicator(
           onRefresh: () => ref.refresh(leaderboardUsersProvider.future),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              if (hasPodium) ...[
-                _PodiumCard(players: podium),
+              if (podiumEntries.isNotEmpty) ...[
+                _PodiumCard(entries: podiumEntries),
                 const SizedBox(height: 10),
               ],
               if (board.myRank != null) ...[
@@ -274,12 +283,29 @@ class _PersonalTab extends ConsumerWidget {
   }
 }
 
+/// Универсальная запись пьедестала — годится для Личного/Клубов/Районов.
+class _PodiumEntry {
+  final int rank;
+  final String name;
+  final String value; // «12.3 км» или «0.45 км²»
+  final bool isMe;
+  const _PodiumEntry({
+    required this.rank,
+    required this.name,
+    required this.value,
+    required this.isMe,
+  });
+}
+
 class _PodiumCard extends StatelessWidget {
-  final List<LeaderUser> players;
-  const _PodiumCard({required this.players});
+  /// Топ по порядку (rank 1 первый). Может быть 1, 2 или 3 — пустые места
+  /// рисуются заглушкой, чтобы пьедестал был всегда (просьба владельца).
+  final List<_PodiumEntry> entries;
+  const _PodiumCard({required this.entries});
 
   @override
   Widget build(BuildContext context) {
+    _PodiumEntry? at(int i) => i < entries.length ? entries[i] : null;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
       decoration: BoxDecoration(
@@ -309,9 +335,9 @@ class _PodiumCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _PodiumItem(player: players[1], height: 72),
-              _PodiumItem(player: players[0], height: 96, isFirst: true),
-              _PodiumItem(player: players[2], height: 56),
+              _PodiumItem(entry: at(1), place: 2, height: 72),
+              _PodiumItem(entry: at(0), place: 1, height: 96, isFirst: true),
+              _PodiumItem(entry: at(2), place: 3, height: 56),
             ],
           ),
         ],
@@ -321,11 +347,13 @@ class _PodiumCard extends StatelessWidget {
 }
 
 class _PodiumItem extends StatelessWidget {
-  final LeaderUser player;
+  final _PodiumEntry? entry; // null — пустое место (нет ещё участника)
+  final int place; // 1/2/3 — позиция пьедестала
   final double height;
   final bool isFirst;
   const _PodiumItem({
-    required this.player,
+    required this.entry,
+    required this.place,
     required this.height,
     this.isFirst = false,
   });
@@ -338,18 +366,20 @@ class _PodiumItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final idx = (player.rank - 1).clamp(0, 2);
-    final color = _medalColors[idx];
+    final color = _medalColors[(place - 1).clamp(0, 2)];
     final avatarR = isFirst ? 27.0 : 21.0;
-    final initial = player.name.isNotEmpty ? player.name[0].toUpperCase() : '?';
+    final empty = entry == null;
+    final dim = empty ? color.withValues(alpha: 0.4) : color;
+    final initial =
+        empty ? '—' : (entry!.name.isNotEmpty ? entry!.name[0].toUpperCase() : '?');
 
     return Expanded(
       child: Column(
         children: [
           if (isFirst) ...[
-            const Icon(
+            Icon(
               CupertinoIcons.rosette,
-              color: AppColors.warning,
+              color: empty ? AppColors.warning.withValues(alpha: 0.4) : AppColors.warning,
               size: 20,
             ),
             const SizedBox(height: 4),
@@ -360,9 +390,9 @@ class _PodiumItem extends StatelessWidget {
             height: avatarR * 2,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.18),
-              border: Border.all(color: color, width: isFirst ? 2.5 : 1.5),
-              boxShadow: isFirst
+              color: color.withValues(alpha: empty ? 0.07 : 0.18),
+              border: Border.all(color: dim, width: isFirst ? 2.5 : 1.5),
+              boxShadow: (isFirst && !empty)
                   ? [
                       BoxShadow(
                         color: color.withValues(alpha: 0.45),
@@ -376,7 +406,7 @@ class _PodiumItem extends StatelessWidget {
               child: Text(
                 initial,
                 style: TextStyle(
-                  color: color,
+                  color: dim,
                   fontWeight: FontWeight.w800,
                   fontSize: isFirst ? 20 : 15,
                 ),
@@ -385,20 +415,22 @@ class _PodiumItem extends StatelessWidget {
           ),
           const SizedBox(height: 7),
           Text(
-            player.isMe ? 'Вы' : player.name.split(' ').first,
+            empty ? '—' : (entry!.isMe ? 'Вы' : entry!.name.split(' ').first),
             style: TextStyle(
               fontSize: 12,
               fontWeight: isFirst ? FontWeight.w700 : FontWeight.w500,
-              color: player.isMe
-                  ? AppColors.electricBlue
-                  : (isFirst ? AppColors.textPrimary : AppColors.textSecondary),
+              color: empty
+                  ? AppColors.textTertiary
+                  : (entry!.isMe
+                      ? AppColors.electricBlue
+                      : (isFirst ? AppColors.textPrimary : AppColors.textSecondary)),
             ),
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 1),
           Text(
-            '${player.km.toStringAsFixed(1)} км',
+            empty ? '' : entry!.value,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -411,14 +443,14 @@ class _PodiumItem extends StatelessWidget {
             child: Container(
               height: height,
               width: double.infinity,
-              color: color.withValues(alpha: 0.13),
+              color: color.withValues(alpha: empty ? 0.06 : 0.13),
               child: Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  '#${player.rank}',
+                  '#$place',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: color,
+                    color: dim,
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
                   ),
@@ -581,12 +613,6 @@ class _PlayerTile extends StatelessWidget {
 class _ClubsTab extends ConsumerWidget {
   const _ClubsTab();
 
-  static const _rankColors = [
-    AppColors.warning,
-    Color(0xFFB0BEC5),
-    Color(0xFFCD7F32),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(leaderboardClubsProvider);
@@ -602,16 +628,28 @@ class _ClubsTab extends ConsumerWidget {
         final maxKm = board.top
             .map((c) => c.km)
             .fold<double>(0, (m, v) => v > m ? v : m);
+        // Топ-3 клуба — пьедесталом (как в Личном), остальные (4+) — списком.
+        final podiumEntries = board.top
+            .take(3)
+            .map((c) => _PodiumEntry(
+                  rank: c.rank,
+                  name: c.name,
+                  value: '${c.km.toStringAsFixed(1)} км',
+                  isMe: c.isMine,
+                ))
+            .toList();
+        final rest = board.top.skip(3).toList();
         return RefreshIndicator(
           onRefresh: () => ref.refresh(leaderboardClubsProvider.future),
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            itemCount: board.top.length,
+            itemCount: 1 + rest.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
-            final c = board.top[i];
-            final color = i < 3 ? _rankColors[i] : AppColors.textSecondary;
+            if (i == 0) return _PodiumCard(entries: podiumEntries);
+            final c = rest[i - 1];
+            const color = AppColors.textSecondary;
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -699,12 +737,6 @@ class _ClubsTab extends ConsumerWidget {
 class _DistrictsTab extends ConsumerWidget {
   const _DistrictsTab();
 
-  static const _rankColors = [
-    AppColors.warning,
-    Color(0xFFB0BEC5),
-    Color(0xFFCD7F32),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(leaderboardDistrictsProvider);
@@ -722,12 +754,23 @@ class _DistrictsTab extends ConsumerWidget {
         final maxArea = board.top
             .map((c) => c.areaM2)
             .fold<double>(0, (m, v) => v > m ? v : m);
+        // Топ-3 клуба по площади — пьедесталом, остальные (4+) — списком.
+        final podiumEntries = board.top
+            .take(3)
+            .map((c) => _PodiumEntry(
+                  rank: c.rank,
+                  name: c.name,
+                  value: c.areaLabel,
+                  isMe: c.isMine,
+                ))
+            .toList();
+        final rest = board.top.skip(3).toList();
         return RefreshIndicator(
           onRefresh: () => ref.refresh(leaderboardDistrictsProvider.future),
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            itemCount: board.top.length + 1,
+            itemCount: 2 + rest.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, idx) {
             if (idx == 0) {
@@ -741,10 +784,9 @@ class _DistrictsTab extends ConsumerWidget {
                 ),
               );
             }
-            final c = board.top[idx - 1];
-            final color = (idx - 1) < 3
-                ? _rankColors[idx - 1]
-                : AppColors.textSecondary;
+            if (idx == 1) return _PodiumCard(entries: podiumEntries);
+            final c = rest[idx - 2];
+            const color = AppColors.textSecondary;
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
