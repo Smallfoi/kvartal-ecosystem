@@ -13,6 +13,7 @@ import '../../../permissions/data/location_access_provider.dart';
 import '../../../permissions/presentation/location_setup_sheet.dart';
 import '../../data/run_provider.dart';
 import '../../data/completed_runs_provider.dart';
+import '../../../shoes/presentation/shoe_run_picker.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
 
 const _locSetupShownKey = 'kvartal.loc_setup_shown.v1';
@@ -330,7 +331,13 @@ class _StartCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-          onTap: () => ref.read(runProvider.notifier).start(),
+          onTap: () async {
+            // Перед стартом спрашиваем, в каких кроссовках бежим — с выбранной
+            // пары спишется ресурс (если есть пары; иначе сразу старт).
+            final proceed = await showRunShoePicker(context, ref);
+            if (!proceed || !context.mounted) return;
+            ref.read(runProvider.notifier).start();
+          },
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(22),

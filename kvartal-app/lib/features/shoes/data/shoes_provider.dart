@@ -105,6 +105,10 @@ class ShoesState {
     return null;
   }
 
+  /// Все рабочие (не списанные) пары — из них выбираем, в каких бежим.
+  List<ShoeAsset> get activeShoes =>
+      shoes.where((s) => !s.retired).toList();
+
   bool get hasShoes => shoes.isNotEmpty;
   bool get hasPending => pending.isNotEmpty;
 }
@@ -198,16 +202,35 @@ class ShoesNotifier extends StateNotifier<ShoesState> {
   /// (офлайн-очередь может переслать одну пробежку повторно — сервер не задвоит).
   /// На улице связи с dev-беком нет → начисление кладётся в очередь и долетит
   /// при следующем refresh (открытие профиля / экрана кроссовок).
+  /// Пара, выбранная для текущего забега (через лист перед стартом).
+  /// null — не выбирали (спишем с активной); '' — выбрано «без кроссовок» (не списываем).
+  String? _runShoeId;
+
+  void selectRunShoe(String? id) => _runShoeId = id;
+
   Future<void> applyRunDistance({
     required double km,
     required String runId,
   }) async {
     if (km <= 0) return;
-    // Нужны данные о кроссовках, чтобы знать активную пару.
+    // Нужны данные о кроссовках, чтобы знать пары.
     if (!state.loaded) await refresh();
-    final active = state.active;
-    if (active == null) return; // нет активных кроссовок — изнашивать нечего
-    await _enqueue({'shoeId': active.id, 'km': km, 'runId': runId});
+
+    // Списываем с ВЫБРАННОЙ перед забегом пары (а не просто «активной»):
+    // null = не выбирали → активная; '' = бежал без кроссовок → не списываем.
+    final chosen = _runShoeId;
+    String? shoeId;
+    if (chosen == null) {
+      shoeId = state.active?.id;
+    } else if (chosen.isEmpty) {
+      shoeId = null;
+    } else {
+      shoeId = chosen;
+    }
+    _runShoeId = null; // сброс — на следующий забег спросим заново
+    if (shoeId == null) return; // без кроссовок / нет активной пары
+
+    await _enqueue({'shoeId': shoeId, 'km': km, 'runId': runId});
     await refresh();
   }
 
