@@ -65,6 +65,13 @@ def redeem(request):
     )
 
 
+# Источники, которые СЕРВЕР начисляет сам (анти-чит S-04) — клиент их слать не может,
+# иначе очки (= деньги в Store) подделываются. runnerRun считается в /v1/runs.
+# Phase 2 перенесёт сюда же runnerTerritory (→/territories/capture) и
+# purchase/registration (→/orders).
+_SERVER_ONLY_SOURCES = {"runnerRun"}
+
+
 @api_view(["POST"])
 def transactions(request):
     uid = user_id_from_request(request)
@@ -74,6 +81,8 @@ def transactions(request):
     run_id = d.get("runId")
     order_id = d.get("orderId")
     source = d.get("source")
+    if source in _SERVER_ONLY_SOURCES:
+        return Response({"detail": "Начисления за бег считает сервер"}, status=403)
     # Идемпотентность: по (user, runId, source) для забегов и
     # по (user, orderId, source) для покупок/начислений за заказ — без дублей.
     if run_id and LoyaltyTransaction.objects.filter(

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_config.dart';
 import '../../auth/data/auth_provider.dart';
+import '../../loyalty/data/loyalty_provider.dart';
 
 const _completedRunsKey = 'kvartal.completed_runs.v1';
 const _runsSyncedKey = 'kvartal.runs_synced.v1';
@@ -182,6 +183,8 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
       _synced.add(run.id);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_runsSyncedKey, _synced.toList());
+      // Сервер сам начислил очки за бег (анти-чит S-04) — обновляем баланс.
+      unawaited(ref.read(loyaltyProvider.notifier).refresh());
     } catch (_) {
       // офлайн/ошибка — синхронизируем позже (старт/вход)
     }

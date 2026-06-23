@@ -19,6 +19,11 @@ class Run(models.Model):
     finished_at = models.DateTimeField()
     created_at = models.DateTimeField(default=timezone.now)
 
+    # Серверный анти-чит (S-04): очки за бег считает сервер, не клиент.
+    points_awarded = models.IntegerField(default=0)
+    flagged = models.BooleanField(default=False, db_index=True)  # неправдоподобный забег
+    flag_reason = models.CharField(max_length=200, blank=True, default="")
+
     class Meta:
         db_table = "runs"
         ordering = ["-finished_at"]

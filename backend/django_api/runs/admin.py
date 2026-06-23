@@ -7,11 +7,11 @@ from .models import Run
 @admin.register(Run)
 class RunAdmin(ModelAdmin):
     list_display = (
-        "id", "user_id", "distance_m", "duration_s",
-        "captured_territory", "captured_zones", "finished_at",
+        "id", "user_id", "distance_m", "duration_s", "points_awarded",
+        "flagged", "flag_reason", "captured_territory", "finished_at",
     )
-    list_filter = ("captured_territory",)
-    search_fields = ("id", "user_id")
+    list_filter = ("flagged", "captured_territory")
+    search_fields = ("id", "user_id", "flag_reason")
     date_hierarchy = "finished_at"
 
     def has_change_permission(self, request, obj=None):
