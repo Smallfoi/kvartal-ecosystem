@@ -18,6 +18,10 @@ class Account(models.Model):
     route_public = models.BooleanField(default=False)     # маршруты/территории видны другим
     realtime_public = models.BooleanField(default=False)  # положение в реальном времени
 
+    # Модерация (S-10): бан абьюзеров. Блокирует вход (новые токены).
+    is_blocked = models.BooleanField(default=False, db_index=True)
+    block_reason = models.CharField(max_length=300, blank=True, default="")
+
     class Meta:
         db_table = "accounts"
 

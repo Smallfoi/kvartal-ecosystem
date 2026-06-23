@@ -6,9 +6,21 @@ from .models import Club, ClubJoinRequest, ClubMember
 
 @admin.register(Club)
 class ClubAdmin(ModelAdmin):
-    list_display = ("id", "name", "city", "owner_id", "join_policy", "created_at")
-    list_filter = ("join_policy", "city")
+    list_display = ("id", "name", "city", "owner_id", "join_policy",
+                    "is_hidden", "created_at")
+    list_filter = ("join_policy", "city", "is_hidden")
     search_fields = ("id", "name", "city", "owner_id")
+    actions = ("hide_clubs", "show_clubs")
+
+    @admin.action(description="Скрыть (модерация)")
+    def hide_clubs(self, request, queryset):
+        n = queryset.update(is_hidden=True)
+        self.message_user(request, f"Скрыто клубов: {n}")
+
+    @admin.action(description="Показать")
+    def show_clubs(self, request, queryset):
+        n = queryset.update(is_hidden=False)
+        self.message_user(request, f"Показано клубов: {n}")
 
 
 @admin.register(ClubMember)

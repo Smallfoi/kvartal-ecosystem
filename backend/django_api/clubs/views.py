@@ -81,7 +81,7 @@ def clubs_root(request):
         return Response({"detail": "Нет токена"}, status=401)
     if request.method == "GET":
         search = request.query_params.get("search")
-        qs = Club.objects.all()
+        qs = Club.objects.filter(is_hidden=False)  # скрытые модерацией не показываем
         if search:
             from django.db.models import Q
             qs = qs.filter(Q(name__icontains=search) | Q(city__icontains=search))
@@ -155,7 +155,7 @@ def join_club(request, club_id):
     if not uid:
         return Response({"detail": "Нет токена"}, status=401)
     club = Club.objects.filter(id=club_id).first()
-    if not club:
+    if not club or club.is_hidden:  # скрытый модерацией недоступен для вступления
         return Response({"detail": "Клуб не найден"}, status=404)
     if _current_club_id(uid):
         return Response({"detail": "Вы уже состоите в клубе"}, status=409)
