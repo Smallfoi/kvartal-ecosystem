@@ -18,6 +18,7 @@ abstract class AuthRepository {
     String? phone,
     String? city,
     String? avatarPath,
+    String? email,
   });
 
   /// Профиль текущего пользователя по JWT (GET /auth/me).
@@ -78,12 +79,13 @@ class MockAuthRepository implements AuthRepository {
     String? phone,
     String? city,
     String? avatarPath,
+    String? email,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return AuthUser(
       id: current.id,
       name: (name?.trim().isNotEmpty == true) ? name!.trim() : current.name,
-      email: current.email,
+      email: (email?.trim().isNotEmpty == true) ? email!.trim() : current.email,
       phone: phone != null
           ? (phone.trim().isNotEmpty ? phone.trim() : null)
           : current.phone,
@@ -172,12 +174,14 @@ class ApiAuthRepository implements AuthRepository {
     String? phone,
     String? city,
     String? avatarPath,
+    String? email,
   }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
     if (phone != null) body['phone'] = phone;
     if (city != null) body['city'] = city;
     if (avatarPath != null) body['avatarPath'] = avatarPath;
+    if (email != null && email.trim().isNotEmpty) body['email'] = email.trim();
     final data = await _client.patch('/profile', body: body);
     return AuthUser.fromJson(data as Map<String, dynamic>);
   }
