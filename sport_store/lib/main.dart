@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
@@ -20,6 +21,10 @@ import 'providers/wishlist_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Шрифты (Inter/Oswald) встроены в assets/fonts — берём их локально, без обращения
+  // к fonts.gstatic.com (офлайн + приватность §2: не шлём IP в Google). Файлы байт-в-байт
+  // те же, что google_fonts скачал бы по сети, поэтому вид не меняется (D-01).
+  GoogleFonts.config.allowRuntimeFetching = false;
   final prefs = await SharedPreferences.getInstance();
 
   // Per-service источник данных (walking skeleton): часть сервисов на реальном
