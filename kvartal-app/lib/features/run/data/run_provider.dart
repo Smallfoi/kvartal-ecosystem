@@ -315,20 +315,13 @@ class RunNotifier extends StateNotifier<RunState> {
         );
   }
 
-  /// Начисление баллов в общий счёт экосистемы за пробежку и захват территории.
-  /// 10 баллов/км + 50 за захват территории (как в демо-экономике бэка).
-  /// Баллы становятся видны и в Store (общий аккаунт).
+  /// Начисление баллов за захват территории.
+  /// Очки ЗА БЕГ (10/км) теперь считает СЕРВЕР при синке забега (`POST /runs`,
+  /// анти-чит S-04) — клиент их больше не присылает; баланс обновляется после
+  /// успешного синка (см. completed_runs_provider). Территория (+50) пока остаётся
+  /// клиентской (Phase 2 перенесёт её в `/territories/capture`).
   Future<void> _awardLoyaltyPoints(CompletedRun run) async {
     final loyalty = _ref.read(loyaltyProvider.notifier);
-    final runPoints = (run.distanceKm * 10).round();
-    if (runPoints > 0) {
-      await loyalty.award(
-        amount: runPoints,
-        source: 'runnerRun',
-        description: 'Пробежка ${run.distanceKm.toStringAsFixed(1)} км',
-        runId: run.id,
-      );
-    }
     if (run.capturedTerritory) {
       final zonesNote = run.capturedZones > 0
           ? ' (${run.capturedZones} зон)'

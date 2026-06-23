@@ -217,8 +217,20 @@ GET  /orders/:id                                         → Order
 ### Loyalty (единый баланс)
 ```
 GET  /loyalty/account                   → { balance, level, transactions: LoyaltyTransaction[] }
-POST /loyalty/transactions  LoyaltyTransaction → 200   (Квартал шлёт бег/территории, Store — покупки/списания)
+POST /loyalty/transactions  LoyaltyTransaction → 200   (Store — покупки/списания; территории Квартала — пока тут)
+                            source=runnerRun → 403         (очки за бег считает сервер: POST /runs, анти-чит S-04)
 ```
+
+### Runs (история пробежек + серверный расчёт очков — анти-чит S-04)
+```
+GET  /runs                              → Run[]   (сводки забегов пользователя, новые сверху)
+POST /runs  { id, distanceMeters, elapsedSeconds, finishedAtMs, capturedTerritory, capturedZones }
+                                        → { ok, duplicate, flagged, flagReason, pointsAwarded, run }
+```
+Сырой GPS-маршрут НЕ передаём/не храним (приватность §2). Сервер сам валидирует забег
+(скорость ≤ 40 км/ч, дистанция/время, суточный лимит) и НАЧИСЛЯЕТ очки за бег
+(`runnerRun` = км×10), идемпотентно по `id`. Неправдоподобный забег → `flagged`, 0 очков.
+Клиент очки за бег больше НЕ присылает.
 
 ### Shoes (трекер износа)
 ```
@@ -253,7 +265,8 @@ JWT сохраняется → работает в Квартале, Store и н
 
 ### 4.2 Баллы: Квартал → Store
 ```
-Пробежал 12 км в Квартале → POST /loyalty/transactions {source:"runnerRun", amount:120}
+Пробежал 12 км в Квартале → POST /runs {id, distanceMeters:12000, elapsedSeconds, ...}
+              ↓ сервер валидирует забег и САМ начисляет runnerRun = км×10 = 120 (анти-чит S-04)
               ↓ единый баланс на backend
 Открыл Store → GET /loyalty/account → видит 430 баллов
 В корзине применяет → заказ с pointsRedeemed → POST /loyalty/transactions {source:"redeem", amount:-430}

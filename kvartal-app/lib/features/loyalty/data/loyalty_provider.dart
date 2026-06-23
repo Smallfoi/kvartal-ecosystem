@@ -178,8 +178,17 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
           data: pending[i],
           options: Options(headers: {'Authorization': 'Bearer $token'}),
         );
+      } on DioException catch (e) {
+        final code = e.response?.statusCode;
+        if (code != null && code >= 400 && code < 500) {
+          // Сервер отклонил навсегда (напр. источник теперь считает сам сервер —
+          // runnerRun, анти-чит S-04, 403). Выкидываем из очереди, не зацикливаемся.
+          continue;
+        }
+        remaining.addAll(pending.sublist(i)); // офлайн/5xx — остаток оставляем
+        break;
       } catch (_) {
-        remaining.addAll(pending.sublist(i)); // офлайн — остаток оставляем
+        remaining.addAll(pending.sublist(i));
         break;
       }
     }
