@@ -61,6 +61,23 @@ class RunAntiCheatTests(ApiTestCase):
         self.assertTrue(r["flagged"])
         self.assertEqual(self.balance(), 0)
 
+    def test_too_many_runs_per_day_flagged(self):
+        # 30 валидных забегов за сутки — ок; 31-й → flagged (анти-спам).
+        for i in range(30):
+            r = self.api_post(
+                "/v1/runs",
+                {"id": f"rc{i}", "distanceMeters": 1000, "elapsedSeconds": 600,
+                 "finishedAtMs": _NOW_MS},
+            ).json()
+            self.assertFalse(r["flagged"], f"забег {i} должен быть валидным")
+        over = self.api_post(
+            "/v1/runs",
+            {"id": "rc_over", "distanceMeters": 1000, "elapsedSeconds": 600,
+             "finishedAtMs": _NOW_MS},
+        ).json()
+        self.assertTrue(over["flagged"])
+        self.assertEqual(over["pointsAwarded"], 0)
+
     def test_client_cannot_mint_runner_run(self):
         r = self.api_post(
             "/v1/loyalty/transactions",

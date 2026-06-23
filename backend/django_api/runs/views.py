@@ -21,6 +21,7 @@ _MAX = 100
 MAX_SPEED_MS = 11.2            # ~40 км/ч — серверный потолок (как в territories)
 MAX_RUN_DISTANCE_M = 100_000   # 100 км за один забег — неправдоподобно
 MAX_DAY_DISTANCE_M = 150_000   # 150 км/сутки суммарно — щедрый потолок против фарма
+MAX_RUNS_PER_DAY = 30          # >30 забегов/сутки — спам/автоматизация (для человека много)
 POINTS_PER_KM = 10             # очки = км × 10 (как было на клиенте, теперь на сервере)
 FUTURE_SKEW = timedelta(hours=12)   # допуск на часовые пояса/рассинхрон часов
 MAX_RUN_AGE = timedelta(days=30)    # старше — подозрение на реплей/бэкфилл фейков
@@ -42,16 +43,17 @@ def _validate(uid, distance_m, duration_s, finished):
         return "Скорость выше 40 км/ч (спуфинг/телепорт)"
     if distance_m > MAX_RUN_DISTANCE_M:
         return "Дистанция за забег неправдоподобна"
-    # Суточный лимит: сумма валидных забегов за календарный день (UTC) + этот.
+    # Суточные лимиты по валидным забегам за календарный день (UTC).
     day_start = finished.replace(hour=0, minute=0, second=0, microsecond=0)
-    day_sum = sum(
-        r.distance_m
-        for r in Run.objects.filter(
+    todays = list(
+        Run.objects.filter(
             user_id=uid, flagged=False, finished_at__gte=day_start,
             finished_at__lt=day_start.replace(hour=23, minute=59, second=59),
         )
     )
-    if day_sum + distance_m > MAX_DAY_DISTANCE_M:
+    if len(todays) >= MAX_RUNS_PER_DAY:  # анти-спам: слишком много забегов за сутки
+        return "Слишком много забегов за день"
+    if sum(r.distance_m for r in todays) + distance_m > MAX_DAY_DISTANCE_M:
         return "Превышен суточный лимит дистанции"
     return ""
 
