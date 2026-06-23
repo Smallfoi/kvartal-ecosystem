@@ -16,6 +16,16 @@
 ---
 
 
+## 2026-06-23 — Claude — Безопасность P0: rate-limiting + payload-лимит + прод-hardening
+**Сделано (бэкенд, к продакшну):** закрыты первые P0 из `docs/PRODUCTION_HARDENING.md` (новый чеклист безопасности+техники).
+- **Rate-limiting (DRF throttling):** `common/throttling.py` — по JWT (`user` 300/мин), по IP для анонимных (`anon` 120/мин), жёстко на `/auth` register/login/phone_verify (`AuthEndpointThrottle`, `auth` 20/мин — анти-брутфорс кода/пароля). Лимиты щедрые → активное приложение не упирается. _Прод: счётчики в Redis (D-07)._
+- **Лимит payload:** `/territories/capture` ≤ 20000 точек (анти-DoS на PostGIS).
+- **Прод-secure-настройки** за `if not DEBUG`: SSL-redirect, HSTS (1 год), secure-cookies, nosniff — в dev/на устройстве НЕ включаются.
+- Тесты: `cache.clear()` в базовом `ApiTestCase` (чтобы лимиты не штрафовали тесты) + `accounts/tests.py` (брутфорс /auth → 429). 19/19 в CI.
+- **Дал владельцу план** production-hardening (P0/P1, безопасность+техника) — `docs/PRODUCTION_HARDENING.md`.
+**Не трогал** live `:8000` принудительно; проверено — health OK, вход 200, тесты на отдельной тест-БД.
+**Дальше по P0/P1:** отзыв токенов (is_blocked на запрос), агрегат баланса+пагинация, прод-конфиг (`.env.example`/compose.prod/nginx). Остальное — за аккаунтами владельца (SMS/хостинг/Sentry/Firebase).
+
 ## 2026-06-21 — Claude — S-04 anti-replay: время забега (автономная очередь, п.2)
 **Сделано:** в `/runs` добавлена защита от реплея/подделки времени — забег с `finishedAt` в будущем (> +12 ч допуск на часовые пояса) или старше 30 дней → `flagged` + 0 очков. Пороги `FUTURE_SKEW`/`MAX_RUN_AGE` в `runs/views.py`. +2 теста (всего 17, зелёные локально и в CI).
 **Дальше по очереди:** лента уведомлений в Квартале (клиент — лучше в сессии с устройством, чтобы проверить вживую); S-10 фаза 2 (роли модератора + действия по флаг-забегам). См. [[project-autonomous-work-queue]].

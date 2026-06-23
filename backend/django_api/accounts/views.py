@@ -1,6 +1,8 @@
 from django.db import IntegrityError
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.response import Response
+
+from common.throttling import AuthEndpointThrottle
 
 from common.security import (
     hash_password,
@@ -17,6 +19,7 @@ from .models import Account
 
 
 @api_view(["POST"])
+@throttle_classes([AuthEndpointThrottle])
 def register(request):
     d = request.data
     email = (d.get("email") or "").strip().lower()
@@ -35,6 +38,7 @@ def register(request):
 
 
 @api_view(["POST"])
+@throttle_classes([AuthEndpointThrottle])
 def login(request):
     d = request.data
     email = (d.get("email") or "").strip().lower()
@@ -47,6 +51,7 @@ def login(request):
 
 
 @api_view(["POST"])
+@throttle_classes([AuthEndpointThrottle])
 def phone_verify(request):
     d = request.data
     if (d.get("code") or "") != "1234":

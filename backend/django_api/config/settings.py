@@ -102,10 +102,33 @@ else:
 # За HTTPS-прокси (nginx/traefik): доверяем заголовку схемы. Безопасно и в dev.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Прод-харднинг (только при DJANGO_DEBUG=0) — в dev/на устройстве НЕ включается,
+# чтобы не ломать http-доступ при локальном тесте. Требует HTTPS-прода (P0 #5).
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31_536_000  # 1 год
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     # Аутентификация — свой JWT (common.security), session-auth/CSRF DRF не используем.
     "DEFAULT_AUTHENTICATION_CLASSES": [],
+    # Rate-limiting (P0 безопасность): на пользователя (по JWT) + по IP для анонимных.
+    # Лимиты щедрые — активное приложение (карта обновляет территории каждые ~12с,
+    # синки) не упирается, но брутфорс/накрутка/DoS отсекаются. /auth — отдельно жёстко.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "common.throttling.UserJWTRateThrottle",
+        "common.throttling.AnonIPRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "300/min",
+        "anon": "120/min",
+        "auth": "20/min",
+    },
 }
 
 LANGUAGE_CODE = "ru-ru"
