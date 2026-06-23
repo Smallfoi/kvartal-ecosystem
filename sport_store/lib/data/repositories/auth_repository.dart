@@ -7,13 +7,6 @@ abstract class AuthRepository {
   Future<AuthUser> login(String email, String password);
   Future<AuthUser> loginByPhone(String phone, String code);
   Future<AuthUser> register(String name, String email, String password);
-  Future<OAuthPendingData> startGoogleSignIn();
-  Future<OAuthPendingData> startAppleSignIn();
-  Future<AuthUser> completeSocialSignUp(
-    OAuthPendingData data,
-    String name,
-    String? phone,
-  );
   Future<void> sendPasswordReset(String email);
   Future<void> resetPassword(String newPassword);
   Future<void> changePassword(String oldPassword, String newPassword);
@@ -61,41 +54,6 @@ class MockAuthRepository implements AuthRepository {
   Future<AuthUser> register(String name, String email, String password) async {
     await Future.delayed(const Duration(milliseconds: 1400));
     return AuthUser(name: name.trim(), email: email.trim());
-  }
-
-  @override
-  Future<OAuthPendingData> startGoogleSignIn() async {
-    await Future.delayed(const Duration(milliseconds: 1200));
-    return const OAuthPendingData(
-      name: 'Алексей Иванов',
-      email: 'alexivanov@gmail.com',
-      provider: LoginProvider.google,
-    );
-  }
-
-  @override
-  Future<OAuthPendingData> startAppleSignIn() async {
-    await Future.delayed(const Duration(milliseconds: 1200));
-    return const OAuthPendingData(
-      name: 'A. Иванов',
-      email: 'user@privaterelay.appleid.com',
-      provider: LoginProvider.apple,
-    );
-  }
-
-  @override
-  Future<AuthUser> completeSocialSignUp(
-    OAuthPendingData data,
-    String name,
-    String? phone,
-  ) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    return AuthUser(
-      name: name.trim(),
-      email: data.email,
-      phone: (phone?.trim().isNotEmpty == true) ? phone!.trim() : null,
-      provider: data.provider,
-    );
   }
 
   @override
@@ -187,48 +145,6 @@ class ApiAuthRepository implements AuthRepository {
     final map = data as Map<String, dynamic>;
     _client.authToken = map['token'] as String?;
     return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
-  }
-
-  @override
-  Future<OAuthPendingData> startGoogleSignIn() async {
-    final data = await _client.post('/auth/oauth/google');
-    final m = data as Map<String, dynamic>;
-    return OAuthPendingData(
-      name: m['name'] as String,
-      email: m['email'] as String,
-      provider: LoginProvider.google,
-    );
-  }
-
-  @override
-  Future<OAuthPendingData> startAppleSignIn() async {
-    final data = await _client.post('/auth/oauth/apple');
-    final m = data as Map<String, dynamic>;
-    return OAuthPendingData(
-      name: m['name'] as String,
-      email: m['email'] as String,
-      provider: LoginProvider.apple,
-    );
-  }
-
-  @override
-  Future<AuthUser> completeSocialSignUp(
-    OAuthPendingData data,
-    String name,
-    String? phone,
-  ) async {
-    final res = await _client.post(
-      '/auth/oauth/complete',
-      body: {
-        'email': data.email,
-        'provider': data.provider.name,
-        'name': name,
-        'phone': phone,
-      },
-    );
-    final m = res as Map<String, dynamic>;
-    _client.authToken = m['token'] as String?;
-    return AuthUser.fromJson(m['user'] as Map<String, dynamic>);
   }
 
   @override

@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import 'forgot_password_screen.dart';
-import 'social_signup_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   final bool startWithRegister;
@@ -84,36 +83,6 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  Future<void> _handleGoogle() async {
-    final auth = context.read<AuthProvider>();
-    final data = await auth.startGoogleSignIn();
-    if (!mounted) return;
-    Navigator.of(context).push(PageRouteBuilder(
-      pageBuilder: (_, a, b) => SocialSignUpScreen(pendingData: data),
-      transitionsBuilder: (_, a, b, child) => SlideTransition(
-        position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-            .animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
-        child: child,
-      ),
-      transitionDuration: const Duration(milliseconds: 350),
-    ));
-  }
-
-  Future<void> _handleApple() async {
-    final auth = context.read<AuthProvider>();
-    final data = await auth.startAppleSignIn();
-    if (!mounted) return;
-    Navigator.of(context).push(PageRouteBuilder(
-      pageBuilder: (_, a, b) => SocialSignUpScreen(pendingData: data),
-      transitionsBuilder: (_, a, b, child) => SlideTransition(
-        position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-            .animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
-        child: child,
-      ),
-      transitionDuration: const Duration(milliseconds: 350),
-    ));
-  }
-
   void _openForgotPassword() {
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -168,8 +137,6 @@ class _AuthScreenState extends State<AuthScreen> {
                         error: _error,
                         onSubmit: _submit,
                         onPhoneSubmit: _submitPhone,
-                        onGoogleTap: _handleGoogle,
-                        onAppleTap: _handleApple,
                         onForgotPassword: _openForgotPassword,
                       )
                     : _RegisterForm(
@@ -180,8 +147,6 @@ class _AuthScreenState extends State<AuthScreen> {
                         confirmCtrl: _confirmCtrl,
                         error: _error,
                         onSubmit: _submit,
-                        onGoogleTap: _handleGoogle,
-                        onAppleTap: _handleApple,
                       ),
               ),
             ),
@@ -322,8 +287,6 @@ class _LoginForm extends StatefulWidget {
   final String? error;
   final VoidCallback onSubmit;
   final VoidCallback onPhoneSubmit;
-  final VoidCallback onGoogleTap;
-  final VoidCallback onAppleTap;
   final VoidCallback onForgotPassword;
 
   const _LoginForm({
@@ -335,8 +298,6 @@ class _LoginForm extends StatefulWidget {
     required this.error,
     required this.onSubmit,
     required this.onPhoneSubmit,
-    required this.onGoogleTap,
-    required this.onAppleTap,
     required this.onForgotPassword,
   });
 
@@ -440,13 +401,6 @@ class _LoginFormState extends State<_LoginForm> {
           label: '\u0412\u041e\u0419\u0422\u0418 \u041f\u041e \u0422\u0415\u041b\u0415\u0424\u041e\u041d\u0423',
           onTap: widget.onPhoneSubmit,
         ),
-
-        const SizedBox(height: 28),
-        _Divider(),
-        const SizedBox(height: 24),
-        _GoogleButton(onTap: widget.onGoogleTap),
-        const SizedBox(height: 16),
-        _AppleButton(onTap: widget.onAppleTap),
         const SizedBox(height: 8),
       ],
     );
@@ -462,8 +416,6 @@ class _RegisterForm extends StatefulWidget {
   final TextEditingController confirmCtrl;
   final String? error;
   final VoidCallback onSubmit;
-  final VoidCallback onGoogleTap;
-  final VoidCallback onAppleTap;
 
   const _RegisterForm({
     super.key,
@@ -473,8 +425,6 @@ class _RegisterForm extends StatefulWidget {
     required this.confirmCtrl,
     required this.error,
     required this.onSubmit,
-    required this.onGoogleTap,
-    required this.onAppleTap,
   });
 
   @override
@@ -569,13 +519,6 @@ class _RegisterFormState extends State<_RegisterForm> {
             height: 1.5,
           ),
         ).animate().fadeIn(duration: 300.ms, delay: 320.ms),
-
-        const SizedBox(height: 28),
-        _Divider(),
-        const SizedBox(height: 24),
-        _GoogleButton(onTap: widget.onGoogleTap),
-        const SizedBox(height: 16),
-        _AppleButton(onTap: widget.onAppleTap),
         const SizedBox(height: 8),
       ],
     );
@@ -764,168 +707,5 @@ class _Divider extends StatelessWidget {
         Expanded(child: Divider(color: AppColors.grey200)),
       ],
     );
-  }
-}
-
-// ─── Social buttons ───────────────────────────────────────────────────────────
-
-class _GoogleButton extends StatefulWidget {
-  final VoidCallback onTap;
-  const _GoogleButton({required this.onTap});
-
-  @override
-  State<_GoogleButton> createState() => _GoogleButtonState();
-}
-
-class _GoogleButtonState extends State<_GoogleButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, auth, _) {
-        return GestureDetector(
-          onTap: auth.isLoading ? null : widget.onTap,
-          onTapDown: auth.isLoading ? null : (_) => setState(() => _pressed = true),
-          onTapUp: (_) => setState(() => _pressed = false),
-          onTapCancel: () => setState(() => _pressed = false),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
-            height: 50,
-            decoration: BoxDecoration(
-              color: _pressed ? AppColors.grey100 : AppColors.white,
-              border: Border.all(color: AppColors.grey200),
-            ),
-            child: auth.isLoading
-                ? const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.grey600,
-                      ),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _GoogleLogo(),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Продолжить с Google',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        );
-      },
-    ).animate().fadeIn(duration: 300.ms, delay: 100.ms);
-  }
-}
-
-class _GoogleLogo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 20,
-      height: 20,
-      child: CustomPaint(painter: _GooglePainter()),
-    );
-  }
-}
-
-class _GooglePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final c = size.center(Offset.zero);
-    final r = size.width / 2;
-
-    final colors = [
-      const Color(0xFF4285F4),
-      const Color(0xFFEA4335),
-      const Color(0xFFFBBC05),
-      const Color(0xFF34A853),
-    ];
-    final starts = [-90.0, 0.0, 90.0, 180.0];
-
-    for (int i = 0; i < 4; i++) {
-      final paint = Paint()
-        ..color = colors[i]
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * 0.22;
-      canvas.drawArc(
-        Rect.fromCircle(center: c, radius: r * 0.72),
-        starts[i] * (3.14159 / 180),
-        90 * (3.14159 / 180),
-        false,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
-
-class _AppleButton extends StatefulWidget {
-  final VoidCallback onTap;
-  const _AppleButton({required this.onTap});
-
-  @override
-  State<_AppleButton> createState() => _AppleButtonState();
-}
-
-class _AppleButtonState extends State<_AppleButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, auth, _) {
-        return GestureDetector(
-          onTap: auth.isLoading ? null : widget.onTap,
-          onTapDown: auth.isLoading ? null : (_) => setState(() => _pressed = true),
-          onTapUp: (_) => setState(() => _pressed = false),
-          onTapCancel: () => setState(() => _pressed = false),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
-            height: 50,
-            color: _pressed ? AppColors.grey800 : AppColors.black,
-            child: auth.isLoading
-                ? const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.white,
-                      ),
-                    ),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.apple, color: Colors.white, size: 22),
-                      SizedBox(width: 10),
-                      Text(
-                        'Продолжить с Apple',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        );
-      },
-    ).animate().fadeIn(duration: 300.ms, delay: 160.ms);
   }
 }
