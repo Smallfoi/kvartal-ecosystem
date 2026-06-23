@@ -4,7 +4,7 @@
                              СЕРВЕР сам валидирует забег и начисляет очки за бег
                              (клиент очки больше не присылает — иначе их можно подделать).
 Требуется Bearer-токен. Сырой GPS-маршрут НЕ принимаем/не храним (приватность §2)."""
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.utils import timezone
 from rest_framework.decorators import api_view
@@ -22,10 +22,18 @@ MAX_SPEED_MS = 11.2            # ~40 км/ч — серверный потоло
 MAX_RUN_DISTANCE_M = 100_000   # 100 км за один забег — неправдоподобно
 MAX_DAY_DISTANCE_M = 150_000   # 150 км/сутки суммарно — щедрый потолок против фарма
 POINTS_PER_KM = 10             # очки = км × 10 (как было на клиенте, теперь на сервере)
+FUTURE_SKEW = timedelta(hours=12)   # допуск на часовые пояса/рассинхрон часов
+MAX_RUN_AGE = timedelta(days=30)    # старше — подозрение на реплей/бэкфилл фейков
 
 
 def _validate(uid, distance_m, duration_s, finished):
     """Возвращает причину флага (str) или '' если забег правдоподобен."""
+    now = timezone.now()
+    # Anti-replay (S-04): время забега в будущем или слишком старое — подделка.
+    if finished > now + FUTURE_SKEW:
+        return "Дата забега в будущем"
+    if finished < now - MAX_RUN_AGE:
+        return "Слишком старый забег (возможный реплей)"
     if distance_m <= 0:
         return "Нулевая дистанция"
     if duration_s <= 0:
