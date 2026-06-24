@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 
 
-class CatalogConfig(AppConfig):
+class LoyaltyConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "catalog"
-    verbose_name = "Каталог"
+    name = "loyalty"
+    verbose_name = "Баллы"

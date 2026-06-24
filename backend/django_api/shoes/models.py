@@ -12,26 +12,39 @@ class ShoeAsset(models.Model):
     STATUS_PENDING = "pending"
     STATUS_ACTIVE = "active"
     STATUS_DECLINED = "declined"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Ожидает подтверждения"),
+        (STATUS_ACTIVE, "Активные"),
+        (STATUS_DECLINED, "Отклонены"),
+    ]
 
-    user_id = models.CharField(max_length=40, db_index=True)
-    product_id = models.CharField(max_length=40)
-    order_id = models.CharField(max_length=40, blank=True, default="")
-    model = models.CharField(max_length=200, blank=True, default="")
-    image_url = models.CharField(max_length=400, blank=True, default="")
-    status = models.CharField(max_length=12, default=STATUS_PENDING, db_index=True)
-    total_km = models.FloatField(default=0)
-    max_km = models.FloatField(default=600)
-    retired = models.BooleanField(default=False)
+    user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
+    product_id = models.CharField(max_length=40, verbose_name="Товар (ID)")
+    order_id = models.CharField(max_length=40, blank=True, default="", verbose_name="Заказ (ID)")
+    model = models.CharField(max_length=200, blank=True, default="", verbose_name="Модель")
+    image_url = models.CharField(max_length=400, blank=True, default="", verbose_name="Фото")
+    status = models.CharField(
+        max_length=12, default=STATUS_PENDING, db_index=True,
+        choices=STATUS_CHOICES, verbose_name="Статус",
+    )
+    total_km = models.FloatField(default=0, verbose_name="Пробег, км")
+    max_km = models.FloatField(default=600, verbose_name="Ресурс, км")
+    retired = models.BooleanField(default=False, verbose_name="Списаны")
     # runId уже учтённых пробежек — идемпотентность distance (офлайн-очередь
     # Квартала может переслать одну пробежку повторно; повтор не задвоит км).
-    applied_runs = models.JSONField(default=list)
-    created_at = models.DateTimeField(default=timezone.now)
+    applied_runs = models.JSONField(default=list, verbose_name="Учтённые забеги")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Куплены")
 
     class Meta:
         db_table = "store_shoes"
         ordering = ["-created_at"]
         # Идемпотентность: одна пара кроссовок из заказа не дублируется.
         unique_together = (("user_id", "order_id", "product_id"),)
+        verbose_name = "Кроссовки"
+        verbose_name_plural = "Кроссовки"
+
+    def __str__(self) -> str:
+        return self.model or f"shoe_{self.pk}"
 
     def to_json(self) -> dict:
         return {
