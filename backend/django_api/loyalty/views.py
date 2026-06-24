@@ -3,7 +3,9 @@ from rest_framework.response import Response
 
 from common.security import user_id_from_request
 
-from .models import LoyaltyTransaction, add_txn, level_for
+from .models import LoyaltyTransaction, add_txn, balance_of, level_for
+
+_TX_LIMIT = 200  # история: отдаём последние N (баланс считается по ВСЕМ через SQL)
 
 
 @api_view(["GET"])
@@ -11,8 +13,10 @@ def account(request):
     uid = user_id_from_request(request)
     if not uid:
         return Response({"detail": "Нет токена"}, status=401)
-    rows = list(LoyaltyTransaction.objects.filter(user_id=uid).order_by("-created_at"))
-    balance = sum(r.amount for r in rows)
+    balance = balance_of(uid)  # SQL-агрегат по всем транзакциям
+    rows = LoyaltyTransaction.objects.filter(user_id=uid).order_by("-created_at")[
+        :_TX_LIMIT
+    ]
     return Response(
         {
             "balance": balance,
@@ -38,16 +42,14 @@ def redeem(request):
     if amount <= 0:
         return Response({"detail": "Некорректное количество баллов"}, status=400)
 
-    rows = list(LoyaltyTransaction.objects.filter(user_id=uid))
-    balance = sum(r.amount for r in rows)
+    balance = balance_of(uid)
     order_id = d.get("orderId")
 
     # Идемпотентность: повторный redeem того же заказа не списывает второй раз.
     if order_id:
-        dup = next(
-            (r for r in rows if r.order_id == order_id and r.source == "redeem"),
-            None,
-        )
+        dup = LoyaltyTransaction.objects.filter(
+            user_id=uid, order_id=order_id, source="redeem"
+        ).first()
         if dup:
             return Response(
                 {"ok": True, "deduped": True, "balance": balance, "spent": -dup.amount}
