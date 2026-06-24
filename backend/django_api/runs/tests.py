@@ -78,6 +78,23 @@ class RunAntiCheatTests(ApiTestCase):
         self.assertTrue(over["flagged"])
         self.assertEqual(over["pointsAwarded"], 0)
 
+    def test_mock_gps_flagged_zero(self):
+        # Клиент сообщил о подделке геолокации → забег флагается, 0 очков.
+        r = self.api_post("/v1/runs", {"id": "rm1", "mockDetected": True, **_OK}).json()
+        self.assertTrue(r["flagged"])
+        self.assertIn("mock", r["flagReason"].lower())
+        self.assertEqual(r["pointsAwarded"], 0)
+        self.assertEqual(self.balance(), 0)
+
+    def test_account_flagged_for_review_after_repeated_cheating(self):
+        # Накопление флагнутых забегов помечает аккаунт «на ревью» (порог 5).
+        from accounts.models import Account
+        for i in range(4):
+            self.api_post("/v1/runs", {"id": f"rmk{i}", "mockDetected": True, **_OK})
+        self.assertFalse(Account.objects.get(id=self.uid).needs_review)  # 4 < порога
+        self.api_post("/v1/runs", {"id": "rmk_5", "mockDetected": True, **_OK})
+        self.assertTrue(Account.objects.get(id=self.uid).needs_review)   # 5 → ревью
+
     def test_client_cannot_mint_runner_run(self):
         r = self.api_post(
             "/v1/loyalty/transactions",
