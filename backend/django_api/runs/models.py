@@ -10,23 +10,25 @@ from django.utils import timezone
 class Run(models.Model):
     # id = клиентский runId → идемпотентность (повторная отправка из офлайн-очереди
     # не задвоит забег).
-    id = models.CharField(primary_key=True, max_length=40)
-    user_id = models.CharField(max_length=40, db_index=True)
-    distance_m = models.FloatField(default=0)
-    duration_s = models.IntegerField(default=0)
-    captured_territory = models.BooleanField(default=False)
-    captured_zones = models.IntegerField(default=0)
-    finished_at = models.DateTimeField()
-    created_at = models.DateTimeField(default=timezone.now)
+    id = models.CharField(primary_key=True, max_length=40, verbose_name="ID")
+    user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
+    distance_m = models.FloatField(default=0, verbose_name="Дистанция, м")
+    duration_s = models.IntegerField(default=0, verbose_name="Длительность, с")
+    captured_territory = models.BooleanField(default=False, verbose_name="Захват территории")
+    captured_zones = models.IntegerField(default=0, verbose_name="Захвачено зон")
+    finished_at = models.DateTimeField(verbose_name="Завершён")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Загружен")
 
     # Серверный анти-чит (S-04): очки за бег считает сервер, не клиент.
-    points_awarded = models.IntegerField(default=0)
-    flagged = models.BooleanField(default=False, db_index=True)  # неправдоподобный забег
-    flag_reason = models.CharField(max_length=200, blank=True, default="")
+    points_awarded = models.IntegerField(default=0, verbose_name="Начислено баллов")
+    flagged = models.BooleanField(default=False, db_index=True, verbose_name="Помечен (чит)")
+    flag_reason = models.CharField(max_length=200, blank=True, default="", verbose_name="Причина пометки")
 
     class Meta:
         db_table = "runs"
         ordering = ["-finished_at"]
+        verbose_name = "Пробежка"
+        verbose_name_plural = "Пробежки"
 
     @property
     def distance_km(self) -> float:

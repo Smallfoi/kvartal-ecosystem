@@ -5,17 +5,30 @@ from django.utils import timezone
 
 
 class Notification(models.Model):
-    user_id = models.CharField(max_length=40, db_index=True)
-    title = models.CharField(max_length=200)
-    body = models.CharField(max_length=500, blank=True, default="")
-    type = models.CharField(max_length=20, default="system")  # order | promo | system
-    order_id = models.CharField(max_length=40, null=True, blank=True)
-    read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
+    TYPE_CHOICES = [
+        ("system", "Системное"),
+        ("order", "Заказ"),
+        ("promo", "Акция"),
+    ]
+
+    user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
+    title = models.CharField(max_length=200, verbose_name="Заголовок")
+    body = models.CharField(max_length=500, blank=True, default="", verbose_name="Текст")
+    type = models.CharField(
+        max_length=20, default="system", choices=TYPE_CHOICES, verbose_name="Тип"
+    )
+    order_id = models.CharField(max_length=40, null=True, blank=True, verbose_name="Заказ (ID)")
+    read = models.BooleanField(default=False, verbose_name="Прочитано")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Создано")
 
     class Meta:
         db_table = "notifications"
         ordering = ["-created_at"]
+        verbose_name = "Уведомление"
+        verbose_name_plural = "Уведомления"
+
+    def __str__(self) -> str:
+        return self.title
 
     def to_json(self) -> dict:
         return {

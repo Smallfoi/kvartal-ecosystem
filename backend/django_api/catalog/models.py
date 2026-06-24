@@ -5,15 +5,20 @@ from django.db import models
 
 
 class Category(models.Model):
-    id = models.CharField(primary_key=True, max_length=40)
-    name = models.CharField(max_length=120)
-    emoji = models.CharField(max_length=16, blank=True, default="")
-    image_url = models.CharField(max_length=300, null=True, blank=True)
-    sort = models.IntegerField(default=0)
+    id = models.CharField(primary_key=True, max_length=40, verbose_name="ID")
+    name = models.CharField(max_length=120, verbose_name="Название")
+    emoji = models.CharField(max_length=16, blank=True, default="", verbose_name="Эмодзи")
+    image_url = models.CharField(max_length=300, null=True, blank=True, verbose_name="Ссылка на фото")
+    sort = models.IntegerField(default=0, verbose_name="Порядок")
 
     class Meta:
         db_table = "catalog_categories"
         ordering = ["sort"]
+        verbose_name = "Категория"
+        verbose_name_plural = "Категории"
+
+    def __str__(self) -> str:
+        return self.name
 
     def to_json(self) -> dict:
         return {
@@ -25,32 +30,37 @@ class Category(models.Model):
 
 
 class Product(models.Model):
-    id = models.CharField(primary_key=True, max_length=40)
-    name = models.CharField(max_length=200)
-    brand = models.CharField(max_length=120, blank=True, default="")
-    category_id = models.CharField(max_length=40, db_index=True)
-    price = models.FloatField()
-    old_price = models.FloatField(null=True, blank=True)
-    image_urls = models.JSONField(default=list)
+    id = models.CharField(primary_key=True, max_length=40, verbose_name="ID")
+    name = models.CharField(max_length=200, verbose_name="Название")
+    brand = models.CharField(max_length=120, blank=True, default="", verbose_name="Бренд")
+    category_id = models.CharField(max_length=40, db_index=True, verbose_name="Категория")
+    price = models.FloatField(verbose_name="Цена")
+    old_price = models.FloatField(null=True, blank=True, verbose_name="Старая цена")
+    image_urls = models.JSONField(default=list, verbose_name="Старые фото (бандл)")
     # Загруженное в админке фото (приоритетнее image_urls). Отдаётся по сети как
     # /media/uploads/products/... — видно в каталоге и трекере кроссовок Квартала.
-    image = models.ImageField(upload_to="uploads/products/", null=True, blank=True)
-    description = models.TextField(blank=True, default="")
-    sizes = models.JSONField(default=list)
-    colors = models.JSONField(default=list)
-    is_new = models.BooleanField(default=False)
-    is_featured = models.BooleanField(default=False)
-    rating = models.FloatField(default=0)
-    review_count = models.IntegerField(default=0)
-    in_stock = models.BooleanField(default=True)
+    image = models.ImageField(upload_to="uploads/products/", null=True, blank=True, verbose_name="Фото")
+    description = models.TextField(blank=True, default="", verbose_name="Описание")
+    sizes = models.JSONField(default=list, verbose_name="Размеры")
+    colors = models.JSONField(default=list, verbose_name="Цвета")
+    is_new = models.BooleanField(default=False, verbose_name="Новинка")
+    is_featured = models.BooleanField(default=False, verbose_name="Рекомендуемый")
+    rating = models.FloatField(default=0, verbose_name="Рейтинг")
+    review_count = models.IntegerField(default=0, verbose_name="Кол-во отзывов")
+    in_stock = models.BooleanField(default=True, verbose_name="В наличии")
     # Draft→Publish: на витрине (сайт/приложение) видны только опубликованные;
     # черновик виден в админ-превью (?preview=1). Существующие → опубликованы.
-    is_published = models.BooleanField(default=True, db_index=True)
-    sort = models.IntegerField(default=0)
+    is_published = models.BooleanField(default=True, db_index=True, verbose_name="Опубликован")
+    sort = models.IntegerField(default=0, verbose_name="Порядок")
 
     class Meta:
         db_table = "catalog_products"
         ordering = ["sort"]
+        verbose_name = "Товар"
+        verbose_name_plural = "Товары"
+
+    def __str__(self) -> str:
+        return self.name
 
     def network_image_url(self) -> str:
         """Сетевой URL фото товара (для Квартала/сайта). Приоритет — загруженное
@@ -84,17 +94,22 @@ class Product(models.Model):
 
 
 class Banner(models.Model):
-    id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=200)
-    subtitle = models.CharField(max_length=200, blank=True, default="")
-    image_url = models.CharField(max_length=300, blank=True, default="")
-    action = models.CharField(max_length=80, blank=True, default="")
-    is_published = models.BooleanField(default=True, db_index=True)
-    sort = models.IntegerField(default=0)
+    id = models.AutoField(primary_key=True, verbose_name="ID")
+    title = models.CharField(max_length=200, verbose_name="Заголовок")
+    subtitle = models.CharField(max_length=200, blank=True, default="", verbose_name="Подзаголовок")
+    image_url = models.CharField(max_length=300, blank=True, default="", verbose_name="Ссылка на фото")
+    action = models.CharField(max_length=80, blank=True, default="", verbose_name="Действие")
+    is_published = models.BooleanField(default=True, db_index=True, verbose_name="Опубликован")
+    sort = models.IntegerField(default=0, verbose_name="Порядок")
 
     class Meta:
         db_table = "catalog_banners"
         ordering = ["sort"]
+        verbose_name = "Баннер"
+        verbose_name_plural = "Баннеры"
+
+    def __str__(self) -> str:
+        return self.title
 
     def to_json(self) -> dict:
         return {

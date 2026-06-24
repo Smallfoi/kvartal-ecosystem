@@ -25,18 +25,20 @@ class LegalDocument(models.Model):
         (CLUB, "Правила сообщества"),
     ]
 
-    doc_type = models.CharField(max_length=20, choices=TYPE_CHOICES, db_index=True)
-    version = models.CharField(max_length=20)  # напр. "1.0"
-    title = models.CharField(max_length=200)
-    body = models.TextField(blank=True, default="")  # текст документа (заполняет юрист)
-    is_required = models.BooleanField(default=False)  # обязателен к принятию для пользования
-    published_at = models.DateTimeField(null=True, blank=True)  # null = черновик
-    created_at = models.DateTimeField(default=timezone.now)
+    doc_type = models.CharField(max_length=20, choices=TYPE_CHOICES, db_index=True, verbose_name="Тип документа")
+    version = models.CharField(max_length=20, verbose_name="Версия")  # напр. "1.0"
+    title = models.CharField(max_length=200, verbose_name="Заголовок")
+    body = models.TextField(blank=True, default="", verbose_name="Текст")  # текст документа (заполняет юрист)
+    is_required = models.BooleanField(default=False, verbose_name="Обязателен к принятию")
+    published_at = models.DateTimeField(null=True, blank=True, verbose_name="Опубликован")  # null = черновик
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Создан")
 
     class Meta:
         db_table = "legal_documents"
         unique_together = [("doc_type", "version")]
         ordering = ["doc_type", "-created_at"]
+        verbose_name = "Юридический документ"
+        verbose_name_plural = "Юридические документы"
 
     def __str__(self) -> str:
         return f"{self.get_doc_type_display()} v{self.version}"
@@ -71,18 +73,20 @@ class LegalDocument(models.Model):
 
 
 class UserConsent(models.Model):
-    user_id = models.CharField(max_length=40, db_index=True)
+    user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
     document = models.ForeignKey(
-        LegalDocument, on_delete=models.PROTECT, related_name="consents"
+        LegalDocument, on_delete=models.PROTECT, related_name="consents", verbose_name="Документ"
     )
-    accepted_at = models.DateTimeField(default=timezone.now)
-    source = models.CharField(max_length=30, blank=True, default="")  # kvartal|sport_store|site
-    revoked_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    accepted_at = models.DateTimeField(default=timezone.now, verbose_name="Принято")
+    source = models.CharField(max_length=30, blank=True, default="", verbose_name="Источник")  # kvartal|sport_store|site
+    revoked_at = models.DateTimeField(null=True, blank=True, verbose_name="Отозвано")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Создано")
 
     class Meta:
         db_table = "user_consents"
         ordering = ["-accepted_at"]
+        verbose_name = "Согласие пользователя"
+        verbose_name_plural = "Согласия пользователей"
 
     @property
     def active(self) -> bool:

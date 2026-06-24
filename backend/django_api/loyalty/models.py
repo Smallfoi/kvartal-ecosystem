@@ -8,17 +8,19 @@ from django.utils import timezone
 
 class LoyaltyTransaction(models.Model):
     """Транзакция баллов — те же поля, что в FastAPI loyalty_transactions."""
-    id = models.CharField(primary_key=True, max_length=40)
-    user_id = models.CharField(max_length=40, db_index=True)
-    amount = models.IntegerField()
-    source = models.CharField(max_length=40)
-    description = models.CharField(max_length=300, blank=True, default="")
-    order_id = models.CharField(max_length=40, null=True, blank=True)
-    run_id = models.CharField(max_length=80, null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    id = models.CharField(primary_key=True, max_length=40, verbose_name="ID")
+    user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
+    amount = models.IntegerField(verbose_name="Сумма баллов")
+    source = models.CharField(max_length=40, verbose_name="Источник")
+    description = models.CharField(max_length=300, blank=True, default="", verbose_name="Описание")
+    order_id = models.CharField(max_length=40, null=True, blank=True, verbose_name="Заказ (ID)")
+    run_id = models.CharField(max_length=80, null=True, blank=True, verbose_name="Забег (ID)")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Дата")
 
     class Meta:
         db_table = "loyalty_transactions"
+        verbose_name = "Транзакция баллов"
+        verbose_name_plural = "Баллы (транзакции)"
 
     def to_json(self) -> dict:
         return {
