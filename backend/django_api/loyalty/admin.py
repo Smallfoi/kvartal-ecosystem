@@ -1,14 +1,16 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
+from common.adminutils import UserRefMixin
+
 from .models import LoyaltyTransaction
 
 
 @admin.register(LoyaltyTransaction)
-class LoyaltyTransactionAdmin(ModelAdmin):
+class LoyaltyTransactionAdmin(UserRefMixin, ModelAdmin):
     list_display = (
         "id",
-        "user_id",
+        "user_ref",
         "amount",
         "source",
         "description",

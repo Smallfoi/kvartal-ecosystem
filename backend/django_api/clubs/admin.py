@@ -1,12 +1,15 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
+from common.adminutils import UserRefMixin
+
 from .models import Club, ClubJoinRequest, ClubMember
 
 
 @admin.register(Club)
-class ClubAdmin(ModelAdmin):
-    list_display = ("id", "name", "city", "owner_id", "join_policy",
+class ClubAdmin(UserRefMixin, ModelAdmin):
+    user_id_field = "owner_id"  # колонка «Пользователь» берёт владельца клуба
+    list_display = ("id", "name", "city", "user_ref", "join_policy",
                     "is_hidden", "created_at")
     list_display_links = ("id", "name")  # название кликабельно → открыть/редактировать
     list_filter = ("join_policy", "city", "is_hidden")
@@ -25,14 +28,14 @@ class ClubAdmin(ModelAdmin):
 
 
 @admin.register(ClubMember)
-class ClubMemberAdmin(ModelAdmin):
-    list_display = ("club_id", "user_id", "role", "joined_at")
+class ClubMemberAdmin(UserRefMixin, ModelAdmin):
+    list_display = ("club_id", "user_ref", "role", "joined_at")
     list_filter = ("role",)
     search_fields = ("club_id", "user_id")
 
 
 @admin.register(ClubJoinRequest)
-class ClubJoinRequestAdmin(ModelAdmin):
-    list_display = ("id", "club_id", "user_id", "status", "created_at")
+class ClubJoinRequestAdmin(UserRefMixin, ModelAdmin):
+    list_display = ("id", "club_id", "user_ref", "status", "created_at")
     list_filter = ("status",)
     search_fields = ("club_id", "user_id")

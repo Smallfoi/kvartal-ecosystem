@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.utils import timezone
 from unfold.admin import ModelAdmin
 
+from common.adminutils import UserRefMixin
+
 from .models import LegalDocument, UserConsent
 
 
@@ -26,8 +28,8 @@ class LegalDocumentAdmin(ModelAdmin):
 
 
 @admin.register(UserConsent)
-class UserConsentAdmin(ModelAdmin):
-    list_display = ("id", "user_id", "document", "source", "accepted_at", "revoked_at")
+class UserConsentAdmin(UserRefMixin, ModelAdmin):
+    list_display = ("id", "user_ref", "document", "source", "accepted_at", "revoked_at")
     list_filter = ("source", "document__doc_type")
     search_fields = ("user_id",)
     date_hierarchy = "accepted_at"
