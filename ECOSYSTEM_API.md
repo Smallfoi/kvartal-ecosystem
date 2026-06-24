@@ -226,8 +226,10 @@ POST /loyalty/transactions  LoyaltyTransaction → 200   (только redeem/п
 ### Runs (история пробежек + серверный расчёт очков — анти-чит S-04)
 ```
 GET  /runs                              → Run[]   (сводки забегов пользователя, новые сверху)
-POST /runs  { id, distanceMeters, elapsedSeconds, finishedAtMs, capturedTerritory, capturedZones }
+POST /runs  { id, distanceMeters, elapsedSeconds, finishedAtMs, capturedTerritory, capturedZones, mockDetected? }
                                         → { ok, duplicate, flagged, flagReason, pointsAwarded, run }
+            mockDetected: bool (опц.) — клиент сообщает о подделке геолокации (Android mock-GPS)
+            → сервер флагает забег (0 очков); накопление флагов помечает аккаунт «на ревью» (S-04).
 ```
 Сырой GPS-маршрут НЕ передаём/не храним (приватность §2). Сервер сам валидирует забег
 (скорость ≤ 40 км/ч, дистанция/время, суточный лимит) и НАЧИСЛЯЕТ очки за бег

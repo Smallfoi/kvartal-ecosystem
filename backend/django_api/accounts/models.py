@@ -22,6 +22,10 @@ class Account(models.Model):
     is_blocked = models.BooleanField(default=False, db_index=True)
     block_reason = models.CharField(max_length=300, blank=True, default="")
 
+    # Анти-чит (S-04): авто-отметка «на ревью» при накоплении флагнутых забегов —
+    # модератору сигнал присмотреться (бан не автоматический, решает человек).
+    needs_review = models.BooleanField(default=False, db_index=True)
+
     class Meta:
         db_table = "accounts"
 
