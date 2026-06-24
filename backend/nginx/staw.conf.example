@@ -1,0 +1,37 @@
+# Nginx для STAW backend (прод). Скопировать в backend/nginx/staw.conf, подставить домен.
+# TLS-сертификаты положить в backend/nginx/certs/ (fullchain.pem + privkey.pem).
+# Проксирует API на web:8000, раздаёт /media и /static, форсит HTTPS.
+
+# HTTP → HTTPS
+server {
+    listen 80;
+    server_name api.staw.ru;
+    # (для Let's Encrypt webroot — добавить location /.well-known/acme-challenge/)
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name api.staw.ru;
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    client_max_body_size 8m;   # загрузка фото (товары/логотип клуба ≤5 МБ)
+
+    # Статика админки и медиа — отдаёт nginx, не Django.
+    location /static/ { alias /srv/static/; access_log off; expires 7d; }
+    location /media/  { alias /srv/media/;  access_log off; expires 7d; }
+
+    location / {
+        proxy_pass http://web:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # ВАЖНО: Django доверяет этому заголовку для HTTPS (SECURE_PROXY_SSL_HEADER).
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+}

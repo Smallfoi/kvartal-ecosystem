@@ -13,20 +13,33 @@
 
 ## 1. Backend (Django)
 
-Запускать за HTTPS-прокси (nginx/traefik/Caddy → терминирует TLS, проксирует на :8000).
-Задать переменные окружения (см. `backend/django_api/.env.example`):
+**Готовый прод-стек** — `backend/docker-compose.prod.yml` (Django+gunicorn + PostGIS + nginx+TLS).
+Шаблоны: `backend/.env.prod.example`, `backend/nginx/staw.conf.example`. Запуск:
+```
+cd backend && cp .env.prod.example .env   # заполнить секреты!
+cp nginx/staw.conf.example nginx/staw.conf # подставить домен; certs/ — TLS
+docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+```
+web сам делает migrate → collectstatic → gunicorn (3 воркера); nginx форсит HTTPS, раздаёт /media, /static.
+**Обязательно:** бэкапы БД (авто `pg_dump` + проверка восстановления — баллы = деньги!); внешний пинг `/v1/health`+алерты; Redis для общего rate-limit/кэша на нескольких воркерах (D-07); сменить дефолтный пароль/логин админки + ограничить `/admin/` по IP.
+
+Задать переменные окружения (см. `backend/.env.prod.example`):
 
 | Переменная | Прод-значение | Зачем |
 |---|---|---|
 | `DJANGO_DEBUG` | `0` | выключить отладку |
-| `DJANGO_SECRET_KEY` | длинный случайный секрет | подпись |
-| `DJANGO_ALLOWED_HOSTS` | `api.staw.ru,staw.ru` | какие хосты принимаем |
+| `DJANGO_SECRET_KEY` | длинный случайный секрет | подпись Django |
+| `JWT_SECRET` | ДРУГОЙ длинный случайный секрет | подпись токенов (иначе любой подделает токен!) |
+| `DJANGO_ALLOWED_HOSTS` | `api.staw.ru` | какие хосты принимаем |
 | `DJANGO_CORS_ORIGINS` | `https://staw.ru,https://www.staw.ru` | каким источникам сайта можно ходить в API (со схемой) |
 | `POSTGRES_*` | прод-БД + сильный пароль | подключение к БД |
 
+- ⚠️ **Fail-fast:** при `DJANGO_DEBUG=0` приложение НЕ стартует, если `JWT_SECRET`/`DJANGO_SECRET_KEY`/пароль БД дефолтные или `ALLOWED_HOSTS=*` (`common/prodcheck.py`) — защита от запуска с публичным dev-секретом.
+- Секреты сгенерировать: `python -c "import secrets; print(secrets.token_urlsafe(64))"` (×2).
+- `SEED_DEMO_POINTS` НЕ задавать — демо-баллы новичкам выключены (реальный лидерборд).
 - Пока `DJANGO_CORS_ORIGINS` пуста → CORS открыт всем (dev). Как задана → только эти источники; они же идут в `CSRF_TRUSTED_ORIGINS` (для Django-admin).
-- `SECURE_PROXY_SSL_HEADER` уже учитывает `X-Forwarded-Proto` от прокси.
-- Прогнать миграции: `python manage.py migrate`, засеять каталог: `python manage.py seed_catalog`.
+- `SECURE_PROXY_SSL_HEADER` уже учитывает `X-Forwarded-Proto` от прокси (nginx-шаблон его шлёт).
+- Миграции + `collectstatic` прод-compose делает сам; засеять каталог: `python manage.py seed_catalog`.
 
 ## 2. Приложения (Flutter) — Квартал и SportStore
 
