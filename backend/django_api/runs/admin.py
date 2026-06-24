@@ -15,4 +15,6 @@ class RunAdmin(ModelAdmin):
     date_hierarchy = "finished_at"
 
     def has_change_permission(self, request, obj=None):
-        return False  # история — только просмотр
+        # Цифры забега не правим (целостность анти-чита S-04). Просмотр деталей
+        # (read-only форма) и удаление забега модератору доступны.
+        return False

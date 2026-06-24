@@ -10,6 +10,7 @@ class LegalDocumentAdmin(ModelAdmin):
     list_display = (
         "doc_type", "version", "title", "is_required", "published_at", "created_at",
     )
+    list_display_links = ("doc_type", "title")  # тип/заголовок кликабельны
     list_filter = ("doc_type", "is_required")
     search_fields = ("title", "body", "version")
     date_hierarchy = "created_at"
@@ -30,7 +31,7 @@ class UserConsentAdmin(ModelAdmin):
     list_filter = ("source", "document__doc_type")
     search_fields = ("user_id",)
     date_hierarchy = "accepted_at"
-    # Аудит согласий не редактируем вручную — только просмотр.
-
+    # Аудит согласий (152-ФЗ) не правим вручную — иначе теряет доказательную силу.
+    # Просмотр деталей (read-only) и удаление записи — доступны.
     def has_change_permission(self, request, obj=None):
         return False

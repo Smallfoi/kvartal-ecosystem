@@ -11,6 +11,7 @@ from .models import Account
 class AccountAdmin(ModelAdmin):
     list_display = ("id", "name", "phone", "email", "city", "provider",
                     "is_blocked", "needs_review", "created_at")
+    list_display_links = ("id", "name")  # имя кликабельно → открыть/редактировать
     list_filter = ("provider", "city", "is_blocked", "needs_review")
     search_fields = ("id", "name", "phone", "email")
     readonly_fields = ("id", "created_at", "password_hash")
