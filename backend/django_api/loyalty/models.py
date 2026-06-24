@@ -1,3 +1,4 @@
+import os
 import secrets
 
 from django.db import models
@@ -42,7 +43,11 @@ def add_txn(user_id, amount, source, description="", order_id=None, run_id=None)
 
 
 def seed_runner_points(user_id):
-    """Демо-баллы «из Квартала» при создании пользователя (как в FastAPI)."""
+    """Демо-баллы при создании аккаунта. По умолчанию ВЫКЛ — новый пользователь
+    начинает с нуля (реальный лидерборд/экономика, не засоряем фейковыми 16 км).
+    Включить можно флагом SEED_DEMO_POINTS=1 (например для демо в dev)."""
+    if os.environ.get("SEED_DEMO_POINTS", "0") != "1":
+        return
     demo = [
         (20, "registration", "Бонус за регистрацию"),
         (120, "runnerRun", "Пробежка 12.0 км"),

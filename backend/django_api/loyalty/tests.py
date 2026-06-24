@@ -1,6 +1,27 @@
-"""Регрессии траты баллов: redeem авторитетен на сервере (нельзя в минус, идемпотентен)."""
+"""Регрессии траты баллов + гейт демо-баллов."""
+import os
+from unittest import mock
+
+from django.test import TestCase
+
 from common.testutils import ApiTestCase
-from loyalty.models import add_txn
+from loyalty.models import LoyaltyTransaction, add_txn, seed_runner_points
+
+
+class SeedGateTests(TestCase):
+    def test_seed_off_by_default(self):
+        # Без SEED_DEMO_POINTS новый аккаунт получает 0 баллов (реальные данные).
+        seed_runner_points("u_seed_a")
+        self.assertEqual(
+            LoyaltyTransaction.objects.filter(user_id="u_seed_a").count(), 0
+        )
+
+    @mock.patch.dict(os.environ, {"SEED_DEMO_POINTS": "1"})
+    def test_seed_on_when_flag_set(self):
+        seed_runner_points("u_seed_b")
+        self.assertEqual(
+            LoyaltyTransaction.objects.filter(user_id="u_seed_b").count(), 5
+        )
 
 
 class RedeemTests(ApiTestCase):
