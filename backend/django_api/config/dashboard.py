@@ -42,6 +42,10 @@ def dashboard_callback(request, context):
     runs_synced = Run.objects.count()
     runs_week = Run.objects.filter(finished_at__gte=week_ago).count()
 
+    # ── Анти-чит (S-04): аккаунты на ревью + помеченные забеги ──
+    accounts_review = Account.objects.filter(needs_review=True).count()
+    runs_flagged = Run.objects.filter(flagged=True).count()
+
     # ── Активность за неделю (WAU): уник. юзеры с начислением или заказом ──
     wau = len(
         set(
@@ -92,6 +96,10 @@ def dashboard_callback(request, context):
              "sub": f"−{points_spent} потрачено", "icon": "loyalty"},
         ],
         "extra_stats": [
+            {"title": "Аккаунтов на проверке", "value": accounts_review,
+             "icon": "gpp_maybe"},
+            {"title": "Забегов помечено (чит)", "value": runs_flagged,
+             "icon": "flag"},
             {"title": "Конверсия Квартал→Store", "value": f"{conversion_pct}%",
              "icon": "sync_alt"},
             {"title": "Км пробежек всего", "value": run_km_total,
