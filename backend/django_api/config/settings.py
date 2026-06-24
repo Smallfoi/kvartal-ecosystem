@@ -113,6 +113,26 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
+# P0-страховка: НЕ стартуем прод (DEBUG=0) с дефолтными секретами/ALLOWED_HOSTS=*.
+# Защита от катастрофы №1 — выкатить прод с публичным dev-секретом.
+from common.prodcheck import insecure_prod_settings  # noqa: E402
+
+_insecure = insecure_prod_settings(
+    debug=DEBUG,
+    secret_key=SECRET_KEY,
+    jwt_secret=os.environ.get("JWT_SECRET", "dev-secret-change-in-prod"),
+    db_password=DATABASES["default"]["PASSWORD"],
+    allowed_hosts=ALLOWED_HOSTS,
+)
+if _insecure:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        "Небезопасная прод-конфигурация (DJANGO_DEBUG=0): задайте "
+        + ", ".join(_insecure)
+        + ". Запуск прода с дефолтами запрещён."
+    )
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     # Аутентификация — свой JWT (common.security), session-auth/CSRF DRF не используем.
