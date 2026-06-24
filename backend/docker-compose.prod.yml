@@ -1,0 +1,57 @@
+# Прод-стек STAW backend (Django+gunicorn + PostGIS + nginx).
+# Запуск:  cd backend && cp .env.prod.example .env && <заполнить .env> && \
+#          docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+# Подробности и чеклист — docs/DEPLOY.md.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Порт наружу НЕ публикуем — доступ к БД только из web-контейнера.
+
+  web:
+    build: ./django_api
+    restart: always
+    env_file: .env
+    # Миграции + сбор статики + gunicorn (3 воркера). collectstatic — для админки.
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60"
+    volumes:
+      - media_uploads:/srv/media/uploads
+      - static_files:/app/staticfiles
+    expose:
+      - "8000"   # только внутри сети compose; наружу — через nginx
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/staw.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro       # TLS-сертификаты (Let's Encrypt / Я.Облако)
+      - media_uploads:/srv/media/uploads:ro
+      - static_files:/srv/static:ro
+    depends_on:
+      - web
+
+volumes:
+  pgdata:
+  media_uploads:
+  static_files:

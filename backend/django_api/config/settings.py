@@ -157,6 +157,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+# Прод: `collectstatic` собирает статику админки сюда, nginx раздаёт (см. docker-compose.prod).
+STATIC_ROOT = os.environ.get("DJANGO_STATIC_ROOT", "/app/staticfiles")
 
 # Медиа: фото товаров для экосистемы (Квартал тянет мини-фото кроссовок по сети).
 # В dev файлы примонтированы из sport_store/assets (см. docker-compose: web → /srv/media).
