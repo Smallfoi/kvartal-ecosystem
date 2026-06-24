@@ -31,12 +31,14 @@ class RunState {
   final List<LatLng> route;
   final Duration elapsed;
   final double distanceMeters;
+  final bool mockDetected; // в забеге был подделанный GPS (Android mock) — анти-чит S-04
 
   const RunState({
     this.status = RunStatus.idle,
     this.route = const [],
     this.elapsed = Duration.zero,
     this.distanceMeters = 0,
+    this.mockDetected = false,
   });
 
   double get distanceKm => distanceMeters / 1000;
@@ -68,12 +70,14 @@ class RunState {
     List<LatLng>? route,
     Duration? elapsed,
     double? distanceMeters,
+    bool? mockDetected,
   }) {
     return RunState(
       status: status ?? this.status,
       route: route ?? this.route,
       elapsed: elapsed ?? this.elapsed,
       distanceMeters: distanceMeters ?? this.distanceMeters,
+      mockDetected: mockDetected ?? this.mockDetected,
     );
   }
 }
@@ -108,6 +112,7 @@ class RunNotifier extends StateNotifier<RunState> {
       route: state.status == RunStatus.idle ? [] : state.route,
       distanceMeters: state.status == RunStatus.idle ? 0 : state.distanceMeters,
       elapsed: state.status == RunStatus.idle ? Duration.zero : state.elapsed,
+      mockDetected: state.status == RunStatus.idle ? false : state.mockDetected,
     );
 
     debugPrint('KVARTAL_RUN_START_STATE_ACTIVE');
@@ -199,6 +204,12 @@ class RunNotifier extends StateNotifier<RunState> {
 
   Future<void> _applyPosition(Position position, {bool force = false}) async {
     if (state.status != RunStatus.active) return;
+    // Анти-чит S-04: подделка геолокации (Android mock-provider). Фиксируем флаг
+    // даже если точка дальше отфильтруется — сервер обнулит очки за такой забег.
+    if (position.isMocked && !state.mockDetected) {
+      debugPrint('KVARTAL_RUN_MOCK_GPS_DETECTED');
+      state = state.copyWith(mockDetected: true);
+    }
     if (!force && position.accuracy > _maxAcceptedAccuracyMeters) return;
     if (!force && position.speed > _maxRunSpeedMs) return;
 
@@ -298,6 +309,7 @@ class RunNotifier extends StateNotifier<RunState> {
       distanceMeters: completed.distanceMeters,
       capturedZones: capturedZones,
       capturedTerritory: capturedTerritory,
+      mockDetected: completed.mockDetected,
     );
     await _ref.read(completedRunsProvider.notifier).add(run);
     await _applyShoeWear(run);
@@ -379,6 +391,7 @@ class RunNotifier extends StateNotifier<RunState> {
       route: route,
       elapsed: elapsed,
       distanceMeters: (data['distanceMeters'] as num? ?? 0).toDouble(),
+      mockDetected: data['mockDetected'] as bool? ?? false,
     );
   }
 
@@ -415,6 +428,7 @@ class RunNotifier extends StateNotifier<RunState> {
       'status': state.status.name,
       'elapsedSeconds': state.elapsed.inSeconds,
       'distanceMeters': distanceMeters,
+      'mockDetected': state.mockDetected,
       'savedAtMs': DateTime.now().millisecondsSinceEpoch,
       'route': [
         for (final p in route) [p.latitude, p.longitude],
