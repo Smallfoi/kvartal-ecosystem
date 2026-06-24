@@ -50,6 +50,15 @@ class AuthFlowTests(ApiTestCase):
                              content_type="application/json")
         self.assertEqual(r.status_code, 403)
 
+    def test_blocked_account_existing_token_rejected(self):
+        # Мгновенный бан: уже выданный токен перестаёт работать (не ждём 30 дней).
+        from django.core.cache import cache
+        from accounts.models import Account
+        self.assertEqual(self.api_get("/v1/auth/me").status_code, 200)  # пока ок
+        Account.objects.filter(id=self.uid).update(is_blocked=True)
+        cache.clear()  # сбрасываем кэш blocked-статуса (в проде — ≤60с TTL)
+        self.assertEqual(self.api_get("/v1/auth/me").status_code, 401)
+
 
 class AuthThrottleTests(TestCase):
     def setUp(self):

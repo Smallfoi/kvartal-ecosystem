@@ -56,9 +56,33 @@ def user_id_from_request(request) -> str | None:
         data = json.loads(base64.urlsafe_b64decode(payload + "=="))
         if data.get("exp", 0) < time.time():
             return None
-        return data["sub"]
+        uid = data["sub"]
+        # Мгновенный бан (S-10): заблокированный теряет доступ, не дожидаясь
+        # истечения 30-дневного токена. Кэш 60с — без удара по БД на каждый запрос.
+        if _is_blocked(uid):
+            return None
+        return uid
     except Exception:
         return None
+
+
+def _is_blocked(uid) -> bool:
+    """Заблокирован ли аккаунт. Сбой кэша/БД → НЕ заблокирован (нельзя залочить
+    всех из-за хиккапа инфраструктуры)."""
+    try:
+        from django.core.cache import cache
+
+        key = f"acc_blocked:{uid}"
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+        from accounts.models import Account
+
+        blocked = Account.objects.filter(id=uid, is_blocked=True).exists()
+        cache.set(key, blocked, 60)
+        return blocked
+    except Exception:
+        return False
 
 
 def normalize_phone(phone: str) -> str:
