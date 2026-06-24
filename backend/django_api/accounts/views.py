@@ -164,6 +164,7 @@ def delete_account(request):
     from loyalty.models import LoyaltyTransaction
     from notifications.models import Notification
     from orders.models import Order
+    from runs.models import Run
     from shoes.models import ShoeAsset
 
     # Клуб во владении с другими участниками — нельзя удалить «молча».
@@ -189,6 +190,7 @@ def delete_account(request):
     # Личные данные по сервисам.
     deleted["loyalty"] = LoyaltyTransaction.objects.filter(user_id=uid).delete()[0]
     deleted["orders"] = Order.objects.filter(user_id=uid).delete()[0]
+    deleted["runs"] = Run.objects.filter(user_id=uid).delete()[0]  # история забегов = ПДн (GPS)
     deleted["shoes"] = ShoeAsset.objects.filter(user_id=uid).delete()[0]
     deleted["notifications"] = Notification.objects.filter(user_id=uid).delete()[0]
     deleted["consents"] = UserConsent.objects.filter(user_id=uid).delete()[0]
