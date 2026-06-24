@@ -8,6 +8,7 @@ from .models import Club, ClubJoinRequest, ClubMember
 class ClubAdmin(ModelAdmin):
     list_display = ("id", "name", "city", "owner_id", "join_policy",
                     "is_hidden", "created_at")
+    list_display_links = ("id", "name")  # название кликабельно → открыть/редактировать
     list_filter = ("join_policy", "city", "is_hidden")
     search_fields = ("id", "name", "city", "owner_id")
     actions = ("hide_clubs", "show_clubs")

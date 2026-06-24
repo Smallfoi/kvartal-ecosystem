@@ -20,6 +20,7 @@ def make_draft(modeladmin, request, queryset):
 @admin.register(Category)
 class CategoryAdmin(ModelAdmin):
     list_display = ("id", "name", "emoji", "sort")
+    list_display_links = ("id", "name")  # имя кликабельно → открыть/редактировать
     list_editable = ("sort",)
     search_fields = ("id", "name")
     ordering = ("sort",)
@@ -100,6 +101,7 @@ class ProductAdmin(ModelAdmin):
 @admin.register(Banner)
 class BannerAdmin(ModelAdmin):
     list_display = ("id", "title", "subtitle", "action", "is_published", "sort")
+    list_display_links = ("id", "title")  # заголовок кликабелен → открыть/редактировать
     list_editable = ("is_published", "sort")
     list_filter = ("is_published",)
     search_fields = ("title", "subtitle")
