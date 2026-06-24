@@ -49,5 +49,7 @@ def orders(request):
         return Response(obj.to_json())
 
     # GET — заказы текущего пользователя
-    rows = Order.objects.filter(user_id=uid)
+    rows = Order.objects.filter(user_id=uid).order_by("-created_at")[
+        :200
+    ]  # последние заказы (детерминированный срез, ограничение payload)
     return Response([o.to_json() for o in rows])

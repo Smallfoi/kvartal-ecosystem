@@ -2,6 +2,7 @@ import os
 import secrets
 
 from django.db import models
+from django.db.models import Sum
 from django.utils import timezone
 
 
@@ -57,6 +58,16 @@ def seed_runner_points(user_id):
     ]
     for amount, source, desc in demo:
         add_txn(user_id, amount, source, desc)
+
+
+def balance_of(user_id) -> int:
+    """Баланс одним SQL-агрегатом (а не загрузкой всех транзакций в Python)."""
+    return (
+        LoyaltyTransaction.objects.filter(user_id=user_id).aggregate(s=Sum("amount"))[
+            "s"
+        ]
+        or 0
+    )
 
 
 def level_for(balance: int) -> str:
