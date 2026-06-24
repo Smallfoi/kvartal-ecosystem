@@ -22,6 +22,7 @@ class CompletedRun {
   final double distanceMeters;
   final int capturedZones;
   final bool capturedTerritory;
+  final bool mockDetected; // подделка геолокации (Android mock-GPS) — анти-чит S-04
 
   const CompletedRun({
     required this.id,
@@ -31,6 +32,7 @@ class CompletedRun {
     required this.distanceMeters,
     required this.capturedZones,
     required this.capturedTerritory,
+    this.mockDetected = false,
   });
 
   double get distanceKm => distanceMeters / 1000;
@@ -74,6 +76,7 @@ class CompletedRun {
     'distanceMeters': distanceMeters,
     'capturedZones': capturedZones,
     'capturedTerritory': capturedTerritory,
+    'mockDetected': mockDetected,
     'route': [
       for (final p in route) [p.latitude, p.longitude],
     ],
@@ -100,6 +103,7 @@ class CompletedRun {
       distanceMeters: (json['distanceMeters'] as num? ?? 0).toDouble(),
       capturedZones: (json['capturedZones'] as num? ?? 0).toInt(),
       capturedTerritory: json['capturedTerritory'] as bool? ?? false,
+      mockDetected: json['mockDetected'] as bool? ?? false,
     );
   }
 }
@@ -177,6 +181,7 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
           'finishedAtMs': run.finishedAt.millisecondsSinceEpoch,
           'capturedTerritory': run.capturedTerritory,
           'capturedZones': run.capturedZones,
+          'mockDetected': run.mockDetected,
         },
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
