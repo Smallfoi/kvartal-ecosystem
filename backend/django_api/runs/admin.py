@@ -1,13 +1,15 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
+from common.adminutils import UserRefMixin
+
 from .models import Run
 
 
 @admin.register(Run)
-class RunAdmin(ModelAdmin):
+class RunAdmin(UserRefMixin, ModelAdmin):
     list_display = (
-        "id", "user_id", "distance_m", "duration_s", "points_awarded",
+        "id", "user_ref", "distance_m", "duration_s", "points_awarded",
         "flagged", "flag_reason", "captured_territory", "finished_at",
     )
     list_filter = ("flagged", "captured_territory")

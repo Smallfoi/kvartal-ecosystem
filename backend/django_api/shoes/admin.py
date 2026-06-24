@@ -1,14 +1,16 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
+from common.adminutils import UserRefMixin
+
 from .models import ShoeAsset
 
 
 @admin.register(ShoeAsset)
-class ShoeAssetAdmin(ModelAdmin):
+class ShoeAssetAdmin(UserRefMixin, ModelAdmin):
     list_display = (
         "id",
-        "user_id",
+        "user_ref",
         "model",
         "status",
         "total_km",
