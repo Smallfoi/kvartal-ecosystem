@@ -152,7 +152,8 @@ REST_FRAMEWORK = {
 }
 
 LANGUAGE_CODE = "ru-ru"
-TIME_ZONE = "UTC"
+# Якутское время для отображения в админке (хранение в БД остаётся UTC, USE_TZ=True).
+TIME_ZONE = "Asia/Yakutsk"
 USE_I18N = True
 USE_TZ = True
 

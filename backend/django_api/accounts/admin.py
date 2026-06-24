@@ -14,8 +14,23 @@ class AccountAdmin(ModelAdmin):
     list_display_links = ("id", "name")  # имя кликабельно → открыть/редактировать
     list_filter = ("provider", "city", "is_blocked", "needs_review")
     search_fields = ("id", "name", "phone", "email")
-    readonly_fields = ("id", "created_at", "password_hash")
+    readonly_fields = ("id", "created_at")
     actions = ("block_accounts", "unblock_accounts", "clear_review")
+    # Карточка пользователя по разделам (хэш пароля не показываем).
+    fieldsets = (
+        ("Профиль", {
+            "fields": ("id", "name", "phone", "email", "city", "provider",
+                       "avatar_path", "created_at"),
+        }),
+        ("Приватность", {
+            "fields": ("profile_public", "route_public", "realtime_public"),
+        }),
+        ("Модерация и анти-чит", {
+            "fields": ("is_blocked", "block_reason", "needs_review"),
+            "description": "Блокировка отрезает вход (≤60с). «На проверке» — авто-метка "
+            "при накоплении флагнутых забегов (S-04); снимается действием в списке.",
+        }),
+    )
 
     @admin.action(description="Заблокировать (бан входа)")
     def block_accounts(self, request, queryset):
