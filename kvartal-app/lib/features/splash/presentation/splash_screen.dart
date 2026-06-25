@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/kvartal_logo.dart';
 import '../../auth/data/auth_provider.dart';
-import '../../offline_maps/presentation/screens/offline_maps_screen.dart';
-import '../../offline_maps/data/offline_maps_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -21,18 +18,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1900), () async {
+    Future.delayed(const Duration(milliseconds: 1900), () {
       if (!mounted) return;
       final auth = ref.read(authProvider);
-      if (auth.status == AuthStatus.authenticated) {
-        final prefs = await SharedPreferences.getInstance();
-        final seen = prefs.getBool(offlineMapOnboardingPrefsKey) ?? false;
-        final downloaded = await isYakutskOfflineMapDownloaded();
-        if (!mounted) return;
-        context.go((seen || downloaded) ? '/map' : '/offline-onboarding');
-      } else {
-        context.go('/auth/phone');
-      }
+      context.go(
+        auth.status == AuthStatus.authenticated ? '/map' : '/auth/phone',
+      );
     });
   }
 

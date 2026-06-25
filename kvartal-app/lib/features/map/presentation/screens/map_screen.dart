@@ -7,13 +7,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/location_provider.dart';
 import '../../data/zone_provider.dart';
 import '../../../run/data/run_provider.dart';
 import '../../../territory/data/territory_provider.dart';
-import '../../../offline_maps/data/offline_maps_provider.dart';
 import '../../../weather/data/weather_provider.dart';
 import '../../../weather/presentation/weather_view.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
@@ -101,7 +99,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
-  void _openOfflineMaps() => context.push('/offline-maps');
   @override
   void initState() {
     super.initState();
@@ -139,11 +136,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final territories = ref.watch(territoryProvider).territories;
     final posAsync = ref.watch(positionStreamProvider);
     final runState = ref.watch(runProvider);
-    final offlineMap = ref.watch(offlineMapsProvider);
-    final offlineTileTemplate = offlineMap.isDownloaded
-        ? offlineMap.tileUrlTemplate
-        : null;
-    final useOfflineBaseMap = offlineTileTemplate != null;
     final closureStatus = ref
         .read(zoneProvider.notifier)
         .inspectLoopClosure(runState.route);
@@ -194,8 +186,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
             children: [
               // Подложка (D-19): онлайн — векторный OpenFreeMap Bright;
-              // офлайн (скачанный город) или пока стиль грузится — растровый фолбэк.
-              if (_mapStyle != null && !useOfflineBaseMap)
+              // пока стиль грузится / если он недоступен — растровый фолбэк CARTO.
+              if (_mapStyle != null)
                 VectorTileLayer(
                   theme: _mapStyle!.theme,
                   sprites: _mapStyle!.sprites,
@@ -205,22 +197,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               else
                 TileLayer(
                   key: ValueKey(_tileLayerReloadId),
-                  // Растровый фолбэк: офлайн-кэш (FileTileProvider) либо CARTO,
-                  // пока грузится векторный Bright / если он недоступен.
+                  // Растровый фолбэк CARTO, пока грузится векторный Bright / если он недоступен.
                   urlTemplate:
-                      offlineTileTemplate ??
                       'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
                   subdomains: const ['a', 'b', 'c', 'd'],
-                  tileProvider: useOfflineBaseMap ? FileTileProvider() : null,
                   userAgentPackageName: 'com.kvartal.kvartal_app',
-                  maxNativeZoom: useOfflineBaseMap ? 15 : 19,
-                  errorTileCallback: (_, __, ___) {
-                    if (!useOfflineBaseMap) _handleTileError();
-                  },
+                  maxNativeZoom: 19,
+                  errorTileCallback: (_, __, ___) => _handleTileError(),
                 ),
 
               // Атрибуция обязательна (D-19): OpenFreeMap / OpenMapTiles / OSM.
-              if (_mapStyle != null && !useOfflineBaseMap)
+              if (_mapStyle != null)
                 const RichAttributionWidget(
                   alignment: AttributionAlignment.bottomLeft,
                   attributions: [
@@ -337,10 +324,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                     child: Row(
                       children: [
-                        _KvartalTopLogo(
-                          cityName: offlineMap.name,
-                          onTap: _openOfflineMaps,
-                        ),
+                        const _KvartalTopLogo(),
                         const Spacer(),
                         _WeatherChip(),
                       ],
@@ -459,10 +443,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: _OfflineMapNotice(
-                  onRetry: _retryBaseMap,
-                  onOfflineMap: _openOfflineMaps,
-                ),
+                child: _MapErrorNotice(onRetry: _retryBaseMap),
               ),
             ),
           Positioned(
@@ -475,14 +456,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (offlineMap.isDownloading)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 16, bottom: 10),
-                      child: _OfflineDownloadChip(
-                        progress: offlineMap.progress,
-                        onTap: _openOfflineMaps,
-                      ),
-                    ),
                   if (!_followUser)
                     Padding(
                       padding: const EdgeInsets.only(right: 16, bottom: 10),
@@ -555,74 +528,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
 // ── Markers ───────────────────────────────────────────────────────────────────
 
-class _OfflineDownloadChip extends StatelessWidget {
-  final double progress;
-  final VoidCallback onTap;
-
-  const _OfflineDownloadChip({required this.progress, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final percent = (progress * 100).clamp(0, 100).round();
-    return GestureDetector(
-      onTap: onTap,
-      child: _Glass(
-        borderRadius: const BorderRadius.all(Radius.circular(16)),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        child: SizedBox(
-          width: 178,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    CupertinoIcons.cloud_download,
-                    color: AppColors.electricBlue,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      '\u041a\u0430\u0440\u0442\u0430 $percent%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: Colors.white38,
-                    size: 12,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 7),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  minHeight: 4,
-                  value: progress.clamp(0, 1),
-                  color: AppColors.electricBlue,
-                  backgroundColor: Colors.white.withValues(alpha: 0.10),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OfflineMapNotice extends StatelessWidget {
+class _MapErrorNotice extends StatelessWidget {
   final VoidCallback onRetry;
-  final VoidCallback onOfflineMap;
 
-  const _OfflineMapNotice({required this.onRetry, required this.onOfflineMap});
+  const _MapErrorNotice({required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -631,7 +540,7 @@ class _OfflineMapNotice extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(CupertinoIcons.map, color: AppColors.warning, size: 28),
+          const Icon(CupertinoIcons.wifi_slash, color: AppColors.warning, size: 28),
           const SizedBox(height: 10),
           const Text(
             '\u041a\u0430\u0440\u0442\u0430 \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u0430',
@@ -644,32 +553,16 @@ class _OfflineMapNotice extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            '\u041f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u0435\u0441\u044c \u043a \u0438\u043d\u0442\u0435\u0440\u043d\u0435\u0442\u0443 \u0438\u043b\u0438 \u0441\u043a\u0430\u0447\u0430\u0439\u0442\u0435 \u043e\u0444\u043b\u0430\u0439\u043d-\u043a\u0430\u0440\u0442\u0443.',
+            '\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0438\u043d\u0442\u0435\u0440\u043d\u0435\u0442 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c\u00bb.',
             style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.25),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _NoticeButton(
-                  label:
-                      '\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c',
-                  icon: CupertinoIcons.arrow_clockwise,
-                  color: AppColors.electricBlue,
-                  onTap: onRetry,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _NoticeButton(
-                  label: '\u041e\u0444\u043b\u0430\u0439\u043d',
-                  icon: CupertinoIcons.arrow_down_circle,
-                  color: AppColors.bgElevated,
-                  onTap: onOfflineMap,
-                ),
-              ),
-            ],
+          _NoticeButton(
+            label: '\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c',
+            icon: CupertinoIcons.arrow_clockwise,
+            color: AppColors.electricBlue,
+            onTap: onRetry,
           ),
         ],
       ),
@@ -959,54 +852,41 @@ class _Glass extends StatelessWidget {
 // ── Top bar ───────────────────────────────────────────────────────────────────
 
 class _KvartalTopLogo extends StatelessWidget {
-  final String cityName;
-  final VoidCallback onTap;
-
-  const _KvartalTopLogo({required this.cityName, required this.onTap});
+  const _KvartalTopLogo();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: _Glass(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const KvartalLogoBadge(size: 24),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  '\u0433\u043e\u0440\u043e\u0434 ',
-                  style: TextStyle(
-                    color: Colors.white38,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
-                Text(
-                  cityName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(width: 3),
-                const Icon(
-                  CupertinoIcons.chevron_down,
+    return _Glass(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          KvartalLogoBadge(size: 24),
+          SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '\u0433\u043e\u0440\u043e\u0434 ',
+                style: TextStyle(
                   color: Colors.white38,
-                  size: 9,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              Text(
+                '\u042f\u043a\u0443\u0442\u0441\u043a',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

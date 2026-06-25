@@ -8,7 +8,7 @@
 - **Frontend:** Flutter 3.32 (Dart) — iOS + Android
 - **Backend:** общий **Django + DRF + PostgreSQL/PostGIS** в Docker (`backend/django_api/`, D-12)
 - **State:** Riverpod 2.x
-- **Maps:** flutter_map + растровые тайлы (CARTO)
+- **Maps:** flutter_map, ТОЛЬКО онлайн (D-26): векторный OpenFreeMap Bright + растровый фолбэк CARTO. Офлайн-карты убраны.
 - **GPS:** geolocator + нативный foreground-сервис (Android)
 - **Navigation:** go_router
 - **Auth:** JWT по телефону (dev-код 1234). Планы: реальный SMS (smsc.ru), VK/Google/Apple
