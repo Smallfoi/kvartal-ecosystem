@@ -3,11 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/auth_provider.dart';
-import '../../../offline_maps/data/offline_maps_provider.dart';
-import '../../../offline_maps/presentation/screens/offline_maps_screen.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key});
@@ -60,11 +57,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         .read(authProvider.notifier)
         .verifyCode(_controller.text);
     if (success && mounted) {
-      final prefs = await SharedPreferences.getInstance();
-      final seen = prefs.getBool(offlineMapOnboardingPrefsKey) ?? false;
-      final downloaded = await isYakutskOfflineMapDownloaded();
-      if (!mounted) return;
-      context.go((seen || downloaded) ? '/map' : '/offline-onboarding');
+      context.go('/map');
       return;
     }
     if (!success && mounted) {

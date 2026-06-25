@@ -14,7 +14,6 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/privacy_screen.dart';
 import '../../features/shoes/presentation/screens/shoes_screen.dart';
-import '../../features/offline_maps/presentation/screens/offline_maps_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
 
@@ -64,11 +63,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/otp',
         pageBuilder: (_, __) => const NoTransitionPage(child: OtpScreen()),
       ),
-      GoRoute(
-        path: '/offline-onboarding',
-        pageBuilder: (_, __) =>
-            const NoTransitionPage(child: OfflineMapsScreen(onboarding: true)),
-      ),
       // Скан QR приглашения — полноэкранный (вне шелла), как камера в Тинькофф.
       GoRoute(
         path: '/club/scan',
@@ -100,11 +94,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/club',
             pageBuilder: (_, __) => const NoTransitionPage(child: ClubScreen()),
-          ),
-          GoRoute(
-            path: '/offline-maps',
-            pageBuilder: (_, __) =>
-                const NoTransitionPage(child: OfflineMapsScreen()),
           ),
           GoRoute(
             path: '/profile',
