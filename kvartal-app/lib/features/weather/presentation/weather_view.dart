@@ -8,9 +8,13 @@ import 'weather_background.dart';
 
 // ── WMO weather code → иконка / подпись ──────────────────────────────────────
 
-IconData weatherIcon(int code) {
-  if (code == 0) return CupertinoIcons.sun_max_fill;
-  if (code <= 2) return CupertinoIcons.cloud_sun_fill;
+IconData weatherIcon(int code, {bool isNight = false}) {
+  if (code == 0) {
+    return isNight ? CupertinoIcons.moon_stars_fill : CupertinoIcons.sun_max_fill;
+  }
+  if (code <= 2) {
+    return isNight ? CupertinoIcons.cloud_moon_fill : CupertinoIcons.cloud_sun_fill;
+  }
   if (code == 3) return CupertinoIcons.cloud_fill;
   if (code == 45 || code == 48) return CupertinoIcons.cloud_fog_fill;
   if (code >= 51 && code <= 57) return CupertinoIcons.cloud_drizzle_fill;
@@ -192,7 +196,7 @@ class _WeatherBody extends StatelessWidget {
                             ),
                           ),
                           Icon(
-                            weatherIcon(w.weatherCode),
+                            weatherIcon(w.weatherCode, isNight: isNightNow()),
                             size: 40,
                             color: Colors.white,
                           ),
