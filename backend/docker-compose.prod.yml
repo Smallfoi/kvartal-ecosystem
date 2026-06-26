@@ -19,6 +19,14 @@ services:
       retries: 10
     # Порт наружу НЕ публикуем — доступ к БД только из web-контейнера.
 
+  redis:
+    image: redis:7-alpine
+    restart: always
+    # Общий кэш для rate-limit/OTP/бана/баланса (D-07/D-28). LRU + лёгкая персистентность.
+    command: redis-server --save 60 1 --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+
   web:
     build: ./django_api
     restart: always
@@ -36,6 +44,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
 
   nginx:
     image: nginx:1.27-alpine
@@ -53,5 +63,6 @@ services:
 
 volumes:
   pgdata:
+  redisdata:
   media_uploads:
   static_files:

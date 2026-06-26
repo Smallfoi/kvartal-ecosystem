@@ -32,7 +32,7 @@
 
 ## 🟠 Техника — P1
 - 🟡 **Тесты.** Под CI (postgis-сервис, ~53): анти-чит, rate-limit, auth/profile, loyalty/redeem, orders, прод-конфиг (fail-fast), удаление аккаунта, `clean_orphans`, seed-гейт, мгновенный бан, SMS-OTP, пуши, оплата ✅ → добавить clubs/leaderboard/shoes-сценарии.
-- ⬜🔑 **Redis + Celery (D-07)** — async (SMS, FCM, гео), кэш (лейдерборд/баланс), общий throttling/блокировки на воркеры.
+- 🟡 **Redis + Celery (D-07/D-28).** **Redis-кэш готов**: `CACHES` → Redis при `REDIS_URL` (иначе LocMem в dev); сервис `redis` в `docker-compose.prod.yml`. Это чинит общий rate-limit/OTP/мгновенный бан на нескольких воркерах gunicorn. Осталось: Celery для async (SMS/пуши/гео) — для валидации (D-28) синхронно ОК, async позже.
 - 🟡 **Производительность:** баланс — SQL-агрегат ✅ (был `sum()` в Python); списки loyalty/orders ограничены 200 ✅. Осталось: кэш лейдерборда/баланса (Redis), планы запросов и нагрузочное тестирование.
 - 🟡🔑 **Sentry — мониторинг/краши** (D-25, self-host РФ). **Бэкенд-каркас готов**: `sentry-sdk[django]`, подключается при `SENTRY_DSN` (иначе no-op), `send_default_pii=False`. Осталось 🔑: self-host Sentry + app-side (`sentry_flutter` под dart-define) — добавить с владельцем (нативная сборка/проверка на устройстве).
 - 🟡🔑 **Пуши вне приложения — RuStore** (D-25, НЕ FCM). **Бэкенд-каркас готов**: `DeviceToken` + `POST /devices/register` + `send_push` в `create_notification` (no-op без `PUSH_PROVIDER`). Осталось 🔑: аккаунт RuStore + реальный вызов RuStore Push API + регистрация токена в приложениях. _Лента в приложении уже есть._
