@@ -11,7 +11,7 @@
 - 🟡🔑 **Секреты из env.** Дефолты (`dev-secret-change-in-prod`, DB `kvartal`) остаются для dev, НО прод защищён **fail-fast** (`common/prodcheck.py`): при `DJANGO_DEBUG=0` приложение НЕ стартует с дефолтными `JWT_SECRET`/`DJANGO_SECRET_KEY`/паролем БД или `ALLOWED_HOSTS=*`. Осталось 🔑: владельцу задать сильные секреты в проде (шаблон — `backend/.env.prod.example`).
 - 🟡 **DEBUG=False в проде.** Через env (`DJANGO_DEBUG=0`) + `DJANGO_ALLOWED_HOSTS` (теперь обязателен — fail-fast не пускает `*`). Прод-secure-заголовки (HSTS/SSL-redirect/secure-cookies) за `not DEBUG`. Осталось задать env в проде.
 - ✅ **Демо-баллы новичкам ВЫКЛ** (`SEED_DEMO_POINTS`, по умолчанию off) — лидерборд и экономика баллов на реальных данных, не на фейковых 16 км.
-- ⬜🔑 **Настоящий вход (SMS-OTP).** Код `1234` зашит — вход под любым телефоном. → smsc.ru (или аналог), одноразовые коды со сроком, лимит попыток/запросов. _SMS-провайдер отложен (D-24), вход строго email+телефон, соцвход убран._
+- 🟡🔑 **Настоящий вход (SMS-OTP).** **Каркас готов**: без `SMS_PROVIDER` — dev (код `1234`); с `SMS_PROVIDER=smsc`+логин/пароль — боевой одноразовый код (срок 5 мин, лимит попыток), `POST /auth/phone/request`→`/verify` (`accounts/sms.py`). Осталось 🔑: аккаунт smsc.ru + общий кэш Redis (D-07) для OTP на воркерах.
 - ✅ **Rate-limiting.** DRF-throttling: по JWT (`user` 300/мин) + по IP для анонимных (`anon` 120/мин) + жёстко на `/auth` (`auth` 20/мин, анти-брутфорс). _Прод: общий счётчик в Redis (D-07) для нескольких воркеров._
 - 🟡 **HTTPS везде.** Secure-заголовки готовы (P0 выше); нужен прод-TLS (домены/сертификаты) и cleartext в апках только для прод-доменов.
 - ⬜🔑 **Админка:** суперюзер создаётся из env (`DJANGO_SUPERUSER_PASSWORD`) — в проде задать СИЛЬНЫЙ пароль и НЕ коммитить; ограничить `/admin` по IP/VPN; 2FA. (Прежний dev-пароль из доков убран.)
@@ -31,11 +31,12 @@
 - ⬜ **Uptime-мониторинг** — `/v1/health` ✅, подключить внешний пинг + алерт.
 
 ## 🟠 Техника — P1
-- 🟡 **Тесты.** Под CI (postgis-сервис, ~40): анти-чит, rate-limit, auth/profile, loyalty/redeem, orders, прод-конфиг (fail-fast), удаление аккаунта, `clean_orphans`, seed-гейт, мгновенный бан ✅ → добавить clubs/leaderboard/shoes-сценарии.
+- 🟡 **Тесты.** Под CI (postgis-сервис, ~53): анти-чит, rate-limit, auth/profile, loyalty/redeem, orders, прод-конфиг (fail-fast), удаление аккаунта, `clean_orphans`, seed-гейт, мгновенный бан, SMS-OTP, пуши, оплата ✅ → добавить clubs/leaderboard/shoes-сценарии.
 - ⬜🔑 **Redis + Celery (D-07)** — async (SMS, FCM, гео), кэш (лейдерборд/баланс), общий throttling/блокировки на воркеры.
 - 🟡 **Производительность:** баланс — SQL-агрегат ✅ (был `sum()` в Python); списки loyalty/orders ограничены 200 ✅. Осталось: кэш лейдерборда/баланса (Redis), планы запросов и нагрузочное тестирование.
-- ⬜🔑 **Краш-репортинг на мобиле** — **НЕ Crashlytics/Firebase** (D-24): Sentry (self-host РФ) или AppMetrica (Яндекс).
-- ⬜🔑 **Пуши вне приложения** — **НЕ FCM/Firebase** (D-24): RuStore Push / VK Push или своё. _Лента в приложении уже есть._
+- 🟡🔑 **Sentry — мониторинг/краши** (D-25, self-host РФ). **Бэкенд-каркас готов**: `sentry-sdk[django]`, подключается при `SENTRY_DSN` (иначе no-op), `send_default_pii=False`. Осталось 🔑: self-host Sentry + app-side (`sentry_flutter` под dart-define) — добавить с владельцем (нативная сборка/проверка на устройстве).
+- 🟡🔑 **Пуши вне приложения — RuStore** (D-25, НЕ FCM). **Бэкенд-каркас готов**: `DeviceToken` + `POST /devices/register` + `send_push` в `create_notification` (no-op без `PUSH_PROVIDER`). Осталось 🔑: аккаунт RuStore + реальный вызов RuStore Push API + регистрация токена в приложениях. _Лента в приложении уже есть._
+- 🟡🔑 **Оплата Store** (D-13). **Каркас готов** (провайдер-агностичный): `Order.payment_status` + `POST /orders/<id>/pay` (`orders/payment.py`); без `PAYMENT_PROVIDER` — dev (оплата не требуется). Осталось 🔑: выбрать провайдера (ЮKassa/др.) + реальный вызов API + оплата в приложении Store.
 - ⬜🔑 **Карта в прод (D-19):** self-host OpenFreeMap (сейчас публичный инстанс, без SLA).
 - ⬜ **Нагрузочное тестирование** перед запуском.
 
