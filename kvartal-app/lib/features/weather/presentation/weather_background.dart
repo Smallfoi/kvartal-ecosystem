@@ -4,6 +4,13 @@ import 'package:flutter/material.dart';
 /// Тип анимации фона по WMO-коду (тот же код, что в WeatherData.weatherCode).
 enum _Kind { sun, cloud, fog, rain, snow, storm }
 
+/// Вечер/ночь по МЕСТНОМУ времени устройства (19:00–6:00). Единый источник правды
+/// для дня/ночи: фон погоды (луна/звёзды) и иконки (солнце↔луна).
+bool isNightNow() {
+  final h = DateTime.now().hour;
+  return h < 6 || h >= 19;
+}
+
 _Kind _kindOf(int code) {
   if (code == 0 || code == 1) return _Kind.sun;
   if (code == 45 || code == 48) return _Kind.fog;
@@ -43,13 +50,14 @@ class _WeatherBackgroundState extends State<WeatherBackground>
   @override
   Widget build(BuildContext context) {
     final kind = _kindOf(widget.weatherCode);
+    final isNight = isNightNow(); // вечер/ночь → луна + тёмное небо со звёздами
     return SizedBox(
       height: widget.height,
       width: double.infinity,
       child: AnimatedBuilder(
         animation: _c,
         builder: (_, __) => CustomPaint(
-          painter: _WeatherPainter(kind: kind, t: _c.value),
+          painter: _WeatherPainter(kind: kind, t: _c.value, isNight: isNight),
         ),
       ),
     );
@@ -59,18 +67,28 @@ class _WeatherBackgroundState extends State<WeatherBackground>
 class _WeatherPainter extends CustomPainter {
   final _Kind kind;
   final double t; // 0..1, зациклено
-  _WeatherPainter({required this.kind, required this.t});
+  final bool isNight; // вечер/ночь по местному времени → луна вместо солнца
+  _WeatherPainter({required this.kind, required this.t, required this.isNight});
 
   @override
   void paint(Canvas canvas, Size size) {
     _paintSky(canvas, size);
     switch (kind) {
       case _Kind.sun:
-        _paintSun(canvas, size);
-        _paintClouds(canvas, size, count: 1, opacity: 0.6);
+        if (isNight) {
+          _paintStars(canvas, size);
+          _paintMoon(canvas, size);
+        } else {
+          _paintSun(canvas, size);
+        }
+        _paintClouds(canvas, size, count: 1, opacity: isNight ? 0.4 : 0.6);
         break;
       case _Kind.cloud:
-        _paintClouds(canvas, size, count: 3, opacity: 0.9);
+        if (isNight) {
+          _paintStars(canvas, size);
+          _paintMoon(canvas, size);
+        }
+        _paintClouds(canvas, size, count: 3, opacity: isNight ? 0.8 : 0.9);
         break;
       case _Kind.fog:
         _paintFog(canvas, size);
@@ -93,14 +111,23 @@ class _WeatherPainter extends CustomPainter {
 
   // ── небо (градиент по условию) ──────────────────────────────────────────
   void _paintSky(Canvas canvas, Size size) {
-    final colors = switch (kind) {
-      _Kind.sun => [const Color(0xFF2E6DB4), const Color(0xFF6FB1E8)],
-      _Kind.cloud => [const Color(0xFF3A4452), const Color(0xFF6E7B8C)],
-      _Kind.fog => [const Color(0xFF4A535F), const Color(0xFF818B97)],
-      _Kind.rain => [const Color(0xFF2C3744), const Color(0xFF55657A)],
-      _Kind.snow => [const Color(0xFF394656), const Color(0xFF7E90A6)],
-      _Kind.storm => [const Color(0xFF1E232C), const Color(0xFF3C4654)],
-    };
+    final colors = isNight
+        ? switch (kind) {
+            _Kind.sun => [const Color(0xFF0B1A33), const Color(0xFF1E3A5F)],
+            _Kind.cloud => [const Color(0xFF161E2B), const Color(0xFF313C4D)],
+            _Kind.fog => [const Color(0xFF1E242D), const Color(0xFF3C434E)],
+            _Kind.rain => [const Color(0xFF111922), const Color(0xFF2A3340)],
+            _Kind.snow => [const Color(0xFF18212E), const Color(0xFF384454)],
+            _Kind.storm => [const Color(0xFF0A0D13), const Color(0xFF1F2632)],
+          }
+        : switch (kind) {
+            _Kind.sun => [const Color(0xFF2E6DB4), const Color(0xFF6FB1E8)],
+            _Kind.cloud => [const Color(0xFF3A4452), const Color(0xFF6E7B8C)],
+            _Kind.fog => [const Color(0xFF4A535F), const Color(0xFF818B97)],
+            _Kind.rain => [const Color(0xFF2C3744), const Color(0xFF55657A)],
+            _Kind.snow => [const Color(0xFF394656), const Color(0xFF7E90A6)],
+            _Kind.storm => [const Color(0xFF1E232C), const Color(0xFF3C4654)],
+          };
     final rect = Offset.zero & size;
     canvas.drawRect(
       rect,
@@ -132,6 +159,43 @@ class _WeatherPainter extends CustomPainter {
       canvas.drawLine(p1, p2, ray);
     }
     canvas.drawCircle(c, 22, Paint()..color = const Color(0xFFFFD75E));
+  }
+
+  // ── луна (ночью вместо солнца) с мягким сиянием и кратерами ──────────────
+  void _paintMoon(Canvas canvas, Size size) {
+    final c = Offset(size.width * 0.80, size.height * 0.38);
+    canvas.drawCircle(
+      c,
+      52,
+      Paint()
+        ..shader = const RadialGradient(
+          colors: [Color(0x55EAF2FF), Color(0x00EAF2FF)],
+        ).createShader(Rect.fromCircle(center: c, radius: 52)),
+    );
+    canvas.drawCircle(c, 20, Paint()..color = const Color(0xFFE8EEF7));
+    final crater = Paint()..color = const Color(0xFFCBD5E6);
+    canvas.drawCircle(c + const Offset(-6, -4), 4, crater);
+    canvas.drawCircle(c + const Offset(5, 6), 3, crater);
+    canvas.drawCircle(c + const Offset(9, -7), 2, crater);
+  }
+
+  // ── звёзды (мерцают по t), слева/в центре — не перекрывают луну ──────────
+  void _paintStars(Canvas canvas, Size size) {
+    const pts = [
+      [0.12, 0.22], [0.28, 0.40], [0.20, 0.62], [0.45, 0.27],
+      [0.55, 0.55], [0.38, 0.72], [0.62, 0.30], [0.08, 0.46],
+      [0.50, 0.16], [0.33, 0.20], [0.15, 0.78], [0.47, 0.66],
+    ];
+    final p = Paint()..color = Colors.white;
+    for (int i = 0; i < pts.length; i++) {
+      final tw = 0.5 + 0.5 * math.sin(t * 2 * math.pi + i);
+      p.color = Colors.white.withValues(alpha: 0.30 + 0.50 * tw);
+      canvas.drawCircle(
+        Offset(pts[i][0] * size.width, pts[i][1] * size.height),
+        i.isEven ? 1.4 : 1.0,
+        p,
+      );
+    }
   }
 
   // ── облака, дрейфующие по горизонтали ───────────────────────────────────
@@ -230,5 +294,5 @@ class _WeatherPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WeatherPainter old) =>
-      old.t != t || old.kind != kind;
+      old.t != t || old.kind != kind || old.isNight != isNight;
 }

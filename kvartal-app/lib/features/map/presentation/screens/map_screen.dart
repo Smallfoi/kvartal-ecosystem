@@ -12,6 +12,7 @@ import '../../data/zone_provider.dart';
 import '../../../run/data/run_provider.dart';
 import '../../../territory/data/territory_provider.dart';
 import '../../../weather/data/weather_provider.dart';
+import '../../../weather/presentation/weather_background.dart';
 import '../../../weather/presentation/weather_view.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
 
@@ -889,7 +890,9 @@ class _WeatherChip extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              w == null ? CupertinoIcons.cloud : weatherIcon(w.weatherCode),
+              w == null
+                  ? CupertinoIcons.cloud
+                  : weatherIcon(w.weatherCode, isNight: isNightNow()),
               size: 13,
               color: AppColors.info,
             ),
