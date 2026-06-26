@@ -1,5 +1,30 @@
-"""Регрессии начисления за покупку (S-04 Phase 2): сервер считает purchase+registration."""
+"""Регрессии начисления за покупку (S-04 Phase 2) + каркас оплаты."""
+import os
+from unittest import mock
+
 from common.testutils import ApiTestCase
+from orders.payment import payment_enabled
+
+
+class PaymentScaffoldTests(ApiTestCase):
+    phone = "+79990002003"
+
+    def test_dev_pay_marks_paid(self):
+        self.assertFalse(payment_enabled())
+        self.api_post("/v1/orders", {"id": "SS-P1", "total": 500, "items": []})
+        r = self.api_post("/v1/orders/SS-P1/pay", {})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["status"], "paid")  # dev — оплата не требуется
+
+    def test_pay_unknown_order_404(self):
+        self.assertEqual(self.api_post("/v1/orders/NOPE/pay", {}).status_code, 404)
+
+    @mock.patch.dict(os.environ, {"PAYMENT_PROVIDER": "yookassa"})
+    def test_provider_mode_pending_without_key(self):
+        self.assertTrue(payment_enabled())
+        self.api_post("/v1/orders", {"id": "SS-P2", "total": 500, "items": []})
+        r = self.api_post("/v1/orders/SS-P2/pay", {})
+        self.assertEqual(r.json()["status"], "pending")  # нет YOOKASSA_SECRET_KEY
 
 
 class OrderAwardTests(ApiTestCase):

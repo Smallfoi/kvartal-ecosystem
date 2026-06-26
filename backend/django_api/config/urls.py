@@ -58,6 +58,7 @@ urlpatterns = [
     path("v1/banners", catalog_views.banners),
     # Заказы Store (D-13)
     path("v1/orders", orders_views.orders),
+    path("v1/orders/<str:order_id>/pay", orders_views.pay_order),  # оплата (каркас)
     # Уведомления (лента экосистемы)
     path("v1/notifications", notif_views.notifications),
     path("v1/notifications/read", notif_views.notifications_read),

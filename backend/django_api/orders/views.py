@@ -6,6 +6,24 @@ from rest_framework.response import Response
 from common.security import user_id_from_request
 
 from .models import Order
+from .payment import create_payment
+
+
+@api_view(["POST"])
+def pay_order(request, order_id):
+    """Инициировать оплату заказа (каркас, D-13). Dev (без провайдера) — сразу
+    «оплачено»; с провайдером — вернуть confirmationUrl для редиректа."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    order = Order.objects.filter(user_id=uid, order_id=order_id).first()
+    if not order:
+        return Response({"detail": "Заказ не найден"}, status=404)
+    result = create_payment(order_id, order.total, request.data.get("returnUrl") or "")
+    order.payment_status = result["status"]
+    order.payment_id = result.get("paymentId") or ""
+    order.save(update_fields=["payment_status", "payment_id"])
+    return Response(result)
 
 
 @api_view(["GET", "POST"])
