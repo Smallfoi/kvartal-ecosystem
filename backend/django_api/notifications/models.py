@@ -43,10 +43,29 @@ class Notification(models.Model):
         }
 
 
+class DeviceToken(models.Model):
+    """Токен устройства для пушей (D-25). Регистрируется приложением; пуши шлёт
+    notifications.push, когда настроен провайдер (RuStore)."""
+    user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
+    token = models.CharField(max_length=255, unique=True, verbose_name="Токен")
+    platform = models.CharField(max_length=20, default="android", verbose_name="Платформа")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Создан")
+
+    class Meta:
+        db_table = "device_tokens"
+        verbose_name = "Токен устройства"
+        verbose_name_plural = "Токены устройств"
+
+
 def create_notification(user_id, title, body="", type="system", order_id=None):
-    """Создать уведомление пользователю. Безопасно (без user_id — ничего не делает)."""
+    """Создать уведомление пользователю + (если настроено) отправить пуш.
+    Безопасно (без user_id — ничего не делает)."""
     if not user_id:
         return None
-    return Notification.objects.create(
+    n = Notification.objects.create(
         user_id=user_id, title=title, body=body, type=type, order_id=order_id,
     )
+    from .push import send_push
+
+    send_push(user_id, title, body)  # no-op без PUSH_PROVIDER
+    return n
