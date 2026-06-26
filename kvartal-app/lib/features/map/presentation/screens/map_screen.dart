@@ -5,7 +5,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/location_provider.dart';
@@ -39,20 +38,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// перейти на дельты/WebSocket (Уровень 2/3).
   Timer? _territoryRefreshTimer;
   static const _territoryRefreshInterval = Duration(seconds: 12);
-
-  /// Векторный стиль OpenFreeMap Bright (D-19). Грузится один раз; пока null —
-  /// показываем растровый фолбэк.
-  Style? _mapStyle;
-  static const _styleUrl = 'https://tiles.openfreemap.org/styles/bright';
-
-  Future<void> _loadMapStyle() async {
-    try {
-      final style = await StyleReader(uri: _styleUrl).read();
-      if (mounted) setState(() => _mapStyle = style);
-    } catch (_) {
-      // стиль не загрузился — остаёмся на растровом фолбэке
-    }
-  }
 
   /// Подгрузить реальные территории (PostGIS) для видимой области карты.
   void _scheduleTerritoryLoad() {
@@ -102,7 +87,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMapStyle();
     _territoryRefreshTimer = Timer.periodic(_territoryRefreshInterval, (_) {
       _loadTerritories();
       // Досылаем отложенные офлайн-захваты, когда вернулась связь (S-07).
@@ -185,37 +169,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               },
             ),
             children: [
-              // Подложка (D-19): онлайн — векторный OpenFreeMap Bright;
-              // пока стиль грузится / если он недоступен — растровый фолбэк CARTO.
-              if (_mapStyle != null)
-                VectorTileLayer(
-                  theme: _mapStyle!.theme,
-                  sprites: _mapStyle!.sprites,
-                  tileProviders: _mapStyle!.providers,
-                  maximumZoom: 18,
-                )
-              else
-                TileLayer(
-                  key: ValueKey(_tileLayerReloadId),
-                  // Растровый фолбэк CARTO, пока грузится векторный Bright / если он недоступен.
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  userAgentPackageName: 'com.kvartal.kvartal_app',
-                  maxNativeZoom: 19,
-                  errorTileCallback: (_, __, ___) => _handleTileError(),
-                ),
+              // Подложка: растровые тайлы CARTO Voyager (надёжно онлайн). Векторный
+              // OpenFreeMap убран — он отрисовывался серым и перекрывал рабочий растр (D-26).
+              TileLayer(
+                key: ValueKey(_tileLayerReloadId),
+                urlTemplate:
+                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c', 'd'],
+                userAgentPackageName: 'com.kvartal.kvartal_app',
+                maxNativeZoom: 19,
+                errorTileCallback: (_, __, ___) => _handleTileError(),
+              ),
 
-              // Атрибуция обязательна (D-19): OpenFreeMap / OpenMapTiles / OSM.
-              if (_mapStyle != null)
-                const RichAttributionWidget(
-                  alignment: AttributionAlignment.bottomLeft,
-                  attributions: [
-                    TextSourceAttribution('OpenFreeMap'),
-                    TextSourceAttribution('OpenMapTiles'),
-                    TextSourceAttribution('© OpenStreetMap'),
-                  ],
-                ),
+              // Атрибуция обязательна.
+              const RichAttributionWidget(
+                alignment: AttributionAlignment.bottomLeft,
+                attributions: [
+                  TextSourceAttribution('CARTO'),
+                  TextSourceAttribution('© OpenStreetMap'),
+                ],
+              ),
               if (capturedAreas.isNotEmpty)
                 PolygonLayer(
                   polygons: capturedAreas
