@@ -271,3 +271,21 @@ UNFOLD = {
         ],
     },
 }
+
+# ── Sentry (мониторинг/краши, D-25: self-host РФ) ───────────────────────────
+# Каркас: подключается ТОЛЬКО при заданном SENTRY_DSN. Без ключа — no-op, без
+# накладных расходов. Заполнит владелец, когда поднимет self-host Sentry.
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        environment=os.environ.get(
+            "SENTRY_ENVIRONMENT", "dev" if DEBUG else "production"
+        ),
+        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0")),
+        send_default_pii=False,  # 152-ФЗ: не отправляем ПДн в события по умолчанию
+    )
