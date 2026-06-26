@@ -272,6 +272,23 @@ UNFOLD = {
     },
 }
 
+# ── Кэш (D-07/D-28) ─────────────────────────────────────────────────────────
+# Общий кэш для rate-limit, SMS-OTP, мгновенного бана, баланса/лейдерборда.
+# Прод (несколько воркеров gunicorn) ОБЯЗАН использовать общий Redis, иначе данные
+# одного воркера не видны другим (OTP/лимиты ломаются). Без REDIS_URL — LocMem (dev).
+_redis_url = os.environ.get("REDIS_URL", "")
+if _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": _redis_url,
+        }
+    }
+else:
+    CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+
 # ── Sentry (мониторинг/краши, D-25: self-host РФ) ───────────────────────────
 # Каркас: подключается ТОЛЬКО при заданном SENTRY_DSN. Без ключа — no-op, без
 # накладных расходов. Заполнит владелец, когда поднимет self-host Sentry.

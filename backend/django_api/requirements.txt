@@ -6,3 +6,4 @@ gunicorn>=22.0
 Pillow>=10.0
 django-unfold>=0.40
 sentry-sdk[django]>=2.0
+redis>=5.0  # общий кэш в проде (rate-limit/OTP/бан), активен при REDIS_URL
