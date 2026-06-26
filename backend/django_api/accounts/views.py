@@ -16,6 +16,7 @@ from common.security import (
 from loyalty.models import seed_runner_points
 
 from .models import Account
+from .sms import check_code, request_code, sms_enabled
 
 
 @api_view(["POST"])
@@ -52,11 +53,23 @@ def login(request):
 
 @api_view(["POST"])
 @throttle_classes([AuthEndpointThrottle])
+def phone_request(request):
+    """Отправить код входа на телефон. В dev (без SMS-провайдера) реальная SMS не
+    шлётся — код входа всегда 1234. С SMS_PROVIDER=smsc уходит одноразовый код."""
+    phone = normalize_phone(request.data.get("phone") or "")
+    if not phone:
+        return Response({"detail": "Нет телефона"}, status=400)
+    request_code(phone)
+    return Response({"ok": True, "smsEnabled": sms_enabled()})
+
+
+@api_view(["POST"])
+@throttle_classes([AuthEndpointThrottle])
 def phone_verify(request):
     d = request.data
-    if (d.get("code") or "") != "1234":
-        return Response({"detail": "Invalid verification code"}, status=401)
     phone = normalize_phone(d.get("phone") or "")
+    if not check_code(phone, d.get("code") or ""):
+        return Response({"detail": "Invalid verification code"}, status=401)
     email = synthetic_email_for_phone(phone)
     acc = Account.objects.filter(phone=phone).first()
     if not acc:

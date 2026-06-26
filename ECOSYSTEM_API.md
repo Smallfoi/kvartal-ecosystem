@@ -176,9 +176,8 @@
 ```
 POST /auth/register            { name, email, password } → { token, user }
 POST /auth/login               { email, password }       → { token, user }
-POST /auth/oauth/google                                  → { name, email }      (handshake)
-POST /auth/oauth/apple                                   → { name, email }
-POST /auth/oauth/complete      { email, provider, name, phone } → { token, user }
+POST /auth/phone/request       { phone }                 → { ok, smsEnabled }   (шлёт код; dev — всегда 1234)
+POST /auth/phone/verify        { phone, code }           → { token, user }      (создаёт аккаунт при первом входе)
 POST /auth/password/forgot     { email }                 → 200
 POST /auth/password/reset      { password }              → 200
 PUT  /auth/password            { old, new }              → 200
