@@ -1,10 +1,44 @@
-"""Регрессии входа/профиля: rate-limit (анти-брутфорс) + базовые потоки auth."""
+"""Регрессии входа/профиля: rate-limit (анти-брутфорс) + базовые потоки auth + SMS-OTP."""
 import json
+import os
+from unittest import mock
 
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from common.testutils import ApiTestCase
+
+
+class SmsOtpTests(SimpleTestCase):
+    """Каркас SMS-OTP: dev принимает 1234; с провайдером — реальный одноразовый код."""
+
+    def setUp(self):
+        cache.clear()
+
+    def test_dev_mode_accepts_1234(self):
+        from accounts.sms import check_code, sms_enabled
+        self.assertFalse(sms_enabled())
+        self.assertTrue(check_code("+79990001111", "1234"))
+        self.assertFalse(check_code("+79990001111", "0000"))
+
+    @mock.patch.dict(os.environ, {"SMS_PROVIDER": "smsc"})
+    def test_real_mode_checks_sent_code(self):
+        from accounts.sms import check_code, request_code, sms_enabled
+        self.assertTrue(sms_enabled())
+        self.assertFalse(check_code("+79990001112", "1234"))  # дев-код больше не годится
+        request_code("+79990001112")  # SMS_LOGIN не задан → реально не шлёт, но код в кэше
+        rec = cache.get("otp:+79990001112")
+        self.assertTrue(check_code("+79990001112", rec["code"]))
+        self.assertFalse(check_code("+79990001112", rec["code"]))  # одноразовый
+
+    @mock.patch.dict(os.environ, {"SMS_PROVIDER": "smsc"})
+    def test_attempt_limit_blocks_even_correct_code(self):
+        from accounts.sms import check_code, request_code
+        request_code("+79990001113")
+        rec = cache.get("otp:+79990001113")
+        for _ in range(5):
+            check_code("+79990001113", "000000")  # 5 неверных
+        self.assertFalse(check_code("+79990001113", rec["code"]))  # лимит исчерпан
 
 
 class AuthFlowTests(ApiTestCase):
