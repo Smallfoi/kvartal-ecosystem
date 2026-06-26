@@ -211,6 +211,8 @@ GET /banners                            → Banner[]
 POST /orders     { items, checkoutData, pointsRedeemed } → Order   (создаёт заказ + ShoeAsset для обуви)
 GET  /orders                                             → Order[] (текущего пользователя)
 GET  /orders/:id                                         → Order
+POST /orders/:id/pay  { returnUrl? }  → { status, paymentId, confirmationUrl }  (каркас оплаты; dev — status=paid)
+POST /devices/register { token, platform }               → { ok }   (токен устройства для пушей, D-25)
 ```
 
 ### Loyalty (единый баланс)
