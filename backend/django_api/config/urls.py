@@ -61,6 +61,7 @@ urlpatterns = [
     # Уведомления (лента экосистемы)
     path("v1/notifications", notif_views.notifications),
     path("v1/notifications/read", notif_views.notifications_read),
+    path("v1/devices/register", notif_views.register_device),  # токен устройства для пушей
     # История пробежек (синхронизация с устройства, сводки — без сырого GPS).
     path("v1/runs", runs_views.runs),
     # Документы и согласия (единые для всех продуктов, §3 LAUNCH_READINESS).

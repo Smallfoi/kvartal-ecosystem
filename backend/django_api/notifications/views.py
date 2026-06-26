@@ -5,7 +5,23 @@ from rest_framework.response import Response
 
 from common.security import user_id_from_request
 
-from .models import Notification
+from .models import DeviceToken, Notification
+
+
+@api_view(["POST"])
+def register_device(request):
+    """Регистрация токена устройства для пушей (D-25). body: {token, platform}."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    token = (request.data.get("token") or "").strip()
+    if not token:
+        return Response({"detail": "Нет токена устройства"}, status=400)
+    platform = (request.data.get("platform") or "android")[:20]
+    DeviceToken.objects.update_or_create(
+        token=token, defaults={"user_id": uid, "platform": platform},
+    )
+    return Response({"ok": True})
 
 
 @api_view(["GET"])
