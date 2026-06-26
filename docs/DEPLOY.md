@@ -72,3 +72,39 @@ flutter build apk --release --target-platform android-arm64 \
 - Проверить `GET https://api.staw.ru/v1/health` → `{"status":"ok"}`.
 - Залогиниться на сайте/в приложениях, убедиться, что баллы общие.
 - Секреты (SECRET_KEY, пароль БД) — только в окружении прод-сервера, НЕ в репозитории (он публичный).
+
+---
+
+## 5. Операторские команды (runbook)
+
+На сервере, из каталога `backend/` (есть `Makefile` и `deploy/*.sh`):
+
+| Команда | Что делает |
+|---|---|
+| `make prod-deploy` | бэкап БД → сборка/миграции/collectstatic → smoke-тест (основной деплой/обновление) |
+| `make backup` | бэкап БД → `backups/staw_<дата>.sql.gz` (ротация 14 дней) |
+| `make restore FILE=backups/staw_….sql.gz` | восстановить БД из бэкапа (спросит подтверждение, сделает контрольный бэкап) |
+| `make smoke` | проверить health + каталог/баннеры изнутри web-контейнера |
+| `make prod-logs` | логи прод-web | 
+| `make prod-up` / `make prod-down` | поднять / остановить прод-стек |
+
+`make` без аргументов — список всех команд.
+
+**Первый деплой:** `cp .env.prod.example .env` → заполнить секреты → `cp nginx/staw.conf.example nginx/staw.conf` (домен+TLS) → `make prod-deploy`.
+
+**Обновление:** `git pull && make prod-deploy` (бэкап делается автоматически перед сборкой).
+
+**Откат:** `git checkout <tag-или-commit> && make prod-deploy`. Если откатить нужно и БД (после плохой миграции) — `make restore FILE=<последний-хороший-бэкап>`.
+
+**Бэкапы по расписанию (cron на сервере):**
+```cron
+0 4 * * *  cd /path/to/backend && ./deploy/backup.sh >> backups/cron.log 2>&1
+```
+Раз в месяц — **проверка восстановления** на staging (`make restore` из свежего бэкапа): бэкап без проверенного restore не считается рабочим.
+
+**Troubleshooting:**
+- `/v1/health` не отвечает → `make prod-logs` (ищем traceback); частые причины: незаполненный `.env` (fail-fast по секретам), недоступная БД, занятый порт.
+- Падает на старте с `ImproperlyConfigured` → дефолтные секреты при `DJANGO_DEBUG=0` (см. п.1).
+- Нет статики/стилей админки → `collectstatic` не отработал; смотреть логи web на шаге деплоя.
+
+**Staging:** тот же `docker-compose.prod.yml` с отдельным `.env` (другие домен/БД/секреты) на отдельной машине/проекте — прогонять деплой и проверку восстановления здесь до прода.
