@@ -1097,18 +1097,11 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
             _LogoPicker(
               value: _logo,
               onChanged: (value) => setState(() => _logo = value),
+              // Загрузка фото доступна у существующего клуба (нужен id на бэке);
+              // при создании — только пресет, фото добавится после создания.
+              onUploadPhoto: _isEdit ? _pickAndUploadLogo : null,
+              isMutating: state.isMutating,
             ),
-            if (_isEdit) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: state.isMutating ? null : _pickAndUploadLogo,
-                  icon: const Icon(CupertinoIcons.photo, size: 18),
-                  label: const Text('Загрузить фото клуба'),
-                ),
-              ),
-            ],
             const SizedBox(height: 14),
             CupertinoSlidingSegmentedControl<String>(
               groupValue: _joinPolicy,
@@ -1158,7 +1151,15 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
 class _LogoPicker extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
-  const _LogoPicker({required this.value, required this.onChanged});
+  // Загрузка фото-логотипа. null → кнопка неактивна (например, при создании клуба).
+  final VoidCallback? onUploadPhoto;
+  final bool isMutating;
+  const _LogoPicker({
+    required this.value,
+    required this.onChanged,
+    this.onUploadPhoto,
+    this.isMutating = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1204,7 +1205,9 @@ class _LogoPicker extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '\u0412\u044b\u0431\u0435\u0440\u0438 \u043f\u0440\u0435\u0441\u0435\u0442. \u0421\u0432\u043e\u0451 \u0444\u043e\u0442\u043e \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u043c \u0447\u0435\u0440\u0435\u0437 \u0445\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435.',
+                      onUploadPhoto == null
+                          ? '\u0412\u044b\u0431\u0435\u0440\u0438 \u043f\u0440\u0435\u0441\u0435\u0442. \u0421\u0432\u043e\u0451 \u0444\u043e\u0442\u043e \u2014 \u043f\u043e\u0441\u043b\u0435 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f \u043a\u043b\u0443\u0431\u0430.'
+                          : '\u0412\u044b\u0431\u0435\u0440\u0438 \u043f\u0440\u0435\u0441\u0435\u0442 \u0438\u043b\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u0438 \u0441\u0432\u043e\u0451 \u0444\u043e\u0442\u043e.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -1216,7 +1219,8 @@ class _LogoPicker extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: null,
+            onPressed:
+                (onUploadPhoto == null || isMutating) ? null : onUploadPhoto,
             icon: const Icon(CupertinoIcons.photo_fill, size: 18),
             label: const Text(
               '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0432\u043e\u0451 \u0444\u043e\u0442\u043e',
