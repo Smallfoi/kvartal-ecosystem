@@ -93,6 +93,7 @@ void _showCreateClubSheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: AppColors.bgSurface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -105,6 +106,7 @@ void _showEditClubSheet(BuildContext context, Club club) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: AppColors.bgSurface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -117,6 +119,7 @@ void _showClubInviteSheet(BuildContext context, Club club) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: AppColors.bgSurface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -220,7 +223,7 @@ class _ClubSliverHeader extends ConsumerWidget {
       child: logo,
     );
     return SliverAppBar(
-      expandedHeight: 218,
+      expandedHeight: 244,
       pinned: true,
       backgroundColor: AppColors.bgDark,
       // Никаких кнопок в шапке: обновление — свайпом вниз (pull-to-refresh),

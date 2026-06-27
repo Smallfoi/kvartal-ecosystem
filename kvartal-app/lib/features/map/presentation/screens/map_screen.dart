@@ -292,10 +292,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
+                    // Чуть опускаем верхние чипы от статус-бара — как на других экранах.
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
                     child: Row(
                       children: [
                         const _KvartalTopLogo(),
