@@ -18,6 +18,10 @@ class Club(models.Model):
     style = models.CharField(
         max_length=20, default="minimal", verbose_name="Стиль оформления"
     )
+    # Обложка-баннер шапки (URL загруженного фото, как у логотипа). Необязательна.
+    cover = models.CharField(
+        max_length=200, null=True, blank=True, verbose_name="Обложка"
+    )
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Создан")
     # Модерация (S-10): скрытый клуб не виден в списке и в него нельзя вступить.
     is_hidden = models.BooleanField(default=False, db_index=True, verbose_name="Скрыт (модерация)")

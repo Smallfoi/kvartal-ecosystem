@@ -165,6 +165,8 @@ class _ClubSliverHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasClub = club != null;
     final s = ClubStyle.byKey(club?.style);
+    final cover = club?.cover;
+    final hasCover = cover != null && cover.isNotEmpty;
     // Логотип в «рамке» пресета (кольцо цвета s.frame).
     Widget ringed(Widget logo) => Container(
       padding: const EdgeInsets.all(2.5),
@@ -183,17 +185,36 @@ class _ClubSliverHeader extends ConsumerWidget {
       title: Text('Клуб', style: Theme.of(context).textTheme.titleLarge),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: s.headerGradient,
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: const [0.0, 0.55, 1.0],
-            ),
-          ),
+          color: AppColors.bgDark,
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              if (hasClub)
+              // Обложка-баннер (если загружена владельцем) — фон шапки.
+              if (hasCover)
+                Image.network(
+                  resolveClubMediaUrl(cover),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              // С обложкой — тёмная вуаль для читаемости; без — градиент пресета.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: hasCover
+                        ? [
+                            Colors.black.withValues(alpha: 0.15),
+                            Colors.black.withValues(alpha: 0.45),
+                            AppColors.bgDark,
+                          ]
+                        : s.headerGradient,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.0, 0.6, 1.0],
+                  ),
+                ),
+              ),
+              // Анимированная тема — только без обложки (иначе фото — главный фон).
+              if (hasClub && !hasCover)
                 Positioned.fill(child: ClubHeaderBackground(style: s)),
               SafeArea(
             child: Padding(
@@ -1031,6 +1052,17 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
     if (mounted && updated != null) setState(() => _logo = updated.logo);
   }
 
+  /// Выбрать широкое фото из галереи и загрузить как обложку-баннер шапки.
+  Future<void> _pickAndUploadCover() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    await ref.read(clubProvider.notifier).uploadCover(picked.path);
+  }
+
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -1128,6 +1160,39 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
               value: _style,
               onChanged: (value) => setState(() => _style = value),
             ),
+            if (_isEdit) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed:
+                          state.isMutating ? null : _pickAndUploadCover,
+                      icon: const Icon(
+                        CupertinoIcons.photo_on_rectangle,
+                        size: 18,
+                      ),
+                      label: Text(
+                        (state.myClub?.cover ?? '').isNotEmpty
+                            ? 'Сменить обложку'
+                            : 'Загрузить обложку',
+                      ),
+                    ),
+                  ),
+                  if ((state.myClub?.cover ?? '').isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Убрать обложку',
+                      onPressed: state.isMutating
+                          ? null
+                          : () =>
+                                ref.read(clubProvider.notifier).removeCover(),
+                      icon: const Icon(CupertinoIcons.trash, size: 18),
+                    ),
+                  ],
+                ],
+              ),
+            ],
             const SizedBox(height: 14),
             CupertinoSlidingSegmentedControl<String>(
               groupValue: _joinPolicy,
