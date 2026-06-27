@@ -1154,45 +1154,16 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
               // при создании — только пресет, фото добавится после создания.
               onUploadPhoto: _isEdit ? _pickAndUploadLogo : null,
               isMutating: state.isMutating,
+              // Обложка-баннер — кнопка сразу под «Загрузить своё фото».
+              onUploadCover: _isEdit ? _pickAndUploadCover : null,
+              onRemoveCover: () => ref.read(clubProvider.notifier).removeCover(),
+              hasCover: (state.myClub?.cover ?? '').isNotEmpty,
             ),
             const SizedBox(height: 14),
             _StylePicker(
               value: _style,
               onChanged: (value) => setState(() => _style = value),
             ),
-            if (_isEdit) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed:
-                          state.isMutating ? null : _pickAndUploadCover,
-                      icon: const Icon(
-                        CupertinoIcons.photo_on_rectangle,
-                        size: 18,
-                      ),
-                      label: Text(
-                        (state.myClub?.cover ?? '').isNotEmpty
-                            ? 'Сменить обложку'
-                            : 'Загрузить обложку',
-                      ),
-                    ),
-                  ),
-                  if ((state.myClub?.cover ?? '').isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: 'Убрать обложку',
-                      onPressed: state.isMutating
-                          ? null
-                          : () =>
-                                ref.read(clubProvider.notifier).removeCover(),
-                      icon: const Icon(CupertinoIcons.trash, size: 18),
-                    ),
-                  ],
-                ],
-              ),
-            ],
             const SizedBox(height: 14),
             CupertinoSlidingSegmentedControl<String>(
               groupValue: _joinPolicy,
@@ -1244,11 +1215,18 @@ class _LogoPicker extends StatelessWidget {
   final ValueChanged<String> onChanged;
   // Загрузка фото-логотипа. null → кнопка неактивна (например, при создании клуба).
   final VoidCallback? onUploadPhoto;
+  // Обложка-баннер шапки. Кнопка идёт сразу под «Загрузить своё фото».
+  final VoidCallback? onUploadCover;
+  final VoidCallback? onRemoveCover;
+  final bool hasCover;
   final bool isMutating;
   const _LogoPicker({
     required this.value,
     required this.onChanged,
     this.onUploadPhoto,
+    this.onUploadCover,
+    this.onRemoveCover,
+    this.hasCover = false,
     this.isMutating = false,
   });
 
@@ -1317,6 +1295,35 @@ class _LogoPicker extends StatelessWidget {
               '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0432\u043e\u0451 \u0444\u043e\u0442\u043e',
             ),
           ),
+          if (onUploadCover != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isMutating ? null : onUploadCover,
+                    icon: const Icon(
+                      CupertinoIcons.photo_on_rectangle,
+                      size: 18,
+                    ),
+                    label: Text(
+                      hasCover ? '\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443' : '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443',
+                    ),
+                  ),
+                ),
+                if (hasCover) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: '\u0423\u0431\u0440\u0430\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443',
+                    onPressed: (isMutating || onRemoveCover == null)
+                        ? null
+                        : onRemoveCover,
+                    icon: const Icon(CupertinoIcons.trash, size: 18),
+                  ),
+                ],
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
