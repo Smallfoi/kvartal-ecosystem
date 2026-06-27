@@ -195,11 +195,8 @@ class _WeatherBody extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Icon(
-                            weatherIcon(w.weatherCode, isNight: isNightNow()),
-                            size: 40,
-                            color: Colors.white,
-                          ),
+                          // Иконку убрали: основной визуал — живой анимированный фон
+                          // (солнце/луна по времени и фазе, облака, дождь, снег, гроза).
                         ],
                       ),
                       Text(
