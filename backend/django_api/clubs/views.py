@@ -70,6 +70,7 @@ def _summary(club: Club) -> dict:
         "description": club.description, "ownerId": club.owner_id,
         "joinPolicy": club.join_policy, "memberCount": len(members),
         "style": club.style or "minimal",
+        "cover": club.cover,
         # Активность клуба — суммарный пробег (км), а не баллы (баллы тратятся/динамичны).
         "totalKm": round(sum(_km(m.user_id) for m in members), 1),
     }
@@ -302,4 +303,38 @@ def club_logo(request, club_id):
     )
     club.logo = f"/media/{saved}"
     club.save(update_fields=["logo"])
+    return Response(_detail(club, uid))
+
+
+@api_view(["POST", "DELETE"])
+def club_cover(request, club_id):
+    """Обложка-баннер клуба (POST multipart, поле `image`; DELETE — снять).
+    Только владелец. Файл в media, в `club.cover` — URL (фон шапки)."""
+    uid = _uid(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    club = Club.objects.filter(id=club_id).first()
+    if not club:
+        return Response({"detail": "Клуб не найден"}, status=404)
+    if club.owner_id != uid:
+        return Response({"detail": "Только владелец клуба"}, status=403)
+    if request.method == "DELETE":
+        club.cover = None
+        club.save(update_fields=["cover"])
+        return Response(_detail(club, uid))
+    f = request.FILES.get("image")
+    if not f:
+        return Response({"detail": "Нет файла"}, status=400)
+    if f.size > 5 * 1024 * 1024:
+        return Response({"detail": "Файл слишком большой (макс 5 МБ)"}, status=400)
+    if not (f.content_type or "").startswith("image/"):
+        return Response({"detail": "Нужен файл-изображение"}, status=400)
+    from django.core.files.storage import default_storage
+
+    ext = (f.name.rsplit(".", 1)[-1] if "." in f.name else "jpg").lower()[:5]
+    saved = default_storage.save(
+        f"uploads/clubs/cover_{club_id}_{secrets.token_hex(4)}.{ext}", f
+    )
+    club.cover = f"/media/{saved}"
+    club.save(update_fields=["cover"])
     return Response(_detail(club, uid))

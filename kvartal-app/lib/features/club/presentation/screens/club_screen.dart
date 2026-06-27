@@ -165,6 +165,8 @@ class _ClubSliverHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasClub = club != null;
     final s = ClubStyle.byKey(club?.style);
+    final cover = club?.cover;
+    final hasCover = cover != null && cover.isNotEmpty;
     // Логотип в «рамке» пресета (кольцо цвета s.frame).
     Widget ringed(Widget logo) => Container(
       padding: const EdgeInsets.all(2.5),
@@ -183,17 +185,36 @@ class _ClubSliverHeader extends ConsumerWidget {
       title: Text('Клуб', style: Theme.of(context).textTheme.titleLarge),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: s.headerGradient,
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: const [0.0, 0.55, 1.0],
-            ),
-          ),
+          color: AppColors.bgDark,
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              if (hasClub)
+              // Обложка-баннер (если загружена владельцем) — фон шапки.
+              if (hasCover)
+                Image.network(
+                  resolveClubMediaUrl(cover),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              // С обложкой — тёмная вуаль для читаемости; без — градиент пресета.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: hasCover
+                        ? [
+                            Colors.black.withValues(alpha: 0.15),
+                            Colors.black.withValues(alpha: 0.45),
+                            AppColors.bgDark,
+                          ]
+                        : s.headerGradient,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.0, 0.6, 1.0],
+                  ),
+                ),
+              ),
+              // Анимированная тема — только без обложки (иначе фото — главный фон).
+              if (hasClub && !hasCover)
                 Positioned.fill(child: ClubHeaderBackground(style: s)),
               SafeArea(
             child: Padding(
@@ -1031,6 +1052,17 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
     if (mounted && updated != null) setState(() => _logo = updated.logo);
   }
 
+  /// Выбрать широкое фото из галереи и загрузить как обложку-баннер шапки.
+  Future<void> _pickAndUploadCover() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    await ref.read(clubProvider.notifier).uploadCover(picked.path);
+  }
+
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -1122,6 +1154,10 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
               // при создании — только пресет, фото добавится после создания.
               onUploadPhoto: _isEdit ? _pickAndUploadLogo : null,
               isMutating: state.isMutating,
+              // Обложка-баннер — кнопка сразу под «Загрузить своё фото».
+              onUploadCover: _isEdit ? _pickAndUploadCover : null,
+              onRemoveCover: () => ref.read(clubProvider.notifier).removeCover(),
+              hasCover: (state.myClub?.cover ?? '').isNotEmpty,
             ),
             const SizedBox(height: 14),
             _StylePicker(
@@ -1179,11 +1215,18 @@ class _LogoPicker extends StatelessWidget {
   final ValueChanged<String> onChanged;
   // Загрузка фото-логотипа. null → кнопка неактивна (например, при создании клуба).
   final VoidCallback? onUploadPhoto;
+  // Обложка-баннер шапки. Кнопка идёт сразу под «Загрузить своё фото».
+  final VoidCallback? onUploadCover;
+  final VoidCallback? onRemoveCover;
+  final bool hasCover;
   final bool isMutating;
   const _LogoPicker({
     required this.value,
     required this.onChanged,
     this.onUploadPhoto,
+    this.onUploadCover,
+    this.onRemoveCover,
+    this.hasCover = false,
     this.isMutating = false,
   });
 
@@ -1252,6 +1295,35 @@ class _LogoPicker extends StatelessWidget {
               '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0432\u043e\u0451 \u0444\u043e\u0442\u043e',
             ),
           ),
+          if (onUploadCover != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isMutating ? null : onUploadCover,
+                    icon: const Icon(
+                      CupertinoIcons.photo_on_rectangle,
+                      size: 18,
+                    ),
+                    label: Text(
+                      hasCover ? '\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443' : '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443',
+                    ),
+                  ),
+                ),
+                if (hasCover) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: '\u0423\u0431\u0440\u0430\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443',
+                    onPressed: (isMutating || onRemoveCover == null)
+                        ? null
+                        : onRemoveCover,
+                    icon: const Icon(CupertinoIcons.trash, size: 18),
+                  ),
+                ],
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,

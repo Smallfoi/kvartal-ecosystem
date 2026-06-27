@@ -57,6 +57,9 @@ class Club {
   /// Пресет оформления клуба (minimal/north/fire/neon/festive).
   final String style;
 
+  /// Обложка-баннер шапки (URL загруженного фото) или null.
+  final String? cover;
+
   /// Активность клуба — суммарный пробег (км), а не баллы.
   final double totalKm;
   final List<ClubMember> members;
@@ -69,6 +72,7 @@ class Club {
     required this.memberCount,
     required this.totalKm,
     this.style = 'minimal',
+    this.cover,
     this.city,
     this.description,
     this.myRole,
@@ -87,6 +91,7 @@ class Club {
     style: json['style']?.toString().trim().isNotEmpty == true
         ? json['style'].toString()
         : 'minimal',
+    cover: _text(json['cover']?.toString()),
     city: _text(json['city']?.toString()),
     description: _text(json['description']?.toString()),
     myRole: _text(json['myRole']?.toString()),
@@ -280,6 +285,38 @@ class ClubNotifier extends StateNotifier<ClubState> {
         options: _authOptions(),
       );
       state = state.copyWith(message: 'Фото клуба обновлено');
+      await refresh();
+    });
+  }
+
+  /// Загрузка обложки-баннера шапки (multipart, поле image). Только владелец.
+  Future<void> uploadCover(String filePath) async {
+    final club = state.myClub;
+    if (club == null) return;
+    await _mutate(() async {
+      final form = FormData.fromMap({
+        'image': await MultipartFile.fromFile(filePath),
+      });
+      await _dio.post<Map<String, dynamic>>(
+        '/clubs/${club.id}/cover',
+        data: form,
+        options: _authOptions(),
+      );
+      state = state.copyWith(message: 'Обложка обновлена');
+      await refresh();
+    });
+  }
+
+  /// Снять обложку-баннер (вернуться к стилю-градиенту). Только владелец.
+  Future<void> removeCover() async {
+    final club = state.myClub;
+    if (club == null) return;
+    await _mutate(() async {
+      await _dio.delete<Map<String, dynamic>>(
+        '/clubs/${club.id}/cover',
+        options: _authOptions(),
+      );
+      state = state.copyWith(message: 'Обложка убрана');
       await refresh();
     });
   }
