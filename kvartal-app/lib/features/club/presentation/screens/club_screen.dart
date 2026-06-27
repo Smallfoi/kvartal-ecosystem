@@ -1333,6 +1333,9 @@ class _StylePicker extends StatelessWidget {
               final selected = st.key == value;
               return GestureDetector(
                 onTap: () => onChanged(st.key),
+                // Вся плашка кликабельна, а не только текст (иначе тап по «пустой»
+                // части чипа не выбирает пресет).
+                behavior: HitTestBehavior.opaque,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
                   padding:
