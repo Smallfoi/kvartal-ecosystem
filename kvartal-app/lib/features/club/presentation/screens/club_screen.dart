@@ -144,6 +144,18 @@ class _FitText extends StatelessWidget {
 String _kmLabel(double km) =>
     '${km >= 100 ? km.round() : km.toStringAsFixed(1)} км';
 
+/// Выбрать фото из галереи и загрузить как логотип клуба (только владелец).
+/// Доступно по тапу на аватарку клуба в шапке и кнопкой в форме редактирования.
+Future<void> _pickAndUploadClubLogo(WidgetRef ref) async {
+  final picked = await ImagePicker().pickImage(
+    source: ImageSource.gallery,
+    maxWidth: 800,
+    imageQuality: 85,
+  );
+  if (picked == null) return;
+  await ref.read(clubProvider.notifier).uploadLogo(picked.path);
+}
+
 class _ClubSliverHeader extends ConsumerWidget {
   final Club? club;
   const _ClubSliverHeader({required this.club});
@@ -177,7 +189,37 @@ class _ClubSliverHeader extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      _ClubLogo(logo: club?.logo ?? 'K', size: 58),
+                      // Владелец: тап по аватарке — выбрать и загрузить фото-логотип.
+                      (hasClub && club!.isOwner)
+                          ? GestureDetector(
+                              onTap: () => _pickAndUploadClubLogo(ref),
+                              behavior: HitTestBehavior.opaque,
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  _ClubLogo(logo: club!.logo, size: 58),
+                                  Positioned(
+                                    right: -2,
+                                    bottom: -2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.electricBlue,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: AppColors.bgDark, width: 2),
+                                      ),
+                                      child: const Icon(
+                                        CupertinoIcons.camera_fill,
+                                        size: 11,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : _ClubLogo(logo: club?.logo ?? 'K', size: 58),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
