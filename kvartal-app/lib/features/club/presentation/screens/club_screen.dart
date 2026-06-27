@@ -157,6 +157,49 @@ Future<void> _pickAndUploadClubLogo(WidgetRef ref) async {
   await ref.read(clubProvider.notifier).uploadLogo(picked.path);
 }
 
+/// Иконка «фон клуба» в шапке: тап → меню (загрузить/сменить/убрать фон).
+/// Только владелец. Файл грузится сразу (как лого).
+Future<void> _editClubCover(
+  BuildContext context,
+  WidgetRef ref,
+  bool hasCover,
+) async {
+  final action = await showCupertinoModalPopup<String>(
+    context: context,
+    builder: (ctx) => CupertinoActionSheet(
+      title: const Text('Фон клуба'),
+      actions: [
+        CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx, 'upload'),
+          child: Text(hasCover ? 'Сменить фон' : 'Загрузить фон'),
+        ),
+        if (hasCover)
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(ctx, 'remove'),
+            child: const Text('Убрать фон'),
+          ),
+      ],
+      cancelButton: CupertinoActionSheetAction(
+        onPressed: () => Navigator.pop(ctx),
+        child: const Text('Отмена'),
+      ),
+    ),
+  );
+  if (action == 'upload') {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      await ref.read(clubProvider.notifier).uploadCover(picked.path);
+    }
+  } else if (action == 'remove') {
+    await ref.read(clubProvider.notifier).removeCover();
+  }
+}
+
 class _ClubSliverHeader extends ConsumerWidget {
   final Club? club;
   const _ClubSliverHeader({required this.club});
@@ -326,6 +369,30 @@ class _ClubSliverHeader extends ConsumerWidget {
               ),
             ),
           ),
+              // Иконка «фон клуба» — владелец меняет обложку прямо на экране.
+              if (hasClub && club!.isOwner)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: SafeArea(
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.28),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => _editClubCover(context, ref, hasCover),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(
+                            CupertinoIcons.photo_on_rectangle,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -1036,33 +1103,6 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
     super.dispose();
   }
 
-  /// Выбрать фото из галереи и загрузить как логотип клуба (только в режиме
-  /// редактирования — нужен уже созданный клуб).
-  Future<void> _pickAndUploadLogo() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 800,
-      imageQuality: 85,
-    );
-    if (picked == null || !mounted) return;
-    await ref.read(clubProvider.notifier).uploadLogo(picked.path);
-    // Фото уже сохранено на бэке; синхронизируем локальное поле, чтобы «Сохранить»
-    // не перезаписало фото буквой.
-    final updated = ref.read(clubProvider).myClub;
-    if (mounted && updated != null) setState(() => _logo = updated.logo);
-  }
-
-  /// Выбрать широкое фото из галереи и загрузить как обложку-баннер шапки.
-  Future<void> _pickAndUploadCover() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1600,
-      imageQuality: 85,
-    );
-    if (picked == null || !mounted) return;
-    await ref.read(clubProvider.notifier).uploadCover(picked.path);
-  }
-
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -1147,17 +1187,11 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
               maxLines: 3,
             ),
             const SizedBox(height: 14),
+            // Логотип/фон фото грузятся на экране клуба (тап по аватарке и
+            // иконка фона) — здесь только выбор буквы/эмодзи (по «Сохранить»).
             _LogoPicker(
               value: _logo,
               onChanged: (value) => setState(() => _logo = value),
-              // Загрузка фото доступна у существующего клуба (нужен id на бэке);
-              // при создании — только пресет, фото добавится после создания.
-              onUploadPhoto: _isEdit ? _pickAndUploadLogo : null,
-              isMutating: state.isMutating,
-              // Обложка-баннер — кнопка сразу под «Загрузить своё фото».
-              onUploadCover: _isEdit ? _pickAndUploadCover : null,
-              onRemoveCover: () => ref.read(clubProvider.notifier).removeCover(),
-              hasCover: (state.myClub?.cover ?? '').isNotEmpty,
             ),
             const SizedBox(height: 14),
             _StylePicker(
@@ -1213,22 +1247,7 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
 class _LogoPicker extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
-  // Загрузка фото-логотипа. null → кнопка неактивна (например, при создании клуба).
-  final VoidCallback? onUploadPhoto;
-  // Обложка-баннер шапки. Кнопка идёт сразу под «Загрузить своё фото».
-  final VoidCallback? onUploadCover;
-  final VoidCallback? onRemoveCover;
-  final bool hasCover;
-  final bool isMutating;
-  const _LogoPicker({
-    required this.value,
-    required this.onChanged,
-    this.onUploadPhoto,
-    this.onUploadCover,
-    this.onRemoveCover,
-    this.hasCover = false,
-    this.isMutating = false,
-  });
+  const _LogoPicker({required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -1274,9 +1293,7 @@ class _LogoPicker extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      onUploadPhoto == null
-                          ? '\u0412\u044b\u0431\u0435\u0440\u0438 \u043f\u0440\u0435\u0441\u0435\u0442. \u0421\u0432\u043e\u0451 \u0444\u043e\u0442\u043e \u2014 \u043f\u043e\u0441\u043b\u0435 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f \u043a\u043b\u0443\u0431\u0430.'
-                          : '\u0412\u044b\u0431\u0435\u0440\u0438 \u043f\u0440\u0435\u0441\u0435\u0442 \u0438\u043b\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u0438 \u0441\u0432\u043e\u0451 \u0444\u043e\u0442\u043e.',
+                      '\u0412\u044b\u0431\u0435\u0440\u0438 \u0431\u0443\u043a\u0432\u0443 \u0438\u043b\u0438 \u044d\u043c\u043e\u0434\u0437\u0438 \u0434\u043b\u044f \u043a\u043b\u0443\u0431\u0430.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -1286,45 +1303,6 @@ class _LogoPicker extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed:
-                  (onUploadPhoto == null || isMutating) ? null : onUploadPhoto,
-              icon: const Icon(CupertinoIcons.photo_fill, size: 18),
-              label: const Text('\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0432\u043e\u0451 \u0444\u043e\u0442\u043e'),
-            ),
-          ),
-          if (onUploadCover != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isMutating ? null : onUploadCover,
-                    icon: const Icon(
-                      CupertinoIcons.photo_on_rectangle,
-                      size: 18,
-                    ),
-                    label: Text(
-                      hasCover ? '\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443' : '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443',
-                    ),
-                  ),
-                ),
-                if (hasCover) ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: '\u0423\u0431\u0440\u0430\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443',
-                    onPressed: (isMutating || onRemoveCover == null)
-                        ? null
-                        : onRemoveCover,
-                    icon: const Icon(CupertinoIcons.trash, size: 18),
-                  ),
-                ],
-              ],
-            ),
-          ],
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
