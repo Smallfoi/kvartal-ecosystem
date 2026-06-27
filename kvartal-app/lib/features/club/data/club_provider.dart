@@ -54,6 +54,9 @@ class Club {
   final String? city, description, myRole;
   final int memberCount;
 
+  /// Пресет оформления клуба (minimal/north/fire/neon/festive).
+  final String style;
+
   /// Активность клуба — суммарный пробег (км), а не баллы.
   final double totalKm;
   final List<ClubMember> members;
@@ -65,6 +68,7 @@ class Club {
     required this.joinPolicy,
     required this.memberCount,
     required this.totalKm,
+    this.style = 'minimal',
     this.city,
     this.description,
     this.myRole,
@@ -80,6 +84,9 @@ class Club {
     joinPolicy: json['joinPolicy']?.toString() ?? 'open',
     memberCount: (json['memberCount'] as num?)?.toInt() ?? 0,
     totalKm: (json['totalKm'] as num?)?.toDouble() ?? 0,
+    style: json['style']?.toString().trim().isNotEmpty == true
+        ? json['style'].toString()
+        : 'minimal',
     city: _text(json['city']?.toString()),
     description: _text(json['description']?.toString()),
     myRole: _text(json['myRole']?.toString()),
@@ -208,6 +215,7 @@ class ClubNotifier extends StateNotifier<ClubState> {
     required String description,
     required String logo,
     required String joinPolicy,
+    String style = 'minimal',
   }) async {
     await _mutate(() async {
       await _dio.post<Map<String, dynamic>>(
@@ -218,6 +226,7 @@ class ClubNotifier extends StateNotifier<ClubState> {
           'description': description,
           'logo': logo,
           'joinPolicy': joinPolicy,
+          'style': style,
         },
         options: _authOptions(),
       );
@@ -232,6 +241,7 @@ class ClubNotifier extends StateNotifier<ClubState> {
     required String description,
     required String logo,
     required String joinPolicy,
+    String? style,
   }) async {
     final club = state.myClub;
     if (club == null) return;
@@ -244,6 +254,7 @@ class ClubNotifier extends StateNotifier<ClubState> {
           'description': description,
           'logo': logo,
           'joinPolicy': joinPolicy,
+          if (style != null) 'style': style,
         },
         options: _authOptions(),
       );

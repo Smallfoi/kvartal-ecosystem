@@ -8,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/club_provider.dart';
+import '../widgets/club_style.dart';
 
 class ClubScreen extends ConsumerStatefulWidget {
   const ClubScreen({super.key});
@@ -163,6 +164,16 @@ class _ClubSliverHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasClub = club != null;
+    final s = ClubStyle.byKey(club?.style);
+    // Логотип в «рамке» пресета (кольцо цвета s.frame).
+    Widget ringed(Widget logo) => Container(
+      padding: const EdgeInsets.all(2.5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(58 * 0.28 + 2.5),
+        border: Border.all(color: s.frame.withValues(alpha: 0.85), width: 2),
+      ),
+      child: logo,
+    );
     return SliverAppBar(
       expandedHeight: 218,
       pinned: true,
@@ -172,15 +183,19 @@ class _ClubSliverHeader extends ConsumerWidget {
       title: Text('Клуб', style: Theme.of(context).textTheme.titleLarge),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF0D1F3C), Color(0xFF0A1628), AppColors.bgDark],
+              colors: s.headerGradient,
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              stops: [0.0, 0.55, 1.0],
+              stops: const [0.0, 0.55, 1.0],
             ),
           ),
-          child: SafeArea(
+          child: Stack(
+            children: [
+              if (hasClub)
+                Positioned.fill(child: ClubHeaderBackground(style: s)),
+              SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Column(
@@ -197,14 +212,14 @@ class _ClubSliverHeader extends ConsumerWidget {
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  _ClubLogo(logo: club!.logo, size: 58),
+                                  ringed(_ClubLogo(logo: club!.logo, size: 58)),
                                   Positioned(
                                     right: -2,
                                     bottom: -2,
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        color: AppColors.electricBlue,
+                                        color: s.accent,
                                         shape: BoxShape.circle,
                                         border: Border.all(
                                             color: AppColors.bgDark, width: 2),
@@ -219,7 +234,7 @@ class _ClubSliverHeader extends ConsumerWidget {
                                 ],
                               ),
                             )
-                          : _ClubLogo(logo: club?.logo ?? 'K', size: 58),
+                          : ringed(_ClubLogo(logo: club?.logo ?? 'K', size: 58)),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -260,7 +275,7 @@ class _ClubSliverHeader extends ConsumerWidget {
                         value: hasClub
                             ? _kmLabel(club!.totalKm)
                             : '0 \u043a\u043c',
-                        color: AppColors.warning,
+                        color: s.accent,
                       ),
                       const SizedBox(width: 8),
                       _ClubMetricCard(
@@ -289,6 +304,8 @@ class _ClubSliverHeader extends ConsumerWidget {
                 ],
               ),
             ),
+          ),
+            ],
           ),
         ),
       ),
@@ -971,6 +988,7 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
   late final TextEditingController _descriptionCtrl;
   String _logo = 'K';
   String _joinPolicy = 'open';
+  String _style = 'minimal';
   String? _error;
 
   @override
@@ -984,6 +1002,7 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
     _descriptionCtrl = TextEditingController(text: club?.description ?? '');
     _logo = club?.logo ?? 'K';
     _joinPolicy = club?.joinPolicy ?? 'open';
+    _style = club?.style ?? 'minimal';
   }
 
   bool get _isEdit => widget.existing != null;
@@ -1026,6 +1045,7 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
         description: _descriptionCtrl.text.trim(),
         logo: _logo,
         joinPolicy: _joinPolicy,
+        style: _style,
       );
     } else {
       await notifier.createClub(
@@ -1034,6 +1054,7 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
         description: _descriptionCtrl.text.trim(),
         logo: _logo,
         joinPolicy: _joinPolicy,
+        style: _style,
       );
     }
     if (!mounted) return;
@@ -1101,6 +1122,11 @@ class _ClubFormSheetState extends ConsumerState<_ClubFormSheet> {
               // при создании — только пресет, фото добавится после создания.
               onUploadPhoto: _isEdit ? _pickAndUploadLogo : null,
               isMutating: state.isMutating,
+            ),
+            const SizedBox(height: 14),
+            _StylePicker(
+              value: _style,
+              onChanged: (value) => setState(() => _style = value),
             ),
             const SizedBox(height: 14),
             CupertinoSlidingSegmentedControl<String>(
@@ -1256,6 +1282,98 @@ class _LogoPicker extends StatelessWidget {
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                     ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Пикер пресета оформления клуба: чипы с мини-превью (градиент + акцент-точка).
+class _StylePicker extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+  const _StylePicker({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.separator),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Стиль клуба',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Цвет, фон шапки и рамка логотипа — одним тапом.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ClubStyle.all.map((st) {
+              final selected = st.key == value;
+              return GestureDetector(
+                onTap: () => onChanged(st.key),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [st.headerGradient[0], st.headerGradient[1]],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected ? st.accent : AppColors.separator,
+                      width: selected ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: st.accent,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        st.label,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight:
+                              selected ? FontWeight.w800 : FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );

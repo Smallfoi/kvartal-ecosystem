@@ -14,6 +14,10 @@ class Club(models.Model):
     join_policy = models.CharField(
         max_length=20, default="open", choices=JOIN_CHOICES, verbose_name="Приём в клуб"
     )
+    # Пресет оформления клуба (акцент-цвет + анимированный фон шапки + рамка лого).
+    style = models.CharField(
+        max_length=20, default="minimal", verbose_name="Стиль оформления"
+    )
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Создан")
     # Модерация (S-10): скрытый клуб не виден в списке и в него нельзя вступить.
     is_hidden = models.BooleanField(default=False, db_index=True, verbose_name="Скрыт (модерация)")

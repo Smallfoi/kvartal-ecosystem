@@ -11,6 +11,14 @@ from notifications.models import create_notification
 
 from .models import Club, ClubJoinRequest, ClubMember
 
+# Допустимые пресеты оформления клуба (см. клиентский club_style.dart).
+CLUB_STYLES = {"minimal", "north", "fire", "neon", "festive"}
+
+
+def _style(value) -> str:
+    v = (value or "").strip()
+    return v if v in CLUB_STYLES else "minimal"
+
 
 def _uid(request):
     return user_id_from_request(request)
@@ -61,6 +69,7 @@ def _summary(club: Club) -> dict:
         "id": club.id, "name": club.name, "logo": club.logo, "city": club.city,
         "description": club.description, "ownerId": club.owner_id,
         "joinPolicy": club.join_policy, "memberCount": len(members),
+        "style": club.style or "minimal",
         # Активность клуба — суммарный пробег (км), а не баллы (баллы тратятся/динамичны).
         "totalKm": round(sum(_km(m.user_id) for m in members), 1),
     }
@@ -104,6 +113,7 @@ def clubs_root(request):
         description=((d.get("description") or "").strip() or None),
         owner_id=uid,
         join_policy=policy,
+        style=_style(d.get("style")),
     )
     ClubMember.objects.create(club_id=club.id, user_id=uid, role="owner")
     return Response(_detail(club, uid))
@@ -145,6 +155,8 @@ def club_detail_or_update(request, club_id):
         club.description = (d.get("description") or "").strip() or None
     if d.get("joinPolicy") in ("open", "request"):
         club.join_policy = d["joinPolicy"]
+    if d.get("style") is not None:
+        club.style = _style(d.get("style"))
     club.save()
     return Response(_detail(club, uid))
 
