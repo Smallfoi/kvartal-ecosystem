@@ -107,6 +107,10 @@ class Club {
   /// Активный клубный челлендж (цель по км на период) или null.
   final ClubChallenge? challenge;
 
+  /// Удерживаемая клубом площадь территорий (м²) и число зон.
+  final double territoryAreaM2;
+  final int territoryPieces;
+
   /// Активность клуба — суммарный пробег (км), а не баллы.
   final double totalKm;
   final List<ClubMember> members;
@@ -121,6 +125,8 @@ class Club {
     this.style = 'minimal',
     this.cover,
     this.challenge,
+    this.territoryAreaM2 = 0,
+    this.territoryPieces = 0,
     this.city,
     this.description,
     this.myRole,
@@ -143,6 +149,12 @@ class Club {
     challenge: json['challenge'] is Map<String, dynamic>
         ? ClubChallenge.fromJson(json['challenge'] as Map<String, dynamic>)
         : null,
+    territoryAreaM2: json['territory'] is Map
+        ? ((json['territory']['areaM2'] as num?)?.toDouble() ?? 0)
+        : 0,
+    territoryPieces: json['territory'] is Map
+        ? ((json['territory']['pieces'] as num?)?.toInt() ?? 0)
+        : 0,
     city: _text(json['city']?.toString()),
     description: _text(json['description']?.toString()),
     myRole: _text(json['myRole']?.toString()),
