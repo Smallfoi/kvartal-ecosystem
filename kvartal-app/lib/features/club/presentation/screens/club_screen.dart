@@ -1287,12 +1287,13 @@ class _LogoPicker extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed:
-                (onUploadPhoto == null || isMutating) ? null : onUploadPhoto,
-            icon: const Icon(CupertinoIcons.photo_fill, size: 18),
-            label: const Text(
-              '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0432\u043e\u0451 \u0444\u043e\u0442\u043e',
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed:
+                  (onUploadPhoto == null || isMutating) ? null : onUploadPhoto,
+              icon: const Icon(CupertinoIcons.photo_fill, size: 18),
+              label: const Text('\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0432\u043e\u0451 \u0444\u043e\u0442\u043e'),
             ),
           ),
           if (onUploadCover != null) ...[
