@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Тип анимации фона по WMO-коду (тот же код, что в WeatherData.weatherCode).
-enum _Kind { sun, cloud, fog, rain, snow, storm }
+enum _Kind { sun, partlyCloudy, cloud, fog, rain, snow, storm }
 
 /// Вечер/ночь по МЕСТНОМУ времени устройства (19:00–6:00). Единый источник правды
 /// для дня/ночи: фон погоды (луна/звёзды) и иконки (солнце↔луна).
@@ -13,6 +13,7 @@ bool isNightNow() {
 
 _Kind _kindOf(int code) {
   if (code == 0 || code == 1) return _Kind.sun;
+  if (code == 2) return _Kind.partlyCloudy; // переменная облачность — солнце за облаками
   if (code == 45 || code == 48) return _Kind.fog;
   if (code >= 71 && code <= 77) return _Kind.snow;
   if (code == 85 || code == 86) return _Kind.snow;
@@ -81,7 +82,17 @@ class _WeatherPainter extends CustomPainter {
         } else {
           _paintSun(canvas, size);
         }
-        _paintClouds(canvas, size, count: 1, opacity: isNight ? 0.4 : 0.6);
+        _paintClouds(canvas, size, count: 1, opacity: isNight ? 0.4 : 0.45);
+        break;
+      case _Kind.partlyCloudy:
+        // Переменная облачность: солнце СВЕТИТ, облака дрейфуют поверх него (днём).
+        if (isNight) {
+          _paintStars(canvas, size);
+          _paintMoon(canvas, size);
+        } else {
+          _paintSun(canvas, size);
+        }
+        _paintClouds(canvas, size, count: 2, opacity: isNight ? 0.7 : 0.8);
         break;
       case _Kind.cloud:
         if (isNight) {
@@ -114,6 +125,7 @@ class _WeatherPainter extends CustomPainter {
     final colors = isNight
         ? switch (kind) {
             _Kind.sun => [const Color(0xFF0B1A33), const Color(0xFF1E3A5F)],
+            _Kind.partlyCloudy => [const Color(0xFF0F2138), const Color(0xFF243F60)],
             _Kind.cloud => [const Color(0xFF161E2B), const Color(0xFF313C4D)],
             _Kind.fog => [const Color(0xFF1E242D), const Color(0xFF3C434E)],
             _Kind.rain => [const Color(0xFF111922), const Color(0xFF2A3340)],
@@ -121,7 +133,9 @@ class _WeatherPainter extends CustomPainter {
             _Kind.storm => [const Color(0xFF0A0D13), const Color(0xFF1F2632)],
           }
         : switch (kind) {
-            _Kind.sun => [const Color(0xFF2E6DB4), const Color(0xFF6FB1E8)],
+            // День: ясно и переменная облачность — яркое голубое небо (не серое!).
+            _Kind.sun => [const Color(0xFF2C82D6), const Color(0xFF8FD2F6)],
+            _Kind.partlyCloudy => [const Color(0xFF3B89CC), const Color(0xFF9AD4F2)],
             _Kind.cloud => [const Color(0xFF3A4452), const Color(0xFF6E7B8C)],
             _Kind.fog => [const Color(0xFF4A535F), const Color(0xFF818B97)],
             _Kind.rain => [const Color(0xFF2C3744), const Color(0xFF55657A)],
@@ -140,25 +154,57 @@ class _WeatherPainter extends CustomPainter {
     );
   }
 
-  // ── солнце с медленно вращающимися лучами ───────────────────────────────
+  // ── солнце: крупное, яркое, с плавной анимацией ─────────────────────────
+  // «Дыхание» (пульсация сияния и лучей) + медленное вращение лучей.
   void _paintSun(Canvas canvas, Size size) {
-    final c = Offset(size.width * 0.80, size.height * 0.40);
-    final glow = Paint()
-      ..shader = RadialGradient(
-        colors: [const Color(0xFFFFF3C4), const Color(0x00FFF3C4)],
-      ).createShader(Rect.fromCircle(center: c, radius: 70));
-    canvas.drawCircle(c, 70, glow);
+    final c = Offset(size.width * 0.78, size.height * 0.40);
+    final pulse = 0.5 + 0.5 * math.sin(t * 2 * math.pi); // 0..1, плавно
+
+    // Тёплое сияние вокруг (пульсирует по размеру и яркости).
+    final glowR = 92 + pulse * 12;
+    canvas.drawCircle(
+      c,
+      glowR,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Color(0xFFFFC93C).withValues(alpha: 0.55 + 0.20 * pulse),
+            const Color(0x00FFC93C),
+          ],
+        ).createShader(Rect.fromCircle(center: c, radius: glowR)),
+    );
+
+    // Лучи: вращаются и слегка удлиняются на пике пульса.
     final ray = Paint()
-      ..color = const Color(0xFFFFE08A).withValues(alpha: 0.7)
-      ..strokeWidth = 3
+      ..color = const Color(0xFFFFD23C).withValues(alpha: 0.9)
+      ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
     for (int i = 0; i < 12; i++) {
       final a = t * 2 * math.pi + i * math.pi / 6;
-      final p1 = c + Offset(math.cos(a), math.sin(a)) * 30;
-      final p2 = c + Offset(math.cos(a), math.sin(a)) * 42;
-      canvas.drawLine(p1, p2, ray);
+      final dir = Offset(math.cos(a), math.sin(a));
+      canvas.drawLine(c + dir * 36, c + dir * (52 + pulse * 9), ray);
     }
-    canvas.drawCircle(c, 22, Paint()..color = const Color(0xFFFFD75E));
+
+    // Тело солнца — насыщенный градиент: бело-жёлтый центр → янтарь → оранж.
+    const r = 30.0;
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..shader = const RadialGradient(
+          colors: [Color(0xFFFFF7D6), Color(0xFFFFC107), Color(0xFFFF8F00)],
+          stops: [0.0, 0.62, 1.0],
+        ).createShader(Rect.fromCircle(center: c, radius: r)),
+    );
+    // Тонкий тёплый ободок для сочности.
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = const Color(0xFFFFE082).withValues(alpha: 0.6),
+    );
   }
 
   // ── луна (ночью вместо солнца) с мягким сиянием и кратерами ──────────────
