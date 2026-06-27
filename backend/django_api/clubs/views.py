@@ -86,6 +86,22 @@ def _challenge_json(club_id):
     }
 
 
+def _club_territory(club_id):
+    """Удерживаемая клубом площадь (м²) + число зон (PostGIS, активные < HOLD)."""
+    from django.db import connection
+    from territories.views import HOLD_HOURS
+
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT COALESCE(SUM(ST_Area(geom::geography)), 0), COUNT(*) "
+            "FROM territories WHERE club_id = %s "
+            "AND captured_at > now() - make_interval(hours => %s)",
+            [club_id, HOLD_HOURS],
+        )
+        area, pieces = cur.fetchone()
+    return {"areaM2": round(area or 0), "pieces": int(pieces or 0)}
+
+
 def _current_club_id(uid):
     m = ClubMember.objects.filter(user_id=uid).first()
     return m.club_id if m else None
@@ -124,6 +140,7 @@ def _detail(club: Club, uid) -> dict:
     base = _summary(club)
     base["members"] = _members_json(club.id)
     base["challenge"] = _challenge_json(club.id)
+    base["territory"] = _club_territory(club.id)
     m = ClubMember.objects.filter(club_id=club.id, user_id=uid).first()
     base["myRole"] = m.role if m else None
     return base

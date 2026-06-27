@@ -531,12 +531,7 @@ class _MyClubBody extends ConsumerWidget {
         const SizedBox(height: 24),
         _SectionHeader(title: 'Захваченные районы'),
         const SizedBox(height: 10),
-        const _FutureModuleCard(
-          icon: CupertinoIcons.map_fill,
-          title: 'Территории клуба — на карте',
-          subtitle:
-              'Захваты участников считаются на сервере (PostGIS) и видны на карте. Рейтинг клубов по площади — во вкладке Рейтинг → «Районы».',
-        ),
+        _ClubTerritoryCard(club: club),
         const SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
@@ -922,6 +917,105 @@ class _ChallengeFormSheetState extends ConsumerState<_ChallengeFormSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Живая карта «Захваченные районы»: удерживаемая клубом площадь + число зон.
+class _ClubTerritoryCard extends StatelessWidget {
+  final Club club;
+  const _ClubTerritoryCard({required this.club});
+
+  String _area(double m2) {
+    if (m2 >= 1000000) return '${(m2 / 1000000).toStringAsFixed(2)} км²';
+    if (m2 >= 1000) return '${(m2 / 1000).toStringAsFixed(1)} тыс. м²';
+    return '${m2.round()} м²';
+  }
+
+  Widget _stat(BuildContext c, String value, String label, Color accent) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: accent,
+              fontWeight: FontWeight.w800,
+              fontSize: 20,
+            ),
+          ),
+          Text(
+            label,
+            style: Theme.of(
+              c,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ClubStyle.byKey(club.style);
+    final has = club.territoryPieces > 0;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.separator),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(CupertinoIcons.map_fill, color: s.accent, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Территории клуба',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (has) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: _stat(
+                    context,
+                    _area(club.territoryAreaM2),
+                    'площадь',
+                    s.accent,
+                  ),
+                ),
+                Container(width: 1, height: 36, color: AppColors.separator),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _stat(context, '${club.territoryPieces}', 'зон', s.accent),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Удержано участниками сейчас. Рейтинг клубов по площади — Рейтинг → «Районы».',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
+          ] else
+            Text(
+              'Пока 0 м². Бегите и замыкайте петли — площадь пойдёт в зачёт клуба. Рейтинг по площади: Рейтинг → «Районы».',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
+        ],
       ),
     );
   }
