@@ -26,6 +26,7 @@ urlpatterns = [
     path("v1/", include("core.urls")),
     path("v1/auth/", include("accounts.urls")),
     path("v1/profile", account_views.update_profile),
+    path("v1/profile/avatar", account_views.profile_avatar),
     # Аккаунт: приватность (§2) и удаление аккаунта/данных (§13 LAUNCH_READINESS).
     path("v1/account/privacy", account_views.account_privacy),
     path("v1/account/delete", account_views.delete_account),

@@ -53,6 +53,37 @@ class AuthFlowTests(ApiTestCase):
         r = self.client.get("/v1/auth/me")
         self.assertEqual(r.status_code, 401)
 
+    def test_avatar_upload_sets_path_and_me_returns_it(self):
+        from io import BytesIO
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        buf = BytesIO()
+        Image.new("RGB", (64, 64), (80, 40, 200)).save(buf, "PNG")
+        img = SimpleUploadedFile("av.png", buf.getvalue(), content_type="image/png")
+        r = self.client.post(
+            "/v1/profile/avatar",
+            {"image": img},
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r.status_code, 200)
+        path = r.json()["avatarPath"]
+        self.assertTrue(path and path.startswith("/media/"))
+        # /auth/me отдаёт тот же аватар (единый для экосистемы)
+        self.assertEqual(self.api_get("/v1/auth/me").json()["avatarPath"], path)
+        # DELETE снимает аватар
+        d = self.client.delete(
+            "/v1/profile/avatar", HTTP_AUTHORIZATION=f"Bearer {self.token}"
+        )
+        self.assertIsNone(d.json()["avatarPath"])
+
+    def test_avatar_requires_image_file(self):
+        r = self.client.post(
+            "/v1/profile/avatar", {}, HTTP_AUTHORIZATION=f"Bearer {self.token}"
+        )
+        self.assertEqual(r.status_code, 400)
+
     def test_update_profile_changes_name(self):
         r = self.api_patch("/v1/profile", {"name": "Новое Имя"})
         self.assertEqual(r.status_code, 200)

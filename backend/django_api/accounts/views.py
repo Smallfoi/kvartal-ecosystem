@@ -136,6 +136,41 @@ def update_profile(request):
     return Response(acc.to_json())
 
 
+@api_view(["POST", "DELETE"])
+def profile_avatar(request):
+    """Аватар профиля — единый для всей экосистемы. POST multipart `image` →
+    media, в avatar_path кладём URL; все приложения берут аватар с сервера.
+    DELETE — снять аватар (вернуться к инициалам)."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    acc = Account.objects.filter(id=uid).first()
+    if not acc:
+        return Response({"detail": "Пользователь не найден"}, status=404)
+    if request.method == "DELETE":
+        acc.avatar_path = None
+        acc.save(update_fields=["avatar_path"])
+        return Response(acc.to_json())
+    f = request.FILES.get("image")
+    if not f:
+        return Response({"detail": "Нет файла"}, status=400)
+    if f.size > 5 * 1024 * 1024:
+        return Response({"detail": "Файл слишком большой (макс 5 МБ)"}, status=400)
+    if not (f.content_type or "").startswith("image/"):
+        return Response({"detail": "Нужен файл-изображение"}, status=400)
+    import secrets
+
+    from django.core.files.storage import default_storage
+
+    ext = (f.name.rsplit(".", 1)[-1] if "." in f.name else "jpg").lower()[:5]
+    saved = default_storage.save(
+        f"uploads/avatars/{uid}_{secrets.token_hex(4)}.{ext}", f
+    )
+    acc.avatar_path = f"/media/{saved}"
+    acc.save(update_fields=["avatar_path"])
+    return Response(acc.to_json())
+
+
 @api_view(["GET", "PATCH"])
 def account_privacy(request):
     """Настройки приватности (LAUNCH_READINESS §2). GET → текущие; PATCH → меняет
