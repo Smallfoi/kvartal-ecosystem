@@ -70,3 +70,24 @@ class ClubJoinRequest(models.Model):
         db_table = "club_join_requests"
         verbose_name = "Заявка в клуб"
         verbose_name_plural = "Заявки в клуб"
+
+
+class ClubChallenge(models.Model):
+    """Клубный челлендж: общая цель по км на период. Прогресс = сумма км
+    участников за [start_at, end_at] (по начислениям runnerRun)."""
+
+    id = models.CharField(primary_key=True, max_length=40, verbose_name="ID")
+    club_id = models.CharField(max_length=40, db_index=True, verbose_name="Клуб (ID)")
+    title = models.CharField(max_length=200, verbose_name="Название")
+    target_km = models.FloatField(verbose_name="Цель (км)")
+    start_at = models.DateTimeField(default=timezone.now, verbose_name="Старт")
+    end_at = models.DateTimeField(verbose_name="Финиш")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Создан")
+
+    class Meta:
+        db_table = "club_challenges"
+        verbose_name = "Челлендж клуба"
+        verbose_name_plural = "Челленджи клубов"
+
+    def __str__(self) -> str:
+        return self.title

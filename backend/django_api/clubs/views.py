@@ -1,5 +1,7 @@
 import secrets
+from datetime import timedelta
 
+from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -9,7 +11,7 @@ from loyalty.models import LoyaltyTransaction
 
 from notifications.models import create_notification
 
-from .models import Club, ClubJoinRequest, ClubMember
+from .models import Club, ClubChallenge, ClubJoinRequest, ClubMember
 
 # Допустимые пресеты оформления клуба (см. клиентский club_style.dart).
 CLUB_STYLES = {"minimal", "north", "fire", "neon", "festive"}
@@ -40,6 +42,48 @@ def _km(uid) -> float:
         ).only("amount")
     )
     return round(pts / 10.0, 1)
+
+
+def _km_between(uid, start, end) -> float:
+    """Пробег (км) участника за период [start, end) — для прогресса челленджа."""
+    pts = sum(
+        t.amount
+        for t in LoyaltyTransaction.objects.filter(
+            user_id=uid, source="runnerRun", created_at__gte=start, created_at__lt=end
+        ).only("amount")
+    )
+    return round(pts / 10.0, 1)
+
+
+def _challenge_json(club_id):
+    """Активный челлендж клуба + прогресс и вклад участников, либо None."""
+    now = timezone.now()
+    ch = (
+        ClubChallenge.objects.filter(club_id=club_id, end_at__gte=now)
+        .order_by("-created_at")
+        .first()
+    )
+    if not ch:
+        return None
+    contribs, total = [], 0.0
+    for m in ClubMember.objects.filter(club_id=club_id):
+        km = _km_between(m.user_id, ch.start_at, ch.end_at)
+        total += km
+        if km > 0:
+            contribs.append({"userId": m.user_id, "name": _name_of(m.user_id), "km": km})
+    contribs.sort(key=lambda x: x["km"], reverse=True)
+    secs_left = (ch.end_at - now).total_seconds()
+    return {
+        "id": ch.id,
+        "title": ch.title,
+        "targetKm": round(ch.target_km, 1),
+        "currentKm": round(total, 1),
+        "startAt": ch.start_at.isoformat(),
+        "endAt": ch.end_at.isoformat(),
+        "daysLeft": max(0, int(secs_left // 86400)),
+        "hoursLeft": max(0, int(secs_left // 3600)),
+        "contributions": contribs[:5],
+    }
 
 
 def _current_club_id(uid):
@@ -79,6 +123,7 @@ def _summary(club: Club) -> dict:
 def _detail(club: Club, uid) -> dict:
     base = _summary(club)
     base["members"] = _members_json(club.id)
+    base["challenge"] = _challenge_json(club.id)
     m = ClubMember.objects.filter(club_id=club.id, user_id=uid).first()
     base["myRole"] = m.role if m else None
     return base
@@ -337,4 +382,48 @@ def club_cover(request, club_id):
     )
     club.cover = f"/media/{saved}"
     club.save(update_fields=["cover"])
+    return Response(_detail(club, uid))
+
+
+@api_view(["POST", "DELETE"])
+def club_challenge(request, club_id):
+    """Клубный челлендж (только владелец). POST — создать цель (title, targetKm,
+    days); DELETE — отменить активный. Один активный челлендж на клуб."""
+    uid = _uid(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    club = Club.objects.filter(id=club_id).first()
+    if not club:
+        return Response({"detail": "Клуб не найден"}, status=404)
+    if club.owner_id != uid:
+        return Response({"detail": "Только владелец клуба"}, status=403)
+    now = timezone.now()
+    if request.method == "DELETE":
+        ClubChallenge.objects.filter(club_id=club.id, end_at__gte=now).delete()
+        return Response(_detail(club, uid))
+    d = request.data
+    title = (d.get("title") or "").strip()
+    if not title:
+        return Response({"detail": "Название цели обязательно"}, status=400)
+    try:
+        target = float(d.get("targetKm") or 0)
+    except (TypeError, ValueError):
+        target = 0.0
+    if target <= 0:
+        return Response({"detail": "Цель в км должна быть больше 0"}, status=400)
+    try:
+        days = int(d.get("days") or 7)
+    except (TypeError, ValueError):
+        days = 7
+    days = max(1, min(365, days))
+    # Один активный челлендж: старые активные снимаем.
+    ClubChallenge.objects.filter(club_id=club.id, end_at__gte=now).delete()
+    ClubChallenge.objects.create(
+        id=f"chl_{secrets.token_hex(8)}",
+        club_id=club.id,
+        title=title[:200],
+        target_km=target,
+        start_at=now,
+        end_at=now + timedelta(days=days),
+    )
     return Response(_detail(club, uid))

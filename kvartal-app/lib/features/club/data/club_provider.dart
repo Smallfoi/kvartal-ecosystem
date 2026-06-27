@@ -34,6 +34,50 @@ class ClubMember {
   );
 }
 
+/// Вклад участника в клубный челлендж (км за период).
+class ClubContribution {
+  final String name;
+  final double km;
+  const ClubContribution({required this.name, required this.km});
+  factory ClubContribution.fromJson(Map<String, dynamic> json) =>
+      ClubContribution(
+        name: json['name']?.toString() ?? 'Участник',
+        km: (json['km'] as num?)?.toDouble() ?? 0,
+      );
+}
+
+/// Клубный челлендж: общая цель по км на период + прогресс и вклад участников.
+class ClubChallenge {
+  final String id, title;
+  final double targetKm, currentKm;
+  final int daysLeft, hoursLeft;
+  final List<ClubContribution> contributions;
+  const ClubChallenge({
+    required this.id,
+    required this.title,
+    required this.targetKm,
+    required this.currentKm,
+    required this.daysLeft,
+    required this.hoursLeft,
+    this.contributions = const [],
+  });
+  factory ClubChallenge.fromJson(Map<String, dynamic> json) => ClubChallenge(
+    id: json['id']?.toString() ?? '',
+    title: json['title']?.toString() ?? '',
+    targetKm: (json['targetKm'] as num?)?.toDouble() ?? 0,
+    currentKm: (json['currentKm'] as num?)?.toDouble() ?? 0,
+    daysLeft: (json['daysLeft'] as num?)?.toInt() ?? 0,
+    hoursLeft: (json['hoursLeft'] as num?)?.toInt() ?? 0,
+    contributions: (json['contributions'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ClubContribution.fromJson)
+        .toList(),
+  );
+  double get progress =>
+      targetKm <= 0 ? 0 : (currentKm / targetKm).clamp(0.0, 1.0);
+  bool get isDone => currentKm >= targetKm && targetKm > 0;
+}
+
 class ClubJoinRequest {
   final String id, userId, name;
   const ClubJoinRequest({
@@ -60,6 +104,9 @@ class Club {
   /// Обложка-баннер шапки (URL загруженного фото) или null.
   final String? cover;
 
+  /// Активный клубный челлендж (цель по км на период) или null.
+  final ClubChallenge? challenge;
+
   /// Активность клуба — суммарный пробег (км), а не баллы.
   final double totalKm;
   final List<ClubMember> members;
@@ -73,6 +120,7 @@ class Club {
     required this.totalKm,
     this.style = 'minimal',
     this.cover,
+    this.challenge,
     this.city,
     this.description,
     this.myRole,
@@ -92,6 +140,9 @@ class Club {
         ? json['style'].toString()
         : 'minimal',
     cover: _text(json['cover']?.toString()),
+    challenge: json['challenge'] is Map<String, dynamic>
+        ? ClubChallenge.fromJson(json['challenge'] as Map<String, dynamic>)
+        : null,
     city: _text(json['city']?.toString()),
     description: _text(json['description']?.toString()),
     myRole: _text(json['myRole']?.toString()),
@@ -317,6 +368,39 @@ class ClubNotifier extends StateNotifier<ClubState> {
         options: _authOptions(),
       );
       state = state.copyWith(message: 'Обложка убрана');
+      await refresh();
+    });
+  }
+
+  /// Создать клубный челлендж (цель по км на период). Только владелец.
+  Future<void> createChallenge({
+    required String title,
+    required double targetKm,
+    required int days,
+  }) async {
+    final club = state.myClub;
+    if (club == null) return;
+    await _mutate(() async {
+      await _dio.post<Map<String, dynamic>>(
+        '/clubs/${club.id}/challenge',
+        data: {'title': title, 'targetKm': targetKm, 'days': days},
+        options: _authOptions(),
+      );
+      state = state.copyWith(message: 'Челлендж создан');
+      await refresh();
+    });
+  }
+
+  /// Завершить активный челлендж. Только владелец.
+  Future<void> cancelChallenge() async {
+    final club = state.myClub;
+    if (club == null) return;
+    await _mutate(() async {
+      await _dio.delete<Map<String, dynamic>>(
+        '/clubs/${club.id}/challenge',
+        options: _authOptions(),
+      );
+      state = state.copyWith(message: 'Челлендж завершён');
       await refresh();
     });
   }

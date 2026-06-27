@@ -527,12 +527,7 @@ class _MyClubBody extends ConsumerWidget {
         const SizedBox(height: 24),
         _SectionHeader(title: 'Клубные вызовы'),
         const SizedBox(height: 10),
-        const _FutureModuleCard(
-          icon: CupertinoIcons.flag_fill,
-          title: 'Челленджи — следующим этапом',
-          subtitle:
-              'Километры клуба уже считаются по реальным пробежкам участников. Общие цели и награды (челленджи) добавим дальше.',
-        ),
+        _ClubChallengeSection(club: club),
         const SizedBox(height: 24),
         _SectionHeader(title: 'Захваченные районы'),
         const SizedBox(height: 10),
@@ -563,6 +558,371 @@ class _MyClubBody extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Клубные челленджи ───────────────────────────────────────────────────────
+
+void _showCreateChallengeSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: AppColors.bgSurface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => const _ChallengeFormSheet(),
+  );
+}
+
+Future<void> _confirmCancelChallenge(BuildContext context, WidgetRef ref) async {
+  final ok = await showCupertinoDialog<bool>(
+    context: context,
+    builder: (ctx) => CupertinoAlertDialog(
+      title: const Text('Завершить челлендж?'),
+      content: const Text('Текущая цель и прогресс будут сняты.'),
+      actions: [
+        CupertinoDialogAction(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Отмена'),
+        ),
+        CupertinoDialogAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Завершить'),
+        ),
+      ],
+    ),
+  );
+  if (ok == true) await ref.read(clubProvider.notifier).cancelChallenge();
+}
+
+/// Раздел «Клубные вызовы»: активный челлендж (прогресс + вклад) либо
+/// приглашение создать (владелец) / пустое состояние (участник).
+class _ClubChallengeSection extends ConsumerWidget {
+  final Club club;
+  const _ClubChallengeSection({required this.club});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ch = club.challenge;
+    final s = ClubStyle.byKey(club.style);
+    final state = ref.watch(clubProvider);
+
+    if (ch == null) {
+      if (!club.isOwner) {
+        return const _FutureModuleCard(
+          icon: CupertinoIcons.flag,
+          title: 'Челленджей пока нет',
+          subtitle:
+              'Владелец задаёт общую цель по км — и весь клуб бежит к ней вместе.',
+        );
+      }
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.separator),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(CupertinoIcons.flag_fill, color: s.accent, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Задай цель клубу',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Общая цель по км на неделю/месяц. Прогресс собирается из пробежек всех участников.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: state.isMutating
+                    ? null
+                    : () => _showCreateChallengeSheet(context),
+                icon: const Icon(CupertinoIcons.add, size: 18),
+                label: const Text('Создать челлендж'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final left = ch.daysLeft >= 1
+        ? 'Осталось ${ch.daysLeft} дн.'
+        : 'Осталось ${ch.hoursLeft} ч.';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [s.accent.withValues(alpha: 0.16), AppColors.bgCard],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: s.accent.withValues(alpha: 0.40)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                ch.isDone
+                    ? CupertinoIcons.checkmark_seal_fill
+                    : CupertinoIcons.flag_fill,
+                color: s.accent,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  ch.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (club.isOwner)
+                GestureDetector(
+                  onTap: state.isMutating
+                      ? null
+                      : () => _confirmCancelChallenge(context, ref),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      CupertinoIcons.xmark,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: ch.progress,
+              minHeight: 12,
+              backgroundColor: AppColors.bgElevated,
+              valueColor: AlwaysStoppedAnimation(s.accent),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${_kmLabel(ch.currentKm)} / ${_kmLabel(ch.targetKm)}',
+                style: TextStyle(color: s.accent, fontWeight: FontWeight.w800),
+              ),
+              Text(
+                ch.isDone ? 'Цель достигнута 🎉' : left,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          if (ch.contributions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Вклад участников',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...ch.contributions.take(5).map(
+              (c) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      CupertinoIcons.person_fill,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        c.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                    Text(
+                      _kmLabel(c.km),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ChallengeFormSheet extends ConsumerStatefulWidget {
+  const _ChallengeFormSheet();
+  @override
+  ConsumerState<_ChallengeFormSheet> createState() =>
+      _ChallengeFormSheetState();
+}
+
+class _ChallengeFormSheetState extends ConsumerState<_ChallengeFormSheet> {
+  final _titleCtrl = TextEditingController(text: 'Цель недели');
+  final _kmCtrl = TextEditingController(text: '100');
+  int _days = 7;
+  String? _error;
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _kmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _create() async {
+    final title = _titleCtrl.text.trim();
+    final km = double.tryParse(_kmCtrl.text.trim().replaceAll(',', '.')) ?? 0;
+    if (title.isEmpty) {
+      setState(() => _error = 'Введи название цели');
+      return;
+    }
+    if (km <= 0) {
+      setState(() => _error = 'Цель в км должна быть больше 0');
+      return;
+    }
+    await ref
+        .read(clubProvider.notifier)
+        .createChallenge(title: title, targetKm: km, days: _days);
+    if (!mounted) return;
+    final err = ref.read(clubProvider).error;
+    if (err == null) {
+      Navigator.of(context).pop();
+    } else {
+      setState(() => _error = err);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final state = ref.watch(clubProvider);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottom + (bottom > 0 ? 16 : 96)),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Новый челлендж',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Закрыть',
+                  icon: const Icon(CupertinoIcons.xmark),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _EditField(
+              controller: _titleCtrl,
+              label: 'Название цели',
+              icon: CupertinoIcons.flag_fill,
+            ),
+            const SizedBox(height: 10),
+            _EditField(
+              controller: _kmCtrl,
+              label: 'Цель, км',
+              icon: CupertinoIcons.location_north_fill,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Длительность',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            CupertinoSlidingSegmentedControl<int>(
+              groupValue: _days,
+              children: const {
+                7: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text('Неделя'),
+                ),
+                14: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text('2 недели'),
+                ),
+                30: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text('Месяц'),
+                ),
+              },
+              onValueChanged: (v) => setState(() => _days = v ?? 7),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ],
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: state.isMutating ? null : _create,
+              child: state.isMutating
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Создать челлендж'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1447,16 +1807,19 @@ class _EditField extends StatelessWidget {
   final String label;
   final IconData icon;
   final int maxLines;
+  final TextInputType? keyboardType;
   const _EditField({
     required this.controller,
     required this.label,
     required this.icon,
     this.maxLines = 1,
+    this.keyboardType,
   });
   @override
   Widget build(BuildContext context) => TextField(
     controller: controller,
     maxLines: maxLines,
+    keyboardType: keyboardType,
     style: const TextStyle(color: AppColors.textPrimary),
     decoration: InputDecoration(
       labelText: label,
