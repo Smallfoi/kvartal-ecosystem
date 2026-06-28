@@ -89,6 +89,14 @@
       + ".eco-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:0 0 auto}"
       + ".eco-avatar--ini{display:inline-flex;align-items:center;justify-content:center;"
       + "background:rgba(0,0,0,.12);font-weight:700;font-size:12px;color:inherit}"
+      // Аватар в панели профиля — кликабелен (смена фото), фото фоном.
+      + ".pr-avatar{cursor:pointer;background-size:cover;background-position:center;position:relative}"
+      + ".pr-avatar::after{content:'📷';position:absolute;right:-2px;bottom:-2px;font-size:11px;"
+      + "background:#20252b;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;"
+      + "justify-content:center;box-shadow:0 0 0 2px #fffdf8}"
+      + ".pr-avatar.has-photo{color:transparent;text-shadow:none}"
+      + ".pr-avatar-remove{display:block;background:none;border:none;color:#c0392b;font:inherit;"
+      + "font-size:12px;cursor:pointer;padding:4px 0 0;text-decoration:underline}"
       + ".eco-link{cursor:pointer;background:none;border:none;color:inherit;font:inherit;"
       + "opacity:.6;text-decoration:underline}"
       + ".eco-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;"
@@ -311,6 +319,72 @@
       });
   }
 
+  // ── единый аватар: смена/удаление прямо с сайта ─────────────────────────────
+  function uploadAvatarFile(file) {
+    var headers = {};
+    var t = getToken();
+    if (t) headers["Authorization"] = "Bearer " + t;
+    var fd = new FormData();
+    fd.append("image", file);
+    return fetch(API + "/profile/avatar", {
+      method: "POST",
+      headers: headers,
+      body: fd,
+    }).then(function (r) {
+      return r.text().then(function (x) {
+        var d = x ? JSON.parse(x) : null;
+        if (!r.ok) throw new Error((d && d.detail) || "Ошибка загрузки");
+        return d;
+      });
+    });
+  }
+  // Выбрать фото и загрузить как единый аватар; затем обновить шапку и вызвать onDone.
+  function changeAvatar(onDone) {
+    if (!getToken()) return;
+    var inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "image/*";
+    inp.style.display = "none";
+    document.body.appendChild(inp);
+    inp.addEventListener("change", function () {
+      var f = inp.files && inp.files[0];
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      if (!f) return;
+      uploadAvatarFile(f)
+        .then(function (user) {
+          setSession(getToken(), user);
+          refresh();
+          if (typeof onDone === "function") onDone(user);
+        })
+        .catch(function (err) {
+          window.alert(err.message || "Не удалось загрузить фото");
+        });
+    });
+    inp.click();
+  }
+  function removeAvatar(onDone) {
+    if (!getToken()) return;
+    var headers = {};
+    var t = getToken();
+    if (t) headers["Authorization"] = "Bearer " + t;
+    fetch(API + "/profile/avatar", { method: "DELETE", headers: headers })
+      .then(function (r) {
+        return r.text().then(function (x) {
+          var d = x ? JSON.parse(x) : null;
+          if (!r.ok) throw new Error((d && d.detail) || "Ошибка");
+          return d;
+        });
+      })
+      .then(function (user) {
+        setSession(getToken(), user);
+        refresh();
+        if (typeof onDone === "function") onDone(user);
+      })
+      .catch(function (err) {
+        window.alert(err.message || "Не удалось убрать фото");
+      });
+  }
+
   // ── init ─────────────────────────────────────────────────────────────────
   function init() {
     injectStyles();
@@ -324,6 +398,10 @@
     window.STAW.openLogin = function () { openModal("login"); };
     window.STAW.openRegister = function () { openModal("register"); };
     window.STAW.getUser = getUser;
+    // Единый аватар экосистемы: показать/сменить/убрать с сайта.
+    window.STAW.avatarUrl = avatarUrl;
+    window.STAW.changeAvatar = changeAvatar;
+    window.STAW.removeAvatar = removeAvatar;
     window.STAW.logout = function () {
       clearSession();
       window.STAW.ecoPoints = 0;
