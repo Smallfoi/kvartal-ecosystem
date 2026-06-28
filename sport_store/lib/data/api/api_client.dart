@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 import 'api_config.dart';
 
 /// Тонкая обёртка над HTTP для общения с backend.
@@ -85,9 +86,32 @@ class ApiClient {
     if (authToken != null) {
       req.headers['Authorization'] = 'Bearer $authToken';
     }
-    req.files.add(await http.MultipartFile.fromPath('image', filePath));
+    // Явный Content-Type картинки: пакет `http` иначе шлёт
+    // `application/octet-stream`, и backend (проверяет `image/*`) отклоняет
+    // загрузку аватара 400-ой. Тип определяем по расширению файла.
+    req.files.add(await http.MultipartFile.fromPath(
+      'image',
+      filePath,
+      contentType: _imageMediaType(filePath),
+    ));
     final streamed = await req.send().timeout(ApiConfig.timeout);
     return _decode(await http.Response.fromStream(streamed));
+  }
+
+  MediaType _imageMediaType(String filePath) {
+    final ext = filePath.toLowerCase().split('.').last;
+    switch (ext) {
+      case 'png':
+        return MediaType('image', 'png');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'gif':
+        return MediaType('image', 'gif');
+      case 'heic':
+        return MediaType('image', 'heic');
+      default:
+        return MediaType('image', 'jpeg');
+    }
   }
 
   dynamic _decode(http.Response res) {

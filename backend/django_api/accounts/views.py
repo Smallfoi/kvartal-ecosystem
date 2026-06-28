@@ -129,6 +129,10 @@ def update_profile(request):
         acc.city = (d.get("city") or "").strip() or None
     if d.get("avatarPath") is not None:
         acc.avatar_path = (d.get("avatarPath") or "").strip() or None
+    if d.get("addresses") is not None:
+        # Адреса доставки — единые для экосистемы. Принимаем список (строки или объекты).
+        addrs = d.get("addresses")
+        acc.addresses = addrs if isinstance(addrs, list) else []
     try:
         acc.save()
     except IntegrityError:

@@ -43,6 +43,17 @@
 - Очистка текстового поля через `adb`: `KEYCODE_MOVE_END` не работает на этой клавиатуре; чистить `tap + N×KEYCODE_DEL(67) + N×KEYCODE_FORWARD_DEL(112)`.
 - Скриншоты: устройство 1224×2720; ресайз до 600 шириной (scale ≈2.04). Чёрный кадр = погас экран (`input keyevent KEYCODE_WAKEUP`).
 
+## Flutter ↔ backend (профиль / аватар)
+- **Загрузка аватара через пакет `http` (`MultipartFile.fromPath`) шлёт `application/octet-stream`** —
+  он НЕ определяет MIME по расширению. Backend проверяет `content_type.startswith("image/")` и
+  отклоняет 400 «Нужен файл-изображение» → в UI «не получается сменить фото», молча. Решение: явно
+  задавать `contentType: MediaType('image', …)` (пакет `http_parser`) по расширению файла. У Dio
+  (Квартал) проблемы нет — `MultipartFile.fromFile` ставит MIME сам, поэтому там аватар работал.
+- **GoRouter `refreshListenable` поверх auth-провайдера — рефрешить ТОЛЬКО по смене статуса входа.**
+  Если дёргать `notifyListeners()` на каждое изменение auth-состояния (поля профиля, аватар,
+  isLoading), то при «Сохранить» весь стек роутера пересобирается → экран редактирования мелькает и
+  проблёскивает предыдущий экран. Гейт: `if (prev?.status != next.status) notifyListeners();`.
+
 ## Flutter / CI
 - **Пустые asset-папки в `pubspec.yaml` ломают `flutter analyze` в CI** (`asset_directory_does_not_exist`):
   git не хранит пустые папки. Решение: `.gitkeep` в каждую объявленную, но пустую папку. Локально не воспроизводится (папки физически есть).

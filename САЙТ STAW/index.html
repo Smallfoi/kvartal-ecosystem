@@ -3,19 +3,56 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>STAW — официальный магазин</title>
+    <title>STAW — спортивная одежда для бега, тренировки и города</title>
     <meta
       name="description"
-      content="Официальный сайт-магазин STAW: спортивная одежда для бега, тренировки, города и движения каждый день."
+      content="Официальный сайт STAW: спортивная одежда для бега, тренировки, города и движения каждый день. Каталог, баллы за активность, единый аккаунт экосистемы."
     />
+    <meta name="theme-color" content="#20252b" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Favicon (инлайн SVG — без отдельного файла). -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2320252b'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='18' font-weight='700' fill='%23ffffff' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E"
+    />
+
+    <!-- Open Graph / Twitter (TODO при деплое: заменить og:url и og:image на абсолютный домен). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="STAW" />
+    <meta property="og:title" content="STAW — спортивная одежда для движения каждый день" />
+    <meta
+      property="og:description"
+      content="Бег, тренировка, город. Каталог STAW, баллы за активность и единый аккаунт экосистемы."
+    />
+    <meta property="og:image" content="media/staw-hero.jpg" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="STAW — спортивная одежда для движения каждый день" />
+    <meta
+      name="twitter:description"
+      content="Бег, тренировка, город. Каталог STAW, баллы за активность и единый аккаунт."
+    />
+    <meta name="twitter:image" content="media/staw-hero.jpg" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
     <link rel="stylesheet" href="styles.css" />
+    <script>
+      // Прогрессивное улучшение: помечаем, что JS активен (под этим классом hero
+      // стартует скрытым и анимируется через motion.js). Страховка: если motion-слой
+      // не поднялся за 2.2с (CDN заблокирован/офлайн) — принудительно показываем hero.
+      document.documentElement.classList.add("js");
+      window.setTimeout(function () {
+        var el = document.documentElement;
+        if (!el.classList.contains("motion-on")) el.classList.add("motion-off");
+      }, 2200);
+    </script>
   </head>
   <body>
     <header class="site-header" data-header>
@@ -23,28 +60,80 @@
       <nav class="main-nav" aria-label="Основная навигация">
         <a href="#philosophy">Философия</a>
         <a href="#catalog">Каталог</a>
+        <a href="#loyalty">Экосистема</a>
         <a href="#references">Референсы</a>
       </nav>
-      <button class="cart-button" type="button" data-cart-toggle>
-        <span data-cart-count>0</span>
-        Корзина
-      </button>
+      <div class="header-actions">
+        <button class="cart-button" type="button" data-cart-toggle aria-label="Корзина">
+          <svg class="cart-ico" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 4h2l2.3 11.3a1 1 0 0 0 1 .8h8a1 1 0 0 0 1-.8L20 7H6"
+            />
+            <circle cx="9.5" cy="20" r="1.4" fill="currentColor" />
+            <circle cx="17.5" cy="20" r="1.4" fill="currentColor" />
+          </svg>
+          <span class="cart-count" data-cart-count>0</span>
+          <span class="cart-label">Корзина</span>
+        </button>
+        <button
+          class="nav-toggle"
+          type="button"
+          data-nav-toggle
+          aria-label="Меню"
+          aria-expanded="false"
+          aria-controls="mobile-nav"
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </header>
 
+    <nav class="mobile-nav" id="mobile-nav" data-mobile-nav aria-label="Мобильное меню">
+      <a href="#philosophy" data-mobile-link>Философия</a>
+      <a href="#catalog" data-mobile-link>Каталог</a>
+      <a href="#loyalty" data-mobile-link>Экосистема и баллы</a>
+      <a href="#references" data-mobile-link>Референсы</a>
+      <button class="mobile-login" type="button" data-eco-login-cta data-mobile-link>Войти в аккаунт</button>
+      <button class="mobile-login" type="button" data-eco-auth-only data-eco-profile-cta data-mobile-link hidden>Профиль</button>
+    </nav>
+    <div class="mobile-nav-backdrop" data-nav-backdrop></div>
+
     <main id="top">
-      <section class="hero scene" aria-labelledby="hero-title">
-        <div class="hero-media" aria-hidden="true">
-          <img src="Референсы/Фото товаров/staw-reference-11.jpg" alt="" />
+      <section class="hero scene" id="hero" aria-labelledby="hero-title">
+        <div class="hero-media" data-anim="hero-media" aria-hidden="true">
+          <!-- Слот под hero-видео: когда появится ролик в Референсы/Видео — заменить
+               <img> на <video autoplay muted loop playsinline poster="...">…</video>.
+               Разметка/анимация рассчитаны на обе версии. -->
+          <img src="media/staw-hero.jpg" alt="" />
+          <span class="hero-scrim" aria-hidden="true"></span>
         </div>
         <div class="hero-content">
-          <p class="eyebrow reveal">Run. City. Weekend.</p>
-          <h1 id="hero-title" class="brand-wordmark reveal" aria-label="STAW">
+          <p class="eyebrow" data-anim="hero">Run · City · Weekend</p>
+          <h1 id="hero-title" class="brand-wordmark" aria-label="STAW">
             <span>S</span><span>T</span><span>A</span><span>W</span>
           </h1>
-          <p class="hero-copy reveal">
+          <p class="hero-copy" data-anim="hero">
             Спортивная одежда для тех, кто двигается каждый день: пробежка утром, город днём, лёгкий маршрут на выходных.
           </p>
+          <div class="hero-actions" data-anim="hero">
+            <a class="btn btn-primary" href="#catalog">Смотреть каталог</a>
+            <a class="btn btn-ghost" href="#philosophy">Философия бренда</a>
+          </div>
         </div>
+        <a class="hero-scroll" href="#philosophy" data-anim="hero" aria-label="Листать вниз">
+          <span>Scroll</span>
+          <i class="hero-scroll-line" aria-hidden="true"></i>
+        </a>
+      </section>
+
+      <!-- Промо-баннеры из админки (/banners). Скрыто, пока promo.js не наполнит. -->
+      <section class="promo scene" id="promo" data-promo hidden aria-label="Акции STAW">
+        <div class="promo-track" data-promo-track></div>
       </section>
 
       <section class="brand-motion scene" aria-label="Бренд STAW">
@@ -78,19 +167,19 @@
         </div>
         <div class="cinema-grid">
           <article class="cinema-card reveal">
-            <img src="Референсы/Фото товаров/staw-reference-02.jpg" alt="Беговой жилет STAW" />
+            <img src="media/staw-clean-02.jpg" alt="Беговой образ STAW" loading="lazy" />
             <div>
               <h3>Бег</h3>
             </div>
           </article>
           <article class="cinema-card reveal">
-            <img src="Референсы/Фото товаров/staw-reference-06.jpg" alt="Беговые шорты STAW" />
+            <img src="media/staw-clean-11.jpg" alt="Беговые шорты STAW" loading="lazy" />
             <div>
               <h3>Тренировка</h3>
             </div>
           </article>
           <article class="cinema-card reveal">
-            <img src="Референсы/Фото товаров/staw-reference-18.jpg" alt="Городская спортивная одежда STAW" />
+            <img src="media/staw-clean-17.jpg" alt="Городская спортивная одежда STAW" loading="lazy" />
             <div>
               <h3>Город</h3>
             </div>
@@ -124,84 +213,244 @@
         </div>
       </section>
 
+      <section class="brand-modes scene" id="modes">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Один бренд — четыре ритма</p>
+          <h2>RUN · TRAIL · RACE · EVERYDAY</h2>
+        </div>
+        <div class="modes-grid">
+          <article class="mode-card reveal">
+            <h3>RUN</h3>
+            <p>Городской бег: лёгкие ткани, вентиляция и чистый силуэт для ежедневных пробежек.</p>
+          </article>
+          <article class="mode-card reveal">
+            <h3>TRAIL</h3>
+            <p>Лёгкий outdoor: защита, посадка и материалы для маршрутов за городом.</p>
+          </article>
+          <article class="mode-card reveal">
+            <h3>RACE</h3>
+            <p>Соревновательный темп: минимум веса, максимум скорости и аэродинамики.</p>
+          </article>
+          <article class="mode-card reveal">
+            <h3>EVERYDAY</h3>
+            <p>Городская повседневность: спортивная функция в одежде, которую носишь каждый день.</p>
+          </article>
+        </div>
+      </section>
+
       <section class="catalog scene" id="catalog">
         <div class="section-heading reveal">
           <p class="eyebrow">Shop the motion</p>
           <h2>Каталог</h2>
         </div>
-        <div class="filters reveal" role="group" aria-label="Фильтры каталога">
-          <button class="filter is-active" type="button" data-filter="all">Все</button>
-          <button class="filter" type="button" data-filter="run">Бег</button>
-          <button class="filter" type="button" data-filter="top">Верх</button>
-          <button class="filter" type="button" data-filter="bottom">Низ</button>
-          <button class="filter" type="button" data-filter="accessory">Аксессуары</button>
+        <div class="catalog-bar reveal">
+          <div class="filters" role="group" aria-label="Фильтры каталога" data-filters>
+            <button class="filter is-active" type="button" data-filter="all">Все</button>
+            <button class="filter" type="button" data-filter="run">Бег</button>
+            <button class="filter" type="button" data-filter="top">Верх</button>
+            <button class="filter" type="button" data-filter="bottom">Низ</button>
+            <button class="filter" type="button" data-filter="accessory">Аксессуары</button>
+          </div>
+          <div class="catalog-tools">
+            <input
+              class="catalog-search"
+              type="search"
+              data-search
+              placeholder="Поиск товаров"
+              aria-label="Поиск по каталогу"
+            />
+            <label class="catalog-sort">
+              <span>Сортировка</span>
+              <select data-sort aria-label="Сортировка каталога">
+                <option value="default">По умолчанию</option>
+                <option value="price-asc">Сначала дешевле</option>
+                <option value="price-desc">Сначала дороже</option>
+                <option value="name">По названию</option>
+              </select>
+            </label>
+          </div>
         </div>
         <div class="product-grid" data-product-grid>
-          <article class="product-card reveal" data-category="run top">
-            <img src="Референсы/Фото товаров/staw-reference-01.jpg" alt="STAW COOLMAX беговой жилет" />
+          <article class="product-card reveal" data-category="run top"
+            data-name="COOLMAX Race Vest" data-price="1790" data-cat="Бег / верх"
+            data-img="media/staw-clean-01.jpg" data-sizes="S,M,L,XL"
+            data-colors="#2b2f36,#ece9e1,#57bcd8" data-stock="В наличии"
+            data-desc="Вентилируемый беговой жилет для темпа, марафона и летних тренировок. Лёгкая сетка, быстрое высыхание, чистая спортивная посадка.">
+            <div class="product-media" data-quick-view tabindex="0" role="button" aria-label="Подробнее:COOLMAX Race Vest">
+              <img src="media/staw-clean-01.jpg" alt="STAW COOLMAX беговой жилет" loading="lazy" />            </div>
             <div class="product-info">
-              <p>Бег / верх</p>
+              <p class="product-cat">Бег / верх</p>
               <h3>COOLMAX Race Vest</h3>
-              <span>1 790 ₽</span>
-              <small>Вентилируемый беговой жилет для темпа, марафона и летних тренировок. Лёгкая сетка, быстрое высыхание, чистая спортивная посадка.</small>
-              <button type="button" data-add-cart="COOLMAX Race Vest" data-price="1790">В корзину</button>
+              <div class="product-colors" aria-hidden="true"><i style="--c:#2b2f36"></i><i style="--c:#ece9e1"></i><i style="--c:#57bcd8"></i></div>
+              <div class="product-sizes" aria-hidden="true"><span>S</span><span>M</span><span>L</span><span>XL</span></div>
+              <div class="product-bottom">
+                <span class="product-price">1 790 ₽</span>
+                <span class="product-stock">В наличии</span>
+              </div>
+              <button class="product-add" type="button" data-add-cart="COOLMAX Race Vest" data-price="1790">В корзину</button>
             </div>
           </article>
 
-          <article class="product-card reveal" data-category="run bottom">
-            <img src="Референсы/Фото товаров/staw-reference-07.jpg" alt="STAW Run 2.0 беговые шорты" />
+          <article class="product-card reveal" data-category="run bottom"
+            data-name="Run 2.0 Two-in-One Shorts" data-price="2790" data-cat="Бег / низ"
+            data-img="media/staw-clean-06.jpg" data-sizes="S,M,L,XL"
+            data-colors="#6b5e57,#2b2f36,#8a93a3" data-stock="В наличии"
+            data-desc="Двухслойные беговые шорты с внутренним слоем. Подходят для тренировок, длинных пробежек и марафонского режима.">
+            <div class="product-media" data-quick-view tabindex="0" role="button" aria-label="Подробнее:Run 2.0 Two-in-One Shorts">
+              <img src="media/staw-clean-06.jpg" alt="STAW Run 2.0 беговые шорты" loading="lazy" />            </div>
             <div class="product-info">
-              <p>Бег / низ</p>
+              <p class="product-cat">Бег / низ</p>
               <h3>Run 2.0 Two-in-One Shorts</h3>
-              <span>2 790 ₽</span>
-              <small>Двухслойные беговые шорты с внутренним слоем. Подходят для тренировок, длинных пробежек и марафонского режима.</small>
-              <button type="button" data-add-cart="Run 2.0 Two-in-One Shorts" data-price="2790">В корзину</button>
+              <div class="product-colors" aria-hidden="true"><i style="--c:#6b5e57"></i><i style="--c:#2b2f36"></i><i style="--c:#8a93a3"></i></div>
+              <div class="product-sizes" aria-hidden="true"><span>S</span><span>M</span><span>L</span><span>XL</span></div>
+              <div class="product-bottom">
+                <span class="product-price">2 790 ₽</span>
+                <span class="product-stock">В наличии</span>
+              </div>
+              <button class="product-add" type="button" data-add-cart="Run 2.0 Two-in-One Shorts" data-price="2790">В корзину</button>
             </div>
           </article>
 
-          <article class="product-card reveal" data-category="top">
-            <img src="Референсы/Фото товаров/staw-reference-14.jpg" alt="STAW городская беговая футболка" />
+          <article class="product-card reveal" data-category="top"
+            data-name="City Motion Tee" data-price="1490" data-cat="Верх"
+            data-img="media/staw-clean-05.jpg" data-sizes="XS,S,M,L,XL"
+            data-colors="#7d5d6a,#ece9e1,#20252b" data-stock="В наличии"
+            data-desc="Базовая футболка для бега и города: лёгкая ткань, спокойная графика, универсальный силуэт.">
+            <div class="product-media" data-quick-view tabindex="0" role="button" aria-label="Подробнее:City Motion Tee">
+              <img src="media/staw-clean-05.jpg" alt="STAW городская беговая футболка" loading="lazy" />            </div>
             <div class="product-info">
-              <p>Верх</p>
+              <p class="product-cat">Верх</p>
               <h3>City Motion Tee</h3>
-              <span>1 490 ₽</span>
-              <small>Базовая футболка для бега и города: лёгкая ткань, спокойная графика, универсальный силуэт.</small>
-              <button type="button" data-add-cart="City Motion Tee" data-price="1490">В корзину</button>
+              <div class="product-colors" aria-hidden="true"><i style="--c:#7d5d6a"></i><i style="--c:#ece9e1"></i><i style="--c:#20252b"></i></div>
+              <div class="product-sizes" aria-hidden="true"><span>XS</span><span>S</span><span>M</span><span>L</span><span>XL</span></div>
+              <div class="product-bottom">
+                <span class="product-price">1 490 ₽</span>
+                <span class="product-stock">В наличии</span>
+              </div>
+              <button class="product-add" type="button" data-add-cart="City Motion Tee" data-price="1490">В корзину</button>
             </div>
           </article>
 
-          <article class="product-card reveal" data-category="run top">
-            <img src="Референсы/Фото товаров/staw-reference-12.jpg" alt="STAW беговая футболка с графикой" />
+          <article class="product-card reveal" data-category="run top"
+            data-name="Statement Pace Tee" data-price="1690" data-cat="Бег / верх"
+            data-img="media/staw-clean-11.jpg" data-sizes="S,M,L,XL"
+            data-colors="#8aa06a,#2b2f36" data-stock="В наличии"
+            data-desc="Футболка для темповых тренировок: графичный вид, спортивная посадка и материал, рассчитанный на активное движение.">
+            <div class="product-media" data-quick-view tabindex="0" role="button" aria-label="Подробнее:Statement Pace Tee">
+              <img src="media/staw-clean-11.jpg" alt="STAW беговая футболка с графикой" loading="lazy" />            </div>
             <div class="product-info">
-              <p>Бег / верх</p>
+              <p class="product-cat">Бег / верх</p>
               <h3>Statement Pace Tee</h3>
-              <span>1 690 ₽</span>
-              <small>Футболка для темповых тренировок: графичный вид, спортивная посадка и материал, рассчитанный на активное движение.</small>
-              <button type="button" data-add-cart="Statement Pace Tee" data-price="1690">В корзину</button>
+              <div class="product-colors" aria-hidden="true"><i style="--c:#8aa06a"></i><i style="--c:#2b2f36"></i></div>
+              <div class="product-sizes" aria-hidden="true"><span>S</span><span>M</span><span>L</span><span>XL</span></div>
+              <div class="product-bottom">
+                <span class="product-price">1 690 ₽</span>
+                <span class="product-stock">В наличии</span>
+              </div>
+              <button class="product-add" type="button" data-add-cart="Statement Pace Tee" data-price="1690">В корзину</button>
             </div>
           </article>
 
-          <article class="product-card reveal" data-category="bottom">
-            <img src="Референсы/Фото товаров/staw-reference-09.jpg" alt="STAW марафонские беговые шорты" />
+          <article class="product-card reveal" data-category="bottom"
+            data-name="Marathon Training Shorts" data-price="2490" data-cat="Низ"
+            data-img="media/staw-clean-09.jpg" data-sizes="S,M,L,XL"
+            data-colors="#b9b3c7,#2b2f36" data-stock="В наличии"
+            data-desc="Лёгкие шорты для регулярных тренировок: быстро сохнут, не утяжеляют образ, держат спортивную геометрию.">
+            <div class="product-media" data-quick-view tabindex="0" role="button" aria-label="Подробнее:Marathon Training Shorts">
+              <img src="media/staw-clean-09.jpg" alt="STAW марафонские беговые шорты" loading="lazy" />            </div>
             <div class="product-info">
-              <p>Низ</p>
+              <p class="product-cat">Низ</p>
               <h3>Marathon Training Shorts</h3>
-              <span>2 490 ₽</span>
-              <small>Лёгкие шорты для регулярных тренировок: быстро сохнут, не утяжеляют образ, держат спортивную геометрию.</small>
-              <button type="button" data-add-cart="Marathon Training Shorts" data-price="2490">В корзину</button>
+              <div class="product-colors" aria-hidden="true"><i style="--c:#b9b3c7"></i><i style="--c:#2b2f36"></i></div>
+              <div class="product-sizes" aria-hidden="true"><span>S</span><span>M</span><span>L</span><span>XL</span></div>
+              <div class="product-bottom">
+                <span class="product-price">2 490 ₽</span>
+                <span class="product-stock">В наличии</span>
+              </div>
+              <button class="product-add" type="button" data-add-cart="Marathon Training Shorts" data-price="2490">В корзину</button>
             </div>
           </article>
 
-          <article class="product-card reveal" data-category="top">
-            <img src="Референсы/Фото товаров/staw-reference-16.jpg" alt="STAW лёгкий спортивный слой" />
+          <article class="product-card reveal" data-category="top"
+            data-name="Everyday Training Layer" data-price="3190" data-cat="Верх"
+            data-img="media/staw-clean-17.jpg" data-sizes="S,M,L,XL"
+            data-colors="#7a6b86,#20252b,#ece9e1" data-stock="Скоро в продаже"
+            data-desc="Лёгкий слой для дороги, разминки и прохладного вечера. Работает как спортивная вещь, выглядит как городской слой.">
+            <div class="product-media" data-quick-view tabindex="0" role="button" aria-label="Подробнее:Everyday Training Layer">
+              <img src="media/staw-clean-17.jpg" alt="STAW лёгкий спортивный слой" loading="lazy" />            </div>
             <div class="product-info">
-              <p>Верх</p>
+              <p class="product-cat">Верх</p>
               <h3>Everyday Training Layer</h3>
-              <span>3 190 ₽</span>
-              <small>Лёгкий слой для дороги, разминки и прохладного вечера. Работает как спортивная вещь, выглядит как городской слой.</small>
-              <button type="button" data-add-cart="Everyday Training Layer" data-price="3190">В корзину</button>
+              <div class="product-colors" aria-hidden="true"><i style="--c:#7a6b86"></i><i style="--c:#20252b"></i><i style="--c:#ece9e1"></i></div>
+              <div class="product-sizes" aria-hidden="true"><span>S</span><span>M</span><span>L</span><span>XL</span></div>
+              <div class="product-bottom">
+                <span class="product-price">3 190 ₽</span>
+                <span class="product-stock product-stock--soon">Скоро в продаже</span>
+              </div>
+              <button class="product-add" type="button" data-add-cart="Everyday Training Layer" data-price="3190">В корзину</button>
             </div>
           </article>
+        </div>
+      </section>
+
+      <section class="loyalty scene" id="loyalty">
+        <div class="loyalty-inner">
+          <div class="loyalty-copy reveal">
+            <p class="eyebrow">Экосистема STAW</p>
+            <h2>Бегаешь — копишь. Покупаешь — экономишь.</h2>
+            <p class="loyalty-lead">
+              Один аккаунт на все продукты STAW. Активность в приложении «Квартал» превращается
+              в баллы, а баллы — в скидку на одежду здесь и в магазине.
+            </p>
+            <div class="loyalty-steps">
+              <article class="loyalty-step">
+                <span class="loyalty-num">01</span>
+                <h3>Бежишь в «Квартале»</h3>
+                <p>Километры, захват территорий, соревнования — всё начисляет баллы.</p>
+              </article>
+              <article class="loyalty-step">
+                <span class="loyalty-num">02</span>
+                <h3>Копятся баллы</h3>
+                <p>1 балл = 1 ₽ скидки. Баланс единый для сайта, магазина и приложения.</p>
+              </article>
+              <article class="loyalty-step">
+                <span class="loyalty-num">03</span>
+                <h3>Тратишь на STAW</h3>
+                <p>Применяешь баллы в корзине — до 30% от суммы заказа.</p>
+              </article>
+            </div>
+            <div class="loyalty-actions">
+              <button class="btn btn-primary" type="button" data-eco-login-cta>Войти в аккаунт</button>
+              <button class="btn btn-primary" type="button" data-eco-auth-only data-eco-profile-cta hidden>Мой профиль</button>
+              <a class="btn btn-ghost btn-ghost-dark" href="#catalog">В каталог</a>
+            </div>
+          </div>
+
+          <aside class="loyalty-card reveal" data-loyalty-card tabindex="0" aria-label="Уровни лояльности STAW">
+            <div class="loyalty-card-glow" aria-hidden="true"></div>
+            <div class="loyalty-card-top">
+              <span>STAW Points</span>
+              <span class="loyalty-level" data-lc-level>Серебро</span>
+            </div>
+            <div class="loyalty-balance">
+              <span class="loyalty-balance-num" data-lc-num>430</span>
+              <span class="loyalty-balance-cur">баллов</span>
+            </div>
+            <p class="loyalty-card-note" data-lc-cashback>Кэшбэк 2% · ранний доступ к акциям</p>
+            <div class="loyalty-progress" aria-hidden="true">
+              <span class="loyalty-progress-bar" data-lc-bar style="--p: 45%"></span>
+            </div>
+            <div class="loyalty-tiers" data-lc-tiers aria-hidden="true">
+              <span class="loyalty-tier" data-tier="0">Базовый</span>
+              <span class="loyalty-tier is-active" data-tier="1">Серебро</span>
+              <span class="loyalty-tier" data-tier="2">Золото</span>
+              <span class="loyalty-tier" data-tier="3">Платина</span>
+            </div>
+            <p class="loyalty-card-foot">
+              <span data-lc-range>200–499 баллов</span>
+              <span class="loyalty-hint">Наведи — пролистать уровни ▸</span>
+            </p>
+          </aside>
         </div>
       </section>
 
@@ -211,15 +460,15 @@
           <h2>Материалы из товарных карточек</h2>
         </div>
         <div class="reference-grid">
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-03.jpg" alt="Референс STAW 1" />
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-04.jpg" alt="Референс STAW 2" />
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-05.jpg" alt="Референс STAW 3" />
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-10.jpg" alt="Референс STAW 4" />
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-08.jpg" alt="Референс STAW 5" />
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-15.jpg" alt="Референс STAW 6" />
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-13.jpg" alt="Референс STAW 7" />
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-17.jpg" alt="Референс STAW 8" />
-          <img class="reveal" src="Референсы/Фото товаров/staw-reference-18.jpg" alt="Референс STAW 9" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-01.jpg" alt="Референс STAW 1" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-02.jpg" alt="Референс STAW 2" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-03.jpg" alt="Референс STAW 3" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-05.jpg" alt="Референс STAW 4" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-06.jpg" alt="Референс STAW 5" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-07.jpg" alt="Референс STAW 6" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-09.jpg" alt="Референс STAW 7" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-10.jpg" alt="Референс STAW 8" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-11.jpg" alt="Референс STAW 9" />
         </div>
       </section>
     </main>
@@ -236,18 +485,276 @@
         <span>Итого</span>
         <strong data-cart-total>0 ₽</strong>
       </div>
+      <button class="cart-checkout" type="button" data-checkout disabled>Оформить заказ</button>
     </aside>
     <div class="overlay" data-cart-toggle data-overlay></div>
 
+    <!-- Оформление заказа (гостевой чекаут + применение баллов). -->
+    <div class="co-modal" data-co-modal aria-hidden="true">
+      <div class="co-backdrop" data-co-close></div>
+      <div class="co-card" role="dialog" aria-modal="true" aria-label="Оформление заказа">
+        <button class="co-close" type="button" data-co-close aria-label="Закрыть">×</button>
+
+        <div class="co-view" data-co-view="form">
+          <h2>Оформление заказа</h2>
+          <p class="co-sub">Гостевой заказ — регистрация не нужна. Войдёте позже, чтобы видеть историю и баллы.</p>
+
+          <form class="co-form" data-co-form novalidate>
+            <fieldset class="co-group">
+              <legend>Контакты</legend>
+              <input type="text" placeholder="Имя и фамилия" autocomplete="name" data-co-name required />
+              <input type="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" data-co-phone required />
+              <input type="email" placeholder="Email" autocomplete="email" data-co-email required />
+            </fieldset>
+
+            <fieldset class="co-group">
+              <legend>Доставка</legend>
+              <label class="co-radio"><input type="radio" name="co-delivery" value="courier" checked /> Курьер — 0 ₽ (от 5 000 ₽)</label>
+              <label class="co-radio"><input type="radio" name="co-delivery" value="pickup" /> Самовывоз — бесплатно</label>
+              <input type="text" placeholder="Город, улица, дом, квартира" autocomplete="street-address" data-co-address />
+            </fieldset>
+
+            <fieldset class="co-group">
+              <legend>Оплата</legend>
+              <label class="co-radio"><input type="radio" name="co-pay" value="card" checked /> Картой онлайн</label>
+              <label class="co-radio"><input type="radio" name="co-pay" value="cod" /> При получении</label>
+            </fieldset>
+
+            <fieldset class="co-group co-points" data-co-points-block hidden>
+              <legend>Баллы STAW</legend>
+              <label class="co-check"><input type="checkbox" data-co-points-toggle /> Списать баллы (<span data-co-points-avail>0</span> доступно)</label>
+              <p class="co-points-note" data-co-points-note></p>
+            </fieldset>
+
+            <p class="co-err" data-co-err></p>
+          </form>
+
+          <div class="co-summary">
+            <div class="co-row"><span>Товары</span><span data-co-goods>0 ₽</span></div>
+            <div class="co-row" data-co-discount-row hidden><span>Скидка баллами</span><span data-co-discount>−0 ₽</span></div>
+            <div class="co-row co-row-total"><span>Итого</span><strong data-co-total>0 ₽</strong></div>
+            <button class="co-submit" type="button" data-co-submit>Подтвердить заказ</button>
+          </div>
+        </div>
+
+        <div class="co-view co-success" data-co-view="success" hidden>
+          <div class="co-success-mark" aria-hidden="true">✓</div>
+          <h2>Заказ оформлен!</h2>
+          <p class="co-sub">Номер заказа <strong data-co-order-id>—</strong>. Мы отправили подтверждение на email и скоро свяжемся.</p>
+          <button class="co-submit" type="button" data-co-close>Готово</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Профиль аккаунта (единый стиль экосистемы; данные из ecosystem.js/localStorage). -->
+    <div class="pr-modal" data-pr-modal aria-hidden="true">
+      <div class="pr-backdrop" data-pr-close></div>
+      <div class="pr-card" role="dialog" aria-modal="true" aria-label="Профиль">
+        <button class="pr-close" type="button" data-pr-close aria-label="Закрыть">×</button>
+
+        <div class="pr-head">
+          <div class="pr-avatar" data-pr-initial aria-hidden="true">S</div>
+          <div class="pr-id">
+            <h2 data-pr-name>Профиль</h2>
+            <p data-pr-phone></p>
+          </div>
+          <button class="pr-gear" type="button" data-pr-gear aria-label="Редактировать профиль">⚙</button>
+        </div>
+
+        <button class="pr-points" type="button" data-pr-levels-open aria-label="Мои баллы и уровень">
+          <div class="pr-points-row">
+            <div class="pr-points-main">
+              <span class="pr-points-num" data-pr-points>0</span>
+              <span class="pr-points-cur">баллов</span>
+            </div>
+            <span class="pr-points-level" data-pr-level>Базовый</span>
+          </div>
+          <div class="pr-points-progress" aria-hidden="true"><span data-pr-progress style="--p: 0%"></span></div>
+          <div class="pr-points-foot">
+            <span data-pr-next>—</span>
+            <span class="pr-points-link">Все уровни →</span>
+          </div>
+        </button>
+
+        <nav class="pr-menu" data-pr-menu>
+          <button class="pr-item" type="button" data-pr-edit>Редактировать профиль</button>
+          <a class="pr-item" href="#loyalty" data-pr-close>Баллы и уровень</a>
+          <button class="pr-item" type="button" data-pr-orders>Мои заказы</button>
+          <a class="pr-item" href="#">Поддержка</a>
+          <a class="pr-item" href="#" data-legal="privacy">Политика конфиденциальности</a>
+          <a class="pr-item" href="#" data-legal="pd_consent">Обработка персональных данных</a>
+        </nav>
+
+        <div class="pr-edit" data-pr-edit-form hidden>
+          <input type="text" data-pr-edit-name placeholder="Имя и фамилия" autocomplete="name" />
+          <input type="tel" data-pr-edit-phone placeholder="Телефон" autocomplete="tel" />
+          <input type="email" data-pr-edit-email placeholder="Email" autocomplete="email" />
+
+          <div class="pr-addr">
+            <p class="pr-addr-title">Адреса доставки <span>· общие во всех приложениях</span></p>
+            <div class="pr-addr-list" data-pr-addr-list></div>
+            <div class="pr-addr-add">
+              <input type="text" data-pr-addr-input placeholder="Новый адрес: город, улица, дом, кв." />
+              <button type="button" class="pr-addr-btn" data-pr-addr-add aria-label="Добавить адрес">＋</button>
+            </div>
+          </div>
+
+          <div class="pr-edit-actions">
+            <button class="btn btn-primary" type="button" data-pr-save>Сохранить</button>
+            <button class="btn btn-ghost btn-ghost-dark" type="button" data-pr-edit-cancel>Отмена</button>
+          </div>
+        </div>
+
+        <div class="pr-levels" data-pr-levels hidden>
+          <h3 class="pr-levels-title">Уровни STAW</h3>
+          <p class="pr-levels-sub">Чем больше баллов за активность — тем выше уровень и кэшбэк.</p>
+          <div class="pr-level" data-level-key="basic">
+            <div class="pr-level-top"><span class="pr-level-name">Базовый</span><span class="pr-level-range">0–199</span></div>
+            <p>Кэшбэк 1%</p>
+          </div>
+          <div class="pr-level" data-level-key="silver">
+            <div class="pr-level-top"><span class="pr-level-name">Серебро</span><span class="pr-level-range">200–499</span></div>
+            <p>Кэшбэк 2% · ранний доступ к акциям</p>
+          </div>
+          <div class="pr-level" data-level-key="gold">
+            <div class="pr-level-top"><span class="pr-level-name">Золото</span><span class="pr-level-range">500–999</span></div>
+            <p>Кэшбэк 3% · бесплатная доставка</p>
+          </div>
+          <div class="pr-level" data-level-key="platinum">
+            <div class="pr-level-top"><span class="pr-level-name">Платина</span><span class="pr-level-range">1000+</span></div>
+            <p>Кэшбэк 5% · эксклюзивные товары · VIP-поддержка</p>
+          </div>
+        </div>
+
+        <div class="pr-orders" data-pr-orders-view hidden>
+          <h3 class="pr-levels-title">Мои заказы</h3>
+          <p class="pr-levels-sub">Все заказы экосистемы — с сайта и из приложений, в одном месте.</p>
+          <div class="pr-orders-list" data-pr-orders-list></div>
+        </div>
+
+        <button class="pr-logout" type="button" data-pr-logout>Выйти из аккаунта</button>
+      </div>
+    </div>
+
+    <!-- Быстрый просмотр товара (наполняется из data-* карточки в script.js). -->
+    <div class="pv-modal" data-pv-modal aria-hidden="true">
+      <div class="pv-backdrop" data-pv-close></div>
+      <div class="pv-card" role="dialog" aria-modal="true" aria-label="Карточка товара">
+        <button class="pv-close" type="button" data-pv-close aria-label="Закрыть">×</button>
+        <div class="pv-media"><img data-pv-img src="" alt="" /></div>
+        <div class="pv-info">
+          <p class="pv-cat" data-pv-cat></p>
+          <h3 data-pv-name></h3>
+          <span class="pv-price" data-pv-price></span>
+          <p class="pv-desc" data-pv-desc></p>
+          <div class="pv-row">
+            <span class="pv-label">Цвет</span>
+            <div class="pv-colors" data-pv-colors></div>
+          </div>
+          <div class="pv-row">
+            <span class="pv-label">Размер</span>
+            <div class="pv-sizes" data-pv-sizes></div>
+          </div>
+          <p class="pv-stock" data-pv-stock></p>
+          <button class="pv-add" type="button" data-pv-add>В корзину</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="site-footer">
-      <p>STAW Official Concept</p>
-      <p>Run, train, move daily</p>
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a class="footer-logo" href="#top">STAW</a>
+          <p>Спортивная одежда для бега, тренировки и города. Двигайся каждый день.</p>
+          <div class="footer-apps">
+            <span>Экосистема</span>
+            <a href="#">«Квартал» — бег</a>
+            <a href="#">STAW Store</a>
+          </div>
+        </div>
+
+        <nav class="footer-col" aria-label="Каталог">
+          <h4>Каталог</h4>
+          <a href="#catalog">Все товары</a>
+          <a href="#catalog">Бег</a>
+          <a href="#catalog">Верх</a>
+          <a href="#catalog">Низ</a>
+        </nav>
+
+        <nav class="footer-col" aria-label="Бренд">
+          <h4>Бренд</h4>
+          <a href="#philosophy">Философия</a>
+          <a href="#loyalty">Экосистема и баллы</a>
+          <a href="#references">Референсы</a>
+        </nav>
+
+        <nav class="footer-col" aria-label="Помощь">
+          <h4>Помощь</h4>
+          <a href="#">Поддержка</a>
+          <a href="#">Доставка и оплата</a>
+          <a href="#">Возврат и обмен</a>
+          <a href="#">Размерная сетка</a>
+        </nav>
+
+        <div class="footer-sub">
+          <h4>Будь в движении</h4>
+          <p>Новинки, дропы и акции — без спама.</p>
+          <form class="footer-form" data-sub-form novalidate>
+            <input
+              type="email"
+              placeholder="Ваш email"
+              aria-label="Email для подписки"
+              data-sub-email
+              required
+            />
+            <button type="submit" aria-label="Подписаться">→</button>
+          </form>
+          <p class="footer-sub-note" data-sub-note></p>
+          <div class="footer-social">
+            <a href="#" aria-label="Telegram">TG</a>
+            <a href="#" aria-label="VK">VK</a>
+            <a href="#" aria-label="YouTube">YT</a>
+            <a href="#" aria-label="Instagram">IG</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>© 2026 STAW. Run, train, move daily.</p>
+        <nav class="footer-legal" aria-label="Правовая информация">
+          <a href="#" data-legal="privacy">Политика конфиденциальности</a>
+          <a href="#" data-legal="pd_consent">Обработка персональных данных</a>
+          <a href="#" data-legal="terms">Условия использования</a>
+        </nav>
+      </div>
     </footer>
+
+    <!-- Юр-документ (текст из /legal/documents, наполняется legal.js). -->
+    <div class="lg-modal" data-lg-modal aria-hidden="true">
+      <div class="lg-backdrop" data-lg-close></div>
+      <div class="lg-card" role="dialog" aria-modal="true" aria-label="Документ">
+        <button class="lg-close" type="button" data-lg-close aria-label="Закрыть">×</button>
+        <p class="lg-meta" data-lg-meta></p>
+        <h2 data-lg-title>Документ</h2>
+        <div class="lg-body" data-lg-body></div>
+      </div>
+    </div>
 
     <script src="script.js"></script>
     <!-- Динамический каталог из общего backend (наполняет сетку товарами). -->
     <script src="catalog.js"></script>
+    <!-- Промо-баннеры из админки (/banners) → стрип под hero. -->
+    <script src="promo.js"></script>
+    <!-- Юр-документы из админки (/legal/documents) → модалка по ссылкам. -->
+    <script src="legal.js"></script>
     <!-- Экосистема: единый аккаунт + общие баллы (самодостаточный модуль). -->
     <script src="ecosystem.js"></script>
+
+    <!-- Motion-слой (premium): плавный скролл Lenis + сцены GSAP/ScrollTrigger.
+         Загружается с CDN; при недоступности сайт работает без анимаций (фолбэк). -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+    <script src="motion.js"></script>
   </body>
 </html>

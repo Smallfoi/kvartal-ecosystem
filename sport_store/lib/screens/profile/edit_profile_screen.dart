@@ -97,7 +97,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _removeAvatar() async {
-    await context.read<AuthProvider>().removeAvatar();
+    final err = await context.read<AuthProvider>().removeAvatar();
+    if (err != null && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(err)));
+    }
   }
 
   // ── Address ──────────────────────────────────────────────────────────────────

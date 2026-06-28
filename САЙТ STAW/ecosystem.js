@@ -75,6 +75,10 @@
   function injectStyles() {
     var css = ""
       + ".eco-account{display:flex;align-items:center;gap:10px;font-family:inherit}"
+      + ".eco-account-btn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;"
+      + "border:1px solid rgba(17,19,23,.14);background:transparent;color:inherit;font:inherit;"
+      + "padding:5px 10px 5px 6px;border-radius:999px}"
+      + ".eco-account-btn:hover{border-color:rgba(17,19,23,.32)}"
       + ".eco-btn{cursor:pointer;border:1px solid currentColor;background:transparent;"
       + "color:inherit;font:inherit;font-weight:600;padding:8px 14px;border-radius:999px;"
       + "letter-spacing:.02em}"
@@ -89,6 +93,10 @@
       + ".eco-modal.is-open{display:flex}"
       + ".eco-card{background:#fffdf8;color:#20252b;width:min(92vw,360px);border-radius:18px;"
       + "padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.3)}"
+      + ".eco-tabs{display:flex;gap:6px;margin:6px 0 14px;background:#f0ede5;padding:4px;border-radius:12px}"
+      + ".eco-tab{flex:1;border:0;background:transparent;font:inherit;font-weight:700;color:#6f7278;"
+      + "padding:9px;border-radius:9px;cursor:pointer}"
+      + ".eco-tab.is-active{background:#fff;color:#20252b;box-shadow:0 1px 4px rgba(0,0,0,.08)}"
       + ".eco-card h3{margin:0 0 4px;font-size:20px}"
       + ".eco-card p.eco-sub{margin:0 0 16px;opacity:.6;font-size:13px}"
       + ".eco-card input{width:100%;box-sizing:border-box;margin:6px 0;padding:12px 14px;"
@@ -107,7 +115,11 @@
   // ── widget в шапке ──────────────────────────────────────────────────────────
   var widget;
   function mountWidget() {
-    var header = document.querySelector(".site-header") || document.body;
+    // Контейнер действий шапки (.header-actions), иначе сама шапка/боди.
+    var header =
+      document.querySelector(".header-actions") ||
+      document.querySelector(".site-header") ||
+      document.body;
     widget = document.createElement("div");
     widget.className = "eco-account";
     widget.setAttribute("data-eco-account", "");
@@ -119,19 +131,27 @@
 
   function renderLoggedOut() {
     widget.innerHTML = '<button class="eco-btn" type="button" data-eco-login>Войти</button>';
-    widget.querySelector("[data-eco-login]").addEventListener("click", openModal);
+    widget.querySelector("[data-eco-login]").addEventListener("click", function () {
+      openModal("login");
+    });
+    updateAuthUI(false);
   }
 
   function renderLoggedIn(user, balance) {
-    var name = (user && user.name) ? user.name : "Профиль";
+    // В шапке — только имя (полное имя видно в профиле).
+    var full = (user && user.name) ? String(user.name).trim() : "";
+    var name = full ? full.split(/\s+/)[0] : "Профиль";
     widget.innerHTML =
+      '<button class="eco-account-btn" type="button" data-eco-profile aria-label="Открыть профиль">' +
       '<span class="eco-points" title="Баллы экосистемы">★ ' + balance + "</span>" +
       '<span class="eco-user">' + escapeHtml(name) + "</span>" +
-      '<button class="eco-link" type="button" data-eco-logout>Выйти</button>';
-    widget.querySelector("[data-eco-logout]").addEventListener("click", function () {
-      clearSession();
-      renderLoggedOut();
+      "</button>";
+    widget.querySelector("[data-eco-profile]").addEventListener("click", function () {
+      if (window.STAW && typeof window.STAW.openProfile === "function") {
+        window.STAW.openProfile();
+      }
     });
+    updateAuthUI(true);
   }
 
   function escapeHtml(s) {
@@ -140,16 +160,43 @@
     });
   }
 
-  // ── login modal ──────────────────────────────────────────────────────────
+  // ── login / register modal ────────────────────────────────────────────────
   var modal;
+  var ecoMode = "login"; // "login" | "register"
+
+  function setMode(m) {
+    ecoMode = m === "register" ? "register" : "login";
+    var nameI = modal.querySelector("[data-eco-name]");
+    var title = modal.querySelector("[data-eco-title]");
+    var submit = modal.querySelector("[data-eco-submit]");
+    modal.querySelectorAll("[data-eco-mode]").forEach(function (b) {
+      b.classList.toggle("is-active", b.getAttribute("data-eco-mode") === ecoMode);
+    });
+    if (ecoMode === "register") {
+      nameI.hidden = false;
+      title.textContent = "Регистрация в STAW";
+      submit.textContent = "Зарегистрироваться";
+    } else {
+      nameI.hidden = true;
+      title.textContent = "Вход в STAW";
+      submit.textContent = "Войти";
+    }
+    modal.querySelector("[data-eco-err]").textContent = "";
+  }
+
   function buildModal() {
     modal = document.createElement("div");
     modal.className = "eco-modal";
     modal.innerHTML =
-      '<div class="eco-card" role="dialog" aria-label="Вход в STAW">' +
+      '<div class="eco-card" role="dialog" aria-label="Вход и регистрация STAW">' +
       '<button class="eco-close" type="button" data-eco-x aria-label="Закрыть">×</button>' +
-      "<h3>Вход в STAW</h3>" +
-      '<p class="eco-sub">Единый аккаунт экосистемы: баллы из «Квартала» и магазина — общие. Dev-код: 1234.</p>' +
+      '<div class="eco-tabs">' +
+      '<button type="button" class="eco-tab is-active" data-eco-mode="login">Вход</button>' +
+      '<button type="button" class="eco-tab" data-eco-mode="register">Регистрация</button>' +
+      "</div>" +
+      '<h3 data-eco-title>Вход в STAW</h3>' +
+      '<p class="eco-sub">Единый аккаунт экосистемы: баллы из «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
+      '<input data-eco-name type="text" placeholder="Имя и фамилия" autocomplete="name" hidden />' +
       '<input data-eco-phone type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
       '<input data-eco-code type="text" inputmode="numeric" placeholder="Код из SMS (dev: 1234)" autocomplete="one-time-code" />' +
       '<p class="eco-err" data-eco-err></p>' +
@@ -160,34 +207,54 @@
       if (e.target === modal) closeModal();
     });
     modal.querySelector("[data-eco-x]").addEventListener("click", closeModal);
-    modal.querySelector("[data-eco-submit]").addEventListener("click", submitLogin);
+    modal.querySelector("[data-eco-submit]").addEventListener("click", submitAuth);
+    modal.querySelectorAll("[data-eco-mode]").forEach(function (b) {
+      b.addEventListener("click", function () { setMode(b.getAttribute("data-eco-mode")); });
+    });
   }
-  function openModal() {
+
+  function openModal(mode) {
     if (!modal) buildModal();
-    modal.querySelector("[data-eco-err]").textContent = "";
+    setMode(mode === "register" ? "register" : "login");
     modal.classList.add("is-open");
-    modal.querySelector("[data-eco-phone]").focus();
+    modal.querySelector(ecoMode === "register" ? "[data-eco-name]" : "[data-eco-phone]").focus();
   }
   function closeModal() { if (modal) modal.classList.remove("is-open"); }
 
-  function submitLogin() {
+  function submitAuth() {
+    var name = modal.querySelector("[data-eco-name]").value.trim();
     var phone = modal.querySelector("[data-eco-phone]").value.trim();
     var code = modal.querySelector("[data-eco-code]").value.trim();
     var errEl = modal.querySelector("[data-eco-err]");
     var btn = modal.querySelector("[data-eco-submit]");
     errEl.textContent = "";
+    if (ecoMode === "register" && !name) { errEl.textContent = "Введите имя"; return; }
     if (!phone) { errEl.textContent = "Введите телефон"; return; }
     if (!code) { errEl.textContent = "Введите код (dev: 1234)"; return; }
     btn.disabled = true;
-    btn.textContent = "Входим…";
+    btn.textContent = "…";
+    // SSO по телефону: verify создаёт аккаунт при первом входе. В режиме
+    // регистрации дополнительно сохраняем имя в профиль.
     api("/auth/phone/verify", { method: "POST", body: { phone: phone, code: code } })
       .then(function (data) {
-        setSession(data.token, data.user);
+        var user = data.user || {};
+        if (ecoMode === "register" && name) user = Object.assign({}, user, { name: name });
+        setSession(data.token, user);
         closeModal();
         refresh();
       })
-      .catch(function (e) { errEl.textContent = e.message || "Не удалось войти"; })
-      .then(function () { btn.disabled = false; btn.textContent = "Войти"; });
+      .catch(function (e) { errEl.textContent = e.message || "Не удалось"; })
+      .then(function () { btn.disabled = false; setMode(ecoMode); });
+  }
+
+  // Показ/скрытие элементов по состоянию входа (CTA «Войти» прячем в аккаунте).
+  function updateAuthUI(loggedIn) {
+    document.querySelectorAll("[data-eco-login-cta]").forEach(function (el) {
+      el.hidden = !!loggedIn;
+    });
+    document.querySelectorAll("[data-eco-auth-only]").forEach(function (el) {
+      el.hidden = !loggedIn;
+    });
   }
 
   // ── refresh state ──────────────────────────────────────────────────────────
@@ -195,9 +262,21 @@
     if (!getToken()) { renderLoggedOut(); return; }
     // показываем кэш пока грузим
     renderLoggedIn(getUser(), "…");
+    // Полный профиль из бэкенда (имя/email/телефон/адреса) → обновляем сессию.
+    api("/auth/me")
+      .then(function (me) {
+        if (me && me.id) {
+          setSession(getToken(), me);
+          renderLoggedIn(me, (window.STAW && window.STAW.ecoPoints) || "…");
+        }
+      })
+      .catch(function () {});
     api("/loyalty/account")
       .then(function (acc) {
         var bal = (acc && typeof acc.balance === "number") ? acc.balance : 0;
+        window.STAW = window.STAW || {};
+        window.STAW.ecoPoints = bal;
+        window.STAW.ecoLevel = (acc && acc.level) ? acc.level : null;
         renderLoggedIn(getUser(), bal);
       })
       .catch(function (e) {
@@ -217,6 +296,25 @@
     injectStyles();
     mountWidget();
     refresh();
+    // Внешние хуки экосистемы (вход/профиль/выход/данные).
+    window.STAW = window.STAW || {};
+    window.STAW.api = api; // авторизованный fetch к бэкенду (Bearer) для других модулей
+    window.STAW.token = getToken;
+    window.STAW.refreshAccount = refresh; // обновить баллы/профиль (напр. после заказа)
+    window.STAW.openLogin = function () { openModal("login"); };
+    window.STAW.openRegister = function () { openModal("register"); };
+    window.STAW.getUser = getUser;
+    window.STAW.logout = function () {
+      clearSession();
+      window.STAW.ecoPoints = 0;
+      renderLoggedOut();
+    };
+    window.STAW.setUser = function (u) {
+      try {
+        localStorage.setItem(LS_USER, JSON.stringify(u || {}));
+      } catch (e) {}
+      if (getToken()) renderLoggedIn(u, (window.STAW && window.STAW.ecoPoints) || 0);
+    };
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

@@ -10,6 +10,8 @@ class Account(models.Model):
     provider = models.CharField(max_length=20, default="email", verbose_name="Способ входа")
     avatar_path = models.CharField(max_length=500, null=True, blank=True, verbose_name="Аватар")
     city = models.CharField(max_length=120, null=True, blank=True, verbose_name="Город")
+    # Адреса доставки — единые для всей экосистемы (сайт/приложения). SavedAddress[] или строки.
+    addresses = models.JSONField(default=list, blank=True, verbose_name="Адреса доставки")
     password_hash = models.CharField(max_length=200, null=True, blank=True, verbose_name="Хэш пароля")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата регистрации")
 
@@ -50,6 +52,6 @@ class Account(models.Model):
             "city": self.city,
             "provider": self.provider or "email",
             "avatarPath": self.avatar_path,
-            "addresses": [],
+            "addresses": self.addresses or [],
             "privacy": self.privacy_json(),
         }
