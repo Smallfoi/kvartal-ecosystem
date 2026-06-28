@@ -19,7 +19,13 @@ import '../../shared/widgets/main_scaffold.dart';
 
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(this._ref) {
-    _ref.listen<AuthState>(authProvider, (_, __) => notifyListeners());
+    // redirect зависит только от auth.status (вход/выход). Рефрешим GoRouter
+    // лишь при смене статуса — иначе сохранение профиля/аватара/isLoading
+    // дёргает весь стек роутера, и экран редактирования мелькает («перекрытие»
+    // редактора, проблеск предыдущего экрана при «Сохранить»).
+    _ref.listen<AuthState>(authProvider, (prev, next) {
+      if (prev?.status != next.status) notifyListeners();
+    });
   }
 
   final Ref _ref;
