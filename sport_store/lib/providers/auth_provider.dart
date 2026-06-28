@@ -158,21 +158,48 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void setAvatar(String? path) {
-    if (_user == null) return;
-    _user = AuthUser(
-      id: _user!.id,
-      name: _user!.name,
-      email: _user!.email,
-      phone: _user!.phone,
-      provider: _user!.provider,
-      city: _user!.city,
-      addresses: _user!.addresses,
-      avatarPath: path,
-    );
-    _save();
-    notifyListeners();
+  /// Загрузить серверный аватар (единый для экосистемы). null — успех.
+  Future<String?> uploadAvatar(String filePath) async {
+    if (_user == null) return 'Не авторизован';
+    _setLoading(true);
+    try {
+      _user = _withServerAvatar(await _repo.uploadAvatar(filePath));
+      _save();
+      return null;
+    } catch (_) {
+      return 'Не удалось загрузить фото';
+    } finally {
+      _setLoading(false);
+    }
   }
+
+  /// Снять серверный аватар (вернуться к инициалам).
+  Future<String?> removeAvatar() async {
+    if (_user == null) return 'Не авторизован';
+    _setLoading(true);
+    try {
+      _user = _withServerAvatar(await _repo.removeAvatar());
+      _save();
+      return null;
+    } catch (_) {
+      return 'Не удалось убрать фото';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Свежий юзер с сервера, но локальные адреса сохраняем; аватар — серверный
+  /// (включая null при удалении — в отличие от _mergeKeepingLocal).
+  AuthUser _withServerAvatar(AuthUser fresh) => AuthUser(
+    id: fresh.id,
+    name: fresh.name,
+    email: fresh.email,
+    phone: fresh.phone,
+    city: fresh.city,
+    provider: fresh.provider,
+    addresses: fresh.addresses.isNotEmpty ? fresh.addresses : _user!.addresses,
+    avatarPath: fresh.avatarPath,
+  );
 
   void addAddress(SavedAddress address) {
     if (_user == null) return;

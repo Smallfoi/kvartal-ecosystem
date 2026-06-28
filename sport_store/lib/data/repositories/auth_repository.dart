@@ -24,6 +24,12 @@ abstract class AuthRepository {
   /// Профиль текущего пользователя по JWT (GET /auth/me).
   Future<AuthUser> fetchMe();
 
+  /// Загрузить серверный аватар (единый для экосистемы) → актуальный юзер.
+  Future<AuthUser> uploadAvatar(String filePath);
+
+  /// Снять серверный аватар.
+  Future<AuthUser> removeAvatar();
+
   /// Видимость профиля (часть общих настроек приватности аккаунта).
   Future<bool> getProfilePublic();
   Future<bool> setProfilePublic(bool value);
@@ -101,6 +107,14 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<AuthUser> fetchMe() async =>
       throw UnimplementedError('Mock не имеет /auth/me');
+
+  @override
+  Future<AuthUser> uploadAvatar(String filePath) async =>
+      throw UnimplementedError('Mock не грузит аватар');
+
+  @override
+  Future<AuthUser> removeAvatar() async =>
+      throw UnimplementedError('Mock не грузит аватар');
 
   @override
   Future<bool> getProfilePublic() async => false;
@@ -189,6 +203,18 @@ class ApiAuthRepository implements AuthRepository {
   @override
   Future<AuthUser> fetchMe() async {
     final data = await _client.get('/auth/me');
+    return AuthUser.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AuthUser> uploadAvatar(String filePath) async {
+    final data = await _client.uploadImage('/profile/avatar', filePath);
+    return AuthUser.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AuthUser> removeAvatar() async {
+    final data = await _client.delete('/profile/avatar');
     return AuthUser.fromJson(data as Map<String, dynamic>);
   }
 
