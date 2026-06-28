@@ -50,7 +50,7 @@
       .join("");
     var desc = p.description || "";
     return (
-      '<article class="product-card reveal" data-category="' + esc(cat) + '"' +
+      '<article class="product-card reveal" data-id="' + esc(p.id) + '" data-category="' + esc(cat) + '"' +
       ' data-name="' + esc(p.name) + '" data-price="' + Number(p.price) + '"' +
       ' data-cat="' + esc(catLabel) + '" data-img="' + esc(img) + '"' +
       ' data-sizes="' + esc(sizes.join(",")) + '" data-colors="' + esc(colors.join(",")) + '"' +
@@ -62,6 +62,10 @@
       '<div class="product-info">' +
       '<p class="product-cat">' + esc(catLabel) + "</p>" +
       "<h3>" + esc(p.name) + "</h3>" +
+      (Number(p.reviewCount) > 0
+        ? '<div class="product-rating">★ ' + (Number(p.rating) || 0).toFixed(1) +
+          ' <span>(' + Number(p.reviewCount) + ")</span></div>"
+        : "") +
       '<div class="product-colors" aria-hidden="true">' + colorDots + "</div>" +
       '<div class="product-sizes" aria-hidden="true">' + sizeChips + "</div>" +
       '<div class="product-bottom">' +
@@ -117,9 +121,174 @@
       .catch(function () { /* офлайн/нет API — оставляем статичные карточки */ });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", load);
-  } else {
+  // ── Отзывы в quick-view (общий бэкенд /products/<id>/reviews) ───────────────
+  // Своим кодом, не трогая разметку/скрипты сайта: подвешиваемся на открытие
+  // быстрого просмотра и дорисовываем блок отзывов в модалку [data-pv-modal].
+  function rvToken() {
+    try { return localStorage.getItem("staw_jwt"); } catch (e) { return null; }
+  }
+  function rvApi(path, opts) {
+    opts = opts || {};
+    var headers = { "Content-Type": "application/json" };
+    var t = rvToken();
+    if (t) headers["Authorization"] = "Bearer " + t;
+    return fetch(API + path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    }).then(function (r) {
+      return r.text().then(function (x) {
+        var d = x ? JSON.parse(x) : null;
+        if (!r.ok) throw new Error((d && d.detail) || "Ошибка");
+        return d;
+      });
+    });
+  }
+  function stars(n, pick) {
+    var s = "";
+    for (var i = 1; i <= 5; i++)
+      s += '<span class="rv-star' + (i <= n ? " on" : "") + '"' +
+        (pick ? ' data-star="' + i + '"' : "") + ">★</span>";
+    return s;
+  }
+  function rvBox() {
+    var modal = document.querySelector("[data-pv-modal]");
+    if (!modal) return null;
+    var box = modal.querySelector("[data-pv-reviews]");
+    if (!box) {
+      box = document.createElement("div");
+      box.setAttribute("data-pv-reviews", "");
+      box.className = "pv-reviews";
+      var add = modal.querySelector("[data-pv-add]");
+      if (add && add.parentNode) add.parentNode.appendChild(box);
+      else modal.appendChild(box);
+    }
+    return box;
+  }
+  function rvRender(box, pid, data) {
+    var list = (data && data.reviews) || [];
+    var html =
+      '<div class="rv-head">Отзывы' +
+      (data && data.reviewCount
+        ? ' <span class="rv-avg">★ ' + (Number(data.rating) || 0).toFixed(1) +
+          " · " + data.reviewCount + "</span>"
+        : "") +
+      "</div>";
+    if (!list.length)
+      html +=
+        '<p class="rv-empty">' +
+        (data && data.canReview
+          ? "Отзывов пока нет. Будьте первым!"
+          : "Отзывов пока нет.") +
+        "</p>";
+    else
+      html += list
+        .map(function (r) {
+          return (
+            '<div class="rv-item"><div class="rv-top"><b>' + esc(r.name) +
+            '</b><span class="rv-stars">' + stars(r.rating) + "</span></div>" +
+            (r.text ? "<p>" + esc(r.text) + "</p>" : "") + "</div>"
+          );
+        })
+        .join("");
+    if (data && data.canReview) {
+      var mine = list.filter(function (r) { return r.mine; })[0];
+      html +=
+        '<div class="rv-form">' +
+        '<div class="rv-pick" data-pick="' + (mine ? mine.rating : 5) + '">' +
+        stars(mine ? mine.rating : 5, true) + "</div>" +
+        '<textarea class="rv-text" placeholder="Ваш отзыв…">' +
+        esc(mine ? mine.text : "") + "</textarea>" +
+        '<button class="rv-send" type="button">' +
+        (mine ? "Изменить отзыв" : "Оставить отзыв") + "</button>" +
+        '<p class="rv-err"></p></div>';
+    }
+    box.innerHTML = html;
+    var form = box.querySelector(".rv-form");
+    if (!form) return;
+    var pick = form.querySelector(".rv-pick");
+    pick.addEventListener("click", function (e) {
+      var st = e.target.closest("[data-star]");
+      if (!st) return;
+      var v = Number(st.getAttribute("data-star"));
+      pick.setAttribute("data-pick", v);
+      pick.querySelectorAll(".rv-star").forEach(function (el, i) {
+        el.classList.toggle("on", i < v);
+      });
+    });
+    form.querySelector(".rv-send").addEventListener("click", function () {
+      if (!rvToken()) {
+        form.querySelector(".rv-err").textContent = "Войдите, чтобы оставить отзыв";
+        return;
+      }
+      var rating = Number(pick.getAttribute("data-pick")) || 5;
+      var text = form.querySelector(".rv-text").value.trim();
+      var btn = form.querySelector(".rv-send");
+      btn.disabled = true;
+      rvApi("/products/" + pid + "/reviews", {
+        method: "POST",
+        body: { rating: rating, text: text },
+      })
+        .then(function () { rvLoad(box, pid); })
+        .catch(function (err) {
+          form.querySelector(".rv-err").textContent = err.message || "Не удалось отправить";
+          btn.disabled = false;
+        });
+    });
+  }
+  function rvLoad(box, pid) {
+    box.innerHTML = '<p class="rv-empty">Загрузка отзывов…</p>';
+    rvApi("/products/" + pid + "/reviews")
+      .then(function (d) { rvRender(box, pid, d); })
+      .catch(function () { box.innerHTML = ""; });
+  }
+  function mountReviews() {
+    document.addEventListener("click", function (e) {
+      var qv = e.target.closest("[data-quick-view]");
+      if (!qv) return;
+      var card = qv.closest(".product-card");
+      var pid = card && card.getAttribute("data-id");
+      if (!pid) return;
+      setTimeout(function () {
+        var box = rvBox();
+        if (box) rvLoad(box, pid);
+      }, 40);
+    });
+  }
+  function injectReviewStyles() {
+    var css =
+      ".pv-reviews{margin-top:18px;border-top:1px solid rgba(0,0,0,.1);padding-top:14px}" +
+      ".rv-head{font-weight:700;margin-bottom:10px;display:flex;gap:8px;align-items:center}" +
+      ".rv-avg{font-weight:600;opacity:.7;font-size:14px}" +
+      ".rv-empty{opacity:.6;font-size:14px;margin:6px 0}" +
+      ".rv-item{background:rgba(0,0,0,.04);border-radius:10px;padding:10px 12px;margin-bottom:8px}" +
+      ".rv-top{display:flex;justify-content:space-between;align-items:center;gap:8px}" +
+      ".rv-item p{margin:5px 0 0;font-size:14px;line-height:1.4}" +
+      ".rv-stars,.rv-pick{color:#e8a000;letter-spacing:1px}" +
+      ".rv-star{opacity:.3}.rv-star.on{opacity:1}" +
+      ".rv-pick .rv-star{cursor:pointer;font-size:22px}" +
+      ".rv-form{margin-top:12px}" +
+      ".rv-text{width:100%;box-sizing:border-box;min-height:64px;margin:8px 0;padding:10px;" +
+      "border:1px solid #d9d6cd;border-radius:10px;font:inherit;resize:vertical}" +
+      ".rv-send{padding:10px 16px;border:none;border-radius:10px;background:#20252b;color:#fff;" +
+      "font:inherit;font-weight:700;cursor:pointer}.rv-send[disabled]{opacity:.5}" +
+      ".rv-err{color:#c0392b;font-size:13px;min-height:16px;margin:6px 0 0}" +
+      ".product-rating{color:#e8a000;font-weight:700;font-size:13px;margin:2px 0 4px}" +
+      ".product-rating span{color:inherit;opacity:.6;font-weight:600}";
+    var s = document.createElement("style");
+    s.setAttribute("data-rv-styles", "");
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  function init() {
+    injectReviewStyles();
+    mountReviews();
     load();
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
   }
 })();

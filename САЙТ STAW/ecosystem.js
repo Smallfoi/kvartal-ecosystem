@@ -86,6 +86,9 @@
       + "padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.06)}"
       + ".eco-user{font-weight:600;opacity:.85;max-width:140px;overflow:hidden;"
       + "text-overflow:ellipsis;white-space:nowrap}"
+      + ".eco-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:0 0 auto}"
+      + ".eco-avatar--ini{display:inline-flex;align-items:center;justify-content:center;"
+      + "background:rgba(0,0,0,.12);font-weight:700;font-size:12px;color:inherit}"
       + ".eco-link{cursor:pointer;background:none;border:none;color:inherit;font:inherit;"
       + "opacity:.6;text-decoration:underline}"
       + ".eco-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;"
@@ -143,6 +146,7 @@
     var name = full ? full.split(/\s+/)[0] : "Профиль";
     widget.innerHTML =
       '<button class="eco-account-btn" type="button" data-eco-profile aria-label="Открыть профиль">' +
+      avatarHtml(user) +
       '<span class="eco-points" title="Баллы экосистемы">★ ' + balance + "</span>" +
       '<span class="eco-user">' + escapeHtml(name) + "</span>" +
       "</button>";
@@ -158,6 +162,22 @@
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
+  }
+
+  // Единый аватар экосистемы: /media/... → абсолютный URL (origin API без /v1).
+  function avatarUrl(user) {
+    var p = user && user.avatarPath;
+    if (!p) return "";
+    if (/^https?:/.test(p)) return p;
+    return API.replace(/\/v1\/?$/, "") + (p.charAt(0) === "/" ? p : "/" + p);
+  }
+  // Аватар-кружок: фото с сервера, иначе инициал имени.
+  function avatarHtml(user) {
+    var av = avatarUrl(user);
+    if (av) return '<img class="eco-avatar" src="' + av + '" alt="">';
+    var full = (user && user.name) ? String(user.name).trim() : "";
+    var ini = full ? full.charAt(0).toUpperCase() : "?";
+    return '<span class="eco-avatar eco-avatar--ini">' + escapeHtml(ini) + "</span>";
   }
 
   // ── login / register modal ────────────────────────────────────────────────
