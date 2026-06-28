@@ -1,10 +1,17 @@
 """Каталог Store (D-13). Публичные read-эндпоинты — токен не нужен.
 Контракт совпадает с ApiProductRepository в SportStore."""
-from django.db.models import Q
+import secrets
+
+from django.db.models import Avg, Count, Q
+from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .models import Banner, Category, Product
+from accounts.models import Account
+from common.security import user_id_from_request
+from orders.models import Order
+
+from .models import Banner, Category, Product, Review
 
 _TRUE = {"1", "true", "True", "yes"}
 
@@ -90,3 +97,97 @@ def banners(request):
     if not _is_preview(request):
         qs = qs.filter(is_published=True)
     return Response([b.to_json() for b in qs])
+
+
+# ── Отзывы на товары ────────────────────────────────────────────────────────
+
+def _recompute_rating(product_id):
+    agg = Review.objects.filter(product_id=product_id).aggregate(
+        a=Avg("rating"), c=Count("id")
+    )
+    Product.objects.filter(id=product_id).update(
+        rating=round(agg["a"] or 0, 1), review_count=agg["c"] or 0
+    )
+
+
+def _has_purchased(uid, product_id):
+    for o in Order.objects.filter(user_id=uid).only("payload"):
+        for it in (o.payload or {}).get("items", []):
+            if isinstance(it, dict) and it.get("productId") == product_id:
+                return True
+    return False
+
+
+def _review_name(uid):
+    a = Account.objects.filter(id=uid).only("name").first()
+    return a.name if (a and a.name) else "Покупатель"
+
+
+def _review_json(r, uid):
+    return {
+        "id": r.id,
+        "userId": r.user_id,
+        "name": _review_name(r.user_id),
+        "rating": r.rating,
+        "text": r.text,
+        "createdAt": r.created_at.isoformat(),
+        "mine": r.user_id == uid,
+    }
+
+
+@api_view(["GET", "POST"])
+def product_reviews(request, pid):
+    """GET — список отзывов товара (+ можно ли оставить). POST — оставить/обновить
+    свой отзыв (только купившие товар). Рейтинг товара пересчитывается."""
+    product = Product.objects.filter(id=pid).first()
+    if not product:
+        return Response({"detail": "Товар не найден"}, status=404)
+    uid = user_id_from_request(request)
+    if request.method == "GET":
+        reviews = [
+            _review_json(r, uid) for r in Review.objects.filter(product_id=pid)
+        ]
+        return Response(
+            {
+                "rating": product.rating,
+                "reviewCount": product.review_count,
+                "reviews": reviews,
+                "canReview": bool(uid and _has_purchased(uid, pid)),
+                "hasMine": any(r["mine"] for r in reviews) if uid else False,
+            }
+        )
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    if not _has_purchased(uid, pid):
+        return Response({"detail": "Отзыв доступен после покупки товара"}, status=403)
+    d = request.data
+    try:
+        rating = int(d.get("rating") or 0)
+    except (TypeError, ValueError):
+        rating = 0
+    if rating < 1 or rating > 5:
+        return Response({"detail": "Оценка должна быть от 1 до 5"}, status=400)
+    text = (d.get("text") or "").strip()[:2000]
+    obj = Review.objects.filter(product_id=pid, user_id=uid).first()
+    if obj:
+        obj.rating = rating
+        obj.text = text
+        obj.created_at = timezone.now()
+        obj.save()
+    else:
+        obj = Review.objects.create(
+            id=f"rev_{secrets.token_hex(8)}",
+            product_id=pid,
+            user_id=uid,
+            rating=rating,
+            text=text,
+        )
+    _recompute_rating(pid)
+    product.refresh_from_db()
+    return Response(
+        {
+            "rating": product.rating,
+            "reviewCount": product.review_count,
+            "review": _review_json(obj, uid),
+        }
+    )

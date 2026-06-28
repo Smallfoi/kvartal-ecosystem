@@ -1,5 +1,6 @@
 import '../../models/category.dart';
 import '../../models/product.dart';
+import '../../models/review.dart';
 import '../api/api_client.dart';
 import '../api/api_config.dart';
 import '../mock_data.dart';
@@ -28,6 +29,12 @@ abstract class ProductRepository {
   Future<List<String>> getSizes();
   Future<PriceRange> getPriceRange();
   Future<List<Map<String, String>>> getBanners();
+
+  /// Отзывы товара (+ можно ли оставить свой).
+  Future<ProductReviews> getReviews(String productId);
+
+  /// Оставить/обновить свой отзыв (только купившие — иначе бросает).
+  Future<void> addReview(String productId, {required int rating, required String text});
 }
 
 // ─── Mock-реализация (прототип, офлайн) ───────────────────────────────────────
@@ -93,6 +100,14 @@ class MockProductRepository implements ProductRepository {
     await Future.delayed(_delay);
     return MockData.banners;
   }
+
+  @override
+  Future<ProductReviews> getReviews(String productId) async =>
+      const ProductReviews();
+
+  @override
+  Future<void> addReview(String productId,
+      {required int rating, required String text}) async {}
 }
 
 // ─── API-реализация (готова к подключению backend) ────────────────────────────
@@ -185,5 +200,20 @@ class ApiProductRepository implements ProductRepository {
     return data
         .map((j) => (j as Map).map((k, v) => MapEntry('$k', '$v')))
         .toList();
+  }
+
+  @override
+  Future<ProductReviews> getReviews(String productId) async {
+    final data = await _client.get('/products/$productId/reviews');
+    return ProductReviews.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> addReview(String productId,
+      {required int rating, required String text}) async {
+    await _client.post(
+      '/products/$productId/reviews',
+      body: {'rating': rating, 'text': text},
+    );
   }
 }

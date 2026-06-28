@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
+import '../../models/review.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/wishlist_provider.dart';
@@ -192,6 +193,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           height: 1.6,
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      _ReviewsSection(productId: product.id),
                       const SizedBox(height: 120),
                     ],
                   ),
@@ -651,6 +656,314 @@ class _AddedToCartSheet extends StatelessWidget {
               ),
             ),
           ).animate(delay: 260.ms).fadeIn(duration: 300.ms),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Отзывы на товар ──────────────────────────────────────────────────────────
+
+class _Stars extends StatelessWidget {
+  final int rating;
+  final double size;
+  const _Stars({required this.rating, this.size = 16});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(
+          5,
+          (i) => Icon(
+            i < rating ? Icons.star : Icons.star_border,
+            size: size,
+            color: AppColors.black,
+          ),
+        ),
+      );
+}
+
+class _ReviewTile extends StatelessWidget {
+  final Review review;
+  const _ReviewTile({required this.review});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.grey100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    review.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                _Stars(rating: review.rating, size: 14),
+              ],
+            ),
+            if (review.text.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                review.text,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: AppColors.black,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+}
+
+class _ReviewsSection extends StatefulWidget {
+  final String productId;
+  const _ReviewsSection({required this.productId});
+
+  @override
+  State<_ReviewsSection> createState() => _ReviewsSectionState();
+}
+
+class _ReviewsSectionState extends State<_ReviewsSection> {
+  ProductReviews? _data;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (mounted) setState(() => _loading = true);
+    try {
+      final d =
+          await context.read<CatalogProvider>().getReviews(widget.productId);
+      if (mounted) {
+        setState(() {
+          _data = d;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _writeReview() async {
+    Review? mine;
+    for (final r in (_data?.reviews ?? const <Review>[])) {
+      if (r.mine) {
+        mine = r;
+        break;
+      }
+    }
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _ReviewForm(
+        productId: widget.productId,
+        initialRating: mine?.rating ?? 5,
+        initialText: mine?.text ?? '',
+      ),
+    );
+    if (ok == true) _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = _data;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'ОТЗЫВЫ',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+                color: AppColors.grey600,
+              ),
+            ),
+            if (d != null && d.canReview)
+              TextButton(
+                onPressed: _writeReview,
+                child: Text(
+                  d.hasMine ? 'Изменить' : 'Оставить отзыв',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.black,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (d == null || d.reviews.isEmpty)
+          Text(
+            d?.canReview == true
+                ? 'Отзывов пока нет. Будьте первым!'
+                : 'Отзывов пока нет.',
+            style: const TextStyle(color: AppColors.grey600, fontSize: 14),
+          )
+        else ...[
+          Row(
+            children: [
+              _Stars(rating: d.rating.round()),
+              const SizedBox(width: 8),
+              Text(
+                d.rating.toStringAsFixed(1),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '· ${d.reviewCount}',
+                style: const TextStyle(color: AppColors.grey600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...d.reviews.map((r) => _ReviewTile(review: r)),
+        ],
+      ],
+    );
+  }
+}
+
+class _ReviewForm extends StatefulWidget {
+  final String productId;
+  final int initialRating;
+  final String initialText;
+  const _ReviewForm({
+    required this.productId,
+    required this.initialRating,
+    required this.initialText,
+  });
+
+  @override
+  State<_ReviewForm> createState() => _ReviewFormState();
+}
+
+class _ReviewFormState extends State<_ReviewForm> {
+  late int _rating = widget.initialRating;
+  late final TextEditingController _ctrl =
+      TextEditingController(text: widget.initialText);
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await context.read<CatalogProvider>().submitReview(
+            widget.productId,
+            rating: _rating,
+            text: _ctrl.text.trim(),
+          );
+      if (mounted) Navigator.pop(context, true);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = 'Не удалось отправить отзыв';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ваш отзыв',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: List.generate(
+              5,
+              (i) => GestureDetector(
+                onTap: () => setState(() => _rating = i + 1),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Icon(
+                    i < _rating ? Icons.star : Icons.star_border,
+                    size: 38,
+                    color: AppColors.black,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _ctrl,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: 'Расскажите о товаре…',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(_error!, style: const TextStyle(color: AppColors.red)),
+          ],
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _saving ? null : _submit,
+              child: _saving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : const Text('Отправить'),
+            ),
+          ),
         ],
       ),
     );

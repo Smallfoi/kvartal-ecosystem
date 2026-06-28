@@ -56,6 +56,7 @@ urlpatterns = [
     path("v1/products/price-range", catalog_views.product_price_range),
     path("v1/products", catalog_views.products),
     path("v1/products/<str:pid>", catalog_views.product_detail),
+    path("v1/products/<str:pid>/reviews", catalog_views.product_reviews),
     path("v1/brands", catalog_views.brands),
     path("v1/sizes", catalog_views.sizes),
     path("v1/banners", catalog_views.banners),
