@@ -1,10 +1,11 @@
 """Регрессии входа/профиля: rate-limit (анти-брутфорс) + базовые потоки auth + SMS-OTP."""
 import json
 import os
+import tempfile
 from unittest import mock
 
 from django.core.cache import cache
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from common.testutils import ApiTestCase
 
@@ -53,6 +54,7 @@ class AuthFlowTests(ApiTestCase):
         r = self.client.get("/v1/auth/me")
         self.assertEqual(r.status_code, 401)
 
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
     def test_avatar_upload_sets_path_and_me_returns_it(self):
         from io import BytesIO
 
