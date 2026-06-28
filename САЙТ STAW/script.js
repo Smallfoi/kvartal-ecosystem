@@ -638,19 +638,24 @@ function prShowOrders() {
   }
 }
 
-// Адреса доставки (централизованные — демо в localStorage, единые в экосистеме).
+// Человекочитаемая строка из структурного адреса {city,street,house,building,apartment}
+// (или из старой строки — обратная совместимость).
+function prAddrLine(a) {
+  if (typeof a === "string") return a;
+  if (!a || typeof a !== "object") return "Адрес";
+  let line = [a.city, a.street, a.house].filter(Boolean).join(", ");
+  if (a.building) line += ", корп. " + a.building;
+  if (a.apartment) line += ", кв. " + a.apartment;
+  return line || a.label || "Адрес";
+}
+
+// Адреса доставки — единые в экосистеме (структурные объекты). Отдаём как есть.
 function prGetAddresses() {
-  // Реальные адреса из профиля (/auth/me, SavedAddress[]) — форматируем в строки.
   const u = prGetUser();
   if (u && Array.isArray(u.addresses) && u.addresses.length) {
-    return u.addresses.map(function (a) {
-      if (typeof a === "string") return a;
-      var parts = [a.city, a.street, a.house].filter(Boolean).join(", ");
-      if (a.apartment) parts += ", кв. " + a.apartment;
-      return parts || a.label || "Адрес";
-    });
+    return u.addresses.slice();
   }
-  // Фолбэк: локально добавленные (на бэке пока нет endpoint записи адресов).
+  // Фолбэк (демо, до первого входа): локально добавленные.
   try {
     return JSON.parse(localStorage.getItem("staw_addresses") || "[]");
   } catch (e) {
@@ -678,7 +683,7 @@ function prRenderAddresses() {
     .map(
       (a, i) => `
       <div class="pr-addr-row">
-        <span>${escapeHtml(a)}</span>
+        <span>${escapeHtml(prAddrLine(a))}</span>
         <button type="button" class="pr-addr-del" data-addr-del="${i}" aria-label="Удалить адрес">×</button>
       </div>`,
     )
@@ -872,11 +877,41 @@ if (prModal) {
   const prAddrAdd = prModal.querySelector("[data-pr-addr-add]");
   if (prAddrAdd)
     prAddrAdd.addEventListener("click", () => {
-      const input = prModal.querySelector("[data-pr-addr-input]");
-      const val = (input.value || "").trim();
-      if (!val) return;
-      prEditAddr.push(val);
-      input.value = "";
+      const fieldVal = (sel) => {
+        const el = prModal.querySelector(sel);
+        return el ? (el.value || "").trim() : "";
+      };
+      const city = fieldVal("[data-pr-addr-city]");
+      const street = fieldVal("[data-pr-addr-street]");
+      const house = fieldVal("[data-pr-addr-house]");
+      const building = fieldVal("[data-pr-addr-building]");
+      const apartment = fieldVal("[data-pr-addr-apt]");
+      // Для корректной доставки требуем город + улицу + дом; корпус/кв — опционально.
+      const required = [
+        ["[data-pr-addr-city]", city],
+        ["[data-pr-addr-street]", street],
+        ["[data-pr-addr-house]", house],
+      ];
+      const missing = required.some(([, v]) => !v);
+      required.forEach(([sel, v]) => {
+        const el = prModal.querySelector(sel);
+        if (el) el.style.borderColor = v ? "" : "#c0392b";
+      });
+      if (missing) return;
+      prEditAddr.push({ city, street, house, building, apartment });
+      [
+        "[data-pr-addr-city]",
+        "[data-pr-addr-street]",
+        "[data-pr-addr-house]",
+        "[data-pr-addr-building]",
+        "[data-pr-addr-apt]",
+      ].forEach((sel) => {
+        const el = prModal.querySelector(sel);
+        if (el) {
+          el.value = "";
+          el.style.borderColor = "";
+        }
+      });
       prRenderAddresses();
     });
   const prCancel = prModal.querySelector("[data-pr-edit-cancel]");

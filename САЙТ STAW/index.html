@@ -593,8 +593,16 @@
             <p class="pr-addr-title">Адреса доставки <span>· общие во всех приложениях</span></p>
             <div class="pr-addr-list" data-pr-addr-list></div>
             <div class="pr-addr-add">
-              <input type="text" data-pr-addr-input placeholder="Новый адрес: город, улица, дом, кв." />
-              <button type="button" class="pr-addr-btn" data-pr-addr-add aria-label="Добавить адрес">＋</button>
+              <input type="text" data-pr-addr-city placeholder="Город" autocomplete="address-level2" />
+              <input type="text" data-pr-addr-street placeholder="Улица" autocomplete="address-line1" />
+              <div class="pr-addr-grid3">
+                <input type="text" data-pr-addr-house placeholder="Дом" inputmode="text" />
+                <input type="text" data-pr-addr-building placeholder="Корпус" inputmode="text" />
+                <input type="text" data-pr-addr-apt placeholder="Кв." inputmode="text" />
+              </div>
+              <button type="button" class="pr-addr-add-btn" data-pr-addr-add>
+                Добавить адрес
+              </button>
             </div>
           </div>
 
