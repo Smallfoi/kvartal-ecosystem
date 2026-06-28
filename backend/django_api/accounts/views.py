@@ -197,6 +197,47 @@ def account_privacy(request):
     return Response(acc.privacy_json())
 
 
+@api_view(["GET"])
+def me_stats(request):
+    """Личная аналитика пользователя: активность бега, баллы, заказы.
+    Данные — из общего бэка (источник правды), одинаковы во всех приложениях."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+
+    from django.db.models import Count, Sum
+
+    from loyalty.models import LoyaltyTransaction, balance_of
+    from orders.models import Order
+    from runs.models import Run
+
+    runs = Run.objects.filter(user_id=uid)
+    runs_agg = runs.aggregate(c=Count("id"))
+    # «Реальные» км — без флаг-забегов (анти-чит); флаг-дистанцию не считаем.
+    km_agg = runs.filter(flagged=False).aggregate(d=Sum("distance_m"))
+    txns = LoyaltyTransaction.objects.filter(user_id=uid)
+    earned = txns.filter(amount__gt=0).aggregate(s=Sum("amount"))["s"] or 0
+    spent = txns.filter(amount__lt=0).aggregate(s=Sum("amount"))["s"] or 0
+    orders_agg = Order.objects.filter(user_id=uid).aggregate(
+        c=Count("id"), total=Sum("total")
+    )
+    return Response({
+        "runs": {
+            "count": runs_agg["c"] or 0,
+            "totalKm": round((km_agg["d"] or 0) / 1000.0, 1),
+        },
+        "loyalty": {
+            "balance": balance_of(uid),
+            "earned": int(earned),
+            "spent": int(-spent),  # положительное число потраченного
+        },
+        "orders": {
+            "count": orders_agg["c"] or 0,
+            "totalSpent": int(orders_agg["total"] or 0),
+        },
+    })
+
+
 @api_view(["POST"])
 def delete_account(request):
     """Удаление аккаунта и всех персональных данных пользователя (152-ФЗ, LR §13).

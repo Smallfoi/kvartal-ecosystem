@@ -30,6 +30,7 @@ urlpatterns = [
     # Аккаунт: приватность (§2) и удаление аккаунта/данных (§13 LAUNCH_READINESS).
     path("v1/account/privacy", account_views.account_privacy),
     path("v1/account/delete", account_views.delete_account),
+    path("v1/me/stats", account_views.me_stats),
     path("v1/loyalty/", include("loyalty.urls")),
     # Клубы — порядок важен: 'me' и 'requests/...' раньше generic '<club_id>'.
     path("v1/clubs", clubs_views.clubs_root),
