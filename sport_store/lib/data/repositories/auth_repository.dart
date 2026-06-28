@@ -19,6 +19,7 @@ abstract class AuthRepository {
     String? city,
     String? avatarPath,
     String? email,
+    List<SavedAddress>? addresses,
   });
 
   /// Профиль текущего пользователя по JWT (GET /auth/me).
@@ -86,6 +87,7 @@ class MockAuthRepository implements AuthRepository {
     String? city,
     String? avatarPath,
     String? email,
+    List<SavedAddress>? addresses,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return AuthUser(
@@ -99,7 +101,7 @@ class MockAuthRepository implements AuthRepository {
           ? (city.trim().isNotEmpty ? city.trim() : null)
           : current.city,
       provider: current.provider,
-      addresses: current.addresses,
+      addresses: addresses ?? current.addresses,
       avatarPath: avatarPath ?? current.avatarPath,
     );
   }
@@ -189,6 +191,7 @@ class ApiAuthRepository implements AuthRepository {
     String? city,
     String? avatarPath,
     String? email,
+    List<SavedAddress>? addresses,
   }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
@@ -196,6 +199,10 @@ class ApiAuthRepository implements AuthRepository {
     if (city != null) body['city'] = city;
     if (avatarPath != null) body['avatarPath'] = avatarPath;
     if (email != null && email.trim().isNotEmpty) body['email'] = email.trim();
+    // Адреса доставки — единые в экосистеме (структурные объекты на бэк).
+    if (addresses != null) {
+      body['addresses'] = addresses.map((a) => a.toJson()).toList();
+    }
     final data = await _client.patch('/profile', body: body);
     return AuthUser.fromJson(data as Map<String, dynamic>);
   }
