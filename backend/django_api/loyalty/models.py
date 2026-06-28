@@ -34,7 +34,9 @@ class LoyaltyTransaction(models.Model):
 
 
 def add_txn(user_id, amount, source, description="", order_id=None, run_id=None):
-    return LoyaltyTransaction.objects.create(
+    # Баланс ДО этой транзакции — чтобы поймать пересечение порога уровня.
+    before = balance_of(user_id)
+    txn = LoyaltyTransaction.objects.create(
         id=f"tx_{secrets.token_hex(8)}",
         user_id=user_id,
         amount=amount,
@@ -43,6 +45,37 @@ def add_txn(user_id, amount, source, description="", order_id=None, run_id=None)
         order_id=order_id,
         run_id=run_id,
     )
+    if amount > 0:
+        _notify_level_up(user_id, before, before + amount)
+    return txn
+
+
+_LEVEL_RANK = {"basic": 0, "silver": 1, "gold": 2, "platinum": 3}
+_LEVEL_UP = {
+    "silver": ("Новый уровень: Серебро", "Вы достигли уровня «Серебро». Так держать!"),
+    "gold": ("Новый уровень: Золото", "Вы достигли уровня «Золото» — отличный результат!"),
+    "platinum": ("Новый уровень: Платина", "Максимальный уровень «Платина». Легенда!"),
+}
+
+
+def _notify_level_up(user_id, before_balance, after_balance):
+    """Уведомление при РОСТЕ уровня (бег/территории/покупки — любой источник через
+    add_txn). Срабатывает один раз на реальное пересечение порога: дедуп начислений
+    (по run_id/order_id) делается до add_txn, поэтому повторов нет. Сбой уведомления
+    не должен ломать начисление баллов."""
+    lvl_before = level_for(before_balance)
+    lvl_after = level_for(after_balance)
+    if _LEVEL_RANK.get(lvl_after, 0) <= _LEVEL_RANK.get(lvl_before, 0):
+        return
+    title_body = _LEVEL_UP.get(lvl_after)
+    if not title_body:
+        return
+    try:
+        from notifications.models import create_notification
+
+        create_notification(user_id, title_body[0], title_body[1], type="level")
+    except Exception:
+        pass
 
 
 def seed_runner_points(user_id):

@@ -9,6 +9,8 @@ class Notification(models.Model):
         ("system", "Системное"),
         ("order", "Заказ"),
         ("promo", "Акция"),
+        ("level", "Новый уровень"),
+        ("club", "Клуб"),
     ]
 
     user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
