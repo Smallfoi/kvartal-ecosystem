@@ -7,6 +7,7 @@ class Review {
   final String text;
   final String createdAt;
   final bool mine;
+  final List<String> photos; // URL фото (/media/...), до 5
 
   const Review({
     required this.id,
@@ -16,6 +17,7 @@ class Review {
     required this.text,
     required this.createdAt,
     this.mine = false,
+    this.photos = const [],
   });
 
   factory Review.fromJson(Map<String, dynamic> j) => Review(
@@ -26,6 +28,9 @@ class Review {
         text: j['text']?.toString() ?? '',
         createdAt: j['createdAt']?.toString() ?? '',
         mine: j['mine'] == true,
+        photos: (j['photos'] as List? ?? const [])
+            .map((e) => e.toString())
+            .toList(),
       );
 }
 

@@ -72,10 +72,16 @@ class CatalogProvider extends ChangeNotifier {
   Future<ProductReviews> getReviews(String productId) =>
       _repo.getReviews(productId);
 
+  /// Загрузить фото к отзыву → URL (для прикрепления к отзыву).
+  Future<String> uploadReviewPhoto(String filePath) =>
+      _repo.uploadReviewPhoto(filePath);
+
   /// Оставить отзыв → обновить рейтинг товара в кэше → вернуть свежие отзывы.
   Future<ProductReviews> submitReview(String productId,
-      {required int rating, required String text}) async {
-    await _repo.addReview(productId, rating: rating, text: text);
+      {required int rating,
+      required String text,
+      List<String> photos = const []}) async {
+    await _repo.addReview(productId, rating: rating, text: text, photos: photos);
     final fresh = await _repo.getById(productId);
     if (fresh != null) {
       _products =

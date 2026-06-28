@@ -34,7 +34,11 @@ abstract class ProductRepository {
   Future<ProductReviews> getReviews(String productId);
 
   /// Оставить/обновить свой отзыв (только купившие — иначе бросает).
-  Future<void> addReview(String productId, {required int rating, required String text});
+  Future<void> addReview(String productId,
+      {required int rating, required String text, List<String> photos});
+
+  /// Загрузить фото к отзыву → URL (/media/...).
+  Future<String> uploadReviewPhoto(String filePath);
 }
 
 // ─── Mock-реализация (прототип, офлайн) ───────────────────────────────────────
@@ -107,7 +111,12 @@ class MockProductRepository implements ProductRepository {
 
   @override
   Future<void> addReview(String productId,
-      {required int rating, required String text}) async {}
+      {required int rating,
+      required String text,
+      List<String> photos = const []}) async {}
+
+  @override
+  Future<String> uploadReviewPhoto(String filePath) async => '';
 }
 
 // ─── API-реализация (готова к подключению backend) ────────────────────────────
@@ -210,10 +219,18 @@ class ApiProductRepository implements ProductRepository {
 
   @override
   Future<void> addReview(String productId,
-      {required int rating, required String text}) async {
+      {required int rating,
+      required String text,
+      List<String> photos = const []}) async {
     await _client.post(
       '/products/$productId/reviews',
-      body: {'rating': rating, 'text': text},
+      body: {'rating': rating, 'text': text, 'photos': photos},
     );
+  }
+
+  @override
+  Future<String> uploadReviewPhoto(String filePath) async {
+    final r = await _client.uploadImage('/reviews/photo', filePath);
+    return (r is Map && r['url'] != null) ? r['url'].toString() : '';
   }
 }

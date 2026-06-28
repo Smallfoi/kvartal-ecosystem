@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../data/api/api_config.dart';
 import '../../models/product.dart';
 import '../../models/review.dart';
 import '../../providers/cart_provider.dart';
@@ -722,8 +724,76 @@ class _ReviewTile extends StatelessWidget {
                 ),
               ),
             ],
+            if (review.photos.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 72,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: review.photos.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) => ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      ApiConfig.resolveMedia(review.photos[i]),
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 72,
+                        height: 72,
+                        color: AppColors.grey200,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
+      );
+}
+
+/// Миниатюра фото в форме отзыва (с кнопкой удаления).
+class _ReviewPhotoThumb extends StatelessWidget {
+  final String url;
+  final VoidCallback onRemove;
+  const _ReviewPhotoThumb({required this.url, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) => Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              ApiConfig.resolveMedia(url),
+              width: 64,
+              height: 64,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 64,
+                height: 64,
+                color: AppColors.grey200,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(2),
+                child: const Icon(Icons.close, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
       );
 }
 
@@ -874,11 +944,36 @@ class _ReviewFormState extends State<_ReviewForm> {
       TextEditingController(text: widget.initialText);
   bool _saving = false;
   String? _error;
+  final List<String> _photos = [];
+  bool _uploading = false;
 
   @override
   void dispose() {
     _ctrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    if (_photos.length >= 5) return;
+    final catalog = context.read<CatalogProvider>();
+    final x = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (x == null) return;
+    setState(() {
+      _uploading = true;
+      _error = null;
+    });
+    try {
+      final url = await catalog.uploadReviewPhoto(x.path);
+      if (mounted && url.isNotEmpty) setState(() => _photos.add(url));
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Не удалось загрузить фото');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -891,6 +986,7 @@ class _ReviewFormState extends State<_ReviewForm> {
             widget.productId,
             rating: _rating,
             text: _ctrl.text.trim(),
+            photos: _photos,
           );
       if (mounted) Navigator.pop(context, true);
     } catch (_) {
@@ -941,6 +1037,49 @@ class _ReviewFormState extends State<_ReviewForm> {
               hintText: 'Расскажите о товаре…',
               border: OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Фото (по желанию)',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ..._photos.map(
+                (url) => _ReviewPhotoThumb(
+                  url: url,
+                  onRemove: () => setState(() => _photos.remove(url)),
+                ),
+              ),
+              if (_photos.length < 5)
+                GestureDetector(
+                  onTap: _uploading ? null : _pickPhoto,
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.grey100,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.grey200),
+                    ),
+                    child: _uploading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.add_a_photo_outlined,
+                            color: AppColors.grey600,
+                          ),
+                  ),
+                ),
+            ],
           ),
           if (_error != null) ...[
             const SizedBox(height: 10),
