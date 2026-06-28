@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' hide Category;
 import '../data/repositories/product_repository.dart';
 import '../models/category.dart';
 import '../models/product.dart';
+import '../models/review.dart';
 
 /// Кэширует каталог, загруженный из [ProductRepository], и отдаёт его экранам
 /// синхронно. Источник (mock/API) задаётся при создании репозитория в main.dart,
@@ -65,6 +66,23 @@ class CatalogProvider extends ChangeNotifier {
       if (c.id == id) return c;
     }
     return null;
+  }
+
+  // ── Отзывы ───────────────────────────────────────────────────────────────
+  Future<ProductReviews> getReviews(String productId) =>
+      _repo.getReviews(productId);
+
+  /// Оставить отзыв → обновить рейтинг товара в кэше → вернуть свежие отзывы.
+  Future<ProductReviews> submitReview(String productId,
+      {required int rating, required String text}) async {
+    await _repo.addReview(productId, rating: rating, text: text);
+    final fresh = await _repo.getById(productId);
+    if (fresh != null) {
+      _products =
+          _products.map((p) => p.id == productId ? fresh : p).toList();
+      notifyListeners();
+    }
+    return _repo.getReviews(productId);
   }
 
   // ── Загрузка ─────────────────────────────────────────────────────────────

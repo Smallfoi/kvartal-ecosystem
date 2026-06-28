@@ -2,6 +2,7 @@
 Контракт JSON совпадает с моделями SportStore (Category/Product), чтобы клиент
 только переключил флаг useApiCatalog без правок парсинга."""
 from django.db import models
+from django.utils import timezone
 
 
 class Category(models.Model):
@@ -118,3 +119,22 @@ class Banner(models.Model):
             "imageUrl": self.image_url,
             "action": self.action,
         }
+
+
+class Review(models.Model):
+    """Отзыв на товар. Один отзыв на пользователя+товар (можно отредактировать).
+    Рейтинг/кол-во в Product пересчитываются из отзывов."""
+
+    id = models.CharField(primary_key=True, max_length=40, verbose_name="ID")
+    product_id = models.CharField(max_length=40, db_index=True, verbose_name="Товар (ID)")
+    user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
+    rating = models.IntegerField(verbose_name="Оценка (1–5)")
+    text = models.TextField(blank=True, default="", verbose_name="Текст")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Создан")
+
+    class Meta:
+        db_table = "catalog_reviews"
+        unique_together = (("product_id", "user_id"),)
+        ordering = ["-created_at"]
+        verbose_name = "Отзыв"
+        verbose_name_plural = "Отзывы"
