@@ -763,8 +763,53 @@ function prPopulate() {
   const name = u.name || "Профиль";
   prModal.querySelector("[data-pr-name]").textContent = name;
   prModal.querySelector("[data-pr-phone]").textContent = u.phone || "";
-  prModal.querySelector("[data-pr-initial]").textContent =
-    (name.trim().charAt(0) || "S").toUpperCase();
+
+  // Единый аватар экосистемы: фото с сервера (если есть), иначе инициал.
+  const avEl = prModal.querySelector("[data-pr-initial]");
+  const avUrl =
+    window.STAW && window.STAW.avatarUrl ? window.STAW.avatarUrl(u) : "";
+  if (avEl) {
+    if (avUrl) {
+      avEl.style.backgroundImage = "url('" + avUrl + "')";
+      avEl.textContent = "";
+      avEl.classList.add("has-photo");
+    } else {
+      avEl.style.backgroundImage = "";
+      avEl.textContent = (name.trim().charAt(0) || "S").toUpperCase();
+      avEl.classList.remove("has-photo");
+    }
+    if (!avEl.dataset.avBound) {
+      avEl.dataset.avBound = "1";
+      avEl.title = "Сменить фото";
+      avEl.addEventListener("click", () => {
+        if (window.STAW && window.STAW.changeAvatar) {
+          window.STAW.changeAvatar(() => prPopulate());
+        }
+      });
+    }
+  }
+  // Ссылка «Убрать фото» — только когда фото есть.
+  const head = prModal.querySelector(".pr-head");
+  let rm = prModal.querySelector("[data-pr-avatar-remove]");
+  if (avUrl && head) {
+    if (!rm) {
+      rm = document.createElement("button");
+      rm.setAttribute("data-pr-avatar-remove", "");
+      rm.className = "pr-avatar-remove";
+      rm.type = "button";
+      rm.textContent = "Убрать фото";
+      rm.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (window.STAW && window.STAW.removeAvatar) {
+          window.STAW.removeAvatar(() => prPopulate());
+        }
+      });
+      head.appendChild(rm);
+    }
+    rm.style.display = "";
+  } else if (rm) {
+    rm.style.display = "none";
+  }
 
   // Реальные баллы пользователя (из /loyalty/account через ecosystem.js).
   const points = (window.STAW && window.STAW.ecoPoints) || 0;
@@ -817,6 +862,11 @@ if (prModal) {
       if (onLevels) prShowMenu();
       else prShowLevels();
     });
+
+  // Пункт меню «Баллы и уровень» — открывает уровни ВНУТРИ профиля (реальные
+  // баллы/уровень/пороги), а не уводит на публичную демо-секцию #loyalty.
+  const prLevelsMenu = prModal.querySelector("[data-pr-levels-menu]");
+  if (prLevelsMenu) prLevelsMenu.addEventListener("click", prShowLevels);
 
   const prOrdersBtn = prModal.querySelector("[data-pr-orders]");
   if (prOrdersBtn) prOrdersBtn.addEventListener("click", prShowOrders);
