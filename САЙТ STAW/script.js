@@ -863,10 +863,8 @@ if (prModal) {
       else prShowLevels();
     });
 
-  // Пункт меню «Баллы и уровень» — открывает уровни ВНУТРИ профиля (реальные
-  // баллы/уровень/пороги), а не уводит на публичную демо-секцию #loyalty.
-  const prLevelsMenu = prModal.querySelector("[data-pr-levels-menu]");
-  if (prLevelsMenu) prLevelsMenu.addEventListener("click", prShowLevels);
+  // Уровни открываются кликом по плитке баллов (data-pr-levels-open).
+  // Дублирующий пункт меню «Баллы и уровень» убран.
 
   const prOrdersBtn = prModal.querySelector("[data-pr-orders]");
   if (prOrdersBtn) prOrdersBtn.addEventListener("click", prShowOrders);
