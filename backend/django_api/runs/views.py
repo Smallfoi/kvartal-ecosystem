@@ -154,3 +154,21 @@ def runs(request):
         "flagged": flagged, "flagReason": reason,
         "pointsAwarded": points, "run": run.to_json(),
     })
+
+
+def approve_run(run):
+    """Модерация (S-04 ф.2): снять флаг с забега и начислить очки за бег.
+    Идемпотентно (по runId) — повторный вызов не дублирует начисление.
+    Возвращает кол-во начисленных за бег очков."""
+    points = round(run.distance_m / 1000.0 * POINTS_PER_KM)
+    if points > 0 and not LoyaltyTransaction.objects.filter(
+        user_id=run.user_id, run_id=run.id, source="runnerRun"
+    ).exists():
+        add_txn(run.user_id, points, "runnerRun",
+                f"Пробежка {run.distance_m / 1000.0:.1f} км (одобрено модератором)",
+                None, run.id)
+    run.flagged = False
+    run.flag_reason = ""
+    run.points_awarded = points
+    run.save(update_fields=["flagged", "flag_reason", "points_awarded"])
+    return points
