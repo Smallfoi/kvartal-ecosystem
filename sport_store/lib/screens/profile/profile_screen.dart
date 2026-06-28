@@ -26,8 +26,33 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with WidgetsBindingObserver {
   int _tab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Свежий профиль (в т.ч. единый аватар) при открытии экрана — без рестарта.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshProfile());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Вернулись в приложение (напр. сменили аватар в Квартале) → перечитать.
+    if (state == AppLifecycleState.resumed) _refreshProfile();
+  }
+
+  void _refreshProfile() {
+    if (mounted) context.read<AuthProvider>().refreshFromServer();
+  }
 
   void _openAuth({bool register = false}) {
     Navigator.of(context).push(

@@ -80,18 +80,34 @@ class AuthUser {
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
     id: j['id'] as String?,
-    name: j['name'] as String,
-    email: j['email'] as String,
+    name: (j['name'] as String?) ?? '',
+    email: (j['email'] as String?) ?? '',
     phone: j['phone'] as String?,
     city: j['city'] as String?,
     provider: LoginProvider.values.firstWhere(
       (e) => e.name == j['provider'],
       orElse: () => LoginProvider.email,
     ),
-    addresses: (j['addresses'] as List? ?? [])
-        .map((a) => SavedAddress.fromJson(a as Map<String, dynamic>))
-        .toList(),
+    addresses: _parseAddresses(j['addresses']),
     avatarPath: j['avatarPath'] as String?,
   );
+
+  // Бэкенд (после централизации адресов) отдаёт адреса СТРОКАМИ, раньше/локально —
+  // объектами. Парсим устойчиво и НЕ роняем весь профиль на ошибке (иначе при
+  // /auth/me падает разбор → аватар/баланс не синкаются между приложениями).
+  static List<SavedAddress> _parseAddresses(dynamic raw) {
+    if (raw is! List) return const [];
+    final out = <SavedAddress>[];
+    for (final a in raw) {
+      try {
+        if (a is Map) {
+          out.add(SavedAddress.fromJson(Map<String, dynamic>.from(a)));
+        } else if (a is String && a.trim().isNotEmpty) {
+          out.add(SavedAddress(city: '', street: a.trim(), house: ''));
+        }
+      } catch (_) {}
+    }
+    return out;
+  }
 }
 

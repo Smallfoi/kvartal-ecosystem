@@ -20,15 +20,33 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    // Всегда подтягиваем актуальный баланс из общего бека при показе профиля.
+    WidgetsBinding.instance.addObserver(this);
+    // При показе профиля тянем баланс/обувь И свежий профиль (единый аватар).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(loyaltyProvider.notifier).refresh();
       ref.read(shoesProvider.notifier).refresh();
+      ref.read(authProvider.notifier).restoreSession();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Вернулись в приложение → перечитать профиль (аватар мог смениться в другом).
+    if (state == AppLifecycleState.resumed) {
+      ref.read(authProvider.notifier).restoreSession();
+      ref.read(loyaltyProvider.notifier).refresh();
+    }
   }
 
   /// Pull-to-refresh: тянем баланс/профиль/статистику с бэка прямо на экране.

@@ -23,7 +23,8 @@ class AuthProvider extends ChangeNotifier {
     if (_user != null) refreshFromServer();
   }
 
-  /// backend пока не хранит адреса/локальный аватар — сохраняем их при синке.
+  /// Синк с backend. Аватар — единый серверный (источник правды, в т.ч. null при
+  /// удалении в другом приложении); локальные адреса сохраняем, если бек не отдал.
   AuthUser _mergeKeepingLocal(AuthUser fresh) => AuthUser(
     id: fresh.id,
     name: fresh.name,
@@ -32,7 +33,7 @@ class AuthProvider extends ChangeNotifier {
     city: fresh.city,
     provider: fresh.provider,
     addresses: fresh.addresses.isNotEmpty ? fresh.addresses : _user!.addresses,
-    avatarPath: fresh.avatarPath ?? _user!.avatarPath,
+    avatarPath: fresh.avatarPath,
   );
 
   /// Обновить профиль из backend (GET /auth/me). Тихо игнорирует офлайн/mock.
