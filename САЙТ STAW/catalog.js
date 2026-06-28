@@ -151,6 +151,31 @@
         (pick ? ' data-star="' + i + '"' : "") + ">★</span>";
     return s;
   }
+  // /media/... → абсолютный URL (origin = API без /v1).
+  function rvMedia(p) {
+    if (!p) return "";
+    if (/^https?:/.test(p)) return p;
+    return API.replace(/\/v1\/?$/, "") + (p.charAt(0) === "/" ? p : "/" + p);
+  }
+  // Загрузка фото отзыва (multipart) → URL.
+  function rvUploadPhoto(file) {
+    var headers = {};
+    var t = rvToken();
+    if (t) headers["Authorization"] = "Bearer " + t;
+    var fd = new FormData();
+    fd.append("image", file);
+    return fetch(API + "/reviews/photo", {
+      method: "POST",
+      headers: headers,
+      body: fd,
+    }).then(function (r) {
+      return r.text().then(function (x) {
+        var d = x ? JSON.parse(x) : null;
+        if (!r.ok) throw new Error((d && d.detail) || "Ошибка загрузки");
+        return d.url;
+      });
+    });
+  }
   function rvBox() {
     var modal = document.querySelector("[data-pv-modal]");
     if (!modal) return null;
@@ -187,7 +212,20 @@
           return (
             '<div class="rv-item"><div class="rv-top"><b>' + esc(r.name) +
             '</b><span class="rv-stars">' + stars(r.rating) + "</span></div>" +
-            (r.text ? "<p>" + esc(r.text) + "</p>" : "") + "</div>"
+            (r.text ? "<p>" + esc(r.text) + "</p>" : "") +
+            (r.photos && r.photos.length
+              ? '<div class="rv-shots">' +
+                r.photos
+                  .map(function (u) {
+                    return (
+                      '<a href="' + rvMedia(u) + '" target="_blank" rel="noopener">' +
+                      '<img src="' + rvMedia(u) + '" alt="фото отзыва"></a>'
+                    );
+                  })
+                  .join("") +
+                "</div>"
+              : "") +
+            "</div>"
           );
         })
         .join("");
@@ -199,6 +237,9 @@
         stars(mine ? mine.rating : 5, true) + "</div>" +
         '<textarea class="rv-text" placeholder="Ваш отзыв…">' +
         esc(mine ? mine.text : "") + "</textarea>" +
+        '<div class="rv-photos"></div>' +
+        '<label class="rv-attach">📷 Добавить фото' +
+        '<input type="file" accept="image/*" class="rv-file" hidden></label>' +
         '<button class="rv-send" type="button">' +
         (mine ? "Изменить отзыв" : "Оставить отзыв") + "</button>" +
         '<p class="rv-err"></p></div>';
@@ -216,6 +257,46 @@
         el.classList.toggle("on", i < v);
       });
     });
+    // Фото (до 5): загружаются сразу, в submit идут как массив URL.
+    var formPhotos = mine && mine.photos ? mine.photos.slice() : [];
+    var photosBox = form.querySelector(".rv-photos");
+    var fileInput = form.querySelector(".rv-file");
+    var attach = form.querySelector(".rv-attach");
+    function renderThumbs() {
+      photosBox.innerHTML = formPhotos
+        .map(function (u, i) {
+          return (
+            '<span class="rv-thumb"><img src="' + rvMedia(u) + '">' +
+            '<button type="button" data-rm="' + i + '">×</button></span>'
+          );
+        })
+        .join("");
+      photosBox.querySelectorAll("[data-rm]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          formPhotos.splice(Number(b.getAttribute("data-rm")), 1);
+          renderThumbs();
+        });
+      });
+      if (attach) attach.style.display = formPhotos.length >= 5 ? "none" : "";
+    }
+    renderThumbs();
+    if (fileInput)
+      fileInput.addEventListener("change", function () {
+        var f = fileInput.files && fileInput.files[0];
+        fileInput.value = "";
+        if (!f || formPhotos.length >= 5) return;
+        var err = form.querySelector(".rv-err");
+        err.textContent = "Загрузка фото…";
+        rvUploadPhoto(f)
+          .then(function (url) {
+            formPhotos.push(url);
+            err.textContent = "";
+            renderThumbs();
+          })
+          .catch(function (e2) {
+            err.textContent = e2.message || "Не удалось загрузить фото";
+          });
+      });
     form.querySelector(".rv-send").addEventListener("click", function () {
       if (!rvToken()) {
         form.querySelector(".rv-err").textContent = "Войдите, чтобы оставить отзыв";
@@ -227,7 +308,7 @@
       btn.disabled = true;
       rvApi("/products/" + pid + "/reviews", {
         method: "POST",
-        body: { rating: rating, text: text },
+        body: { rating: rating, text: text, photos: formPhotos },
       })
         .then(function () { rvLoad(box, pid); })
         .catch(function (err) {
@@ -273,6 +354,15 @@
       ".rv-send{padding:10px 16px;border:none;border-radius:10px;background:#20252b;color:#fff;" +
       "font:inherit;font-weight:700;cursor:pointer}.rv-send[disabled]{opacity:.5}" +
       ".rv-err{color:#c0392b;font-size:13px;min-height:16px;margin:6px 0 0}" +
+      ".rv-shots{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}" +
+      ".rv-shots img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block}" +
+      ".rv-photos{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}" +
+      ".rv-thumb{position:relative;display:inline-block}" +
+      ".rv-thumb img{width:60px;height:60px;object-fit:cover;border-radius:8px;display:block}" +
+      ".rv-thumb button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border:none;" +
+      "border-radius:50%;background:#20252b;color:#fff;font-size:13px;line-height:1;cursor:pointer}" +
+      ".rv-attach{display:inline-block;cursor:pointer;font-size:13px;font-weight:600;color:#167a95;" +
+      "border:1px dashed #9fc6d4;border-radius:10px;padding:8px 12px;margin:0 0 10px}" +
       ".product-rating{color:#e8a000;font-weight:700;font-size:13px;margin:2px 0 4px}" +
       ".product-rating span{color:inherit;opacity:.6;font-weight:600}";
     var s = document.createElement("style");
