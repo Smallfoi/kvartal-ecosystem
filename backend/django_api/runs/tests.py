@@ -1,6 +1,8 @@
 """Регрессии анти-чита бега (S-04): сервер сам считает очки, чит/реплей → flagged/0."""
 import time
 
+from django.test import TestCase
+
 from common.testutils import ApiTestCase
 
 _NOW_MS = int(time.time() * 1000)
@@ -102,3 +104,44 @@ class RunAntiCheatTests(ApiTestCase):
         )
         self.assertEqual(r.status_code, 403)
         self.assertEqual(self.balance(), 0)
+
+    def test_approve_flagged_run_awards_points_idempotent(self):
+        """S-04 ф.2: модератор одобряет флаг-забег → очки начисляются один раз."""
+        from runs.models import Run
+        from runs.views import approve_run
+
+        # Спид-чит: 5 км за 10 с → flagged, 0 очков.
+        self.api_post("/v1/runs", {
+            "id": "r_mod", "distanceMeters": 5000, "elapsedSeconds": 10,
+            "finishedAtMs": _NOW_MS,
+        })
+        run = Run.objects.get(id="r_mod")
+        self.assertTrue(run.flagged)
+        self.assertEqual(self.balance(), 0)
+        # Одобрение → снят флаг + 50 очков (5 км × 10).
+        self.assertEqual(approve_run(run), 50)
+        run.refresh_from_db()
+        self.assertFalse(run.flagged)
+        self.assertEqual(run.points_awarded, 50)
+        self.assertEqual(self.balance(), 50)
+        # Повторное одобрение не дублирует начисление.
+        approve_run(run)
+        self.assertEqual(self.balance(), 50)
+
+
+class ModeratorGroupTests(TestCase):
+    """S-10 ф.2: команда создаёт группу «Модератор» с ограниченными правами."""
+
+    def test_setup_moderator_group(self):
+        from django.contrib.auth.models import Group
+        from django.core.management import call_command
+
+        call_command("setup_moderator_group")
+        g = Group.objects.get(name="Модератор")
+        codes = set(g.permissions.values_list("codename", flat=True))
+        # Может модерировать забеги/отзывы/аккаунты.
+        self.assertIn("change_run", codes)
+        self.assertIn("change_review", codes)
+        self.assertIn("change_account", codes)
+        # НЕ полный админ: не правит товары.
+        self.assertNotIn("change_product", codes)
