@@ -130,6 +130,8 @@ class Review(models.Model):
     user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
     rating = models.IntegerField(verbose_name="Оценка (1–5)")
     text = models.TextField(blank=True, default="", verbose_name="Текст")
+    photos = models.JSONField(default=list, blank=True, verbose_name="Фото (URL)")
+    hidden = models.BooleanField(default=False, verbose_name="Скрыт (модерация)")
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Создан")
 
     class Meta:

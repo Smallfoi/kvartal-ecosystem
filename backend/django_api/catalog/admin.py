@@ -1,8 +1,9 @@
 from django.contrib import admin
-from django.utils.html import format_html
+from django.db.models import Avg, Count
+from django.utils.html import format_html, format_html_join
 from unfold.admin import ModelAdmin
 
-from .models import Banner, Category, Product
+from .models import Banner, Category, Product, Review
 
 
 @admin.action(description="Опубликовать (на витрину)")
@@ -107,3 +108,69 @@ class BannerAdmin(ModelAdmin):
     search_fields = ("title", "subtitle")
     ordering = ("sort",)
     actions = [make_published, make_draft]
+
+
+# ── Модерация отзывов ───────────────────────────────────────────────────────
+
+def _recompute_product_rating(product_id):
+    """Пересчёт рейтинга/кол-ва товара по видимым отзывам (скрытые не считаются)."""
+    agg = Review.objects.filter(product_id=product_id, hidden=False).aggregate(
+        a=Avg("rating"), c=Count("id")
+    )
+    Product.objects.filter(id=product_id).update(
+        rating=round(agg["a"] or 0, 1), review_count=agg["c"] or 0
+    )
+
+
+@admin.action(description="Скрыть (модерация)")
+def hide_reviews(modeladmin, request, queryset):
+    pids = set(queryset.values_list("product_id", flat=True))
+    n = queryset.update(hidden=True)
+    for pid in pids:
+        _recompute_product_rating(pid)
+    modeladmin.message_user(request, f"Скрыто отзывов: {n}")
+
+
+@admin.action(description="Показать (снять скрытие)")
+def show_reviews(modeladmin, request, queryset):
+    pids = set(queryset.values_list("product_id", flat=True))
+    n = queryset.update(hidden=False)
+    for pid in pids:
+        _recompute_product_rating(pid)
+    modeladmin.message_user(request, f"Показано отзывов: {n}")
+
+
+@admin.register(Review)
+class ReviewAdmin(ModelAdmin):
+    list_display = (
+        "id", "product_id", "user_id", "rating", "short_text",
+        "photos_count", "hidden", "created_at",
+    )
+    list_display_links = ("id",)
+    list_editable = ("hidden",)
+    list_filter = ("hidden", "rating", "created_at")
+    search_fields = ("id", "product_id", "user_id", "text")
+    ordering = ("-created_at",)
+    actions = [hide_reviews, show_reviews]
+    readonly_fields = ("photos_preview", "created_at")
+
+    @admin.display(description="Текст")
+    def short_text(self, obj):
+        t = obj.text or ""
+        return (t[:60] + "…") if len(t) > 60 else (t or "—")
+
+    @admin.display(description="Фото")
+    def photos_count(self, obj):
+        return len(obj.photos or [])
+
+    @admin.display(description="Фото отзыва")
+    def photos_preview(self, obj):
+        urls = obj.photos or []
+        if not urls:
+            return "Нет фото"
+        return format_html_join(
+            "",
+            '<img src="{}" style="height:90px;border-radius:8px;'
+            'margin:0 6px 6px 0;object-fit:cover"/>',
+            ((u,) for u in urls),
+        )
