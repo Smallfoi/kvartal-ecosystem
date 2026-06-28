@@ -6,6 +6,35 @@ from django.test import TestCase
 
 from common.testutils import ApiTestCase
 from loyalty.models import LoyaltyTransaction, add_txn, seed_runner_points
+from notifications.models import Notification
+
+
+class LevelUpNotificationTests(TestCase):
+    """Уведомление при росте уровня лояльности (бег/территории/покупки → add_txn)."""
+
+    def _levels(self, uid):
+        return Notification.objects.filter(user_id=uid, type="level")
+
+    def test_crossing_threshold_notifies_once(self):
+        uid = "u_lvl_a"
+        add_txn(uid, 150, "runnerRun", "пробежка")  # basic — без уведомления
+        self.assertEqual(self._levels(uid).count(), 0)
+        add_txn(uid, 100, "runnerRun", "пробежка")  # 250 → silver
+        self.assertEqual(self._levels(uid).count(), 1)
+        self.assertIn("Серебро", self._levels(uid).first().title)
+
+    def test_no_duplicate_within_same_level(self):
+        uid = "u_lvl_b"
+        add_txn(uid, 250, "runnerRun")  # → silver (1)
+        add_txn(uid, 50, "runnerRun")  # 300, всё ещё silver
+        self.assertEqual(self._levels(uid).count(), 1)
+
+    def test_redeem_does_not_notify(self):
+        uid = "u_lvl_c"
+        add_txn(uid, 600, "manual")  # → gold (1)
+        add_txn(uid, -500, "redeem")  # списание (amount<0) — без уведомления
+        self.assertEqual(self._levels(uid).count(), 1)
+        self.assertIn("Золото", self._levels(uid).first().title)
 
 
 class SeedGateTests(TestCase):

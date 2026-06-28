@@ -83,6 +83,9 @@ class _Empty extends StatelessWidget {
 }
 
 ({IconData icon, Color color}) _meta(String type, String title) {
+  if (type == 'level' || title.contains('ровень')) {
+    return (icon: CupertinoIcons.star_fill, color: AppColors.warning);
+  }
   if (title.contains('одобрена')) {
     return (icon: CupertinoIcons.checkmark_seal_fill, color: AppColors.success);
   }
