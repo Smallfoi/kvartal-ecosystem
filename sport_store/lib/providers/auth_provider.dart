@@ -202,40 +202,59 @@ class AuthProvider extends ChangeNotifier {
     avatarPath: fresh.avatarPath,
   );
 
-  void addAddress(SavedAddress address) {
+  AuthUser _withAddresses(List<SavedAddress> list) => AuthUser(
+    id: _user!.id,
+    name: _user!.name,
+    email: _user!.email,
+    phone: _user!.phone,
+    provider: _user!.provider,
+    city: _user!.city,
+    addresses: list,
+    avatarPath: _user!.avatarPath,
+  );
+
+  /// Сохранить адреса на общий бэкенд (единые в экосистеме). Локально уже
+  /// применены — здесь только синк; при офлайне молча остаёмся на кэше.
+  Future<void> _persistAddresses(List<SavedAddress> list) async {
+    if (_user == null) return;
+    try {
+      final fresh = await _repo.updateProfile(_user!, addresses: list);
+      // Берём адреса с сервера, аватар оставляем серверным (единый).
+      _user = AuthUser(
+        id: fresh.id,
+        name: fresh.name,
+        email: fresh.email,
+        phone: fresh.phone,
+        provider: fresh.provider,
+        city: fresh.city,
+        addresses: fresh.addresses,
+        avatarPath: fresh.avatarPath,
+      );
+      _save();
+      notifyListeners();
+    } catch (_) {
+      // офлайн/ошибка — адрес уже в локальном кэше, долетит позже
+    }
+  }
+
+  Future<void> addAddress(SavedAddress address) async {
     if (_user == null) return;
     final list = List<SavedAddress>.from(_user!.addresses);
     final exists = list.any((a) => a.displayLine == address.displayLine);
     if (!exists) list.insert(0, address);
-    _user = AuthUser(
-      id: _user!.id,
-      name: _user!.name,
-      email: _user!.email,
-      phone: _user!.phone,
-      provider: _user!.provider,
-      city: _user!.city,
-      addresses: list,
-      avatarPath: _user!.avatarPath,
-    );
+    _user = _withAddresses(list);
     _save();
     notifyListeners();
+    await _persistAddresses(list);
   }
 
-  void removeAddress(int index) {
+  Future<void> removeAddress(int index) async {
     if (_user == null) return;
     final list = List<SavedAddress>.from(_user!.addresses)..removeAt(index);
-    _user = AuthUser(
-      id: _user!.id,
-      name: _user!.name,
-      email: _user!.email,
-      phone: _user!.phone,
-      provider: _user!.provider,
-      city: _user!.city,
-      addresses: list,
-      avatarPath: _user!.avatarPath,
-    );
+    _user = _withAddresses(list);
     _save();
     notifyListeners();
+    await _persistAddresses(list);
   }
 
   Future<String?> changePassword(

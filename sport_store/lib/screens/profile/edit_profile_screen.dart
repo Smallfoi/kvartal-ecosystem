@@ -33,6 +33,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _addressCityCtrl = TextEditingController();
   final _streetCtrl = TextEditingController();
   final _houseCtrl = TextEditingController();
+  final _buildingCtrl = TextEditingController();
   final _aptCtrl = TextEditingController();
   final _postalCtrl = TextEditingController();
   String? _addressError;
@@ -70,6 +71,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _addressCityCtrl,
       _streetCtrl,
       _houseCtrl,
+      _buildingCtrl,
       _aptCtrl,
       _postalCtrl,
     ]) {
@@ -126,6 +128,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         city: _addressCityCtrl.text.trim(),
         street: _streetCtrl.text.trim(),
         house: _houseCtrl.text.trim(),
+        building: _buildingCtrl.text.trim().isNotEmpty
+            ? _buildingCtrl.text.trim()
+            : null,
         apartment: _aptCtrl.text.trim().isNotEmpty
             ? _aptCtrl.text.trim()
             : null,
@@ -140,6 +145,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _addressCityCtrl,
       _streetCtrl,
       _houseCtrl,
+      _buildingCtrl,
       _aptCtrl,
       _postalCtrl,
     ]) {
@@ -620,6 +626,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 label: 'Дом',
                                 hint: '12А',
                                 icon: Icons.home_outlined,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _Field(
+                                ctrl: _buildingCtrl,
+                                label: 'Корпус',
+                                hint: '1',
+                                icon: Icons.apartment_outlined,
                               ),
                             ),
                             const SizedBox(width: 12),

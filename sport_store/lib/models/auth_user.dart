@@ -7,6 +7,7 @@ class SavedAddress {
   final String city;
   final String street;
   final String house;
+  final String? building; // корпус
   final String? apartment;
   final String? postalCode;
 
@@ -15,14 +16,18 @@ class SavedAddress {
     required this.city,
     required this.street,
     required this.house,
+    this.building,
     this.apartment,
     this.postalCode,
   });
 
   String get displayLine {
     final parts = [city, street, house].where((s) => s.isNotEmpty).join(', ');
-    final apt = apartment != null ? ', кв. $apartment' : '';
-    return '$parts$apt';
+    final bld =
+        (building != null && building!.isNotEmpty) ? ', корп. $building' : '';
+    final apt =
+        (apartment != null && apartment!.isNotEmpty) ? ', кв. $apartment' : '';
+    return '$parts$bld$apt';
   }
 
   String get displayTitle => label.isNotEmpty ? label : displayLine;
@@ -32,6 +37,7 @@ class SavedAddress {
     'city': city,
     'street': street,
     'house': house,
+    'building': building,
     'apartment': apartment,
     'postalCode': postalCode,
   };
@@ -41,6 +47,7 @@ class SavedAddress {
     city: j['city'] as String? ?? '',
     street: j['street'] as String? ?? '',
     house: j['house'] as String? ?? '',
+    building: j['building'] as String?,
     apartment: j['apartment'] as String?,
     postalCode: j['postalCode'] as String?,
   );
