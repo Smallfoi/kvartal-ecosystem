@@ -102,7 +102,8 @@ def banners(request):
 # ── Отзывы на товары ────────────────────────────────────────────────────────
 
 def _recompute_rating(product_id):
-    agg = Review.objects.filter(product_id=product_id).aggregate(
+    # Скрытые модерацией отзывы не влияют на рейтинг.
+    agg = Review.objects.filter(product_id=product_id, hidden=False).aggregate(
         a=Avg("rating"), c=Count("id")
     )
     Product.objects.filter(id=product_id).update(
@@ -130,6 +131,7 @@ def _review_json(r, uid):
         "name": _review_name(r.user_id),
         "rating": r.rating,
         "text": r.text,
+        "photos": r.photos or [],
         "createdAt": r.created_at.isoformat(),
         "mine": r.user_id == uid,
     }
@@ -145,7 +147,8 @@ def product_reviews(request, pid):
     uid = user_id_from_request(request)
     if request.method == "GET":
         reviews = [
-            _review_json(r, uid) for r in Review.objects.filter(product_id=pid)
+            _review_json(r, uid)
+            for r in Review.objects.filter(product_id=pid, hidden=False)
         ]
         return Response(
             {
@@ -168,10 +171,16 @@ def product_reviews(request, pid):
     if rating < 1 or rating > 5:
         return Response({"detail": "Оценка должна быть от 1 до 5"}, status=400)
     text = (d.get("text") or "").strip()[:2000]
+    # Фото отзыва: до 5 URL (загружаются через POST /v1/reviews/photo).
+    photos = d.get("photos")
+    if not isinstance(photos, list):
+        photos = []
+    photos = [str(p).strip() for p in photos if isinstance(p, str) and p.strip()][:5]
     obj = Review.objects.filter(product_id=pid, user_id=uid).first()
     if obj:
         obj.rating = rating
         obj.text = text
+        obj.photos = photos
         obj.created_at = timezone.now()
         obj.save()
     else:
@@ -181,6 +190,7 @@ def product_reviews(request, pid):
             user_id=uid,
             rating=rating,
             text=text,
+            photos=photos,
         )
     _recompute_rating(pid)
     product.refresh_from_db()
@@ -191,3 +201,26 @@ def product_reviews(request, pid):
             "review": _review_json(obj, uid),
         }
     )
+
+
+@api_view(["POST"])
+def review_photo(request):
+    """Загрузка фото к отзыву (multipart `image`) → URL в media. Авторизованные;
+    право оставить отзыв проверяется при сохранении (купившие товар)."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    f = request.FILES.get("image")
+    if not f:
+        return Response({"detail": "Нет файла"}, status=400)
+    if f.size > 5 * 1024 * 1024:
+        return Response({"detail": "Файл слишком большой (макс 5 МБ)"}, status=400)
+    if not (f.content_type or "").startswith("image/"):
+        return Response({"detail": "Нужен файл-изображение"}, status=400)
+    from django.core.files.storage import default_storage
+
+    ext = (f.name.rsplit(".", 1)[-1] if "." in f.name else "jpg").lower()[:5]
+    saved = default_storage.save(
+        f"uploads/reviews/{uid}_{secrets.token_hex(6)}.{ext}", f
+    )
+    return Response({"url": f"/media/{saved}"})
