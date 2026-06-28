@@ -150,3 +150,34 @@ class AuthThrottleTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(r.status_code, 401)
+
+
+class MeStatsTests(ApiTestCase):
+    """Личная аналитика: агрегаты забегов/баллов/заказов из общего бэка."""
+
+    phone = "+79990006001"
+
+    def test_me_stats_aggregates(self):
+        import time
+
+        from orders.models import Order
+
+        # Забег 5 км → +50 баллов (сервер считает).
+        self.api_post("/v1/runs", {
+            "id": "rs1", "distanceMeters": 5000, "elapsedSeconds": 1800,
+            "finishedAtMs": int(time.time() * 1000),
+        })
+        Order.objects.create(
+            user_id=self.uid, order_id="SS-9", total=5000,
+            payload={"id": "SS-9", "items": []},
+        )
+        d = self.api_get("/v1/me/stats").json()
+        self.assertEqual(d["runs"]["count"], 1)
+        self.assertEqual(d["runs"]["totalKm"], 5.0)
+        self.assertEqual(d["loyalty"]["balance"], 50)
+        self.assertGreaterEqual(d["loyalty"]["earned"], 50)
+        self.assertEqual(d["orders"]["count"], 1)
+        self.assertEqual(d["orders"]["totalSpent"], 5000)
+
+    def test_me_stats_requires_auth(self):
+        self.assertEqual(self.client.get("/v1/me/stats").status_code, 401)
