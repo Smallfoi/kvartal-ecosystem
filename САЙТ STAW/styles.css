@@ -2324,12 +2324,12 @@ html.js.motion-off .hero .brand-wordmark span {
 }
 
 .pr-addr-add {
-  display: flex;
+  display: grid;
   gap: 8px;
 }
 
 .pr-addr-add input {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   min-height: 46px;
   padding: 0 14px;
@@ -2344,16 +2344,26 @@ html.js.motion-off .hero .brand-wordmark span {
   border-color: var(--accent);
 }
 
-.pr-addr-btn {
-  flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
+/* Дом · корпус · квартира — в одну строку (структурный адрес). */
+.pr-addr-grid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.pr-addr-add-btn {
+  min-height: 46px;
   border: 0;
   border-radius: 12px;
   background: var(--graphite);
   color: var(--on-dark);
-  font-size: 20px;
+  font: inherit;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.pr-addr-add-btn:hover {
+  filter: brightness(1.12);
 }
 
 /* — Модалка юр-документа (/legal/documents) — */
