@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../data/api/api_config.dart';
 import '../../models/loyalty.dart';
 import '../../models/order.dart';
 import '../../providers/auth_provider.dart';
@@ -423,8 +424,10 @@ class _UserHeader extends StatelessWidget {
             ),
             clipBehavior: Clip.antiAlias,
             child: user.avatarPath != null
-                ? Image.file(
-                    File(user.avatarPath!),
+                ? Image(
+                    image: ApiConfig.isRemoteAvatar(user.avatarPath)
+                        ? NetworkImage(ApiConfig.resolveMedia(user.avatarPath))
+                        : FileImage(File(user.avatarPath!)) as ImageProvider,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Center(
                       child: Text(_initials,

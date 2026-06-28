@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../data/api/api_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 
@@ -87,11 +88,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       maxWidth: 600,
     );
     if (result == null || !mounted) return;
-    context.read<AuthProvider>().setAvatar(result.path);
+    final err = await context.read<AuthProvider>().uploadAvatar(result.path);
+    if (err != null && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(err)));
+    }
   }
 
-  void _removeAvatar() {
-    context.read<AuthProvider>().setAvatar(null);
+  Future<void> _removeAvatar() async {
+    await context.read<AuthProvider>().removeAvatar();
   }
 
   // ── Address ──────────────────────────────────────────────────────────────────
@@ -219,8 +225,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 ),
                                 clipBehavior: Clip.antiAlias,
                                 child: user.avatarPath != null
-                                    ? Image.file(
-                                        File(user.avatarPath!),
+                                    ? Image(
+                                        image: ApiConfig.isRemoteAvatar(
+                                                user.avatarPath)
+                                            ? NetworkImage(ApiConfig.resolveMedia(
+                                                user.avatarPath))
+                                            : FileImage(File(user.avatarPath!))
+                                                as ImageProvider,
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) =>
                                             _initialsWidget(user.name),

@@ -72,6 +72,24 @@ class ApiClient {
     return _decode(res);
   }
 
+  Future<dynamic> delete(String path) async {
+    final res = await _client
+        .delete(_uri(path), headers: _headers)
+        .timeout(ApiConfig.timeout);
+    return _decode(res);
+  }
+
+  /// Multipart-загрузка файла (поле `image`) — для серверного аватара.
+  Future<dynamic> uploadImage(String path, String filePath) async {
+    final req = http.MultipartRequest('POST', _uri(path));
+    if (authToken != null) {
+      req.headers['Authorization'] = 'Bearer $authToken';
+    }
+    req.files.add(await http.MultipartFile.fromPath('image', filePath));
+    final streamed = await req.send().timeout(ApiConfig.timeout);
+    return _decode(await http.Response.fromStream(streamed));
+  }
+
   dynamic _decode(http.Response res) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return null;

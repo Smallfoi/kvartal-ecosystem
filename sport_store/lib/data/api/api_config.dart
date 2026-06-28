@@ -33,4 +33,16 @@ class ApiConfig {
       useApiNotifications;
 
   static const Duration timeout = Duration(seconds: 15);
+
+  /// Относительный media-URL (`/media/...`) → абсолютный (origin без `/v1`).
+  /// Для серверного аватара (единый для экосистемы). http/пусто — как есть.
+  static String resolveMedia(String? url) {
+    if (url == null || url.isEmpty || url.startsWith('http')) return url ?? '';
+    final origin = baseUrl.replaceFirst(RegExp(r'/v1/?$'), '');
+    return url.startsWith('/') ? '$origin$url' : '$origin/$url';
+  }
+
+  /// true — это серверный аватар (URL), а не локальный файл устройства (legacy).
+  static bool isRemoteAvatar(String? path) =>
+      path != null && (path.startsWith('http') || path.startsWith('/media'));
 }
