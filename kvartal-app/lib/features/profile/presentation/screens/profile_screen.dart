@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/api/api_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../loyalty/data/loyalty_provider.dart';
@@ -186,7 +188,7 @@ class _ProfileAppBar extends ConsumerWidget {
                   onTap: () => context.push('/profile/edit'),
                   child: Stack(
                     children: [
-                      _Avatar(name: name, size: 84),
+                      _Avatar(name: name, size: 84, avatarPath: user?.avatarPath),
                       Positioned(
                         right: 0,
                         bottom: 0,
@@ -254,7 +256,10 @@ class _Avatar extends StatelessWidget {
   final String name;
   final double size;
 
-  const _Avatar({required this.name, required this.size});
+  /// Единый аватар экосистемы (URL с сервера) — если задан, рисуем фото.
+  final String? avatarPath;
+
+  const _Avatar({required this.name, required this.size, this.avatarPath});
 
   String get _initials {
     final parts = name
@@ -266,27 +271,54 @@ class _Avatar extends StatelessWidget {
     return parts.isNotEmpty ? parts.first[0].toUpperCase() : '?';
   }
 
+  bool get _hasPhoto {
+    final p = avatarPath;
+    return p != null && (p.startsWith('http') || p.startsWith('/media'));
+  }
+
+  Widget _initialsCircle() => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: AppColors.electricBlue.withValues(alpha: 0.2),
+      border: Border.all(
+        color: AppColors.electricBlue.withValues(alpha: 0.5),
+        width: 2,
+      ),
+    ),
+    child: Center(
+      child: Text(
+        _initials,
+        style: TextStyle(
+          fontSize: size * 0.32,
+          fontWeight: FontWeight.w800,
+          color: AppColors.electricBlue,
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
+    if (!_hasPhoto) return _initialsCircle();
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.electricBlue.withValues(alpha: 0.2),
         border: Border.all(
           color: AppColors.electricBlue.withValues(alpha: 0.5),
           width: 2,
         ),
       ),
-      child: Center(
-        child: Text(
-          _initials,
-          style: TextStyle(
-            fontSize: size * 0.32,
-            fontWeight: FontWeight.w800,
-            color: AppColors.electricBlue,
-          ),
+      child: ClipOval(
+        child: Image.network(
+          ApiConfig.resolveMedia(avatarPath),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _initialsCircle(),
         ),
       ),
     );
@@ -460,6 +492,45 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
+  Future<void> _pickAvatar() async {
+    final hasPhoto = (ref.read(authProvider).user?.avatarPath ?? '').isNotEmpty;
+    final action = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: const Text('Фото профиля'),
+        message: const Text('Один аватар для всех приложений экосистемы STAW.'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(ctx, 'upload'),
+            child: Text(hasPhoto ? 'Сменить фото' : 'Загрузить фото'),
+          ),
+          if (hasPhoto)
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.pop(ctx, 'remove'),
+              child: const Text('Убрать фото'),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Отмена'),
+        ),
+      ),
+    );
+    if (action == 'upload') {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        await ref.read(authProvider.notifier).uploadAvatar(picked.path);
+      }
+    } else if (action == 'remove') {
+      await ref.read(authProvider.notifier).removeAvatar();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
@@ -477,11 +548,41 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(
-                child: _Avatar(
-                  name: _nameCtrl.text.trim().isEmpty
-                      ? 'КВАРТАЛ'
-                      : _nameCtrl.text,
-                  size: 92,
+                child: GestureDetector(
+                  onTap: auth.isLoading ? null : _pickAvatar,
+                  behavior: HitTestBehavior.opaque,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      _Avatar(
+                        name: _nameCtrl.text.trim().isEmpty
+                            ? 'КВАРТАЛ'
+                            : _nameCtrl.text,
+                        size: 92,
+                        avatarPath: auth.user?.avatarPath,
+                      ),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.electricBlue,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.bgDark,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            CupertinoIcons.camera_fill,
+                            size: 13,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 20),

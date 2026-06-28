@@ -305,6 +305,49 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Загрузить фото профиля (единый аватар экосистемы). Multipart на сервер →
+  /// avatar_path в media; все приложения берут аватар по /auth/me.
+  Future<bool> uploadAvatar(String filePath) async {
+    final token = state.token;
+    if (token == null || token.isEmpty) return false;
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final form = FormData.fromMap({
+        'image': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/profile/avatar',
+        data: form,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final user = AuthUser.fromJson(response.data ?? {});
+      await _saveSession(token, user, user.phone ?? state.phone);
+      state = state.copyWith(isLoading: false, user: user, clearError: true);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _authErrorText(e));
+      return false;
+    }
+  }
+
+  /// Снять фото профиля (вернуться к инициалам).
+  Future<bool> removeAvatar() async {
+    final token = state.token;
+    if (token == null || token.isEmpty) return false;
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/profile/avatar',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final user = AuthUser.fromJson(response.data ?? {});
+      await _saveSession(token, user, user.phone ?? state.phone);
+      state = state.copyWith(user: user);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   String _authErrorText(Object error) {
     if (error is DioException) {
       if (error.type == DioExceptionType.connectionTimeout ||
