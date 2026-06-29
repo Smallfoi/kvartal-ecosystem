@@ -14,6 +14,8 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/privacy_screen.dart';
 import '../../features/shoes/presentation/screens/shoes_screen.dart';
+import '../../features/tools/presentation/screens/tools_hub_screen.dart';
+import '../../features/tools/presentation/screens/pace_converter_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
 
@@ -131,6 +133,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile/privacy',
             builder: (_, __) => const PrivacyScreen(),
+          ),
+          // Инструменты бегуна — офлайн-калькуляторы/таймеры (вход из профиля).
+          GoRoute(
+            path: '/tools',
+            builder: (_, __) => const ToolsHubScreen(),
+          ),
+          GoRoute(
+            path: '/tools/pace',
+            builder: (_, __) => const PaceConverterScreen(),
           ),
         ],
       ),
