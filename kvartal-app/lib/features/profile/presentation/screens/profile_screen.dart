@@ -90,6 +90,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     const SizedBox(height: 12),
                     const _ShoesCard(),
                     const SizedBox(height: 12),
+                    const _ToolsCard(),
+                    const SizedBox(height: 12),
                     _AccountCard(user: user),
                     const SizedBox(height: 24),
                     Text(
@@ -1317,6 +1319,71 @@ class _ShoesCard extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
             ],
+            const Icon(
+              CupertinoIcons.chevron_right,
+              color: AppColors.textTertiary,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Вход в раздел «Инструменты бегуна» (офлайн-калькуляторы и таймеры).
+class _ToolsCard extends StatelessWidget {
+  const _ToolsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/tools'),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.separator),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.electricBlue.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                CupertinoIcons.wrench_fill,
+                color: AppColors.electricBlue,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Инструменты бегуна',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  Text(
+                    'калькуляторы и таймеры для тренировок',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                  ),
+                ],
+              ),
+            ),
             const Icon(
               CupertinoIcons.chevron_right,
               color: AppColors.textTertiary,
