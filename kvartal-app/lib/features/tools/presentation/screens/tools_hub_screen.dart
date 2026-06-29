@@ -17,6 +17,18 @@ class ToolsHubScreen extends StatelessWidget {
       subtitle: 'Перевод темпа ↔ скорости и время забега',
       route: '/tools/pace',
     ),
+    ToolEntry(
+      icon: CupertinoIcons.heart_fill,
+      title: 'Пульсовые зоны',
+      subtitle: 'Z1–Z5 по возрасту и пульсу покоя',
+      route: '/tools/hr-zones',
+    ),
+    ToolEntry(
+      icon: Icons.straighten,
+      title: 'Размер кроссовок',
+      subtitle: 'Длина стопы → RU/EU, UK, US',
+      route: '/tools/shoe-size',
+    ),
   ];
 
   @override
