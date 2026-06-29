@@ -371,9 +371,43 @@
     document.head.appendChild(s);
   }
 
+  // Блокировка скролла фона, пока открыт любой оверлей (.is-open у модалок/панелей).
+  // Надёжнее CSS :has() — через MutationObserver: ловит любую модалку независимо от
+  // поддержки :has() и от того, html или body является скролл-контейнером.
+  function lockScrollUnderModals() {
+    var MODALS = [
+      "pv-modal", "pr-modal", "co-modal", "cart-panel", "mobile-nav", "eco-modal",
+    ];
+    function anyOpen() {
+      for (var i = 0; i < MODALS.length; i++) {
+        if (document.querySelector("." + MODALS[i] + ".is-open")) return true;
+      }
+      return false;
+    }
+    function sync() {
+      var lock = anyOpen();
+      document.documentElement.style.overflow = lock ? "hidden" : "";
+      document.body.style.overflow = lock ? "hidden" : "";
+    }
+    var obs = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var t = muts[i].target;
+        if (!t.classList) continue;
+        for (var j = 0; j < MODALS.length; j++) {
+          if (t.classList.contains(MODALS[j])) { sync(); return; }
+        }
+      }
+    });
+    obs.observe(document.body, {
+      subtree: true, attributes: true, attributeFilter: ["class"],
+    });
+    sync();
+  }
+
   function init() {
     injectReviewStyles();
     mountReviews();
+    lockScrollUnderModals();
     load();
   }
   if (document.readyState === "loading") {
