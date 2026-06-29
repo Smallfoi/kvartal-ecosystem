@@ -1059,7 +1059,12 @@ html.js.motion-off .hero .brand-wordmark span {
   display: flex;
   flex-direction: column;
   padding: clamp(20px, 2.4vw, 34px);
-  overflow: auto;
+  /* Пространство снизу, чтобы последние кнопки (отзыв/фото) не липли к краю. */
+  padding-bottom: clamp(28px, 3.5vw, 44px);
+  /* min-height:0 — грид-ячейка может сжиматься, иначе overflow не скроллит и
+     контент (форма отзыва) обрезается рамкой карточки. */
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .pv-cat {
@@ -1177,6 +1182,12 @@ html.js.motion-off .hero .brand-wordmark span {
     grid-template-columns: 1fr;
     max-height: 92vh;
     overflow: auto;
+  }
+
+  /* На мобильном скроллится карточка целиком (фото + инфо стопкой) —
+     у .pv-info свой скролл отключаем, чтобы не было вложенного. */
+  .pv-info {
+    overflow: visible;
   }
 
   .pv-media img {
@@ -2848,4 +2859,16 @@ html.lenis body {
   .loyalty-steps {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Блокировка скролла фона под открытым оверлеем ──────────────────────────
+   Пока поверх стоит модалка/панель — страница под ней не двигается, скроллится
+   только верхний слой (квик-вью, профиль, корзина, чек-аут, меню, вход). */
+html:has(.pv-modal.is-open),
+html:has(.pr-modal.is-open),
+html:has(.co-modal.is-open),
+html:has(.cart-panel.is-open),
+html:has(.mobile-nav.is-open),
+html:has(.eco-modal.is-open) {
+  overflow: hidden;
 }
