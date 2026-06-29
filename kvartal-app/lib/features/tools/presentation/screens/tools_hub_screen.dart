@@ -29,6 +29,18 @@ class ToolsHubScreen extends StatelessWidget {
       subtitle: 'Длина стопы → RU/EU, UK, US',
       route: '/tools/shoe-size',
     ),
+    ToolEntry(
+      icon: Icons.music_note,
+      title: 'Метроном каденса',
+      subtitle: 'Ритм шагов (шагов/мин) звуком и вибро',
+      route: '/tools/metronome',
+    ),
+    ToolEntry(
+      icon: Icons.timer,
+      title: 'Интервальный таймер',
+      subtitle: 'Работа/отдых по раундам, сигналы на сменах',
+      route: '/tools/interval',
+    ),
   ];
 
   @override
