@@ -29,11 +29,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     if (location.startsWith('/leaderboard')) return 2;
     if (location.startsWith('/club')) return 3;
     if (location.startsWith('/profile')) return 4;
+    if (location.startsWith('/tools')) return 5;
     return 0;
   }
 
   void _onTap(BuildContext context, int index) {
-    const routes = ['/map', '/run', '/leaderboard', '/club', '/profile'];
+    const routes = ['/map', '/run', '/leaderboard', '/club', '/profile', '/tools'];
     // Закрываем открытый модальный лист (погода, выбор кроссовок и т.п.) на текущей
     // вкладке — иначе он висит поверх новой вкладки при переключении.
     final shellNav = shellNavigatorKey.currentState;
@@ -135,6 +136,13 @@ class _KvartalNavBar extends StatelessWidget {
                     label: AppStrings.tabProfile,
                     isActive: currentIndex == 4,
                     onTap: () => onTap(4),
+                  ),
+                  _NavItem(
+                    icon: CupertinoIcons.wrench,
+                    activeIcon: CupertinoIcons.wrench_fill,
+                    label: AppStrings.tabTools,
+                    isActive: currentIndex == 5,
+                    onTap: () => onTap(5),
                   ),
                 ],
               ),
@@ -239,12 +247,16 @@ class _NavItem extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                color: color,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  color: color,
+                ),
               ),
             ),
           ],

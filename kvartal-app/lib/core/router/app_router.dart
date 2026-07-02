@@ -138,10 +138,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/profile/privacy',
             builder: (_, __) => const PrivacyScreen(),
           ),
-          // Инструменты бегуна — офлайн-калькуляторы/таймеры (вход из профиля).
+          // Инструменты бегуна — 6-я вкладка нижней навигации.
           GoRoute(
             path: '/tools',
-            builder: (_, __) => const ToolsHubScreen(),
+            pageBuilder: (_, __) =>
+                const NoTransitionPage(child: ToolsHubScreen()),
           ),
           GoRoute(
             path: '/tools/pace',
