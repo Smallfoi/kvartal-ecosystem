@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/repositories/auth_repository.dart';
 import '../models/auth_user.dart';
+import '../models/me_stats.dart';
 
 // Re-export, чтобы существующие `import '.../auth_provider.dart'` по-прежнему
 // видели AuthUser/SavedAddress/LoginProvider.
 export '../models/auth_user.dart';
+export '../models/me_stats.dart';
 
 class AuthProvider extends ChangeNotifier {
   final SharedPreferences _prefs;
@@ -47,6 +49,9 @@ class AuthProvider extends ChangeNotifier {
       // backend недоступен или mock — оставляем локальный кэш
     }
   }
+
+  /// Личная статистика с общего бэка (GET /me/stats).
+  Future<MeStats> fetchStats() => _repo.fetchStats();
 
   AuthUser? get user => _user;
   bool get isLoggedIn => _user != null;

@@ -1,4 +1,5 @@
 import '../../models/auth_user.dart';
+import '../../models/me_stats.dart';
 import '../api/api_client.dart';
 
 /// Контракт аутентификации. Валидация форм остаётся в `AuthProvider`,
@@ -24,6 +25,9 @@ abstract class AuthRepository {
 
   /// Профиль текущего пользователя по JWT (GET /auth/me).
   Future<AuthUser> fetchMe();
+
+  /// Личная статистика (GET /me/stats): забеги/км, баллы, заказы.
+  Future<MeStats> fetchStats();
 
   /// Загрузить серверный аватар (единый для экосистемы) → актуальный юзер.
   Future<AuthUser> uploadAvatar(String filePath);
@@ -109,6 +113,9 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<AuthUser> fetchMe() async =>
       throw UnimplementedError('Mock не имеет /auth/me');
+
+  @override
+  Future<MeStats> fetchStats() async => const MeStats();
 
   @override
   Future<AuthUser> uploadAvatar(String filePath) async =>
@@ -211,6 +218,12 @@ class ApiAuthRepository implements AuthRepository {
   Future<AuthUser> fetchMe() async {
     final data = await _client.get('/auth/me');
     return AuthUser.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<MeStats> fetchStats() async {
+    final data = await _client.get('/me/stats');
+    return MeStats.fromJson(data as Map<String, dynamic>);
   }
 
   @override

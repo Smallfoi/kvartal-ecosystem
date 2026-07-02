@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import 'account_data_screen.dart';
 import 'edit_profile_screen.dart';
+import 'stats_screen.dart';
 
 /// Настройки профиля Store — единый стиль с шестерёнкой Квартала (экосистема):
 /// одна точка входа на редактирование профиля, уведомления, конфиденциальность и выход.
@@ -60,6 +61,11 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.person_outline,
             label: 'Редактировать профиль',
             onTap: () => _push(context, const EditProfileScreen()),
+          ),
+          _SettingsTile(
+            icon: Icons.insights_outlined,
+            label: 'Моя статистика',
+            onTap: () => _push(context, const StatsScreen()),
           ),
           _SettingsTile(
             icon: Icons.notifications_none,
