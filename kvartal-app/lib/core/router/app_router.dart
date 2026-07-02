@@ -13,6 +13,7 @@ import '../../features/club/presentation/screens/club_scan_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/privacy_screen.dart';
+import '../../features/profile/presentation/screens/stats_screen.dart';
 import '../../features/shoes/presentation/screens/shoes_screen.dart';
 import '../../features/tools/presentation/screens/tools_hub_screen.dart';
 import '../../features/tools/presentation/screens/pace_converter_screen.dart';
@@ -117,6 +118,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile/points',
             builder: (_, __) => const PointsHistoryScreen(),
+          ),
+          GoRoute(
+            path: '/profile/stats',
+            builder: (_, __) => const StatsScreen(),
           ),
           GoRoute(
             path: '/profile/shoes',
