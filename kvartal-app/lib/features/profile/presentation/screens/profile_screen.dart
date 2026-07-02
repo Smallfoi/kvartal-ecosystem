@@ -713,6 +713,11 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.push('/profile/edit'),
             ),
             _SettingsTile(
+              icon: CupertinoIcons.chart_bar_alt_fill,
+              label: '\u041c\u043e\u044f \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430',
+              onTap: () => context.push('/profile/stats'),
+            ),
+            _SettingsTile(
               icon: CupertinoIcons.location_solid,
               label:
                   '\u0413\u0435\u043e\u043b\u043e\u043a\u0430\u0446\u0438\u044f \u0438 \u0444\u043e\u043d\u043e\u0432\u044b\u0439 \u0440\u0435\u0436\u0438\u043c',
