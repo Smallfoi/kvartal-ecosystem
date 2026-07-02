@@ -71,6 +71,50 @@
     });
   }
 
+  // ── Скролл-лок под модалкой (Lenis-совместимо) ─────────────────────────────
+  // Lenis крутит страницу в обход overflow:hidden. Пока открыт оверлей — стопим
+  // Lenis (фон замирает), а внутренний скролл окна идёт нативно через
+  // data-lenis-prevent на самих окнах/панелях.
+  if (lenis) {
+    var MODALS = [
+      "pv-modal", "pr-modal", "co-modal", "cart-panel", "mobile-nav", "eco-modal",
+    ];
+    // Помечаем существующие окна/панели, чтобы их колесо не перехватывал Lenis.
+    document
+      .querySelectorAll("." + MODALS.join(", ."))
+      .forEach(function (el) { el.setAttribute("data-lenis-prevent", ""); });
+
+    var lenisStopped = false;
+    function syncModalScroll() {
+      var open = false;
+      for (var i = 0; i < MODALS.length; i++) {
+        if (document.querySelector("." + MODALS[i] + ".is-open")) { open = true; break; }
+      }
+      if (open && !lenisStopped) { lenis.stop(); lenisStopped = true; }
+      else if (!open && lenisStopped) { lenis.start(); lenisStopped = false; }
+    }
+    var modalObs = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var t = muts[i].target;
+        if (!t.classList) continue;
+        for (var j = 0; j < MODALS.length; j++) {
+          if (t.classList.contains(MODALS[j])) {
+            // На случай динамически добавленной модалки (eco-modal) — пометим её.
+            if (!t.hasAttribute("data-lenis-prevent")) {
+              t.setAttribute("data-lenis-prevent", "");
+            }
+            syncModalScroll();
+            return;
+          }
+        }
+      }
+    });
+    modalObs.observe(document.body, {
+      subtree: true, attributes: true, attributeFilter: ["class"],
+    });
+    syncModalScroll();
+  }
+
   // ── Вход hero (кинематографичный timeline) ─────────────────────────────────
   function initHero() {
     var hero = document.querySelector(".hero");
