@@ -98,14 +98,18 @@ class _StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // IntrinsicHeight — иначе stretch в Row внутри ListView получает
+    // неограниченную высоту и секции ниже первой рендерятся пустыми.
     final children = <Widget>[];
     for (var i = 0; i < stats.length; i++) {
       if (i > 0) children.add(const SizedBox(width: 10));
       children.add(Expanded(child: _StatCard(stats[i])));
     }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: children,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
     );
   }
 }

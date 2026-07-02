@@ -6,8 +6,16 @@ import '../../theme/app_theme.dart';
 
 /// Личная статистика пользователя из общего бэка (/v1/me/stats):
 /// бег (Квартал) + баллы + заказы (Store) — единая витрина экосистемы.
-class StatsScreen extends StatelessWidget {
+class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
+
+  @override
+  State<StatsScreen> createState() => _StatsScreenState();
+}
+
+class _StatsScreenState extends State<StatsScreen> {
+  late final Future<MeStats> _future =
+      context.read<AuthProvider>().fetchStats();
 
   static String _km(double v) =>
       v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
@@ -18,7 +26,7 @@ class StatsScreen extends StatelessWidget {
       backgroundColor: AppColors.white,
       appBar: AppBar(title: const Text('Моя статистика')),
       body: FutureBuilder<MeStats>(
-        future: context.read<AuthProvider>().fetchStats(),
+        future: _future,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -102,12 +110,20 @@ class _StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // IntrinsicHeight даёт Row ограниченную высоту (= самая высокая карточка),
+    // тогда stretch выравнивает карточки по высоте без «неограниченной высоты»
+    // в ListView (иначе секции ниже первой рендерились пустыми).
     final children = <Widget>[];
     for (var i = 0; i < stats.length; i++) {
       if (i > 0) children.add(const SizedBox(width: 10));
       children.add(Expanded(child: _StatCard(stats[i])));
     }
-    return Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
+    );
   }
 }
 
