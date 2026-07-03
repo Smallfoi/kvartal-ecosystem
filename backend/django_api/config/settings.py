@@ -271,9 +271,11 @@ UNFOLD = {
                 ],
             },
             {
-                "title": "Превью (до прода)",
+                "title": "Витрина (до прода)",
                 "separator": True,
                 "items": [
+                    {"title": "Конструктор витрины", "icon": "dashboard_customize",
+                     "link": reverse_lazy("merch_console")},
                     {"title": "Превью сайта", "icon": "preview",
                      "link": reverse_lazy("preview_site")},
                     {"title": "Превью приложения", "icon": "smartphone",
