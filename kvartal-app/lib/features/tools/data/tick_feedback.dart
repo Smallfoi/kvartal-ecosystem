@@ -6,10 +6,14 @@ import 'package:vibration/vibration.dart';
 enum TickKind { count, work, rest, finish }
 
 /// Звук + вибрация для инструментов (метроном, интервальный таймер).
-/// Надёжная замена тихого `SystemSound`: реальный аудио-тик (ассеты) + сильная
-/// вибрация через пакет `vibration`. Разные сигналы для разных событий.
+///
+/// Звук — через **пул `AudioPlayer`** с round-robin: каждый следующий сигнал
+/// играется на следующем плеере пула, поэтому быстрые повторы (метроном, отсчёт)
+/// не «глотаются» одним занятым плеером. Вибрация — через `vibration` (VIBRATE).
 class ToolTick {
-  final AudioPlayer _player = AudioPlayer();
+  static const _poolSize = 6;
+  final List<AudioPlayer> _players = [];
+  int _next = 0;
   bool _canVibrate = false;
 
   static const _assets = <TickKind, String>{
@@ -19,30 +23,37 @@ class ToolTick {
     TickKind.finish: 'audio/finish.wav',
   };
 
-  /// Готовит плеер и проверяет наличие вибромотора. Вызывать в initState.
+  /// Готовит пул плееров и проверяет вибромотор. Вызывать в initState.
   Future<void> init() async {
     try {
       _canVibrate = (await Vibration.hasVibrator()) == true;
     } catch (_) {
       _canVibrate = false;
     }
-    try {
-      await _player.setReleaseMode(ReleaseMode.stop);
-      await _player.setPlayerMode(PlayerMode.lowLatency);
-    } catch (_) {}
+    for (var i = 0; i < _poolSize; i++) {
+      final p = AudioPlayer();
+      try {
+        await p.setReleaseMode(ReleaseMode.stop);
+      } catch (_) {}
+      _players.add(p);
+    }
   }
 
-  /// Проиграть сигнал: звук + вибро.
+  /// Проиграть сигнал: звук (на следующем плеере пула) + вибро.
   Future<void> play(TickKind kind) async {
-    try {
-      await _player.play(AssetSource(_assets[kind]!));
-    } catch (_) {}
+    if (_players.isNotEmpty) {
+      final p = _players[_next];
+      _next = (_next + 1) % _players.length;
+      try {
+        await p.stop();
+        await p.play(AssetSource(_assets[kind]!));
+      } catch (_) {}
+    }
     _vibrate(kind);
   }
 
   void _vibrate(TickKind kind) {
     if (!_canVibrate) {
-      // Запасной вариант, если пакет вибрации недоступен.
       if (kind == TickKind.count) {
         HapticFeedback.selectionClick();
       } else {
@@ -63,6 +74,8 @@ class ToolTick {
   }
 
   void dispose() {
-    _player.dispose();
+    for (final p in _players) {
+      p.dispose();
+    }
   }
 }
