@@ -11,7 +11,7 @@ from accounts.models import Account
 from common.security import user_id_from_request
 from orders.models import Order
 
-from .models import Banner, Category, Product, Review
+from .models import Banner, Category, Product, Review, SiteContent
 
 _TRUE = {"1", "true", "True", "yes"}
 
@@ -107,6 +107,13 @@ def banners(request):
         qs = qs.filter(is_published=True)
     qs = qs.order_by(*_platform_order(request))
     return Response([b.to_json() for b in qs])
+
+
+@api_view(["GET"])
+def site_content(request):
+    """Редактируемый контент сайта (тексты/фото шапки, hero, секций) для мини-CMS.
+    Сайт подставляет по data-edit / data-edit-img. Публичный (как каталог)."""
+    return Response({c.key: c.to_json() for c in SiteContent.objects.all()})
 
 
 # ── Отзывы на товары ────────────────────────────────────────────────────────
