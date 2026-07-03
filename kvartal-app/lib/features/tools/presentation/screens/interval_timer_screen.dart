@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../data/tick_feedback.dart';
 import '../../logic/interval_plan.dart';
+import '../widgets/tool_widgets.dart';
 
-/// Интервальный таймер: настраиваешь работу/отдых/раунды и бежишь по сигналам
-/// (звук + вибро на сменах фаз). Звук — встроенный системный клик.
+/// Интервальный таймер: настраиваешь работу/отдых/раунды барабанами и бежишь
+/// по сигналам (звук + вибро на сменах фаз). Звук — встроенный системный клик.
 class IntervalTimerScreen extends StatefulWidget {
   const IntervalTimerScreen({super.key});
 
@@ -16,37 +17,63 @@ class IntervalTimerScreen extends StatefulWidget {
 }
 
 class _IntervalTimerScreenState extends State<IntervalTimerScreen> {
-  int _work = 30;
-  int _rest = 30;
+  Duration _work = const Duration(seconds: 30);
+  Duration _rest = const Duration(seconds: 30);
   int _rounds = 8;
+
+  /// Меняется при выборе пресета — чтобы барабаны времени пере-инициализировались.
+  int _cfgVersion = 0;
 
   List<IntervalStep>? _plan;
   int _stepIndex = 0;
   int _remaining = 0;
   bool _paused = false;
   Timer? _timer;
+  final ToolTick _fx = ToolTick();
 
-  static const _presets = <({String label, int work, int rest, int rounds})>[
-    (label: 'Табата 20/10 ×8', work: 20, rest: 10, rounds: 8),
-    (label: '30/30 ×8', work: 30, rest: 30, rounds: 8),
-    (label: '1:00 / 1:00 ×5', work: 60, rest: 60, rounds: 5),
-  ];
+  static const _presets =
+      <({String label, Duration work, Duration rest, int rounds})>[
+        (
+          label: 'Табата 20/10 ×8',
+          work: Duration(seconds: 20),
+          rest: Duration(seconds: 10),
+          rounds: 8,
+        ),
+        (
+          label: '30/30 ×8',
+          work: Duration(seconds: 30),
+          rest: Duration(seconds: 30),
+          rounds: 8,
+        ),
+        (
+          label: '1:00 / 1:00 ×5',
+          work: Duration(minutes: 1),
+          rest: Duration(minutes: 1),
+          rounds: 5,
+        ),
+      ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fx.init();
+  }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _fx.dispose();
     super.dispose();
   }
 
   void _start() {
     final plan = buildIntervalPlan(
-      workSec: _work,
-      restSec: _rest,
+      workSec: _work.inSeconds,
+      restSec: _rest.inSeconds,
       rounds: _rounds,
     );
     if (plan.isEmpty) return;
-    SystemSound.play(SystemSoundType.click);
-    HapticFeedback.mediumImpact();
+    _fx.play(TickKind.work);
     setState(() {
       _plan = plan;
       _stepIndex = 0;
@@ -60,10 +87,8 @@ class _IntervalTimerScreenState extends State<IntervalTimerScreen> {
     if (_paused) return;
     if (_remaining > 1) {
       setState(() => _remaining--);
-      if (_remaining <= 3) {
-        SystemSound.play(SystemSoundType.click);
-        HapticFeedback.selectionClick();
-      }
+      // Обратный отсчёт последних 5 секунд фазы — тики.
+      if (_remaining <= 5) _fx.play(TickKind.count);
       return;
     }
     _advance();
@@ -77,19 +102,19 @@ class _IntervalTimerScreenState extends State<IntervalTimerScreen> {
       _finish();
       return;
     }
-    SystemSound.play(SystemSoundType.click);
-    HapticFeedback.heavyImpact();
+    // Свой сигнал на старт «Работы» и «Отдыха» — их слышно по-разному.
+    final step = plan[next];
+    _fx.play(step.phase == IntervalPhase.work ? TickKind.work : TickKind.rest);
     setState(() {
       _stepIndex = next;
-      _remaining = plan[next].seconds;
+      _remaining = step.seconds;
     });
   }
 
   void _finish() {
     _timer?.cancel();
     _timer = null;
-    SystemSound.play(SystemSoundType.click);
-    HapticFeedback.heavyImpact();
+    _fx.play(TickKind.finish);
     setState(() {
       _plan = null;
       _stepIndex = 0;
@@ -135,35 +160,43 @@ class _IntervalTimerScreenState extends State<IntervalTimerScreen> {
   }
 
   Widget _buildConfig(BuildContext context) {
-    final plan = buildIntervalPlan(
-      workSec: _work,
-      restSec: _rest,
-      rounds: _rounds,
+    final total = intervalPlanTotalSec(
+      buildIntervalPlan(
+        workSec: _work.inSeconds,
+        restSec: _rest.inSeconds,
+        rounds: _rounds,
+      ),
     );
-    final total = intervalPlanTotalSec(plan);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _Stepper(
-          label: 'Работа',
-          value: '$_work сек',
-          onMinus: () => setState(() => _work = (_work - 5).clamp(5, 600)),
-          onPlus: () => setState(() => _work = (_work + 5).clamp(5, 600)),
+        ToolCard(
+          title: 'Работа',
+          child: ToolTimePicker(
+            pickerKey: ValueKey('work-$_cfgVersion'),
+            initial: _work,
+            onChanged: (d) => setState(() => _work = d),
+          ),
         ),
         const SizedBox(height: 10),
-        _Stepper(
-          label: 'Отдых',
-          value: '$_rest сек',
-          onMinus: () => setState(() => _rest = (_rest - 5).clamp(0, 600)),
-          onPlus: () => setState(() => _rest = (_rest + 5).clamp(0, 600)),
+        ToolCard(
+          title: 'Отдых',
+          child: ToolTimePicker(
+            pickerKey: ValueKey('rest-$_cfgVersion'),
+            initial: _rest,
+            onChanged: (d) => setState(() => _rest = d),
+          ),
         ),
         const SizedBox(height: 10),
-        _Stepper(
-          label: 'Раундов',
-          value: '$_rounds',
-          onMinus: () => setState(() => _rounds = (_rounds - 1).clamp(1, 30)),
-          onPlus: () => setState(() => _rounds = (_rounds + 1).clamp(1, 30)),
+        ToolCard(
+          title: 'Раундов',
+          child: ToolValuePicker(
+            height: 128,
+            items: [for (var r = 1; r <= 30; r++) '$r'],
+            index: _rounds - 1,
+            onChanged: (i) => setState(() => _rounds = i + 1),
+          ),
         ),
         const SizedBox(height: 16),
         Text(
@@ -191,6 +224,7 @@ class _IntervalTimerScreenState extends State<IntervalTimerScreen> {
                     _work = p.work;
                     _rest = p.rest;
                     _rounds = p.rounds;
+                    _cfgVersion++;
                   }),
                 ),
               )
@@ -319,65 +353,6 @@ class _IntervalTimerScreenState extends State<IntervalTimerScreen> {
             ],
           ),
           const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-}
-
-class _Stepper extends StatelessWidget {
-  final String label;
-  final String value;
-  final VoidCallback onMinus;
-  final VoidCallback onPlus;
-
-  const _Stepper({
-    required this.label,
-    required this.value,
-    required this.onMinus,
-    required this.onPlus,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.separator),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-          IconButton(
-            onPressed: onMinus,
-            icon: const Icon(Icons.remove, color: AppColors.textPrimary),
-          ),
-          SizedBox(
-            width: 72,
-            child: Text(
-              value,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.electricBlue,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: onPlus,
-            icon: const Icon(Icons.add, color: AppColors.textPrimary),
-          ),
         ],
       ),
     );

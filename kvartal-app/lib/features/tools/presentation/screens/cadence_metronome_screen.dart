@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../data/tick_feedback.dart';
 import '../../logic/interval_plan.dart';
+import '../widgets/tool_widgets.dart';
 
-/// Метроном каденса: задаёт частоту шагов (шагов/мин) звуком + вибро,
-/// чтобы держать ритм бега. Звук — встроенный системный клик (без ассетов).
+/// Метроном каденса: задаёт частоту шагов (шагов/мин) звуком + вибро.
+/// Каденс выбирается барабаном. Звук — встроенный системный клик.
 class CadenceMetronomeScreen extends StatefulWidget {
   const CadenceMetronomeScreen({super.key});
 
@@ -23,11 +24,24 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
   bool _running = false;
   bool _beat = false;
   Timer? _timer;
+  final ToolTick _fx = ToolTick();
+
+  @override
+  void initState() {
+    super.initState();
+    _fx.init();
+  }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _fx.dispose();
     super.dispose();
+  }
+
+  void _apply(int spm) {
+    setState(() => _spm = spm.clamp(_min, _max));
+    if (_running) _start();
   }
 
   void _toggle() => _running ? _stop() : _start();
@@ -53,13 +67,8 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
   }
 
   void _tick() {
-    SystemSound.play(SystemSoundType.click);
-    HapticFeedback.selectionClick();
+    _fx.play(TickKind.count);
     if (mounted) setState(() => _beat = !_beat);
-  }
-
-  void _setSpm(int v) {
-    setState(() => _spm = v.clamp(_min, _max));
   }
 
   @override
@@ -75,13 +84,13 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Expanded(
                 child: Center(
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 90),
-                    width: _beat ? 210 : 180,
-                    height: _beat ? 210 : 180,
+                    width: _beat ? 190 : 164,
+                    height: _beat ? 190 : 164,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.electricBlue.withValues(
@@ -100,7 +109,7 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
                           '$_spm',
                           style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 64,
+                            fontSize: 56,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -114,33 +123,16 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
                   ),
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _StepButton(
-                    icon: Icons.remove,
-                    onTap: () => _setSpm(_spm - 1),
-                  ),
-                  Expanded(
-                    child: Slider(
-                      value: _spm.toDouble(),
-                      min: _min.toDouble(),
-                      max: _max.toDouble(),
-                      onChanged: (v) => _setSpm(v.round()),
-                      onChangeEnd: (_) {
-                        if (_running) _start();
-                      },
-                    ),
-                  ),
-                  _StepButton(
-                    icon: Icons.add,
-                    onTap: () => _setSpm(_spm + 1),
-                  ),
-                ],
+              ToolValuePicker(
+                height: 116,
+                items: [for (var s = _min; s <= _max; s++) '$s'],
+                index: _spm - _min,
+                onChanged: (i) => _apply(i + _min),
               ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
+                alignment: WrapAlignment.center,
                 children: const [160, 170, 180]
                     .map(
                       (p) => ActionChip(
@@ -151,15 +143,12 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w700,
                         ),
-                        onPressed: () {
-                          _setSpm(p);
-                          if (_running) _start();
-                        },
+                        onPressed: () => _apply(p),
                       ),
                     )
                     .toList(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -174,10 +163,10 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
                   label: Text(_running ? 'Стоп' : 'Старт'),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
-                'Оптимальный беговой каденс обычно 170–185 шагов/мин. '
-                'Звук тихий — лучше слышно в наушниках; есть вибрация.',
+                'Оптимальный беговой каденс обычно 170–185. Звук тихий — лучше '
+                'слышно в наушниках; есть вибрация.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textTertiary,
@@ -185,26 +174,6 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StepButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _StepButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onTap,
-      icon: Icon(icon, color: AppColors.textPrimary),
-      style: IconButton.styleFrom(
-        backgroundColor: AppColors.bgElevated,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );

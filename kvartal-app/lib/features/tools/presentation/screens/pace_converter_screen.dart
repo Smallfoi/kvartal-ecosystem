@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../logic/pace_math.dart';
+import '../widgets/tool_widgets.dart';
 
 /// Конвертер темпа и скорости + расчёт времени забега.
-/// Полностью офлайн: меняешь любое поле — результаты пересчитываются мгновенно.
+/// Ввод времени — барабаном (мин : сек) как в будильнике iOS.
 class PaceConverterScreen extends StatefulWidget {
   const PaceConverterScreen({super.key});
 
@@ -14,11 +14,12 @@ class PaceConverterScreen extends StatefulWidget {
 }
 
 class _PaceConverterScreenState extends State<PaceConverterScreen> {
-  final _paceMin = TextEditingController(text: '5');
-  final _paceSec = TextEditingController(text: '30');
-  final _speed = TextEditingController(text: '10');
+  Duration _pace = const Duration(minutes: 5, seconds: 30);
 
-  /// Популярные дистанции для расчёта времени забега (км).
+  // Скорости 3.0 … 25.0 км/ч с шагом 0.5 (барабан).
+  static final _speeds = List<double>.generate(45, (i) => 3.0 + i * 0.5);
+  int _speedIdx = 14; // 10.0 км/ч
+
   static const _distances = <({String label, double km})>[
     (label: '5 км', km: 5),
     (label: '10 км', km: 10),
@@ -27,27 +28,13 @@ class _PaceConverterScreenState extends State<PaceConverterScreen> {
   ];
   double _distanceKm = 10;
 
-  @override
-  void dispose() {
-    _paceMin.dispose();
-    _paceSec.dispose();
-    _speed.dispose();
-    super.dispose();
-  }
-
-  double get _paceSecPerKm {
-    final m = int.tryParse(_paceMin.text.trim()) ?? 0;
-    final s = int.tryParse(_paceSec.text.trim()) ?? 0;
-    return (m * 60 + s).toDouble();
-  }
-
-  double get _speedInput =>
-      double.tryParse(_speed.text.trim().replaceAll(',', '.')) ?? 0;
+  double get _paceSecPerKm => _pace.inSeconds.toDouble();
 
   @override
   Widget build(BuildContext context) {
     final speedFromPace = speedKmhFromPace(_paceSecPerKm);
-    final paceFromSpeed = paceSecPerKmFromSpeed(_speedInput);
+    final speed = _speeds[_speedIdx];
+    final paceFromSpeed = paceSecPerKmFromSpeed(speed);
     final raceTime = timeSecFromDistancePace(_distanceKm, _paceSecPerKm);
 
     return Scaffold(
@@ -60,32 +47,17 @@ class _PaceConverterScreenState extends State<PaceConverterScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _ToolCard(
+            ToolCard(
               title: 'Темп → скорость',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _NumField(
-                          controller: _paceMin,
-                          label: 'мин',
-                          onChanged: (_) => setState(() {}),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _NumField(
-                          controller: _paceSec,
-                          label: 'сек',
-                          onChanged: (_) => setState(() {}),
-                        ),
-                      ),
-                    ],
+                  ToolTimePicker(
+                    initial: _pace,
+                    onChanged: (d) => setState(() => _pace = d),
                   ),
-                  const SizedBox(height: 14),
-                  _ResultLine(
+                  const SizedBox(height: 8),
+                  _Result(
                     value: speedFromPace > 0
                         ? '${speedFromPace.toStringAsFixed(1)} км/ч'
                         : '—',
@@ -95,30 +67,28 @@ class _PaceConverterScreenState extends State<PaceConverterScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _ToolCard(
+            ToolCard(
               title: 'Скорость → темп',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _NumField(
-                    controller: _speed,
-                    label: 'км/ч',
-                    allowDecimal: true,
-                    onChanged: (_) => setState(() {}),
+                  ToolValuePicker(
+                    items: [
+                      for (final s in _speeds) '${s.toStringAsFixed(1)} км/ч',
+                    ],
+                    index: _speedIdx,
+                    onChanged: (i) => setState(() => _speedIdx = i),
                   ),
-                  const SizedBox(height: 14),
-                  _ResultLine(
-                    value: paceFromSpeed > 0
-                        ? '${formatPace(paceFromSpeed)} /км'
-                        : '—',
-                    hint: 'при скорости '
-                        '${_speedInput > 0 ? _speedInput.toStringAsFixed(1) : '0'} км/ч',
+                  const SizedBox(height: 8),
+                  _Result(
+                    value: '${formatPace(paceFromSpeed)} /км',
+                    hint: 'при скорости ${speed.toStringAsFixed(1)} км/ч',
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-            _ToolCard(
+            ToolCard(
               title: 'Время забега',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,8 +115,8 @@ class _PaceConverterScreenState extends State<PaceConverterScreen> {
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 14),
-                  _ResultLine(
+                  const SizedBox(height: 12),
+                  _Result(
                     value: formatDuration(raceTime),
                     hint:
                         '${_distanceKm.toStringAsFixed(_distanceKm % 1 == 0 ? 0 : 1)}'
@@ -157,8 +127,8 @@ class _PaceConverterScreenState extends State<PaceConverterScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Подсказка: меняй темп (мин/сек) или скорость — остальное пересчитается. '
-              'Дистанция считается по выбранному выше темпу.',
+              'Крути барабан темпа (мин : сек) или выбери скорость — остальное '
+              'посчитается само.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -170,87 +140,10 @@ class _PaceConverterScreenState extends State<PaceConverterScreen> {
   }
 }
 
-class _ToolCard extends StatelessWidget {
-  final String title;
-  final Widget child;
-  const _ToolCard({required this.title, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.separator),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _NumField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final bool allowDecimal;
-  final ValueChanged<String> onChanged;
-
-  const _NumField({
-    required this.controller,
-    required this.label,
-    required this.onChanged,
-    this.allowDecimal = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      keyboardType: TextInputType.numberWithOptions(decimal: allowDecimal),
-      inputFormatters: [
-        allowDecimal
-            ? FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))
-            : FilteringTextInputFormatter.digitsOnly,
-      ],
-      style: const TextStyle(
-        color: AppColors.textPrimary,
-        fontWeight: FontWeight.w700,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: AppColors.bgElevated,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.separator),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.separator),
-        ),
-      ),
-    );
-  }
-}
-
-class _ResultLine extends StatelessWidget {
+class _Result extends StatelessWidget {
   final String value;
   final String hint;
-  const _ResultLine({required this.value, required this.hint});
+  const _Result({required this.value, required this.hint});
 
   @override
   Widget build(BuildContext context) {
