@@ -7,14 +7,14 @@
      data-app-url="{{ app_preview_url }}"></div>
 <form style="display:none">{% csrf_token %}</form>
 
-<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
   <div>
     <a href="{% url 'admin:index' %}"
        style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#6b7280;text-decoration:none;margin-bottom:6px">← Назад в админку</a>
     <h1 style="font-size:20px;font-weight:700;margin:0">Конструктор</h1>
     <p style="font-size:13px;color:#6b7280;margin:4px 0 0">
-      Порядок раздельный по площадкам (перетаскивание), данные товара — общие.
-      Клик по товару — правка (меняется на сайте и в приложении).
+      Это ваш <b>реальный сайт</b> в режиме правки — как увидят посетители. Перетаскивайте
+      товары прямо в сетке, кликайте по товару — правьте. Порядок раздельный по площадкам.
     </p>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
@@ -22,25 +22,17 @@
       <button type="button" data-platform="site" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Сайт</button>
       <button type="button" data-platform="app" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Приложение</button>
     </div>
-    <button type="button" id="merch-refresh" style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">Обновить превью</button>
+    <button type="button" id="merch-refresh" style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">Обновить</button>
   </div>
 </div>
 
-<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-  <div style="flex:1 1 340px;min-width:300px;max-width:460px">
-    <p id="merch-hint" style="font-size:12px;color:#9ca3af;margin:0 0 8px">Перетаскивайте товары, чтобы менять порядок.</p>
-    <div id="merch-list" style="display:flex;flex-direction:column;gap:8px;max-height:74vh;overflow-y:auto;padding-right:4px"></div>
-  </div>
-  <div style="flex:2 1 460px;min-width:320px">
-    <div style="overflow:hidden;border-radius:10px;border:1px solid #e5e7eb;background:#fff;height:76vh">
-      <iframe id="merch-preview" title="Превью" style="width:100%;height:100%;border:0;background:#fff"></iframe>
-    </div>
-    <p id="merch-preview-note" style="font-size:12px;color:#9ca3af;margin:8px 0 0"></p>
-  </div>
+<div style="overflow:hidden;border-radius:10px;border:1px solid #e5e7eb;background:#fff;height:80vh">
+  <iframe id="merch-frame" title="Конструктор — сайт" style="width:100%;height:100%;border:0;background:#fff"></iframe>
 </div>
+<p id="merch-note" style="font-size:12px;color:#9ca3af;margin:8px 0 0"></p>
 
-<!-- Модалка правки товара -->
-<div id="merch-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+<!-- Модалка правки товара (открывается кликом по товару на сайте) -->
+<div id="merch-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:12px;max-width:520px;width:92%;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <h2 id="merch-m-title" style="font-size:17px;font-weight:700;margin:0">Товар</h2>
@@ -74,24 +66,16 @@
 (function () {
   "use strict";
   var cfg = document.getElementById("merch-cfg");
-  var SITE_URL = cfg.getAttribute("data-site-url");
+  var SITE_URL = cfg.getAttribute("data-site-url");   // .../?preview=1&platform=site
   var APP_URL = cfg.getAttribute("data-app-url");
   var csrf = (document.querySelector("[name=csrfmiddlewaretoken]") || {}).value || "";
 
-  var listEl = document.getElementById("merch-list");
-  var frame = document.getElementById("merch-preview");
-  var note = document.getElementById("merch-preview-note");
+  var frame = document.getElementById("merch-frame");
+  var note = document.getElementById("merch-note");
   var modal = document.getElementById("merch-modal");
   var platform = "site";
   var products = [];
   var editId = null;
-
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  }
-  function fmt(n) { return new Intl.NumberFormat("ru-RU").format(Math.round(n)) + " ₽"; }
 
   function api(url, opts) {
     opts = opts || {};
@@ -103,98 +87,53 @@
     });
   }
 
-  function setPreview() {
-    var url = platform === "app" ? APP_URL : SITE_URL;
-    frame.src = url;
+  function loadProducts() {
+    return api("./products?platform=" + platform).then(function (d) { products = d.products || []; });
+  }
+
+  function frameSrc() {
+    return platform === "app" ? APP_URL : (SITE_URL + "&edit=1");
+  }
+  function setFrame() {
+    frame.src = frameSrc();
     note.textContent = platform === "app"
-      ? "Превью приложения (Flutter web). Если пусто — запущена ли web-сборка приложения."
-      : "Превью сайта (?preview=1). Если пусто — запущена ли витрина сайта.";
+      ? "Превью приложения. Если пусто — запущена ли web-сборка приложения (правка товаров — на вкладке «Сайт»)."
+      : "Перетаскивайте товары в сетке; клик по товару — правка. Если пусто — запущена ли витрина сайта.";
   }
-  function refreshPreview() { frame.src = frame.src; }
-
-  function cardHtml(p) {
-    var badges = "";
-    if (!p.isPublished) badges += '<span style="background:#fef3c7;color:#92400e;font-size:10px;padding:1px 6px;border-radius:6px;margin-left:6px">черновик</span>';
-    if (!p.inStock) badges += '<span style="background:#fee2e2;color:#991b1b;font-size:10px;padding:1px 6px;border-radius:6px;margin-left:6px">нет в наличии</span>';
-    var oldp = p.oldPrice ? ('<s style="color:#9ca3af;font-size:11px;margin-left:6px">' + fmt(p.oldPrice) + "</s>") : "";
-    var img = p.imageUrl
-      ? ('<img src="' + esc(p.imageUrl) + '" style="width:44px;height:44px;object-fit:cover;border-radius:8px;background:#f3f4f6" onerror="this.style.visibility=\'hidden\'">')
-      : '<div style="width:44px;height:44px;border-radius:8px;background:#f3f4f6"></div>';
-    return '' +
-      '<div class="merch-card" draggable="true" data-id="' + esc(p.id) + '" ' +
-      'style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;cursor:grab">' +
-      '<span style="color:#cbd5e1;font-size:16px;cursor:grab;user-select:none">⋮⋮</span>' + img +
-      '<div style="flex:1;min-width:0">' +
-      '<div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p.name) + badges + "</div>" +
-      '<div style="font-size:12px;color:#374151">' + fmt(p.price) + oldp + "</div>" +
-      "</div>" +
-      '<button type="button" class="merch-edit" style="border:0;background:#f3f4f6;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600">✏</button>' +
-      "</div>";
+  function reloadFrame() { frame.src = frameSrc(); }
+  function tellFrame(msg) {
+    msg.source = "staw-console";
+    if (frame.contentWindow) frame.contentWindow.postMessage(msg, "*");
   }
 
-  function render() {
-    listEl.innerHTML = products.map(cardHtml).join("");
-  }
-
-  function load() {
-    listEl.innerHTML = '<p style="color:#9ca3af;font-size:13px">Загрузка…</p>';
-    api("./products?platform=" + platform).then(function (d) {
-      products = d.products || [];
-      render();
-    }).catch(function (e) {
-      listEl.innerHTML = '<p style="color:#dc2626;font-size:13px">Ошибка загрузки: ' + esc(e.message) + "</p>";
-    });
-  }
-
-  // ── Drag-and-drop переупорядочивание (вертикальный список) ──
-  var dragged = null;
-  function afterElement(y) {
-    var els = [].slice.call(listEl.querySelectorAll(".merch-card:not(.dragging)"));
-    var closest = { offset: -Infinity, el: null };
-    els.forEach(function (child) {
-      var box = child.getBoundingClientRect();
-      var offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) closest = { offset: offset, el: child };
-    });
-    return closest.el;
-  }
-  listEl.addEventListener("dragstart", function (e) {
-    var card = e.target.closest(".merch-card");
-    if (!card) return;
-    dragged = card;
-    card.classList.add("dragging");
-    card.style.opacity = "0.4";
-    e.dataTransfer.effectAllowed = "move";
-  });
-  listEl.addEventListener("dragend", function () {
-    if (!dragged) return;
-    dragged.classList.remove("dragging");
-    dragged.style.opacity = "";
-    dragged = null;
-    saveOrder();
-  });
-  listEl.addEventListener("dragover", function (e) {
-    e.preventDefault();
-    if (!dragged) return;
-    var after = afterElement(e.clientY);
-    if (after == null) listEl.appendChild(dragged);
-    else listEl.insertBefore(dragged, after);
+  // ── Мост: сообщения от editor.js на сайте ──
+  window.addEventListener("message", function (e) {
+    var d = e.data || {};
+    if (d.source !== "staw-editor") return;
+    if (d.type === "reorder") {
+      api("./reorder", { method: "POST", body: JSON.stringify({ platform: platform, order: d.order }) })
+        .catch(function (err) { alert("Не удалось сохранить порядок: " + err.message); });
+    } else if (d.type === "editProduct") {
+      openEdit(d.id);
+    } else if (d.type === "editContent" || d.type === "editImage") {
+      alert("Правка текстов и фото сайта — в следующей фазе конструктора. Сейчас работают товары (порядок + правка).");
+    }
   });
 
-  function saveOrder() {
-    var order = [].slice.call(listEl.querySelectorAll(".merch-card")).map(function (c) {
-      return c.getAttribute("data-id");
-    });
-    api("./reorder", { method: "POST", body: JSON.stringify({ platform: platform, order: order }) })
-      .then(function () { refreshPreview(); })
-      .catch(function (e) { alert("Не удалось сохранить порядок: " + e.message); });
-  }
-
-  // ── Правка товара ──
+  // ── Модалка правки товара ──
   function openEdit(id) {
     var p = products.filter(function (x) { return x.id === id; })[0];
-    if (!p) return;
-    editId = id;
+    if (!p) { // кэш устарел — перезагрузим и попробуем ещё раз
+      loadProducts().then(function () {
+        var q = products.filter(function (x) { return x.id === id; })[0];
+        if (q) fill(q);
+      });
+      return;
+    }
+    fill(p);
+  }
+  function fill(p) {
+    editId = p.id;
     document.getElementById("merch-m-title").textContent = p.name;
     document.getElementById("merch-f-price").value = p.price;
     document.getElementById("merch-f-old").value = p.oldPrice || "";
@@ -225,24 +164,16 @@
       .then(function (d) {
         var i = products.findIndex(function (x) { return x.id === editId; });
         if (i >= 0) products[i] = d.product;
-        render();
         closeEdit();
-        refreshPreview();
+        tellFrame({ type: "reload" }); // сайт перерисует карточку с новыми данными
       })
-      .catch(function (e) {
+      .catch(function (err) {
         var el = document.getElementById("merch-m-err");
-        el.textContent = e.message; el.style.display = "block";
+        el.textContent = err.message; el.style.display = "block";
       });
   }
 
-  // Клик по карточке / кнопке правки
-  listEl.addEventListener("click", function (e) {
-    var card = e.target.closest(".merch-card");
-    if (!card) return;
-    openEdit(card.getAttribute("data-id"));
-  });
-
-  // Табы площадок
+  // ── Табы площадок ──
   function setActiveTab() {
     [].slice.call(document.querySelectorAll(".merch-tab")).forEach(function (b) {
       var on = b.getAttribute("data-platform") === platform;
@@ -254,12 +185,12 @@
     b.addEventListener("click", function () {
       platform = b.getAttribute("data-platform");
       setActiveTab();
-      setPreview();
-      load();
+      setFrame();
+      loadProducts();
     });
   });
 
-  document.getElementById("merch-refresh").addEventListener("click", refreshPreview);
+  document.getElementById("merch-refresh").addEventListener("click", reloadFrame);
   document.getElementById("merch-m-close").addEventListener("click", closeEdit);
   document.getElementById("merch-m-cancel").addEventListener("click", closeEdit);
   document.getElementById("merch-m-save").addEventListener("click", saveEdit);
@@ -267,8 +198,8 @@
 
   // init
   setActiveTab();
-  setPreview();
-  load();
+  setFrame();
+  loadProducts();
 })();
 </script>
 {% endverbatim %}
