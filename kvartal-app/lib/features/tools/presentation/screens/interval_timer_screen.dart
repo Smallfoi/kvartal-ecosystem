@@ -172,27 +172,26 @@ class _IntervalTimerScreenState extends State<IntervalTimerScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         ToolCard(
-          title: 'Работа',
-          child: ToolTimePicker(
-            pickerKey: ValueKey('work-$_cfgVersion'),
-            initial: _work,
+          child: ToolTimeField(
+            key: ValueKey('work-$_cfgVersion'),
+            label: 'Работа',
+            value: _work,
             onChanged: (d) => setState(() => _work = d),
           ),
         ),
         const SizedBox(height: 10),
         ToolCard(
-          title: 'Отдых',
-          child: ToolTimePicker(
-            pickerKey: ValueKey('rest-$_cfgVersion'),
-            initial: _rest,
+          child: ToolTimeField(
+            key: ValueKey('rest-$_cfgVersion'),
+            label: 'Отдых',
+            value: _rest,
             onChanged: (d) => setState(() => _rest = d),
           ),
         ),
         const SizedBox(height: 10),
         ToolCard(
-          title: 'Раундов',
-          child: ToolValuePicker(
-            height: 128,
+          child: ToolValueField(
+            label: 'Раундов',
             items: [for (var r = 1; r <= 30; r++) '$r'],
             index: _rounds - 1,
             onChanged: (i) => setState(() => _rounds = i + 1),

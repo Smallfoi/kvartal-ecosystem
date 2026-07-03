@@ -52,8 +52,9 @@ class _PaceConverterScreenState extends State<PaceConverterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ToolTimePicker(
-                    initial: _pace,
+                  ToolTimeField(
+                    label: 'Темп',
+                    value: _pace,
                     onChanged: (d) => setState(() => _pace = d),
                   ),
                   const SizedBox(height: 8),
@@ -72,7 +73,8 @@ class _PaceConverterScreenState extends State<PaceConverterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ToolValuePicker(
+                  ToolValueField(
+                    label: 'Скорость',
                     items: [
                       for (final s in _speeds) '${s.toStringAsFixed(1)} км/ч',
                     ],

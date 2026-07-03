@@ -123,8 +123,8 @@ class _CadenceMetronomeScreenState extends State<CadenceMetronomeScreen> {
                   ),
                 ),
               ),
-              ToolValuePicker(
-                height: 116,
+              ToolValueField(
+                label: 'Каденс',
                 items: [for (var s = _min; s <= _max; s++) '$s'],
                 index: _spm - _min,
                 onChanged: (i) => _apply(i + _min),
