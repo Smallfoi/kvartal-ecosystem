@@ -14,8 +14,6 @@ from config.admin_views import (
     merch_product,
     merch_products,
     merch_reorder,
-    preview_app,
-    preview_site,
 )
 from notifications import views as notif_views
 from legal import views as legal_views
@@ -26,10 +24,7 @@ from shoes import views as shoes_views
 from territories import views as territories_views
 
 urlpatterns = [
-    # Кастомные страницы админки — раньше generic admin/ роутинга.
-    path("admin/preview-site/", preview_site, name="preview_site"),
-    path("admin/preview-app/", preview_app, name="preview_app"),
-    # Конструктор витрины (мерчендайзинг): раздельный порядок + правка-в-превью.
+    # Конструктор (live-превью + правка + публикация). Отдельные «Превью» убраны.
     path("admin/merch/", merch_console, name="merch_console"),
     path("admin/merch/products", merch_products, name="merch_products"),
     path("admin/merch/reorder", merch_reorder, name="merch_reorder"),
