@@ -66,6 +66,21 @@ class MerchConsoleTests(TestCase):
         self.assertContains(r, "Конструктор")
         self.assertContains(r, "Назад в админку")
 
+    def test_site_content_edit_and_public_read(self):
+        self.assertEqual(self.client.get("/v1/site/content").json(), {})
+        r = self._post("/admin/merch/site-content", {"key": "hero.copy", "value": "Новый текст"})
+        self.assertEqual(r.status_code, 200)
+        got = self.client.get("/v1/site/content").json()
+        self.assertEqual(got["hero.copy"]["value"], "Новый текст")
+
+    def test_site_content_requires_key(self):
+        self.assertEqual(self._post("/admin/merch/site-content", {"value": "x"}).status_code, 400)
+
+    def test_site_content_requires_staff(self):
+        self.client.logout()
+        r = self._post("/admin/merch/site-content", {"key": "a", "value": "b"})
+        self.assertIn(r.status_code, (302, 403))
+
     def test_requires_staff(self):
         self.client.logout()
         r = self._post("/admin/merch/reorder", {"platform": "site", "order": []})

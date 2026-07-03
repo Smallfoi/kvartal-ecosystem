@@ -14,6 +14,8 @@ from config.admin_views import (
     merch_product,
     merch_products,
     merch_reorder,
+    merch_site_content,
+    merch_site_image,
 )
 from notifications import views as notif_views
 from legal import views as legal_views
@@ -29,6 +31,8 @@ urlpatterns = [
     path("admin/merch/products", merch_products, name="merch_products"),
     path("admin/merch/reorder", merch_reorder, name="merch_reorder"),
     path("admin/merch/product/<str:pid>", merch_product, name="merch_product"),
+    path("admin/merch/site-content", merch_site_content, name="merch_site_content"),
+    path("admin/merch/site-image", merch_site_image, name="merch_site_image"),
     path("admin/", admin.site.urls),
     path("v1/", include("core.urls")),
     path("v1/auth/", include("accounts.urls")),
@@ -69,6 +73,8 @@ urlpatterns = [
     path("v1/brands", catalog_views.brands),
     path("v1/sizes", catalog_views.sizes),
     path("v1/banners", catalog_views.banners),
+    # Редактируемый контент сайта (мини-CMS для конструктора).
+    path("v1/site/content", catalog_views.site_content),
     # Заказы Store (D-13)
     path("v1/orders", orders_views.orders),
     path("v1/orders/<str:order_id>/pay", orders_views.pay_order),  # оплата (каркас)

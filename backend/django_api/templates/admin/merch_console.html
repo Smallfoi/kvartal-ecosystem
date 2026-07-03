@@ -28,8 +28,11 @@
   </div>
 </div>
 
-<div style="overflow:hidden;border-radius:10px;border:1px solid #e5e7eb;background:#fff;height:80vh">
-  <iframe id="merch-frame" title="Конструктор — сайт" style="width:100%;height:100%;border:0;background:#fff"></iframe>
+<!-- Сцена превью: сайт — во всю ширину; приложение — в рамке реального телефона. -->
+<div id="merch-stage" style="height:80vh;display:flex;justify-content:center;align-items:flex-start;background:#f3f4f6;border-radius:10px;padding:0">
+  <div id="merch-frame-wrap" style="width:100%;height:100%;overflow:hidden;border-radius:10px;border:1px solid #e5e7eb;background:#fff">
+    <iframe id="merch-frame" title="Конструктор" style="width:100%;height:100%;border:0;background:#fff"></iframe>
+  </div>
 </div>
 <p id="merch-note" style="font-size:12px;color:#9ca3af;margin:8px 0 0"></p>
 
@@ -63,6 +66,21 @@
   </div>
 </div>
 
+<!-- Модалка правки текста блока сайта (клик по тексту на сайте) -->
+<div id="merch-txt" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;max-width:520px;width:92%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 id="merch-txt-title" style="font-size:16px;font-weight:700;margin:0">Текст</h2>
+      <button type="button" id="merch-txt-close" style="border:0;background:none;font-size:22px;cursor:pointer;color:#6b7280">×</button>
+    </div>
+    <textarea id="merch-txt-val" rows="3" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"></textarea>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+      <button type="button" id="merch-txt-cancel" style="padding:9px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600">Отмена</button>
+      <button type="button" id="merch-txt-save" style="padding:9px 18px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600">Готово</button>
+    </div>
+  </div>
+</div>
+
 {% verbatim %}
 <script>
 (function () {
@@ -73,6 +91,8 @@
   var csrf = (document.querySelector("[name=csrfmiddlewaretoken]") || {}).value || "";
 
   var frame = document.getElementById("merch-frame");
+  var stage = document.getElementById("merch-stage");
+  var frameWrap = document.getElementById("merch-frame-wrap");
   var note = document.getElementById("merch-note");
   var modal = document.getElementById("merch-modal");
   var publishBtn = document.getElementById("merch-publish");
@@ -83,6 +103,8 @@
   // ── Черновик: правки копятся здесь, на живой сайт уходят только по «Опубликовать». ──
   var pendingOrder = { site: null, app: null };
   var pendingProducts = {};
+  var pendingContent = {};   // черновые тексты блоков сайта (key → value)
+  var txtKey = null;
 
   function api(url, opts) {
     opts = opts || {};
@@ -99,8 +121,26 @@
   function frameSrc() { return platform === "app" ? (APP_URL + "?edit=1") : (SITE_URL + "&edit=1"); }
   function setFrame() {
     frame.src = frameSrc();
+    if (platform === "app") {
+      // Рамка реального телефона: узкая ширина + пропорции, как на телефоне.
+      frameWrap.style.width = "390px";
+      frameWrap.style.maxWidth = "100%";
+      frameWrap.style.height = "min(100%, 820px)";
+      frameWrap.style.border = "10px solid #111827";
+      frameWrap.style.borderRadius = "38px";
+      stage.style.alignItems = "center";
+      stage.style.padding = "12px";
+    } else {
+      frameWrap.style.width = "100%";
+      frameWrap.style.maxWidth = "none";
+      frameWrap.style.height = "100%";
+      frameWrap.style.border = "1px solid #e5e7eb";
+      frameWrap.style.borderRadius = "10px";
+      stage.style.alignItems = "flex-start";
+      stage.style.padding = "0";
+    }
     note.textContent = platform === "app"
-      ? "ЧЕРНОВИК приложения: в разделе «Каталог» зажмите товар и перетащите. На сайт/в приложение — по «Опубликовать»."
+      ? "ЧЕРНОВИК приложения (как на телефоне): в разделе «Каталог» зажмите товар и перетащите. На витрину — по «Опубликовать»."
       : "Это ЧЕРНОВИК: правки видны в превью, но на реальный сайт попадут только после «Опубликовать».";
   }
   function reloadFrame() { frame.src = frameSrc(); }
@@ -110,7 +150,8 @@
   }
 
   function pendingCount() {
-    return (pendingOrder.site ? 1 : 0) + (pendingOrder.app ? 1 : 0) + Object.keys(pendingProducts).length;
+    return (pendingOrder.site ? 1 : 0) + (pendingOrder.app ? 1 : 0)
+      + Object.keys(pendingProducts).length + Object.keys(pendingContent).length;
   }
   function updatePending() {
     var n = pendingCount();
@@ -133,13 +174,18 @@
       updatePending();
     } else if (d.type === "editProduct") {
       openEdit(d.id);
-    } else if (d.type === "editContent" || d.type === "editImage") {
-      alert("Правка текстов и фото сайта — в следующей фазе конструктора. Сейчас работают товары (порядок + правка).");
+    } else if (d.type === "editContent") {
+      openTextEdit(d.key, d.value || "");
+    } else if (d.type === "editImage") {
+      alert("Замена фото — в следующей фазе конструктора. Сейчас: тексты + товары (порядок/поля).");
     } else if (d.type === "ready") {
       // Сайт перезагрузился → возвращаем черновик в превью.
       if (pendingOrder[platform]) tellFrame({ type: "setOrder", order: pendingOrder[platform] });
       Object.keys(pendingProducts).forEach(function (id) {
         tellFrame({ type: "updateCard", id: id, fields: cardFields(pendingProducts[id]) });
+      });
+      Object.keys(pendingContent).forEach(function (k) {
+        tellFrame({ type: "setContent", key: k, value: pendingContent[k] });
       });
     }
   });
@@ -193,6 +239,25 @@
     updatePending();
   }
 
+  // ── Правка текста блока сайта (в черновик) ──
+  var txtModal = document.getElementById("merch-txt");
+  function openTextEdit(key, value) {
+    txtKey = key;
+    document.getElementById("merch-txt-title").textContent = "Текст: " + key;
+    document.getElementById("merch-txt-val").value = value;
+    txtModal.style.display = "flex";
+    document.getElementById("merch-txt-val").focus();
+  }
+  function closeText() { txtModal.style.display = "none"; txtKey = null; }
+  function saveText() {
+    if (!txtKey) return;
+    var val = document.getElementById("merch-txt-val").value;
+    pendingContent[txtKey] = val;              // в черновик, НЕ на сайт
+    tellFrame({ type: "setContent", key: txtKey, value: val });
+    closeText();
+    updatePending();
+  }
+
   // ── Публикация на реальный сайт (с подтверждением) ──
   function publish() {
     if (!pendingCount()) return;
@@ -204,9 +269,12 @@
     Object.keys(pendingProducts).forEach(function (id) {
       calls.push(api("./product/" + encodeURIComponent(id), { method: "POST", body: JSON.stringify(pendingProducts[id]) }));
     });
+    Object.keys(pendingContent).forEach(function (k) {
+      calls.push(api("./site-content", { method: "POST", body: JSON.stringify({ key: k, value: pendingContent[k] }) }));
+    });
     publishBtn.disabled = true; publishBtn.textContent = "Публикую…";
     Promise.all(calls).then(function () {
-      pendingOrder = { site: null, app: null }; pendingProducts = {};
+      pendingOrder = { site: null, app: null }; pendingProducts = {}; pendingContent = {};
       return loadProducts();
     }).then(function () {
       updatePending(); publishBtn.textContent = "Опубликовать на сайт"; reloadFrame();
@@ -237,6 +305,10 @@
   document.getElementById("merch-m-cancel").addEventListener("click", closeEdit);
   document.getElementById("merch-m-save").addEventListener("click", saveEdit);
   publishBtn.addEventListener("click", publish);
+  document.getElementById("merch-txt-close").addEventListener("click", closeText);
+  document.getElementById("merch-txt-cancel").addEventListener("click", closeText);
+  document.getElementById("merch-txt-save").addEventListener("click", saveText);
+  txtModal.addEventListener("click", function (e) { if (e.target === txtModal) closeText(); });
   modal.addEventListener("click", function (e) { if (e.target === modal) closeEdit(); });
   window.addEventListener("beforeunload", function (e) {
     if (pendingCount()) { e.preventDefault(); e.returnValue = ""; }

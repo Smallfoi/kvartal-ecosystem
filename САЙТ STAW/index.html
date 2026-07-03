@@ -56,12 +56,12 @@
   </head>
   <body>
     <header class="site-header" data-header>
-      <a class="brand" href="#top" aria-label="STAW официальный магазин">STAW</a>
+      <a class="brand" href="#top" aria-label="STAW официальный магазин" data-edit="header.brand">STAW</a>
       <nav class="main-nav" aria-label="Основная навигация">
-        <a href="#philosophy">Философия</a>
-        <a href="#catalog">Каталог</a>
-        <a href="#loyalty">Экосистема</a>
-        <a href="#references">Референсы</a>
+        <a href="#philosophy" data-edit="nav.philosophy">Философия</a>
+        <a href="#catalog" data-edit="nav.catalog">Каталог</a>
+        <a href="#loyalty" data-edit="nav.loyalty">Экосистема</a>
+        <a href="#references" data-edit="nav.references">Референсы</a>
       </nav>
       <div class="header-actions">
         <button class="cart-button" type="button" data-cart-toggle aria-label="Корзина">
@@ -109,20 +109,20 @@
           <!-- Слот под hero-видео: когда появится ролик в Референсы/Видео — заменить
                <img> на <video autoplay muted loop playsinline poster="...">…</video>.
                Разметка/анимация рассчитаны на обе версии. -->
-          <img src="media/staw-hero.jpg" alt="" />
+          <img src="media/staw-hero.jpg" alt="" data-edit-img="hero.image" />
           <span class="hero-scrim" aria-hidden="true"></span>
         </div>
         <div class="hero-content">
-          <p class="eyebrow" data-anim="hero">Run · City · Weekend</p>
+          <p class="eyebrow" data-anim="hero" data-edit="hero.eyebrow">Run · City · Weekend</p>
           <h1 id="hero-title" class="brand-wordmark" aria-label="STAW">
             <span>S</span><span>T</span><span>A</span><span>W</span>
           </h1>
-          <p class="hero-copy" data-anim="hero">
+          <p class="hero-copy" data-anim="hero" data-edit="hero.copy">
             Спортивная одежда для тех, кто двигается каждый день: пробежка утром, город днём, лёгкий маршрут на выходных.
           </p>
           <div class="hero-actions" data-anim="hero">
-            <a class="btn btn-primary" href="#catalog">Смотреть каталог</a>
-            <a class="btn btn-ghost" href="#philosophy">Философия бренда</a>
+            <a class="btn btn-primary" href="#catalog" data-edit="hero.btn1">Смотреть каталог</a>
+            <a class="btn btn-ghost" href="#philosophy" data-edit="hero.btn2">Философия бренда</a>
           </div>
         </div>
         <a class="hero-scroll" href="#philosophy" data-anim="hero" aria-label="Листать вниз">
@@ -756,6 +756,8 @@
     <script src="legal.js"></script>
     <!-- Экосистема: единый аккаунт + общие баллы (самодостаточный модуль). -->
     <script src="ecosystem.js?v=20260702"></script>
+    <!-- Мини-CMS: тексты/фото сайта из бэкенда (задаются в «Конструкторе»). -->
+    <script src="content.js"></script>
     <!-- Режим редактирования для «Конструктора» (активен только при ?edit=1). -->
     <script src="editor.js"></script>
 

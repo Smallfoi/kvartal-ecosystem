@@ -113,3 +113,46 @@ def merch_product(request, pid):
         p.sizes = [str(s).strip() for s in d["sizes"] if str(s).strip()]
     p.save()
     return JsonResponse({"ok": True, "product": _merch_json(p)})
+
+
+# ── Контент сайта (мини-CMS): тексты и фото шапки/hero/секций ────────────────
+
+@staff_member_required
+@require_http_methods(["POST"])
+def merch_site_content(request):
+    """Правка текста блока сайта: {key, value} → SiteContent (публикуется на сайт)."""
+    from catalog.models import SiteContent
+
+    try:
+        d = json.loads(request.body or b"{}")
+    except ValueError:
+        return JsonResponse({"detail": "Некорректный JSON"}, status=400)
+    key = (d.get("key") or "").strip()[:80]
+    if not key:
+        return JsonResponse({"detail": "Нет ключа"}, status=400)
+    obj, _ = SiteContent.objects.get_or_create(key=key)
+    obj.value = str(d.get("value") or "")
+    obj.save()
+    return JsonResponse({"ok": True, "content": {key: obj.to_json()}})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def merch_site_image(request):
+    """Замена фото блока сайта: multipart image + key → SiteContent.image."""
+    from catalog.models import SiteContent
+
+    key = (request.POST.get("key") or "").strip()[:80]
+    if not key:
+        return JsonResponse({"detail": "Нет ключа"}, status=400)
+    f = request.FILES.get("image")
+    if not f:
+        return JsonResponse({"detail": "Нет файла"}, status=400)
+    if f.size > 5 * 1024 * 1024:
+        return JsonResponse({"detail": "Файл слишком большой (макс 5 МБ)"}, status=400)
+    if not (f.content_type or "").startswith("image/"):
+        return JsonResponse({"detail": "Нужен файл-изображение"}, status=400)
+    obj, _ = SiteContent.objects.get_or_create(key=key)
+    obj.image = f
+    obj.save()
+    return JsonResponse({"ok": True, "content": {key: obj.to_json()}})

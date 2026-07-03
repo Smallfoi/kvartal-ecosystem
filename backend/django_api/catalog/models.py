@@ -164,3 +164,28 @@ class Review(models.Model):
         ordering = ["-created_at"]
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
+
+
+class SiteContent(models.Model):
+    """Редактируемый контент сайта (мини-CMS для «Конструктора»): тексты и фото
+    шапки/hero/секций. Ключ → текст/фото. Сайт читает через GET /v1/site/content и
+    подставляет в элементы с data-edit / data-edit-img; правится кликом в конструкторе."""
+
+    key = models.CharField(primary_key=True, max_length=80, verbose_name="Ключ")
+    value = models.TextField(blank=True, default="", verbose_name="Текст")
+    image = models.ImageField(upload_to="uploads/site/", null=True, blank=True, verbose_name="Фото")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлено")
+
+    class Meta:
+        db_table = "site_content"
+        verbose_name = "Контент сайта"
+        verbose_name_plural = "Контент сайта"
+
+    def __str__(self) -> str:
+        return self.key
+
+    def image_url(self) -> str:
+        return self.image.url if self.image else ""
+
+    def to_json(self) -> dict:
+        return {"value": self.value, "imageUrl": self.image_url()}
