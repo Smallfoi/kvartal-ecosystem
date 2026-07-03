@@ -81,6 +81,8 @@
   </div>
 </div>
 
+<input type="file" id="merch-img-input" accept="image/*" style="display:none">
+
 {% verbatim %}
 <script>
 (function () {
@@ -104,6 +106,7 @@
   var pendingOrder = { site: null, app: null };
   var pendingProducts = {};
   var pendingContent = {};   // черновые тексты блоков сайта (key → value)
+  var pendingImages = {};    // черновые фото блоков (key → {file, url})
   var txtKey = null;
 
   function api(url, opts) {
@@ -151,7 +154,15 @@
 
   function pendingCount() {
     return (pendingOrder.site ? 1 : 0) + (pendingOrder.app ? 1 : 0)
-      + Object.keys(pendingProducts).length + Object.keys(pendingContent).length;
+      + Object.keys(pendingProducts).length + Object.keys(pendingContent).length
+      + Object.keys(pendingImages).length;
+  }
+  function apiForm(url, formData) {
+    return fetch(url, { method: "POST", headers: { "X-CSRFToken": csrf }, credentials: "same-origin", body: formData })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (j) { throw new Error(j.detail || ("HTTP " + r.status)); });
+        return r.json();
+      });
   }
   function updatePending() {
     var n = pendingCount();
@@ -177,7 +188,7 @@
     } else if (d.type === "editContent") {
       openTextEdit(d.key, d.value || "");
     } else if (d.type === "editImage") {
-      alert("Замена фото — в следующей фазе конструктора. Сейчас: тексты + товары (порядок/поля).");
+      openImagePick(d.key);
     } else if (d.type === "ready") {
       // Сайт перезагрузился → возвращаем черновик в превью.
       if (pendingOrder[platform]) tellFrame({ type: "setOrder", order: pendingOrder[platform] });
@@ -186,6 +197,9 @@
       });
       Object.keys(pendingContent).forEach(function (k) {
         tellFrame({ type: "setContent", key: k, value: pendingContent[k] });
+      });
+      Object.keys(pendingImages).forEach(function (k) {
+        tellFrame({ type: "setImage", key: k, url: pendingImages[k].url });
       });
     }
   });
@@ -258,6 +272,23 @@
     updatePending();
   }
 
+  // ── Замена фото блока сайта (в черновик) ──
+  var imgInput = document.getElementById("merch-img-input");
+  var imgKey = null;
+  function openImagePick(key) { imgKey = key; imgInput.value = ""; imgInput.click(); }
+  imgInput.addEventListener("change", function () {
+    var file = imgInput.files && imgInput.files[0];
+    if (!file || !imgKey) return;
+    var key = imgKey;
+    var reader = new FileReader();
+    reader.onload = function () {
+      pendingImages[key] = { file: file, url: reader.result };
+      tellFrame({ type: "setImage", key: key, url: reader.result });
+      updatePending();
+    };
+    reader.readAsDataURL(file);
+  });
+
   // ── Публикация на реальный сайт (с подтверждением) ──
   function publish() {
     if (!pendingCount()) return;
@@ -272,9 +303,15 @@
     Object.keys(pendingContent).forEach(function (k) {
       calls.push(api("./site-content", { method: "POST", body: JSON.stringify({ key: k, value: pendingContent[k] }) }));
     });
+    Object.keys(pendingImages).forEach(function (k) {
+      var fd = new FormData();
+      fd.append("key", k);
+      fd.append("image", pendingImages[k].file);
+      calls.push(apiForm("./site-image", fd));
+    });
     publishBtn.disabled = true; publishBtn.textContent = "Публикую…";
     Promise.all(calls).then(function () {
-      pendingOrder = { site: null, app: null }; pendingProducts = {}; pendingContent = {};
+      pendingOrder = { site: null, app: null }; pendingProducts = {}; pendingContent = {}; pendingImages = {};
       return loadProducts();
     }).then(function () {
       updatePending(); publishBtn.textContent = "Опубликовать на сайт"; reloadFrame();

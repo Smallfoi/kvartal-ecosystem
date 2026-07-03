@@ -174,6 +174,13 @@
       var card = cardById(d.id);
       if (card) applyCardFields(card, d.fields);
     }
+    // Черновое фото (превью до публикации): подставляем data-URL/URL.
+    if (d.type === "setImage" && d.key && d.url) {
+      document.querySelectorAll('[data-edit-img="' + d.key + '"]').forEach(function (el) {
+        if (el.tagName === "IMG") el.src = d.url;
+        else el.style.backgroundImage = "url('" + d.url + "')";
+      });
+    }
   });
 
   send({ type: "ready", platform: PLATFORM });
