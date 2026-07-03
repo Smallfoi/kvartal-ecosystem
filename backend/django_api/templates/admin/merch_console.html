@@ -22,7 +22,9 @@
       <button type="button" data-platform="site" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Сайт</button>
       <button type="button" data-platform="app" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Приложение</button>
     </div>
-    <button type="button" id="merch-refresh" style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">Обновить</button>
+    <button type="button" id="merch-refresh" style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">Обновить превью</button>
+    <span id="merch-pending" style="display:none;font-size:12px;font-weight:600;color:#b45309;background:#fef3c7;padding:5px 10px;border-radius:8px">Черновик: <span id="merch-pending-n">0</span></span>
+    <button type="button" id="merch-publish" disabled style="padding:8px 16px;border:0;border-radius:8px;background:#9ca3af;color:#fff;cursor:not-allowed;font-size:13px;font-weight:700">Опубликовать на сайт</button>
   </div>
 </div>
 
@@ -73,9 +75,14 @@
   var frame = document.getElementById("merch-frame");
   var note = document.getElementById("merch-note");
   var modal = document.getElementById("merch-modal");
+  var publishBtn = document.getElementById("merch-publish");
   var platform = "site";
   var products = [];
   var editId = null;
+
+  // ── Черновик: правки копятся здесь, на живой сайт уходят только по «Опубликовать». ──
+  var pendingOrder = { site: null, app: null };
+  var pendingProducts = {};
 
   function api(url, opts) {
     opts = opts || {};
@@ -86,19 +93,15 @@
       return r.json();
     });
   }
-
   function loadProducts() {
     return api("./products?platform=" + platform).then(function (d) { products = d.products || []; });
   }
-
-  function frameSrc() {
-    return platform === "app" ? APP_URL : (SITE_URL + "&edit=1");
-  }
+  function frameSrc() { return platform === "app" ? APP_URL : (SITE_URL + "&edit=1"); }
   function setFrame() {
     frame.src = frameSrc();
     note.textContent = platform === "app"
-      ? "Превью приложения. Если пусто — запущена ли web-сборка приложения (правка товаров — на вкладке «Сайт»)."
-      : "Перетаскивайте товары в сетке; клик по товару — правка. Если пусто — запущена ли витрина сайта.";
+      ? "Превью приложения (правка товаров — на вкладке «Сайт»)."
+      : "Это ЧЕРНОВИК: правки видны в превью, но на реальный сайт попадут только после «Опубликовать».";
   }
   function reloadFrame() { frame.src = frameSrc(); }
   function tellFrame(msg) {
@@ -106,30 +109,45 @@
     if (frame.contentWindow) frame.contentWindow.postMessage(msg, "*");
   }
 
+  function pendingCount() {
+    return (pendingOrder.site ? 1 : 0) + (pendingOrder.app ? 1 : 0) + Object.keys(pendingProducts).length;
+  }
+  function updatePending() {
+    var n = pendingCount();
+    document.getElementById("merch-pending-n").textContent = n;
+    document.getElementById("merch-pending").style.display = n ? "inline-block" : "none";
+    publishBtn.disabled = !n;
+    publishBtn.style.background = n ? "#111" : "#9ca3af";
+    publishBtn.style.cursor = n ? "pointer" : "not-allowed";
+  }
+  function cardFields(f) { return { price: Number(f.price) || 0, inStock: !!f.inStock }; }
+
   // ── Мост: сообщения от editor.js на сайте ──
   window.addEventListener("message", function (e) {
     var d = e.data || {};
     if (d.source !== "staw-editor") return;
     if (d.type === "reorder") {
-      api("./reorder", { method: "POST", body: JSON.stringify({ platform: platform, order: d.order }) })
-        .catch(function (err) { alert("Не удалось сохранить порядок: " + err.message); });
+      pendingOrder[d.platform === "app" ? "app" : "site"] = d.order; // в черновик, НЕ на сайт
+      updatePending();
     } else if (d.type === "editProduct") {
       openEdit(d.id);
     } else if (d.type === "editContent" || d.type === "editImage") {
       alert("Правка текстов и фото сайта — в следующей фазе конструктора. Сейчас работают товары (порядок + правка).");
+    } else if (d.type === "ready") {
+      // Сайт перезагрузился → возвращаем черновик в превью.
+      if (pendingOrder[platform]) tellFrame({ type: "setOrder", order: pendingOrder[platform] });
+      Object.keys(pendingProducts).forEach(function (id) {
+        tellFrame({ type: "updateCard", id: id, fields: cardFields(pendingProducts[id]) });
+      });
     }
   });
 
-  // ── Модалка правки товара ──
+  // ── Модалка правки товара (в черновик) ──
   function openEdit(id) {
     var p = products.filter(function (x) { return x.id === id; })[0];
-    if (!p) { // кэш устарел — перезагрузим и попробуем ещё раз
-      loadProducts().then(function () {
-        var q = products.filter(function (x) { return x.id === id; })[0];
-        if (q) fill(q);
-      });
-      return;
-    }
+    if (!p) { loadProducts().then(function () {
+      var q = products.filter(function (x) { return x.id === id; })[0]; if (q) fill(q);
+    }); return; }
     fill(p);
   }
   function fill(p) {
@@ -151,7 +169,7 @@
     if (!editId) return;
     var sizes = document.getElementById("merch-f-sizes").value.split(",")
       .map(function (s) { return s.trim(); }).filter(Boolean);
-    var body = {
+    var fields = {
       price: document.getElementById("merch-f-price").value,
       oldPrice: document.getElementById("merch-f-old").value,
       description: document.getElementById("merch-f-desc").value,
@@ -160,17 +178,41 @@
       isPublished: document.getElementById("merch-f-pub").checked,
       isFeatured: document.getElementById("merch-f-feat").checked,
     };
-    api("./product/" + encodeURIComponent(editId), { method: "POST", body: JSON.stringify(body) })
-      .then(function (d) {
-        var i = products.findIndex(function (x) { return x.id === editId; });
-        if (i >= 0) products[i] = d.product;
-        closeEdit();
-        tellFrame({ type: "reload" }); // сайт перерисует карточку с новыми данными
-      })
-      .catch(function (err) {
-        var el = document.getElementById("merch-m-err");
-        el.textContent = err.message; el.style.display = "block";
-      });
+    pendingProducts[editId] = fields;               // в черновик, НЕ на сайт
+    var i = products.findIndex(function (x) { return x.id === editId; });
+    if (i >= 0) products[i] = Object.assign({}, products[i], {
+      price: Number(fields.price) || 0,
+      oldPrice: fields.oldPrice === "" ? null : Number(fields.oldPrice),
+      description: fields.description, sizes: fields.sizes,
+      inStock: fields.inStock, isPublished: fields.isPublished, isFeatured: fields.isFeatured,
+    });
+    tellFrame({ type: "updateCard", id: editId, fields: cardFields(fields) });
+    closeEdit();
+    updatePending();
+  }
+
+  // ── Публикация на реальный сайт (с подтверждением) ──
+  function publish() {
+    if (!pendingCount()) return;
+    if (!confirm("Опубликовать изменения на РЕАЛЬНЫЙ сайт? Их сразу увидят посетители.\n\nВы всё проверили в превью?")) return;
+    var calls = [];
+    ["site", "app"].forEach(function (pl) {
+      if (pendingOrder[pl]) calls.push(api("./reorder", { method: "POST", body: JSON.stringify({ platform: pl, order: pendingOrder[pl] }) }));
+    });
+    Object.keys(pendingProducts).forEach(function (id) {
+      calls.push(api("./product/" + encodeURIComponent(id), { method: "POST", body: JSON.stringify(pendingProducts[id]) }));
+    });
+    publishBtn.disabled = true; publishBtn.textContent = "Публикую…";
+    Promise.all(calls).then(function () {
+      pendingOrder = { site: null, app: null }; pendingProducts = {};
+      return loadProducts();
+    }).then(function () {
+      updatePending(); publishBtn.textContent = "Опубликовать на сайт"; reloadFrame();
+      alert("Опубликовано на сайт ✅");
+    }).catch(function (err) {
+      publishBtn.disabled = false; publishBtn.textContent = "Опубликовать на сайт";
+      alert("Ошибка публикации: " + err.message);
+    });
   }
 
   // ── Табы площадок ──
@@ -184,9 +226,7 @@
   [].slice.call(document.querySelectorAll(".merch-tab")).forEach(function (b) {
     b.addEventListener("click", function () {
       platform = b.getAttribute("data-platform");
-      setActiveTab();
-      setFrame();
-      loadProducts();
+      setActiveTab(); setFrame(); loadProducts();
     });
   });
 
@@ -194,12 +234,14 @@
   document.getElementById("merch-m-close").addEventListener("click", closeEdit);
   document.getElementById("merch-m-cancel").addEventListener("click", closeEdit);
   document.getElementById("merch-m-save").addEventListener("click", saveEdit);
+  publishBtn.addEventListener("click", publish);
   modal.addEventListener("click", function (e) { if (e.target === modal) closeEdit(); });
+  window.addEventListener("beforeunload", function (e) {
+    if (pendingCount()) { e.preventDefault(); e.returnValue = ""; }
+  });
 
   // init
-  setActiveTab();
-  setFrame();
-  loadProducts();
+  setActiveTab(); setFrame(); loadProducts(); updatePending();
 })();
 </script>
 {% endverbatim %}

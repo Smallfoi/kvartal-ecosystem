@@ -126,14 +126,53 @@
     new MutationObserver(markDraggable).observe(g, { childList: true });
   }
 
+  // Найти карточку по data-id (без селектор-инъекций).
+  function cardById(id) {
+    var cards = document.querySelectorAll(".product-card");
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].getAttribute("data-id") === id) return cards[i];
+    }
+    return null;
+  }
+  function fmtPrice(v) {
+    return new Intl.NumberFormat("ru-RU").format(Math.round(Number(v))) + " ₽";
+  }
+  // Применить черновые поля товара к карточке (превью до публикации).
+  function applyCardFields(card, f) {
+    if (f.price != null) {
+      var pe = card.querySelector(".product-price");
+      if (pe) pe.textContent = fmtPrice(f.price);
+    }
+    if ("inStock" in f) {
+      var se = card.querySelector(".product-stock");
+      if (se) {
+        se.textContent = f.inStock ? "В наличии" : "Скоро в продаже";
+        se.classList.toggle("product-stock--soon", !f.inStock);
+      }
+    }
+  }
+
   // Сообщения от родителя (конструктора).
   window.addEventListener("message", function (e) {
     var d = e.data || {};
     if (d.source !== "staw-console") return;
-    if (d.type === "reload") location.reload();
+    if (d.type === "reload") { location.reload(); return; }
     if (d.type === "setContent" && d.key) {
       var el = document.querySelector('[data-edit="' + d.key + '"]');
       if (el && typeof d.value === "string") el.textContent = d.value;
+    }
+    if (d.type === "setOrder" && d.order && d.order.length) {
+      var g = grid();
+      if (g) {
+        d.order.forEach(function (id) {
+          var c = cardById(id);
+          if (c) g.appendChild(c);
+        });
+      }
+    }
+    if (d.type === "updateCard" && d.id && d.fields) {
+      var card = cardById(d.id);
+      if (card) applyCardFields(card, d.fields);
     }
   });
 
