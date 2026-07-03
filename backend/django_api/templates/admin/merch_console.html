@@ -96,11 +96,11 @@
   function loadProducts() {
     return api("./products?platform=" + platform).then(function (d) { products = d.products || []; });
   }
-  function frameSrc() { return platform === "app" ? APP_URL : (SITE_URL + "&edit=1"); }
+  function frameSrc() { return platform === "app" ? (APP_URL + "?edit=1") : (SITE_URL + "&edit=1"); }
   function setFrame() {
     frame.src = frameSrc();
     note.textContent = platform === "app"
-      ? "Превью приложения (правка товаров — на вкладке «Сайт»)."
+      ? "ЧЕРНОВИК приложения: в разделе «Каталог» зажмите товар и перетащите. На сайт/в приложение — по «Опубликовать»."
       : "Это ЧЕРНОВИК: правки видны в превью, но на реальный сайт попадут только после «Опубликовать».";
   }
   function reloadFrame() { frame.src = frameSrc(); }
@@ -122,10 +122,12 @@
   }
   function cardFields(f) { return { price: Number(f.price) || 0, inStock: !!f.inStock }; }
 
-  // ── Мост: сообщения от editor.js на сайте ──
+  // ── Мост: сообщения от editor.js (сайт) и от приложения (Flutter web) ──
   window.addEventListener("message", function (e) {
     var d = e.data || {};
-    if (d.source !== "staw-editor") return;
+    // Приложение (Flutter) шлёт JSON-строкой; сайт — объектом.
+    if (typeof d === "string") { try { d = JSON.parse(d); } catch (err) { return; } }
+    if (!d || d.source !== "staw-editor") return;
     if (d.type === "reorder") {
       pendingOrder[d.platform === "app" ? "app" : "site"] = d.order; // в черновик, НЕ на сайт
       updatePending();

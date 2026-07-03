@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../models/product.dart';
 import '../../providers/catalog_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../util/console_bridge.dart';
 import '../../widgets/product_card.dart';
+
+// Сетка каталога (2 колонки) — общая для обычного и режима правки конструктора.
+const _catalogGrid = SliverGridDelegateWithFixedCrossAxisCount(
+  crossAxisCount: 2,
+  crossAxisSpacing: 12,
+  mainAxisSpacing: 16,
+  childAspectRatio: 0.58,
+);
 
 // ─── Filter state model ───────────────────────────────────────────────────────
 
@@ -70,6 +80,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
   String _sortBy = 'default';
   CatalogFilters _filters = const CatalogFilters();
 
+  // Режим правки конструктора: локальный перетаскиваемый порядок товаров.
+  List<Product>? _editOrder;
+
   @override
   void initState() {
     super.initState();
@@ -113,9 +126,57 @@ class _CatalogScreenState extends State<CatalogScreen> {
     if (result != null) setState(() => _filters = result);
   }
 
+  // Режим правки конструктора: перетаскиваемая сетка товаров (порядок приложения).
+  Widget _buildEditor(BuildContext context, CatalogProvider catalog) {
+    final all = catalog.byCategory('all');
+    if (_editOrder == null || _editOrder!.length != all.length) {
+      _editOrder = List.of(all);
+    }
+    final items = _editOrder!;
+    return Scaffold(
+      backgroundColor: AppColors.white,
+      appBar: AppBar(title: const Text('КАТАЛОГ · правка')),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: const Color(0xFFFFF7E6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: const Text(
+              'Зажмите карточку и перетащите, чтобы изменить порядок в приложении. '
+              'Опубликовать — кнопкой в конструкторе.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF8A5A00)),
+            ),
+          ),
+          Expanded(
+            child: items.isEmpty
+                ? const Center(child: Text('Нет товаров'))
+                : ReorderableGridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: _catalogGrid,
+                    itemCount: items.length,
+                    itemBuilder: (context, index) => Container(
+                      key: ValueKey(items[index].id),
+                      child: ProductCard(product: items[index]),
+                    ),
+                    onReorder: (oldIndex, newIndex) {
+                      setState(() {
+                        final item = items.removeAt(oldIndex);
+                        items.insert(newIndex, item);
+                      });
+                      postReorder(items.map((p) => p.id).toList());
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
+    if (consoleEditMode) return _buildEditor(context, catalog);
     final products = _filtered(catalog);
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -157,13 +218,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   )
                 : GridView.builder(
                     padding: const EdgeInsets.all(16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.58,
-                    ),
+                    gridDelegate: _catalogGrid,
                     itemCount: products.length,
                     itemBuilder: (context, index) {
                       return ProductCard(product: products[index]);
