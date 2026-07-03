@@ -143,7 +143,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
             color: const Color(0xFFFFF7E6),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: const Text(
-              'Зажмите карточку и перетащите, чтобы изменить порядок в приложении. '
+              'Потяните карточку мышью, чтобы изменить порядок в приложении. '
               'Опубликовать — кнопкой в конструкторе.',
               style: TextStyle(fontSize: 12, color: Color(0xFF8A5A00)),
             ),
@@ -154,6 +154,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 : ReorderableGridView.builder(
                     padding: const EdgeInsets.all(16),
                     gridDelegate: _catalogGrid,
+                    // Тащить сразу по нажатию (без долгого удержания);
+                    // прокрутка на десктопе — колёсиком, конфликта нет.
+                    dragStartDelay: Duration.zero,
                     itemCount: items.length,
                     itemBuilder: (context, index) => Container(
                       key: ValueKey(items[index].id),
