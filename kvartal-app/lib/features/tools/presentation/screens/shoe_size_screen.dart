@@ -4,8 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../logic/shoe_size.dart';
 import '../widgets/tool_widgets.dart';
 
-/// Калькулятор размера кроссовок: длина стопы (см) → RU/EU, см, UK, US.
-/// Связка со Store: подсказывает размер при покупке.
+/// Калькулятор размера кроссовок: длина стопы (см, барабан) → RU/EU, см, UK, US.
 class ShoeSizeScreen extends StatefulWidget {
   const ShoeSizeScreen({super.key});
 
@@ -14,14 +13,10 @@ class ShoeSizeScreen extends StatefulWidget {
 }
 
 class _ShoeSizeScreenState extends State<ShoeSizeScreen> {
-  final _foot = TextEditingController(text: '26');
+  // Длина стопы 15.0 … 40.0 см с шагом 0.5.
+  static final _feet = List<double>.generate(51, (i) => 15.0 + i * 0.5);
+  int _footIdx = 22; // 26.0 см
   bool _running = false;
-
-  @override
-  void dispose() {
-    _foot.dispose();
-    super.dispose();
-  }
 
   static String _fmt(double v) {
     final r = roundHalf(v);
@@ -30,10 +25,8 @@ class _ShoeSizeScreenState extends State<ShoeSizeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final footCm =
-        double.tryParse(_foot.text.trim().replaceAll(',', '.')) ?? 0;
-    final valid = footCm >= 15 && footCm <= 40;
-    final s = valid ? sizesFromFootCm(footCm, running: _running) : null;
+    final footCm = _feet[_footIdx];
+    final s = sizesFromFootCm(footCm, running: _running);
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,
@@ -50,11 +43,11 @@ class _ShoeSizeScreenState extends State<ShoeSizeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ToolNumField(
-                    controller: _foot,
-                    label: 'см',
-                    allowDecimal: true,
-                    onChanged: (_) => setState(() {}),
+                  ToolValuePicker(
+                    height: 132,
+                    items: [for (final f in _feet) '${f.toStringAsFixed(1)} см'],
+                    index: _footIdx,
+                    onChanged: (i) => setState(() => _footIdx = i),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -83,29 +76,19 @@ class _ShoeSizeScreenState extends State<ShoeSizeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (s != null) ...[
-              _SizeTile(label: 'RU / EU', sub: 'европейский', value: _fmt(s.eu)),
-              const SizedBox(height: 10),
-              _SizeTile(
-                label: 'Mondopoint',
-                sub: 'длина стопы, см',
-                value: _fmt(s.mondo),
-              ),
-              const SizedBox(height: 10),
-              _SizeTile(label: 'UK', sub: 'британский', value: _fmt(s.uk)),
-              const SizedBox(height: 10),
-              _SizeTile(label: 'US', sub: 'мужской', value: _fmt(s.usMen)),
-              const SizedBox(height: 10),
-              _SizeTile(label: 'US', sub: 'женский', value: _fmt(s.usWomen)),
-            ] else
-              ToolCard(
-                child: Text(
-                  'Введи длину стопы в сантиметрах (обычно 22–30 см).',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-              ),
+            _SizeTile(label: 'RU / EU', sub: 'европейский', value: _fmt(s.eu)),
+            const SizedBox(height: 10),
+            _SizeTile(
+              label: 'Mondopoint',
+              sub: 'длина стопы, см',
+              value: _fmt(s.mondo),
+            ),
+            const SizedBox(height: 10),
+            _SizeTile(label: 'UK', sub: 'британский', value: _fmt(s.uk)),
+            const SizedBox(height: 10),
+            _SizeTile(label: 'US', sub: 'мужской', value: _fmt(s.usMen)),
+            const SizedBox(height: 10),
+            _SizeTile(label: 'US', sub: 'женский', value: _fmt(s.usWomen)),
             const SizedBox(height: 12),
             Text(
               'Размеры приблизительные — сетки брендов отличаются. Перед покупкой '

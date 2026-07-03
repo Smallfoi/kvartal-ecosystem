@@ -51,6 +51,10 @@ dependencies:
   mobile_scanner: ^7.2.0
   image_picker: ^1.1.2
 
+  # Звук + вибрация для инструментов (метроном, интервальный таймер)
+  audioplayers: ^6.1.0
+  vibration: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -67,3 +71,4 @@ flutter:
     - assets/icons/
     - assets/brand/
     - assets/zones.json
+    - assets/audio/

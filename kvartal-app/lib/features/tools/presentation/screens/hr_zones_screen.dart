@@ -5,6 +5,7 @@ import '../../logic/hr_zones.dart';
 import '../widgets/tool_widgets.dart';
 
 /// Калькулятор пульсовых зон: возраст (+ необязательный пульс покоя) → 5 зон.
+/// Значения задаются барабанами.
 class HrZonesScreen extends StatefulWidget {
   const HrZonesScreen({super.key});
 
@@ -13,8 +14,8 @@ class HrZonesScreen extends StatefulWidget {
 }
 
 class _HrZonesScreenState extends State<HrZonesScreen> {
-  final _age = TextEditingController(text: '30');
-  final _rest = TextEditingController();
+  int _age = 30;
+  int? _restHr;
 
   static const _zoneColors = <Color>[
     AppColors.info,
@@ -25,19 +26,10 @@ class _HrZonesScreenState extends State<HrZonesScreen> {
   ];
 
   @override
-  void dispose() {
-    _age.dispose();
-    _rest.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final age = int.tryParse(_age.text.trim()) ?? 0;
-    final maxHr = age > 0 ? maxHrByAge(age) : 0;
-    final rest = int.tryParse(_rest.text.trim());
-    final karvonen = rest != null && rest > 0 && rest < maxHr;
-    final zones = maxHr > 0 ? hrZones(maxHr: maxHr, restHr: rest) : <HrZone>[];
+    final maxHr = maxHrByAge(_age);
+    final karvonen = _restHr != null && _restHr! > 0 && _restHr! < maxHr;
+    final zones = hrZones(maxHr: maxHr, restHr: _restHr);
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,
@@ -56,23 +48,36 @@ class _HrZonesScreenState extends State<HrZonesScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: ToolNumField(
-                          controller: _age,
+                        child: _WheelColumn(
                           label: 'Возраст',
-                          onChanged: (_) => setState(() {}),
+                          child: ToolValuePicker(
+                            height: 128,
+                            items: [for (var a = 10; a <= 90; a++) '$a'],
+                            index: _age - 10,
+                            onChanged: (i) => setState(() => _age = i + 10),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: ToolNumField(
-                          controller: _rest,
+                        child: _WheelColumn(
                           label: 'Пульс покоя',
-                          onChanged: (_) => setState(() {}),
+                          child: ToolValuePicker(
+                            height: 128,
+                            items: [
+                              '—',
+                              for (var h = 30; h <= 120; h++) '$h',
+                            ],
+                            index: _restHr == null ? 0 : _restHr! - 29,
+                            onChanged: (i) => setState(
+                              () => _restHr = i == 0 ? null : i + 29,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Text(
@@ -83,7 +88,7 @@ class _HrZonesScreenState extends State<HrZonesScreen> {
                       ),
                       const Spacer(),
                       Text(
-                        maxHr > 0 ? '$maxHr уд/мин' : '—',
+                        '$maxHr уд/мин',
                         style: const TextStyle(
                           color: AppColors.electricBlue,
                           fontSize: 18,
@@ -120,6 +125,30 @@ class _HrZonesScreenState extends State<HrZonesScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _WheelColumn extends StatelessWidget {
+  final String label;
+  final Widget child;
+  const _WheelColumn({required this.label, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textTertiary,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 4),
+        child,
+      ],
     );
   }
 }
