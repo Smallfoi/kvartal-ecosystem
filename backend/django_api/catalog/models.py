@@ -10,6 +10,8 @@ class Category(models.Model):
     name = models.CharField(max_length=120, verbose_name="Название")
     emoji = models.CharField(max_length=16, blank=True, default="", verbose_name="Эмодзи")
     image_url = models.CharField(max_length=300, null=True, blank=True, verbose_name="Ссылка на фото")
+    # Загруженное в админке фото категории (приоритетнее image_url).
+    image = models.ImageField(upload_to="uploads/categories/", null=True, blank=True, verbose_name="Фото")
     sort = models.IntegerField(default=0, verbose_name="Порядок")
 
     class Meta:
@@ -21,12 +23,18 @@ class Category(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def network_image_url(self) -> str:
+        """Сетевой URL фото: приоритет — загруженное в админке, иначе ссылка."""
+        if self.image:
+            return self.image.url
+        return self.image_url or ""
+
     def to_json(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
             "emoji": self.emoji,
-            "imageUrl": self.image_url,
+            "imageUrl": self.network_image_url(),
         }
 
 
@@ -99,6 +107,8 @@ class Banner(models.Model):
     title = models.CharField(max_length=200, verbose_name="Заголовок")
     subtitle = models.CharField(max_length=200, blank=True, default="", verbose_name="Подзаголовок")
     image_url = models.CharField(max_length=300, blank=True, default="", verbose_name="Ссылка на фото")
+    # Загруженный в админке баннер (приоритетнее image_url) → /media/uploads/banners/…
+    image = models.ImageField(upload_to="uploads/banners/", null=True, blank=True, verbose_name="Фото")
     action = models.CharField(max_length=80, blank=True, default="", verbose_name="Действие")
     is_published = models.BooleanField(default=True, db_index=True, verbose_name="Опубликован")
     sort = models.IntegerField(default=0, verbose_name="Порядок")
@@ -112,11 +122,17 @@ class Banner(models.Model):
     def __str__(self) -> str:
         return self.title
 
+    def network_image_url(self) -> str:
+        """Сетевой URL баннера: приоритет — загруженное в админке, иначе ссылка."""
+        if self.image:
+            return self.image.url
+        return self.image_url or ""
+
     def to_json(self) -> dict:
         return {
             "title": self.title,
             "subtitle": self.subtitle,
-            "imageUrl": self.image_url,
+            "imageUrl": self.network_image_url(),
             "action": self.action,
         }
 
