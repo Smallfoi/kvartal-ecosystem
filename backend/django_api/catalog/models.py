@@ -117,6 +117,9 @@ class Banner(models.Model):
     action = models.CharField(max_length=80, blank=True, default="", verbose_name="Действие")
     is_published = models.BooleanField(default=True, db_index=True, verbose_name="Опубликован")
     sort = models.IntegerField(default=0, verbose_name="Порядок")
+    # Раздельный порядок промо по площадкам (мерчендайзинг per-channel), как у товаров.
+    sort_site = models.IntegerField(default=0, verbose_name="Порядок (сайт)")
+    sort_app = models.IntegerField(default=0, verbose_name="Порядок (приложение)")
 
     class Meta:
         db_table = "catalog_banners"

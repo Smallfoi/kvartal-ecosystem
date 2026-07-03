@@ -57,7 +57,7 @@
   }
 
   function load() {
-    fetch(API + "/banners")
+    fetch(API + "/banners?platform=site")
       .then(function (r) {
         return r.ok ? r.json() : Promise.reject();
       })

@@ -158,3 +158,12 @@ class PlatformOrderTests(ApiTestCase):
     def test_no_platform_does_not_break(self):
         # Без platform — по общему sort (обратная совместимость), без ошибки.
         self.assertEqual(sorted(self._ids("/v1/products")), ["pa", "pb", "pc"])
+
+    def test_banner_platform_order(self):
+        from catalog.models import Banner
+        Banner.objects.create(title="B1", sort_site=1, sort_app=2, is_published=True)
+        Banner.objects.create(title="B2", sort_site=2, sort_app=1, is_published=True)
+        site = [b["title"] for b in self.client.get("/v1/banners?platform=site").json()]
+        app = [b["title"] for b in self.client.get("/v1/banners?platform=app").json()]
+        self.assertEqual([t for t in site if t in ("B1", "B2")], ["B1", "B2"])
+        self.assertEqual([t for t in app if t in ("B1", "B2")], ["B2", "B1"])
