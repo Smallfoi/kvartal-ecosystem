@@ -133,16 +133,17 @@ class ProductAdmin(ModelAdmin):
 
 @admin.register(Banner)
 class BannerAdmin(ModelAdmin):
-    list_display = ("preview", "id", "title", "subtitle", "action", "is_published", "sort")
+    list_display = ("preview", "id", "title", "subtitle", "action", "is_published",
+                    "sort_site", "sort_app")
     list_display_links = ("id", "title")  # заголовок кликабелен → открыть/редактировать
-    list_editable = ("is_published", "sort")
+    list_editable = ("is_published", "sort_site", "sort_app")
     list_filter = ("is_published",)
     search_fields = ("title", "subtitle")
     ordering = ("sort",)
     actions = [make_published, make_draft]
     readonly_fields = ("preview_large",)
     fields = ("title", "subtitle", "image", "preview_large", "image_url",
-              "action", "is_published", "sort")
+              "action", "is_published", "sort", "sort_site", "sort_app")
 
     @admin.display(description="Фото")
     def preview(self, obj):

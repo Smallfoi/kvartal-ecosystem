@@ -105,6 +105,7 @@ def banners(request):
     qs = Banner.objects.all()
     if not _is_preview(request):
         qs = qs.filter(is_published=True)
+    qs = qs.order_by(*_platform_order(request))
     return Response([b.to_json() for b in qs])
 
 
