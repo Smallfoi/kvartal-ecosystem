@@ -15,7 +15,6 @@ import '../../features/notifications/presentation/screens/notifications_screen.d
 import '../../features/profile/presentation/screens/privacy_screen.dart';
 import '../../features/profile/presentation/screens/stats_screen.dart';
 import '../../features/shoes/presentation/screens/shoes_screen.dart';
-import '../../features/tools/presentation/screens/tools_hub_screen.dart';
 import '../../features/tools/presentation/screens/pace_converter_screen.dart';
 import '../../features/tools/presentation/screens/hr_zones_screen.dart';
 import '../../features/tools/presentation/screens/shoe_size_screen.dart';
@@ -143,12 +142,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/profile/privacy',
             builder: (_, __) => const PrivacyScreen(),
           ),
-          // Инструменты бегуна — 6-я вкладка нижней навигации.
-          GoRoute(
-            path: '/tools',
-            pageBuilder: (_, __) =>
-                const NoTransitionPage(child: ToolsHubScreen()),
-          ),
+          // Инструменты бегуна — открываются с экрана «Бег» (лента ярлыков).
           GoRoute(
             path: '/tools/pace',
             builder: (_, __) => const PaceConverterScreen(),

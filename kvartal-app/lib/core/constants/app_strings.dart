@@ -9,5 +9,4 @@
   static const tabLeaderboard = 'Рейтинг';
   static const tabClub = 'Клуб';
   static const tabProfile = 'Профиль';
-  static const tabTools = 'Инструменты';
 }
