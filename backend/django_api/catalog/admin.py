@@ -20,11 +20,32 @@ def make_draft(modeladmin, request, queryset):
 
 @admin.register(Category)
 class CategoryAdmin(ModelAdmin):
-    list_display = ("id", "name", "emoji", "sort")
+    list_display = ("preview", "id", "name", "emoji", "sort")
     list_display_links = ("id", "name")  # имя кликабельно → открыть/редактировать
     list_editable = ("sort",)
     search_fields = ("id", "name")
     ordering = ("sort",)
+    readonly_fields = ("preview_large",)
+    fields = ("id", "name", "emoji", "image", "preview_large", "image_url", "sort")
+
+    @admin.display(description="Фото")
+    def preview(self, obj):
+        url = obj.network_image_url()
+        if url:
+            return format_html(
+                '<img src="{}" style="height:34px;width:34px;object-fit:cover;'
+                'border-radius:6px"/>', url,
+            )
+        return "—"
+
+    @admin.display(description="Текущее фото")
+    def preview_large(self, obj):
+        url = obj.network_image_url()
+        if url:
+            return format_html(
+                '<img src="{}" style="max-height:120px;border-radius:10px"/>', url
+            )
+        return "Нет фото"
 
 
 @admin.register(Product)
@@ -101,13 +122,34 @@ class ProductAdmin(ModelAdmin):
 
 @admin.register(Banner)
 class BannerAdmin(ModelAdmin):
-    list_display = ("id", "title", "subtitle", "action", "is_published", "sort")
+    list_display = ("preview", "id", "title", "subtitle", "action", "is_published", "sort")
     list_display_links = ("id", "title")  # заголовок кликабелен → открыть/редактировать
     list_editable = ("is_published", "sort")
     list_filter = ("is_published",)
     search_fields = ("title", "subtitle")
     ordering = ("sort",)
     actions = [make_published, make_draft]
+    readonly_fields = ("preview_large",)
+    fields = ("title", "subtitle", "image", "preview_large", "image_url",
+              "action", "is_published", "sort")
+
+    @admin.display(description="Фото")
+    def preview(self, obj):
+        url = obj.network_image_url()
+        if url:
+            return format_html(
+                '<img src="{}" style="height:34px;border-radius:6px"/>', url
+            )
+        return "—"
+
+    @admin.display(description="Текущий баннер")
+    def preview_large(self, obj):
+        url = obj.network_image_url()
+        if url:
+            return format_html(
+                '<img src="{}" style="max-height:130px;border-radius:10px"/>', url
+            )
+        return "Нет фото"
 
 
 # ── Модерация отзывов ───────────────────────────────────────────────────────
