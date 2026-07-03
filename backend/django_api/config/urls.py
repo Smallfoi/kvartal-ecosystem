@@ -9,7 +9,14 @@ admin.site.index_title = "Управление: каталог, заказы, к
 
 from accounts import views as account_views
 from catalog import views as catalog_views
-from config.admin_views import preview_app, preview_site
+from config.admin_views import (
+    merch_console,
+    merch_product,
+    merch_products,
+    merch_reorder,
+    preview_app,
+    preview_site,
+)
 from notifications import views as notif_views
 from legal import views as legal_views
 from runs import views as runs_views
@@ -19,9 +26,14 @@ from shoes import views as shoes_views
 from territories import views as territories_views
 
 urlpatterns = [
-    # Кастомная страница админки — раньше generic admin/ роутинга.
+    # Кастомные страницы админки — раньше generic admin/ роутинга.
     path("admin/preview-site/", preview_site, name="preview_site"),
     path("admin/preview-app/", preview_app, name="preview_app"),
+    # Конструктор витрины (мерчендайзинг): раздельный порядок + правка-в-превью.
+    path("admin/merch/", merch_console, name="merch_console"),
+    path("admin/merch/products", merch_products, name="merch_products"),
+    path("admin/merch/reorder", merch_reorder, name="merch_reorder"),
+    path("admin/merch/product/<str:pid>", merch_product, name="merch_product"),
     path("admin/", admin.site.urls),
     path("v1/", include("core.urls")),
     path("v1/auth/", include("accounts.urls")),
