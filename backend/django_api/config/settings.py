@@ -219,6 +219,8 @@ UNFOLD = {
                      "link": reverse_lazy("admin:catalog_category_changelist")},
                     {"title": "Баннеры", "icon": "image",
                      "link": reverse_lazy("admin:catalog_banner_changelist")},
+                    {"title": "Отзывы", "icon": "reviews",
+                     "link": reverse_lazy("admin:catalog_review_changelist")},
                 ],
             },
             {
@@ -243,10 +245,20 @@ UNFOLD = {
                      "link": reverse_lazy("admin:clubs_clubjoinrequest_changelist")},
                     {"title": "Участники клубов", "icon": "badge",
                      "link": reverse_lazy("admin:clubs_clubmember_changelist")},
+                    {"title": "Челленджи клубов", "icon": "emoji_events",
+                     "link": reverse_lazy("admin:clubs_clubchallenge_changelist")},
                     {"title": "Пользователи", "icon": "person",
                      "link": reverse_lazy("admin:accounts_account_changelist")},
                     {"title": "Уведомления", "icon": "notifications",
                      "link": reverse_lazy("admin:notifications_notification_changelist")},
+                ],
+            },
+            {
+                "title": "Бег и модерация",
+                "separator": True,
+                "items": [
+                    {"title": "Забеги (анти-чит)", "icon": "sports_score",
+                     "link": reverse_lazy("admin:runs_run_changelist")},
                 ],
             },
             {

@@ -4,7 +4,7 @@ from unfold.admin import ModelAdmin
 
 from common.adminutils import UserRefMixin
 
-from .models import Club, ClubJoinRequest, ClubMember
+from .models import Club, ClubChallenge, ClubJoinRequest, ClubMember
 
 
 def _user_label(uid):
@@ -21,6 +21,7 @@ class ClubAdmin(UserRefMixin, ModelAdmin):
     list_display_links = ("id", "name")  # название кликабельно → открыть/редактировать
     list_filter = ("join_policy", "city", "is_hidden")
     search_fields = ("id", "name", "city", "owner_id")
+    ordering = ("-created_at",)
     actions = ("hide_clubs", "show_clubs")
     # club_id — обычный CharField (не FK), поэтому стандартные инлайны недоступны;
     # показываем участников и заявки read-only блоками прямо в карточке клуба.
@@ -67,6 +68,7 @@ class ClubMemberAdmin(UserRefMixin, ModelAdmin):
     list_display = ("club_id", "user_ref", "role", "joined_at")
     list_filter = ("role",)
     search_fields = ("club_id", "user_id")
+    ordering = ("-joined_at",)
 
 
 @admin.register(ClubJoinRequest)
@@ -74,3 +76,16 @@ class ClubJoinRequestAdmin(UserRefMixin, ModelAdmin):
     list_display = ("id", "club_id", "user_ref", "status", "created_at")
     list_filter = ("status",)
     search_fields = ("club_id", "user_id")
+    ordering = ("-created_at",)
+
+
+@admin.register(ClubChallenge)
+class ClubChallengeAdmin(ModelAdmin):
+    list_display = (
+        "id", "club_id", "title", "target_km", "start_at", "end_at", "created_at",
+    )
+    list_display_links = ("id", "title")
+    list_filter = ("start_at", "end_at")
+    search_fields = ("id", "club_id", "title")
+    ordering = ("-created_at",)
+    date_hierarchy = "start_at"

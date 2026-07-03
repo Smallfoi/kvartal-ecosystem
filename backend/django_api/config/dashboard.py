@@ -65,14 +65,20 @@ def dashboard_callback(request, context):
     conversion_pct = round(converted / len(runners) * 100) if runners else 0
 
     # ── Территории (PostGIS): активные (живой слой) + суммарная площадь ──
-    with connection.cursor() as cur:
-        cur.execute(
-            "SELECT count(*), COALESCE(SUM(ST_Area(geom::geography)),0) "
-            "FROM territories WHERE captured_at > now() - make_interval(hours => %s)",
-            [HOLD_HOURS],
-        )
-        terr_count, terr_area = cur.fetchone()
-    terr_km2 = round((terr_area or 0) / 1_000_000, 2)
+    # Единственный raw-PostGIS-запрос на дашборде: изолируем try/except, чтобы
+    # сбой расширения/таблицы territories не ронял всю главную страницу админки.
+    terr_count, terr_km2 = 0, 0
+    try:
+        with connection.cursor() as cur:
+            cur.execute(
+                "SELECT count(*), COALESCE(SUM(ST_Area(geom::geography)),0) "
+                "FROM territories WHERE captured_at > now() - make_interval(hours => %s)",
+                [HOLD_HOURS],
+            )
+            terr_count, terr_area = cur.fetchone()
+        terr_km2 = round((terr_area or 0) / 1_000_000, 2)
+    except Exception:
+        terr_count, terr_km2 = 0, 0
 
     # Заказы по дням за последнюю неделю — для столбчатого графика.
     daily = []
