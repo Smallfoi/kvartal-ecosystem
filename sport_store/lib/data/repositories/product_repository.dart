@@ -129,11 +129,13 @@ class ApiProductRepository implements ProductRepository {
   final ApiClient _client;
   ApiProductRepository(this._client);
 
-  /// В превью-сборке (ApiConfig.preview) добавляем ?preview=1 — каталог отдаёт
-  /// и черновики, чтобы видеть правки до публикации в админ-превью.
+  /// platform=app → раздельный порядок витрины для приложения (мерчендайзинг
+  /// per-channel: данные товара общие, порядок свой). В превью-сборке
+  /// (ApiConfig.preview) добавляем ещё ?preview=1 — каталог отдаёт и черновики.
   Map<String, dynamic>? _q([Map<String, dynamic>? base]) {
-    if (!ApiConfig.preview) return base;
-    return {...?base, 'preview': '1'};
+    final q = <String, dynamic>{...?base, 'platform': 'app'};
+    if (ApiConfig.preview) q['preview'] = '1';
+    return q;
   }
 
   @override

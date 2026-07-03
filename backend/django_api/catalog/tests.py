@@ -132,3 +132,29 @@ class ReviewTests(ApiTestCase):
         data = self.api_get("/v1/products/p_test/reviews").json()
         self.assertEqual(len(data["reviews"]), 0)
         self.assertEqual(data["reviewCount"], 0)
+
+
+class PlatformOrderTests(ApiTestCase):
+    """Раздельный порядок витрины: ?platform=site|app сортирует по своему полю."""
+
+    def setUp(self):
+        super().setUp()
+        # На сайте порядок A,B,C; в приложении — обратный C,B,A.
+        Product.objects.create(id="pa", name="A", category_id="c1", price=100,
+                               sort_site=1, sort_app=3)
+        Product.objects.create(id="pb", name="B", category_id="c1", price=100,
+                               sort_site=2, sort_app=2)
+        Product.objects.create(id="pc", name="C", category_id="c1", price=100,
+                               sort_site=3, sort_app=1)
+
+    def _ids(self, url):
+        got = [p["id"] for p in self.client.get(url).json()]
+        return [i for i in got if i in {"pa", "pb", "pc"}]
+
+    def test_site_and_app_orders_differ(self):
+        self.assertEqual(self._ids("/v1/products?platform=site"), ["pa", "pb", "pc"])
+        self.assertEqual(self._ids("/v1/products?platform=app"), ["pc", "pb", "pa"])
+
+    def test_no_platform_does_not_break(self):
+        # Без platform — по общему sort (обратная совместимость), без ошибки.
+        self.assertEqual(sorted(self._ids("/v1/products")), ["pa", "pb", "pc"])

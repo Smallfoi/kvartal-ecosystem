@@ -28,6 +28,14 @@ def _visible_products(request):
     return qs
 
 
+def _platform_order(request):
+    """Порядок витрины по площадке (мерчендайзинг per-channel). platform=site|app →
+    свой порядок (sort_site/sort_app); без параметра — общий sort (обратная совместимость)."""
+    platform = (request.query_params.get("platform") or "").strip().lower()
+    field = {"site": "sort_site", "app": "sort_app"}.get(platform)
+    return (field, "sort", "id") if field else ("sort", "id")
+
+
 @api_view(["GET"])
 def categories(request):
     return Response([c.to_json() for c in Category.objects.all()])
@@ -43,6 +51,7 @@ def products(request):
         qs = qs.filter(is_featured=True)
     if request.query_params.get("new") in _TRUE:
         qs = qs.filter(is_new=True)
+    qs = qs.order_by(*_platform_order(request))
     return Response([p.to_json() for p in qs])
 
 
