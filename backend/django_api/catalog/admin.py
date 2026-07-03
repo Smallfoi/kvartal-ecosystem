@@ -64,7 +64,8 @@ class ProductAdmin(ModelAdmin):
         "is_published",
         "is_featured",
         "is_new",
-        "sort",
+        "sort_site",
+        "sort_app",
     )
     list_display_links = ("id", "name")
     list_editable = (
@@ -74,7 +75,8 @@ class ProductAdmin(ModelAdmin):
         "is_published",
         "is_featured",
         "is_new",
-        "sort",
+        "sort_site",
+        "sort_app",
     )
     list_filter = ("category_id", "brand", "in_stock", "is_published", "is_featured", "is_new")
     search_fields = ("id", "name", "brand", "description")
@@ -94,9 +96,11 @@ class ProductAdmin(ModelAdmin):
         }),
         ("Витрина", {
             "fields": ("is_published", "is_new", "is_featured", "rating",
-                       "review_count", "sort"),
+                       "review_count", "sort", "sort_site", "sort_app"),
             "description": "is_published — виден ли товар на витрине (сайт/приложение). "
-            "Снимите галочку, чтобы держать как черновик и смотреть в превью.",
+            "Порядок раздельный по площадкам: sort_site — на сайте, sort_app — в "
+            "приложении (данные общие, раскладка своя). Удобное перетаскивание — на "
+            "странице «Конструктор витрины».",
         }),
     )
     readonly_fields = ("preview_large",)

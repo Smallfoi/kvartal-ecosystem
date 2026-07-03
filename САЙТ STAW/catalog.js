@@ -115,7 +115,7 @@
   }
 
   function load() {
-    fetch(API + "/products" + (PREVIEW ? "?preview=1" : ""))
+    fetch(API + "/products?platform=site" + (PREVIEW ? "&preview=1" : ""))
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(render)
       .catch(function () { /* офлайн/нет API — оставляем статичные карточки */ });

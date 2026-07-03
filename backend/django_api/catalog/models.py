@@ -61,6 +61,11 @@ class Product(models.Model):
     # черновик виден в админ-превью (?preview=1). Существующие → опубликованы.
     is_published = models.BooleanField(default=True, db_index=True, verbose_name="Опубликован")
     sort = models.IntegerField(default=0, verbose_name="Порядок")
+    # Раздельный порядок витрины по площадкам (мерчендайзинг per-channel): данные
+    # товара общие, а раскладка раздельная. API отдаёт порядок по ?platform=site|app
+    # (sort_site / sort_app); без параметра — по общему sort (обратная совместимость).
+    sort_site = models.IntegerField(default=0, verbose_name="Порядок (сайт)")
+    sort_app = models.IntegerField(default=0, verbose_name="Порядок (приложение)")
 
     class Meta:
         db_table = "catalog_products"
