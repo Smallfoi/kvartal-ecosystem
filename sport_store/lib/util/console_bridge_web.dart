@@ -5,8 +5,6 @@
 import 'dart:convert';
 import 'dart:html' as html;
 
-bool get consoleEditMode => Uri.base.queryParameters['edit'] == '1';
-
 void postReorder(List<String> productIds) {
   html.window.parent?.postMessage(
     jsonEncode({

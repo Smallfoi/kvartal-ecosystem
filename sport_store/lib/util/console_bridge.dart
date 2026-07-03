@@ -8,8 +8,10 @@
 import 'console_bridge_stub.dart'
     if (dart.library.html) 'console_bridge_web.dart' as impl;
 
-/// true — приложение открыто в конструкторе в режиме правки (web + ?edit=1).
-bool get consoleEditMode => impl.consoleEditMode;
+/// Режим правки конструктора. Задаётся при сборке web-превью для конструктора:
+/// flutter build web --dart-define=CONSOLE_EDIT=1. В обычном APK флага нет → false.
+/// (URL-параметр ?edit=1 не годится: go_router на старте убирает query из адреса.)
+const bool consoleEditMode = bool.fromEnvironment('CONSOLE_EDIT');
 
 /// Отправить новый порядок товаров (площадка app) родителю-конструктору.
 void postReorder(List<String> productIds) => impl.postReorder(productIds);
