@@ -20,4 +20,15 @@ class LoyaltyTransactionAdmin(UserRefMixin, ModelAdmin):
     list_filter = ("source",)
     search_fields = ("user_id", "description", "order_id", "run_id")
     date_hierarchy = "created_at"
+    ordering = ("-created_at",)
     readonly_fields = ("id",)
+
+    # Финансовый реестр: баланс/уровень пользователя = сумма транзакций
+    # (loyalty.models.balance_of). Ручная правка/удаление молча исказит баланс,
+    # поэтому существующие записи — только просмотр. Корректировка — новой записью
+    # (add остаётся доступным), а не редактированием/удалением истории.
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
