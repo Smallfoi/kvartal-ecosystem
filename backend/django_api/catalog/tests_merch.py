@@ -63,7 +63,8 @@ class MerchConsoleTests(TestCase):
     def test_console_page_renders(self):
         r = self.client.get("/admin/merch/")
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "Конструктор витрины")
+        self.assertContains(r, "Конструктор")
+        self.assertContains(r, "Назад в админку")
 
     def test_requires_staff(self):
         self.client.logout()
