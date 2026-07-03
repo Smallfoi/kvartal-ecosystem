@@ -271,15 +271,13 @@ UNFOLD = {
                 ],
             },
             {
-                "title": "Витрина (до прода)",
+                "title": "Витрина",
                 "separator": True,
                 "items": [
-                    {"title": "Конструктор витрины", "icon": "dashboard_customize",
+                    # Конструктор = live-превью + правка + публикация (отдельные
+                    # страницы «Превью» убраны — конструктор их заменяет).
+                    {"title": "Конструктор", "icon": "dashboard_customize",
                      "link": reverse_lazy("merch_console")},
-                    {"title": "Превью сайта", "icon": "preview",
-                     "link": reverse_lazy("preview_site")},
-                    {"title": "Превью приложения", "icon": "smartphone",
-                     "link": reverse_lazy("preview_app")},
                 ],
             },
         ],
