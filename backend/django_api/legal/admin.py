@@ -33,7 +33,12 @@ class UserConsentAdmin(UserRefMixin, ModelAdmin):
     list_filter = ("source", "document__doc_type")
     search_fields = ("user_id",)
     date_hierarchy = "accepted_at"
-    # Аудит согласий (152-ФЗ) не правим вручную — иначе теряет доказательную силу.
-    # Просмотр деталей (read-only) и удаление записи — доступны.
+    ordering = ("-accepted_at",)
+
+    # Аудит согласий (152-ФЗ): запись — доказательство согласия. Не правим и не
+    # удаляем вручную, иначе теряется доказательная сила. Только просмотр.
     def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False

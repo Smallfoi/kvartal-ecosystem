@@ -12,6 +12,7 @@ class NotificationAdmin(UserRefMixin, ModelAdmin):
     list_filter = ("type", "read")
     search_fields = ("user_id", "title", "body", "order_id")
     date_hierarchy = "created_at"
+    ordering = ("-created_at",)
 
 
 @admin.register(DeviceToken)
@@ -20,3 +21,4 @@ class DeviceTokenAdmin(UserRefMixin, ModelAdmin):
     list_filter = ("platform",)
     search_fields = ("user_id", "token")
     date_hierarchy = "created_at"
+    ordering = ("-created_at",)

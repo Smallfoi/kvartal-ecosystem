@@ -1,13 +1,13 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
-from common.adminutils import UserRefMixin
+from common.adminutils import ExportCsvMixin, UserRefMixin
 
 from .models import LoyaltyTransaction
 
 
 @admin.register(LoyaltyTransaction)
-class LoyaltyTransactionAdmin(UserRefMixin, ModelAdmin):
+class LoyaltyTransactionAdmin(ExportCsvMixin, UserRefMixin, ModelAdmin):
     list_display = (
         "id",
         "user_ref",
@@ -22,6 +22,10 @@ class LoyaltyTransactionAdmin(UserRefMixin, ModelAdmin):
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
     readonly_fields = ("id",)
+    actions = ("export_as_csv",)
+    csv_filename = "loyalty_transactions"
+    export_fields = ("id", "user_id", "amount", "source", "description",
+                     "order_id", "run_id", "created_at")
 
     # Финансовый реестр: баланс/уровень пользователя = сумма транзакций
     # (loyalty.models.balance_of). Ручная правка/удаление молча исказит баланс,

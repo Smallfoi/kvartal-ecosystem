@@ -3,6 +3,8 @@ from django.db.models import Avg, Count
 from django.utils.html import format_html, format_html_join
 from unfold.admin import ModelAdmin
 
+from common.adminutils import UserRefMixin
+
 from .models import Banner, Category, Product, Review
 
 
@@ -55,7 +57,7 @@ class ProductAdmin(ModelAdmin):
         "id",
         "name",
         "brand",
-        "category_id",
+        "category_name",
         "price",
         "old_price",
         "in_stock",
@@ -98,6 +100,11 @@ class ProductAdmin(ModelAdmin):
         }),
     )
     readonly_fields = ("preview_large",)
+
+    @admin.display(description="Категория")
+    def category_name(self, obj):
+        c = Category.objects.filter(id=obj.category_id).only("name").first()
+        return c.name if c else (obj.category_id or "—")
 
     @admin.display(description="Фото")
     def preview(self, obj):
@@ -183,9 +190,9 @@ def show_reviews(modeladmin, request, queryset):
 
 
 @admin.register(Review)
-class ReviewAdmin(ModelAdmin):
+class ReviewAdmin(UserRefMixin, ModelAdmin):
     list_display = (
-        "id", "product_id", "user_id", "rating", "short_text",
+        "id", "product_ref", "user_ref", "rating", "short_text",
         "photos_count", "hidden", "created_at",
     )
     list_display_links = ("id",)
@@ -195,6 +202,11 @@ class ReviewAdmin(ModelAdmin):
     ordering = ("-created_at",)
     actions = [hide_reviews, show_reviews]
     readonly_fields = ("photos_preview", "created_at")
+
+    @admin.display(description="Товар")
+    def product_ref(self, obj):
+        p = Product.objects.filter(id=obj.product_id).only("name").first()
+        return f"{p.name}" if p else f"{obj.product_id} (нет)"
 
     @admin.display(description="Текст")
     def short_text(self, obj):

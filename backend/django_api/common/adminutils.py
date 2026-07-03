@@ -3,7 +3,30 @@
 user_id в моделях — обычный CharField (не ForeignKey, контракт с FastAPI), поэтому
 Django не покажет имя автоматически. Миксин подтягивает Account и выводит
 «Имя · телефон». Запрос на строку — для админ-списка (≤100 строк) это норма."""
+import csv
+
 from django.contrib import admin
+from django.http import HttpResponse
+
+
+class ExportCsvMixin:
+    """Действие «Экспорт в CSV» для выбранных строк. Поля — из `export_fields`
+    (если не задано — все поля модели). Файл с BOM, чтобы кириллица открывалась
+    в Excel корректно."""
+    export_fields = None
+    csv_filename = "export"
+
+    @admin.action(description="Экспорт выбранных в CSV")
+    def export_as_csv(self, request, queryset):
+        fields = self.export_fields or [f.name for f in self.model._meta.fields]
+        resp = HttpResponse(content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = f'attachment; filename="{self.csv_filename}.csv"'
+        resp.write(chr(0xFEFF))  # BOM, чтобы кириллица открывалась в Excel
+        writer = csv.writer(resp)
+        writer.writerow(fields)
+        for obj in queryset:
+            writer.writerow([getattr(obj, f, "") for f in fields])
+        return resp
 
 
 class UserRefMixin:
