@@ -4,23 +4,30 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.models import Group, User
 from unfold.admin import ModelAdmin
 
+from common.adminutils import ExportCsvMixin
+
 from .models import Account
 
 
 @admin.register(Account)
-class AccountAdmin(ModelAdmin):
+class AccountAdmin(ExportCsvMixin, ModelAdmin):
     list_display = ("id", "name", "phone", "email", "city", "provider",
                     "is_blocked", "needs_review", "created_at")
     list_display_links = ("id", "name")  # имя кликабельно → открыть/редактировать
     list_filter = ("provider", "city", "is_blocked", "needs_review")
     search_fields = ("id", "name", "phone", "email")
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
     readonly_fields = ("id", "created_at")
-    actions = ("block_accounts", "unblock_accounts", "clear_review")
+    actions = ("block_accounts", "unblock_accounts", "clear_review", "export_as_csv")
+    csv_filename = "accounts"
+    export_fields = ("id", "name", "phone", "email", "city", "provider",
+                     "is_blocked", "needs_review", "created_at")
     # Карточка пользователя по разделам (хэш пароля не показываем).
     fieldsets = (
         ("Профиль", {
             "fields": ("id", "name", "phone", "email", "city", "provider",
-                       "avatar_path", "created_at"),
+                       "avatar_path", "addresses", "created_at"),
         }),
         ("Приватность", {
             "fields": ("profile_public", "route_public", "realtime_public"),
