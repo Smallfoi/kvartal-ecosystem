@@ -39,21 +39,183 @@ class ToolCard extends StatelessWidget {
   }
 }
 
+/// Строка-заголовок раскрывающегося поля: подпись слева, значение справа, шеврон.
+class _FieldHeader extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool open;
+  const _FieldHeader({
+    required this.label,
+    required this.value,
+    required this.open,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            value,
+            style: TextStyle(
+              color: open ? AppColors.electricBlue : AppColors.textPrimary,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 6),
+          AnimatedRotation(
+            turns: open ? 0.5 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              CupertinoIcons.chevron_down,
+              size: 16,
+              color: open ? AppColors.electricBlue : AppColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Поле времени: по умолчанию — простое «м:сс», по тапу красиво разворачивается
+/// барабан (только при редактировании), выбрал — снова простое значение.
+class ToolTimeField extends StatefulWidget {
+  final String label;
+  final Duration value;
+  final ValueChanged<Duration> onChanged;
+
+  const ToolTimeField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  State<ToolTimeField> createState() => _ToolTimeFieldState();
+}
+
+class _ToolTimeFieldState extends State<ToolTimeField> {
+  bool _open = false;
+
+  static String _fmt(Duration d) {
+    final m = d.inMinutes;
+    final s = d.inSeconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() => _open = !_open),
+          child: _FieldHeader(
+            label: widget.label,
+            value: _fmt(widget.value),
+            open: _open,
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: _open
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: ToolTimePicker(
+                    initial: widget.value,
+                    onChanged: widget.onChanged,
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
+/// Поле выбора из списка: по умолчанию — выбранное значение, по тапу — барабан.
+class ToolValueField extends StatefulWidget {
+  final String label;
+  final List<String> items;
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  const ToolValueField({
+    super.key,
+    required this.label,
+    required this.items,
+    required this.index,
+    required this.onChanged,
+  });
+
+  @override
+  State<ToolValueField> createState() => _ToolValueFieldState();
+}
+
+class _ToolValueFieldState extends State<ToolValueField> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() => _open = !_open),
+          child: _FieldHeader(
+            label: widget.label,
+            value: widget.items[widget.index],
+            open: _open,
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: _open
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: ToolValuePicker(
+                    items: widget.items,
+                    index: widget.index,
+                    onChanged: widget.onChanged,
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
 /// Барабан-пикер времени (мин : сек) в стиле будильника iOS.
-/// Свайпом выставляешь минуты и секунды — всё на одном экране.
 class ToolTimePicker extends StatelessWidget {
   final Duration initial;
   final ValueChanged<Duration> onChanged;
-
-  /// Ключ для пере-инициализации барабана (напр. при выборе пресета).
-  final Key? pickerKey;
   final double height;
 
   const ToolTimePicker({
     super.key,
     required this.initial,
     required this.onChanged,
-    this.pickerKey,
     this.height = 150,
   });
 
@@ -73,7 +235,6 @@ class ToolTimePicker extends StatelessWidget {
           ),
         ),
         child: CupertinoTimerPicker(
-          key: pickerKey,
           mode: CupertinoTimerPickerMode.ms,
           initialTimerDuration: initial,
           onTimerDurationChanged: onChanged,
@@ -114,7 +275,6 @@ class _ToolValuePickerState extends State<ToolValuePicker> {
   @override
   void didUpdateWidget(covariant ToolValuePicker old) {
     super.didUpdateWidget(old);
-    // Внешнее изменение (напр. пресет) — плавно докручиваем барабан.
     if (widget.index != old.index &&
         _ctrl.hasClients &&
         _ctrl.selectedItem != widget.index) {

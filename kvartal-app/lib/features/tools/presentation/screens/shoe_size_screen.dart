@@ -43,8 +43,8 @@ class _ShoeSizeScreenState extends State<ShoeSizeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ToolValuePicker(
-                    height: 132,
+                  ToolValueField(
+                    label: 'Длина стопы',
                     items: [for (final f in _feet) '${f.toStringAsFixed(1)} см'],
                     index: _footIdx,
                     onChanged: (i) => setState(() => _footIdx = i),

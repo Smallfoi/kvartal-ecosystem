@@ -5,7 +5,7 @@ import '../../logic/hr_zones.dart';
 import '../widgets/tool_widgets.dart';
 
 /// Калькулятор пульсовых зон: возраст (+ необязательный пульс покоя) → 5 зон.
-/// Значения задаются барабанами.
+/// Значения задаются барабаном, который разворачивается по тапу.
 class HrZonesScreen extends StatefulWidget {
   const HrZonesScreen({super.key});
 
@@ -45,39 +45,21 @@ class _HrZonesScreenState extends State<HrZonesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _WheelColumn(
-                          label: 'Возраст',
-                          child: ToolValuePicker(
-                            height: 128,
-                            items: [for (var a = 10; a <= 90; a++) '$a'],
-                            index: _age - 10,
-                            onChanged: (i) => setState(() => _age = i + 10),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _WheelColumn(
-                          label: 'Пульс покоя',
-                          child: ToolValuePicker(
-                            height: 128,
-                            items: [
-                              '—',
-                              for (var h = 30; h <= 120; h++) '$h',
-                            ],
-                            index: _restHr == null ? 0 : _restHr! - 29,
-                            onChanged: (i) => setState(
-                              () => _restHr = i == 0 ? null : i + 29,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  ToolValueField(
+                    label: 'Возраст',
+                    items: [for (var a = 10; a <= 90; a++) '$a'],
+                    index: _age - 10,
+                    onChanged: (i) => setState(() => _age = i + 10),
                   ),
-                  const SizedBox(height: 8),
+                  Divider(color: AppColors.separator, height: 14),
+                  ToolValueField(
+                    label: 'Пульс покоя',
+                    items: ['—', for (var h = 30; h <= 120; h++) '$h'],
+                    index: _restHr == null ? 0 : _restHr! - 29,
+                    onChanged: (i) =>
+                        setState(() => _restHr = i == 0 ? null : i + 29),
+                  ),
+                  Divider(color: AppColors.separator, height: 14),
                   Row(
                     children: [
                       Text(
@@ -125,30 +107,6 @@ class _HrZonesScreenState extends State<HrZonesScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _WheelColumn extends StatelessWidget {
-  final String label;
-  final Widget child;
-  const _WheelColumn({required this.label, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textTertiary,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 4),
-        child,
-      ],
     );
   }
 }
