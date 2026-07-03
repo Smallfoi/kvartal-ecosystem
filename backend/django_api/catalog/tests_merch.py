@@ -81,6 +81,23 @@ class MerchConsoleTests(TestCase):
         r = self._post("/admin/merch/site-content", {"key": "a", "value": "b"})
         self.assertIn(r.status_code, (302, 403))
 
+    def test_site_image_upload(self):
+        import tempfile
+        from io import BytesIO
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+        from PIL import Image
+
+        buf = BytesIO()
+        Image.new("RGB", (16, 16), (1, 2, 3)).save(buf, "PNG")
+        img = SimpleUploadedFile("s.png", buf.getvalue(), content_type="image/png")
+        with override_settings(MEDIA_ROOT=tempfile.mkdtemp()):
+            r = self.client.post("/admin/merch/site-image", {"key": "hero.image", "image": img})
+            self.assertEqual(r.status_code, 200)
+            got = self.client.get("/v1/site/content").json()
+            self.assertTrue(got["hero.image"]["imageUrl"])
+
     def test_requires_staff(self):
         self.client.logout()
         r = self._post("/admin/merch/reorder", {"platform": "site", "order": []})
