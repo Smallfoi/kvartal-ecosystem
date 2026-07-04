@@ -90,7 +90,8 @@ class TerritoryViewTests(ApiTestCase):
 
 
 class TerritoryCleanupTests(TestCase):
-    """Команда cleanup_territories удаляет ТОЛЬКО протухшее (>7д зоны, >24ч защита)."""
+    """Команда cleanup_territories удаляет ТОЛЬКО протухшее (>7д зоны, >24ч защита,
+    >30д записи идемпотентности), свежее не трогает."""
 
     _G = "ST_GeomFromText('MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))',4326)"
 
@@ -112,6 +113,15 @@ class TerritoryCleanupTests(TestCase):
                 "INSERT INTO recent_captures (owner_id, geom, captured_at) "
                 f"VALUES ('o_new',{self._G}, now())"
             )
+            # Идемпотентность захвата: старую (>30д) чистим, свежую храним.
+            cur.execute(
+                "INSERT INTO processed_captures (capture_id, owner_id, created_at) "
+                "VALUES ('cap_old','o_old', now() - interval '40 days')"
+            )
+            cur.execute(
+                "INSERT INTO processed_captures (capture_id, owner_id, created_at) "
+                "VALUES ('cap_new','o_new', now())"
+            )
         call_command("cleanup_territories")
         with connection.cursor() as cur:
             cur.execute("SELECT owner_id FROM territories")
@@ -119,6 +129,8 @@ class TerritoryCleanupTests(TestCase):
             self.assertEqual(rows, ["o_new"])  # протухшая удалена, свежая осталась
             cur.execute("SELECT count(*) FROM recent_captures")
             self.assertEqual(cur.fetchone()[0], 1)  # истёкшая защита удалена
+            cur.execute("SELECT capture_id FROM processed_captures")
+            self.assertEqual([r[0] for r in cur.fetchall()], ["cap_new"])  # старая идемпот. удалена
 
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
