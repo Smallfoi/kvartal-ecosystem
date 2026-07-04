@@ -35,6 +35,9 @@ def register(request):
         password_hash=hash_password(d.get("password") or ""),
     )
     seed_runner_points(acc.id)
+    from analytics.models import E_REGISTER, track
+
+    track(E_REGISTER, user_id=acc.id, source="email")  # аналитика (D-30)
     return Response({"token": make_token(acc.id), "user": acc.to_json()})
 
 
@@ -77,6 +80,7 @@ def phone_verify(request):
         if acc:
             acc.phone = phone
             acc.save(update_fields=["phone"])
+    created = False
     if not acc:
         acc = Account.objects.create(
             id=new_user_id(),
@@ -87,8 +91,13 @@ def phone_verify(request):
             password_hash=hash_password(f"phone:{phone}"),
         )
         seed_runner_points(acc.id)
+        created = True
     if acc.is_blocked:
         return Response({"detail": "Аккаунт заблокирован"}, status=403)
+    # Аналитика (D-30): регистрация нового аккаунта или вход существующего.
+    from analytics.models import E_LOGIN, E_REGISTER, track
+
+    track(E_REGISTER if created else E_LOGIN, user_id=acc.id, source="phone")
     return Response({"token": make_token(acc.id), "user": acc.to_json()})
 
 

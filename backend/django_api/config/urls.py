@@ -29,6 +29,7 @@ from clubs import views as clubs_views
 from orders import views as orders_views
 from shoes import views as shoes_views
 from territories import views as territories_views
+from analytics import views as analytics_views
 
 urlpatterns = [
     # Конструктор (live-превью + правка + публикация). Отдельные «Превью» убраны.
@@ -53,6 +54,8 @@ urlpatterns = [
     path("v1/account/privacy", account_views.account_privacy),
     path("v1/account/delete", account_views.delete_account),
     path("v1/me/stats", account_views.me_stats),
+    # Продуктовая аналитика (D-30): приём клиентских событий.
+    path("v1/events", analytics_views.events),
     path("v1/loyalty/", include("loyalty.urls")),
     # Клубы — порядок важен: 'me' и 'requests/...' раньше generic '<club_id>'.
     path("v1/clubs", clubs_views.clubs_root),

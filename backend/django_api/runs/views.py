@@ -149,6 +149,12 @@ def runs(request):
     if flagged:
         _maybe_flag_for_review(uid)
 
+    # Аналитика (D-30): завершённый забег (км/очки/флаг).
+    from analytics.models import E_RUN_FINISHED, track
+
+    track(E_RUN_FINISHED, user_id=uid, source="kvartal",
+          km=round(distance_m / 1000.0, 2), points=points, flagged=flagged)
+
     return Response({
         "ok": True, "duplicate": False,
         "flagged": flagged, "flagReason": reason,

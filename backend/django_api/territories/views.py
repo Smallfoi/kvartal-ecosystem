@@ -229,6 +229,10 @@ def capture(request):
         ).exists():
             add_txn(uid, TERRITORY_POINTS, "runnerTerritory",
                     "Захват территории", None, capture_id)
+    # Аналитика (D-30): успешный захват территории (площадь владения после захвата).
+    from analytics.models import E_TERRITORY_CAPTURED, track
+
+    track(E_TERRITORY_CAPTURED, user_id=uid, source="kvartal", areaM2=round(area or 0))
     return Response(
         {
             "ok": True,
