@@ -33,3 +33,48 @@ class PushScaffoldTests(ApiTestCase):
         self.assertTrue(push_enabled())
         DeviceToken.objects.create(user_id=self.uid, token="t2", platform="android")
         self.assertEqual(send_push(self.uid, "x", "y"), 0)  # нет RUSTORE_PUSH_KEY
+
+
+class NotificationFeedTests(ApiTestCase):
+    """Лента уведомлений и пометка прочитанным (GET /notifications, POST .../read)."""
+    phone = "+79990005002"
+
+    def test_feed_lists_own_notifications(self):
+        create_notification(self.uid, "Заказ принят")
+        create_notification(self.uid, "Новый уровень")
+        data = self.api_get("/v1/notifications").json()
+        self.assertEqual({n["title"] for n in data}, {"Заказ принят", "Новый уровень"})
+        self.assertFalse(data[0]["read"])
+
+    def test_feed_isolated_per_user(self):
+        create_notification("u_other", "Чужое")
+        create_notification(self.uid, "Моё")
+        data = self.api_get("/v1/notifications").json()
+        self.assertEqual([n["title"] for n in data], ["Моё"])
+
+    def test_read_all(self):
+        create_notification(self.uid, "a")
+        create_notification(self.uid, "b")
+        self.assertEqual(self.api_post("/v1/notifications/read", {}).json()["marked"], 2)
+        self.assertTrue(all(n["read"] for n in self.api_get("/v1/notifications").json()))
+
+    def test_read_specific_ids(self):
+        n1 = create_notification(self.uid, "a")
+        create_notification(self.uid, "b")
+        self.assertEqual(
+            self.api_post("/v1/notifications/read", {"ids": [n1.pk]}).json()["marked"], 1
+        )
+        by_title = {
+            n["title"]: n["read"] for n in self.api_get("/v1/notifications").json()
+        }
+        self.assertTrue(by_title["a"])
+        self.assertFalse(by_title["b"])
+
+    def test_read_idempotent(self):
+        create_notification(self.uid, "a")
+        self.api_post("/v1/notifications/read", {})
+        self.assertEqual(self.api_post("/v1/notifications/read", {}).json()["marked"], 0)
+
+    def test_feed_requires_auth(self):
+        self.assertEqual(self.client.get("/v1/notifications").status_code, 401)
+        self.assertEqual(self.client.post("/v1/notifications/read").status_code, 401)
