@@ -1,5 +1,8 @@
-"""Тесты страховки прод-конфигурации (fail-fast на дефолтные секреты)."""
-from django.test import SimpleTestCase
+"""Тесты страховки прод-конфигурации (fail-fast на дефолтные секреты) + launch-gate."""
+import os
+from unittest import mock
+
+from django.test import SimpleTestCase, TestCase
 
 from common.prodcheck import insecure_prod_settings
 
@@ -51,3 +54,82 @@ class ProdCheckTests(SimpleTestCase):
     def test_wildcard_allowed_hosts_flagged(self):
         bad = insecure_prod_settings(**{**_SECURE, "allowed_hosts": ["staw.ru", "*"]})
         self.assertEqual(bad, ["DJANGO_ALLOWED_HOSTS"])
+
+
+class LaunchReadinessTests(SimpleTestCase):
+    """Отчёт готовности к запуску: интеграции dev→no-op, включаются ключами (D-30 арк 2)."""
+
+    def _by_key(self, items, key):
+        return next(i for i in items if i["key"] == key)
+
+    @mock.patch.dict(os.environ, {}, clear=True)
+    def test_integrations_dev_all_not_ready(self):
+        from common.launch import integrations
+
+        self.assertTrue(all(not i["ready"] for i in integrations()))
+
+    @mock.patch.dict(
+        os.environ,
+        {"SMS_PROVIDER": "smsc", "SMS_LOGIN": "l", "SMS_PASSWORD": "p"},
+        clear=True,
+    )
+    def test_sms_ready_when_provider_and_keys(self):
+        from common.launch import integrations
+
+        self.assertTrue(self._by_key(integrations(), "sms")["ready"])
+
+    @mock.patch.dict(os.environ, {"SMS_PROVIDER": "smsc"}, clear=True)
+    def test_sms_not_ready_provider_without_keys(self):
+        from common.launch import integrations
+
+        self.assertFalse(self._by_key(integrations(), "sms")["ready"])
+
+    @mock.patch.dict(os.environ, {"REDIS_URL": "redis://x:6379/0"}, clear=True)
+    def test_infra_redis_ready_with_url(self):
+        from common.launch import infra
+
+        self.assertTrue(self._by_key(infra(), "redis")["ready"])
+
+    @mock.patch.dict(os.environ, {}, clear=True)
+    def test_security_dev_mode_no_blockers(self):
+        from common.launch import security
+
+        sec = security()
+        self.assertFalse(sec["prodMode"])  # DEBUG по умолчанию dev
+        self.assertEqual(sec["insecure"], [])
+
+
+class LegalGateTests(TestCase):
+    """Launch-gate по юр-документам: обязательные должны быть опубликованы."""
+
+    def test_missing_required_unpublished(self):
+        from django.utils import timezone
+
+        from common.launch import legal_gate
+        from legal.models import LegalDocument
+
+        LegalDocument.objects.create(
+            doc_type="terms", version="1.0", title="T", is_required=True,
+            published_at=timezone.now(),
+        )
+        LegalDocument.objects.create(
+            doc_type="privacy", version="1.0", title="P", is_required=True,
+            published_at=None,  # черновик
+        )
+        gate = legal_gate()
+        self.assertIn("privacy", gate["missing"])
+        self.assertFalse(gate["ok"])
+
+    def test_ok_when_all_required_published(self):
+        from django.utils import timezone
+
+        from common.launch import legal_gate
+        from legal.models import LegalDocument
+
+        LegalDocument.objects.create(
+            doc_type="terms", version="1.0", title="T", is_required=True,
+            published_at=timezone.now(),
+        )
+        gate = legal_gate()
+        self.assertEqual(gate["missing"], [])
+        self.assertTrue(gate["ok"])

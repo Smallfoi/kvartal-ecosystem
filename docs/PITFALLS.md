@@ -134,6 +134,16 @@
 - **Dio + keep-alive поверх `adb reverse`** даёт `Connection closed before full header`, когда dev-сервер закрывает idle keep-alive.
   Смягчение: заголовок `Connection: close` на запросах лояльности + не слать дубль-запросы разом. (Но чаще причина — упавший бек, см. выше.)
 
+## Git (рабочее дерево)
+- **`git reset --hard origin/main` СНОСИТ незакоммиченные правки в отслеживаемых файлах.** Синхронизировал
+  `main` через `reset --hard`, имея несохранённые правки Arc 2 → откатились правки в `.env.example`/`tests.py`/
+  docs (выжили только НОВЫЕ untracked-файлы). **Впредь:** сначала закоммить/`git stash` (или ветвись без reset),
+  и только на чистом дереве делай `reset --hard`. Проверяй `git status` перед reset.
+- **Мердж-конфликты в `docs/WORKLOG.md`** при параллельной сессии — оба агента пишут запись сверху. Разрешать
+  вручную, СОХРАНЯЯ ОБА блока (свой + чужой), не выбирая одну сторону. Код обычно мержится авто; конфликтует только WORKLOG.
+- **`git pull --ff-only origin main` иногда даёт «Cannot fast-forward to multiple branches»** (конфиг рефспеков).
+  Надёжнее: `git fetch origin && git checkout main && git reset --hard origin/main` — НО только на чистом дереве (см. выше).
+
 ## GitHub
 - **Branch protection / rulesets на ПРИВАТНОМ репо бесплатного плана = HTTP 403** («Upgrade to Pro or make public»).
   Решение для этого проекта: репозиторий сделан публичным (см. DECISIONS D-05).

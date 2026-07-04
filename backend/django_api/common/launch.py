@@ -1,0 +1,103 @@
+"""Готовность к запуску (launch-gate): что осталось включить владельцу.
+
+Каркасы интеграций (SMS/оплата/пуш) в dev работают как no-op — реальные вызовы
+активируются переменными окружения (провайдер + ключи аккаунта владельца). Этот модуль
+собирает единый отчёт: какие интеграции настроены, безопасна ли прод-конфигурация,
+опубликованы ли обязательные юр-документы. Печатает команда `check_launch_readiness`.
+См. docs/LAUNCH_READINESS.md.
+"""
+import os
+
+from common.prodcheck import insecure_prod_settings
+
+
+def _env(name):
+    return (os.environ.get(name) or "").strip()
+
+
+def integrations():
+    """Внешние интеграции: provider задан И ключи есть → ready; иначе dev-режим (no-op)."""
+    sms_p, pay_p, push_p = _env("SMS_PROVIDER"), _env("PAYMENT_PROVIDER"), _env("PUSH_PROVIDER")
+    return [
+        {
+            "key": "sms",
+            "name": "SMS-вход (коды подтверждения)",
+            "provider": sms_p or "—",
+            "ready": bool(sms_p) and bool(_env("SMS_LOGIN") and _env("SMS_PASSWORD")),
+            "needs": "SMS_PROVIDER=smsc + SMS_LOGIN/SMS_PASSWORD",
+        },
+        {
+            "key": "payment",
+            "name": "Оплата заказов",
+            "provider": pay_p or "—",
+            "ready": bool(pay_p) and bool(_env("YOOKASSA_SHOP_ID") and _env("YOOKASSA_SECRET_KEY")),
+            "needs": "PAYMENT_PROVIDER=yookassa + YOOKASSA_SHOP_ID/YOOKASSA_SECRET_KEY",
+        },
+        {
+            "key": "push",
+            "name": "Push-уведомления",
+            "provider": push_p or "—",
+            "ready": bool(push_p) and bool(_env("RUSTORE_PUSH_KEY") or _env("FCM_SERVER_KEY")),
+            "needs": "PUSH_PROVIDER=rustore + RUSTORE_PUSH_KEY (или FCM_SERVER_KEY)",
+        },
+    ]
+
+
+def infra():
+    """Инфра, обязательная для прод-масштаба (несколько воркеров gunicorn)."""
+    return [
+        {
+            "key": "redis",
+            "name": "Redis (общий кэш + брокер Celery)",
+            "ready": bool(_env("REDIS_URL") or _env("CELERY_BROKER_URL")),
+            "needs": "REDIS_URL (иначе LocMem-кэш и Celery EAGER — только dev/один воркер)",
+        },
+        {
+            "key": "sentry",
+            "name": "Sentry (мониторинг ошибок)",
+            "ready": bool(_env("SENTRY_DSN")),
+            "needs": "SENTRY_DSN (self-host РФ, D-25)",
+        },
+    ]
+
+
+def security():
+    """Прод-безопасность: не остались ли дефолтные секреты / ALLOWED_HOSTS=*."""
+    debug = os.environ.get("DJANGO_DEBUG", "1") == "1"
+    insecure = insecure_prod_settings(
+        debug=debug,
+        secret_key=_env("DJANGO_SECRET_KEY") or "dev-secret-change-in-prod",
+        jwt_secret=_env("JWT_SECRET") or "dev-secret-change-in-prod",
+        db_password=_env("POSTGRES_PASSWORD") or "kvartal",
+        allowed_hosts=[h.strip() for h in _env("DJANGO_ALLOWED_HOSTS").split(",") if h.strip()] or ["*"],
+    )
+    return {"prodMode": not debug, "insecure": insecure}
+
+
+def legal_gate():
+    """Обязательные юр-документы опубликованы? (launch-gate §3/§13 LAUNCH_READINESS)."""
+    from legal.models import LegalDocument
+
+    required = set(
+        LegalDocument.objects.filter(is_required=True).values_list("doc_type", flat=True)
+    )
+    published = set(
+        LegalDocument.objects.filter(is_required=True, published_at__isnull=False)
+        .values_list("doc_type", flat=True)
+    )
+    missing = sorted(required - published)
+    return {
+        "requiredTypes": sorted(required),
+        "missing": missing,
+        "ok": bool(required) and not missing,
+    }
+
+
+def launch_report():
+    """Единый отчёт готовности к запуску."""
+    return {
+        "integrations": integrations(),
+        "infra": infra(),
+        "security": security(),
+        "legal": legal_gate(),
+    }
