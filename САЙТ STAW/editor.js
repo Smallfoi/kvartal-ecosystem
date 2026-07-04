@@ -14,7 +14,9 @@
 (function () {
   "use strict";
   var params = new URLSearchParams(location.search);
-  if (params.get("edit") !== "1") return;
+  // Прод-защита: режим правки активен ТОЛЬКО внутри iframe «Конструктора» (window.parent !== window).
+  // На живом сайте (даже с ?edit=1 напрямую) редактор не включается — UI правки не виден посетителям.
+  if (params.get("edit") !== "1" || window.parent === window) return;
   var PLATFORM = params.get("platform") === "app" ? "app" : "site";
 
   var css = document.createElement("style");
@@ -33,6 +35,7 @@
     "html.staw-edit .staw-tools button{border:0;border-radius:6px;padding:4px 8px;color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}" +
     "html.staw-edit .staw-del{background:rgba(17,24,39,.92)}" +
     "html.staw-edit .staw-anim-btn{background:rgba(124,58,237,.95)}" +
+    "html.staw-edit .staw-size-btn{background:rgba(37,99,235,.95)}" +
     // «Добавить блок» — плитка ВНУТРИ сетки (не ломает раскладку секции).
     "html.staw-edit .staw-add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:64px;padding:14px;" +
       "border:2px dashed #0a84ff;border-radius:12px;background:rgba(239,246,255,.9);color:#0a58ca;cursor:pointer;" +
@@ -226,7 +229,16 @@
     var anim = document.createElement("button");
     anim.type = "button"; anim.className = "staw-ui staw-anim-btn"; anim.draggable = false; anim.textContent = "✨";
     anim.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); send({ type: "editAnim", key: key, value: currentAnim(el) }); });
-    tools.appendChild(del); tools.appendChild(anim);
+    var size = document.createElement("button");
+    size.type = "button"; size.className = "staw-ui staw-size-btn"; size.draggable = false;
+    size.textContent = el.classList.contains("staw-w-wide") ? "⟷ Обычный" : "⟷ Шире";
+    size.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var wide = el.classList.toggle("staw-w-wide");
+      size.textContent = wide ? "⟷ Обычный" : "⟷ Шире";
+      draft("size." + key, wide ? "wide" : "");
+    });
+    tools.appendChild(del); tools.appendChild(anim); tools.appendChild(size);
     el.appendChild(tools);
     hideBtns[key] = { btn: del, el: el };
     updateHideBtn(key);
@@ -272,6 +284,7 @@
     }
     if (key.indexOf("align.") === 0) { var ak = key.slice(6); if (safeId(ak)) applyAlignLocal(document.querySelector('[data-align="' + ak + '"]'), value); return; }
     if (key.indexOf("anim.") === 0) { var nk = key.slice(5); if (safeId(nk)) applyAnimLocal(nk, value); return; }
+    if (key.indexOf("size.") === 0) { var zk = key.slice(5); if (safeId(zk)) document.querySelectorAll('[data-hideable="' + zk + '"]').forEach(function (el) { el.classList.toggle("staw-w-wide", value === "wide"); }); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
   }

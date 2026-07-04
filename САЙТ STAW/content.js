@@ -47,7 +47,9 @@
       "@keyframes staw-zm{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}" +
       ".staw-anim-zoom{animation:staw-zm .7s ease both}" +
       "@keyframes staw-pl{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}" +
-      ".staw-anim-pulse{animation:staw-pl 1.8s ease-in-out infinite}";
+      ".staw-anim-pulse{animation:staw-pl 1.8s ease-in-out infinite}" +
+      // Ширина блока: «шире» = занять 2 колонки грид-сетки (в 1-колоночных секциях — без эффекта).
+      ".staw-w-wide{grid-column:span 2}";
     (document.head || document.documentElement).appendChild(st);
   }
 
@@ -114,6 +116,12 @@
       if (val && /^[\w-]+$/.test(val) && val !== "none") el.classList.add("staw-anim-" + val);
     });
   }
+  function applySize(key, val) {
+    if (!safeId(key)) return;
+    document.querySelectorAll('[data-hideable="' + key + '"]').forEach(function (el) {
+      el.classList.toggle("staw-w-wide", val === "wide");
+    });
+  }
 
   function apply(content) {
     if (!content) return;
@@ -130,6 +138,7 @@
         if (key.indexOf("hidden.") === 0) { applyHidden(key.slice(7), c.value); return; }
         if (key.indexOf("align.") === 0) { applyAlign(key.slice(6), c.value); return; }
         if (key.indexOf("anim.") === 0) { applyAnim(key.slice(5), c.value); return; }
+        if (key.indexOf("size.") === 0) { applySize(key.slice(5), c.value); return; }
         if (key.indexOf("extra.") === 0) { return; } // уже применили выше
         if (c.value && safeId(key)) {
           document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = c.value; });
