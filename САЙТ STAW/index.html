@@ -94,11 +94,11 @@
     </header>
 
     <nav class="mobile-nav" id="mobile-nav" data-mobile-nav aria-label="Мобильное меню">
-      <a href="#philosophy" data-mobile-link>Философия</a>
-      <a href="#catalog" data-mobile-link>Каталог</a>
-      <a href="#loyalty" data-mobile-link>Экосистема и баллы</a>
-      <a href="#references" data-mobile-link>Референсы</a>
-      <button class="mobile-login" type="button" data-eco-login-cta data-mobile-link>Войти в аккаунт</button>
+      <a href="#philosophy" data-mobile-link data-edit="nav.philosophy">Философия</a>
+      <a href="#catalog" data-mobile-link data-edit="nav.catalog">Каталог</a>
+      <a href="#loyalty" data-mobile-link data-edit="nav.loyalty">Экосистема и баллы</a>
+      <a href="#references" data-mobile-link data-edit="nav.references">Референсы</a>
+      <button class="mobile-login" type="button" data-eco-login-cta data-mobile-link data-edit="eco.loginCta">Войти в аккаунт</button>
       <button class="mobile-login" type="button" data-eco-auth-only data-eco-profile-cta data-mobile-link hidden>Профиль</button>
     </nav>
     <div class="mobile-nav-backdrop" data-nav-backdrop></div>
@@ -120,9 +120,9 @@
           <p class="hero-copy" data-anim="hero" data-edit="hero.copy">
             Спортивная одежда для тех, кто двигается каждый день: пробежка утром, город днём, лёгкий маршрут на выходных.
           </p>
-          <div class="hero-actions" data-anim="hero">
-            <a class="btn btn-primary" href="#catalog" data-edit="hero.btn1">Смотреть каталог</a>
-            <a class="btn btn-ghost" href="#philosophy" data-edit="hero.btn2">Философия бренда</a>
+          <div class="hero-actions" data-anim="hero" data-sortable="heroActions">
+            <a class="btn btn-primary" href="#catalog" data-sid="a1" data-edit="hero.btn1">Смотреть каталог</a>
+            <a class="btn btn-ghost" href="#philosophy" data-sid="a2" data-edit="hero.btn2">Философия бренда</a>
           </div>
         </div>
         <a class="hero-scroll" href="#philosophy" data-anim="hero" aria-label="Листать вниз">
@@ -165,20 +165,20 @@
           <p class="eyebrow" data-edit="cinema.eyebrow">Sport / Street / Outdoor</p>
           <h2 data-edit="cinema.title">Один гардероб для разных скоростей.</h2>
         </div>
-        <div class="cinema-grid">
-          <article class="cinema-card reveal">
+        <div class="cinema-grid" data-sortable="cinema">
+          <article class="cinema-card reveal" data-sid="c1" data-hideable="cinema1">
             <img src="media/staw-clean-02.jpg" alt="Беговой образ STAW" loading="lazy" data-edit-img="cinema.img1" />
             <div>
               <h3 data-edit="cinema.card1">Бег</h3>
             </div>
           </article>
-          <article class="cinema-card reveal">
+          <article class="cinema-card reveal" data-sid="c2" data-hideable="cinema2">
             <img src="media/staw-clean-11.jpg" alt="Беговые шорты STAW" loading="lazy" data-edit-img="cinema.img2" />
             <div>
               <h3 data-edit="cinema.card2">Тренировка</h3>
             </div>
           </article>
-          <article class="cinema-card reveal">
+          <article class="cinema-card reveal" data-sid="c3" data-hideable="cinema3">
             <img src="media/staw-clean-17.jpg" alt="Городская спортивная одежда STAW" loading="lazy" data-edit-img="cinema.img3" />
             <div>
               <h3 data-edit="cinema.card3">Город</h3>
@@ -197,18 +197,18 @@
             образом.
           </p>
         </div>
-        <div class="feature-stack">
-          <article class="feature-panel reveal">
-            <h3>Быстросохнущие материалы</h3>
-            <p>Для жары, темпа и длинной городской активности.</p>
+        <div class="feature-stack" data-sortable="features">
+          <article class="feature-panel reveal" data-sid="f1" data-hideable="feature1">
+            <h3 data-edit="feature1.title">Быстросохнущие материалы</h3>
+            <p data-edit="feature1.text">Для жары, темпа и длинной городской активности.</p>
           </article>
-          <article class="feature-panel reveal">
-            <h3>Посадка для движения</h3>
-            <p>Свобода шага, лёгкий вес, продуманная вентиляция.</p>
+          <article class="feature-panel reveal" data-sid="f2" data-hideable="feature2">
+            <h3 data-edit="feature2.title">Посадка для движения</h3>
+            <p data-edit="feature2.text">Свобода шага, лёгкий вес, продуманная вентиляция.</p>
           </article>
-          <article class="feature-panel reveal">
-            <h3>Городская эстетика</h3>
-            <p>Спортивная функция без ощущения формы только для зала.</p>
+          <article class="feature-panel reveal" data-sid="f3" data-hideable="feature3">
+            <h3 data-edit="feature3.title">Городская эстетика</h3>
+            <p data-edit="feature3.text">Спортивная функция без ощущения формы только для зала.</p>
           </article>
         </div>
       </section>
@@ -218,22 +218,22 @@
           <p class="eyebrow" data-edit="modes.eyebrow">Один бренд — четыре ритма</p>
           <h2 data-edit="modes.title">RUN · TRAIL · RACE · EVERYDAY</h2>
         </div>
-        <div class="modes-grid">
-          <article class="mode-card reveal">
-            <h3>RUN</h3>
-            <p>Городской бег: лёгкие ткани, вентиляция и чистый силуэт для ежедневных пробежек.</p>
+        <div class="modes-grid" data-sortable="modes">
+          <article class="mode-card reveal" data-sid="m1" data-hideable="mode1">
+            <h3 data-edit="mode1.title">RUN</h3>
+            <p data-edit="mode1.text">Городской бег: лёгкие ткани, вентиляция и чистый силуэт для ежедневных пробежек.</p>
           </article>
-          <article class="mode-card reveal">
-            <h3>TRAIL</h3>
-            <p>Лёгкий outdoor: защита, посадка и материалы для маршрутов за городом.</p>
+          <article class="mode-card reveal" data-sid="m2" data-hideable="mode2">
+            <h3 data-edit="mode2.title">TRAIL</h3>
+            <p data-edit="mode2.text">Лёгкий outdoor: защита, посадка и материалы для маршрутов за городом.</p>
           </article>
-          <article class="mode-card reveal">
-            <h3>RACE</h3>
-            <p>Соревновательный темп: минимум веса, максимум скорости и аэродинамики.</p>
+          <article class="mode-card reveal" data-sid="m3" data-hideable="mode3">
+            <h3 data-edit="mode3.title">RACE</h3>
+            <p data-edit="mode3.text">Соревновательный темп: минимум веса, максимум скорости и аэродинамики.</p>
           </article>
-          <article class="mode-card reveal">
-            <h3>EVERYDAY</h3>
-            <p>Городская повседневность: спортивная функция в одежде, которую носишь каждый день.</p>
+          <article class="mode-card reveal" data-sid="m4" data-hideable="mode4">
+            <h3 data-edit="mode4.title">EVERYDAY</h3>
+            <p data-edit="mode4.text">Городская повседневность: спортивная функция в одежде, которую носишь каждый день.</p>
           </article>
         </div>
       </section>
@@ -244,12 +244,12 @@
           <h2 data-edit="catalog.title">Каталог</h2>
         </div>
         <div class="catalog-bar reveal">
-          <div class="filters" role="group" aria-label="Фильтры каталога" data-filters>
-            <button class="filter is-active" type="button" data-filter="all">Все</button>
-            <button class="filter" type="button" data-filter="run">Бег</button>
-            <button class="filter" type="button" data-filter="top">Верх</button>
-            <button class="filter" type="button" data-filter="bottom">Низ</button>
-            <button class="filter" type="button" data-filter="accessory">Аксессуары</button>
+          <div class="filters" role="group" aria-label="Фильтры каталога" data-filters data-sortable="filters">
+            <button class="filter is-active" type="button" data-filter="all" data-sid="all" data-edit="filter.all">Все</button>
+            <button class="filter" type="button" data-filter="run" data-sid="run" data-edit="filter.run">Бег</button>
+            <button class="filter" type="button" data-filter="top" data-sid="top" data-edit="filter.top">Верх</button>
+            <button class="filter" type="button" data-filter="bottom" data-sid="bottom" data-edit="filter.bottom">Низ</button>
+            <button class="filter" type="button" data-filter="accessory" data-sid="accessory" data-edit="filter.accessory">Аксессуары</button>
           </div>
           <div class="catalog-tools">
             <input
@@ -394,39 +394,39 @@
       </section>
 
       <section class="loyalty scene" id="loyalty">
-        <div class="loyalty-inner">
-          <div class="loyalty-copy reveal">
-            <p class="eyebrow">Экосистема STAW</p>
-            <h2>Бегаешь — копишь. Покупаешь — экономишь.</h2>
-            <p class="loyalty-lead">
+        <div class="loyalty-inner" data-sortable="loyaltyInner">
+          <div class="loyalty-copy reveal" data-sid="copy">
+            <p class="eyebrow" data-edit="loyalty.eyebrow">Экосистема STAW</p>
+            <h2 data-edit="loyalty.title">Бегаешь — копишь. Покупаешь — экономишь.</h2>
+            <p class="loyalty-lead" data-edit="loyalty.lead">
               Один аккаунт на все продукты STAW. Активность в приложении «Квартал» превращается
               в баллы, а баллы — в скидку на одежду здесь и в магазине.
             </p>
-            <div class="loyalty-steps">
-              <article class="loyalty-step">
+            <div class="loyalty-steps" data-sortable="loyaltySteps">
+              <article class="loyalty-step" data-sid="ls1" data-hideable="loyaltyStep1">
                 <span class="loyalty-num">01</span>
-                <h3>Бежишь в «Квартале»</h3>
-                <p>Километры, захват территорий, соревнования — всё начисляет баллы.</p>
+                <h3 data-edit="loyalty.step1title">Бежишь в «Квартале»</h3>
+                <p data-edit="loyalty.step1text">Километры, захват территорий, соревнования — всё начисляет баллы.</p>
               </article>
-              <article class="loyalty-step">
+              <article class="loyalty-step" data-sid="ls2" data-hideable="loyaltyStep2">
                 <span class="loyalty-num">02</span>
-                <h3>Копятся баллы</h3>
-                <p>1 балл = 1 ₽ скидки. Баланс единый для сайта, магазина и приложения.</p>
+                <h3 data-edit="loyalty.step2title">Копятся баллы</h3>
+                <p data-edit="loyalty.step2text">1 балл = 1 ₽ скидки. Баланс единый для сайта, магазина и приложения.</p>
               </article>
-              <article class="loyalty-step">
+              <article class="loyalty-step" data-sid="ls3" data-hideable="loyaltyStep3">
                 <span class="loyalty-num">03</span>
-                <h3>Тратишь на STAW</h3>
-                <p>Применяешь баллы в корзине — до 30% от суммы заказа.</p>
+                <h3 data-edit="loyalty.step3title">Тратишь на STAW</h3>
+                <p data-edit="loyalty.step3text">Применяешь баллы в корзине — до 30% от суммы заказа.</p>
               </article>
             </div>
             <div class="loyalty-actions">
-              <button class="btn btn-primary" type="button" data-eco-login-cta>Войти в аккаунт</button>
-              <button class="btn btn-primary" type="button" data-eco-auth-only data-eco-profile-cta hidden>Мой профиль</button>
-              <a class="btn btn-ghost btn-ghost-dark" href="#catalog">В каталог</a>
+              <button class="btn btn-primary" type="button" data-eco-login-cta data-edit="loyalty.loginBtn">Войти в аккаунт</button>
+              <button class="btn btn-primary" type="button" data-eco-auth-only data-eco-profile-cta hidden data-edit="loyalty.profileBtn">Мой профиль</button>
+              <a class="btn btn-ghost btn-ghost-dark" href="#catalog" data-edit="loyalty.catalogBtn">В каталог</a>
             </div>
           </div>
 
-          <aside class="loyalty-card reveal" data-loyalty-card tabindex="0" aria-label="Уровни лояльности STAW">
+          <aside class="loyalty-card reveal" data-sid="card" data-loyalty-card tabindex="0" aria-label="Уровни лояльности STAW">
             <div class="loyalty-card-glow" aria-hidden="true"></div>
             <div class="loyalty-card-top">
               <span>STAW Points</span>
@@ -456,19 +456,19 @@
 
       <section class="references scene" id="references">
         <div class="section-heading reveal">
-          <p class="eyebrow">References</p>
-          <h2>Материалы из товарных карточек</h2>
+          <p class="eyebrow" data-edit="references.eyebrow">References</p>
+          <h2 data-edit="references.title">Материалы из товарных карточек</h2>
         </div>
-        <div class="reference-grid">
-          <img class="reveal" loading="lazy" src="media/staw-clean-01.jpg" alt="Референс STAW 1" />
-          <img class="reveal" loading="lazy" src="media/staw-clean-02.jpg" alt="Референс STAW 2" />
-          <img class="reveal" loading="lazy" src="media/staw-clean-03.jpg" alt="Референс STAW 3" />
-          <img class="reveal" loading="lazy" src="media/staw-clean-05.jpg" alt="Референс STAW 4" />
-          <img class="reveal" loading="lazy" src="media/staw-clean-06.jpg" alt="Референс STAW 5" />
-          <img class="reveal" loading="lazy" src="media/staw-clean-07.jpg" alt="Референс STAW 6" />
-          <img class="reveal" loading="lazy" src="media/staw-clean-09.jpg" alt="Референс STAW 7" />
-          <img class="reveal" loading="lazy" src="media/staw-clean-10.jpg" alt="Референс STAW 8" />
-          <img class="reveal" loading="lazy" src="media/staw-clean-11.jpg" alt="Референс STAW 9" />
+        <div class="reference-grid" data-sortable="references">
+          <img class="reveal" loading="lazy" src="media/staw-clean-01.jpg" alt="Референс STAW 1" data-sid="r1" data-hideable="ref1" data-edit-img="references.img1" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-02.jpg" alt="Референс STAW 2" data-sid="r2" data-hideable="ref2" data-edit-img="references.img2" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-03.jpg" alt="Референс STAW 3" data-sid="r3" data-hideable="ref3" data-edit-img="references.img3" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-05.jpg" alt="Референс STAW 4" data-sid="r4" data-hideable="ref4" data-edit-img="references.img4" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-06.jpg" alt="Референс STAW 5" data-sid="r5" data-hideable="ref5" data-edit-img="references.img5" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-07.jpg" alt="Референс STAW 6" data-sid="r6" data-hideable="ref6" data-edit-img="references.img6" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-09.jpg" alt="Референс STAW 7" data-sid="r7" data-hideable="ref7" data-edit-img="references.img7" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-10.jpg" alt="Референс STAW 8" data-sid="r8" data-hideable="ref8" data-edit-img="references.img8" />
+          <img class="reveal" loading="lazy" src="media/staw-clean-11.jpg" alt="Референс STAW 9" data-sid="r9" data-hideable="ref9" data-edit-img="references.img9" />
         </div>
       </section>
     </main>
@@ -671,12 +671,12 @@
     <footer class="site-footer">
       <div class="footer-top">
         <div class="footer-brand">
-          <a class="footer-logo" href="#top">STAW</a>
-          <p>Спортивная одежда для бега, тренировки и города. Двигайся каждый день.</p>
+          <a class="footer-logo" href="#top" data-edit="footer.logo">STAW</a>
+          <p data-edit="footer.brandText">Спортивная одежда для бега, тренировки и города. Двигайся каждый день.</p>
           <div class="footer-apps">
-            <span>Экосистема</span>
-            <a href="#">«Квартал» — бег</a>
-            <a href="#">STAW Store</a>
+            <span data-edit="footer.appsLabel">Экосистема</span>
+            <a href="#" data-edit="footer.app1">«Квартал» — бег</a>
+            <a href="#" data-edit="footer.app2">STAW Store</a>
           </div>
         </div>
 
@@ -727,7 +727,7 @@
       </div>
 
       <div class="footer-bottom">
-        <p>© 2026 STAW. Run, train, move daily.</p>
+        <p data-edit="footer.copyright">© 2026 STAW. Run, train, move daily.</p>
         <nav class="footer-legal" aria-label="Правовая информация">
           <a href="#" data-legal="privacy">Политика конфиденциальности</a>
           <a href="#" data-legal="pd_consent">Обработка персональных данных</a>

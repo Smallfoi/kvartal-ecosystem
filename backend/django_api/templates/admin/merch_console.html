@@ -13,8 +13,9 @@
        style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#6b7280;text-decoration:none;margin-bottom:6px">← Назад в админку</a>
     <h1 style="font-size:20px;font-weight:700;margin:0">Конструктор</h1>
     <p style="font-size:13px;color:#6b7280;margin:4px 0 0">
-      Это ваш <b>реальный сайт</b> в режиме правки — как увидят посетители. Перетаскивайте
-      товары прямо в сетке, кликайте по товару — правьте. Порядок раздельный по площадкам.
+      Это ваш <b>реальный сайт</b> в режиме правки — как увидят посетители. <b>Кликните</b> по любому
+      тексту, кнопке или фото — правьте. <b>Перетаскивайте</b> карточки, фильтры и блоки — меняйте порядок.
+      Кнопка <b>«Скрыть ✕»</b> на блоке убирает его (можно вернуть). Всё копится в черновик — на сайт по «Опубликовать».
     </p>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
@@ -189,6 +190,11 @@
       openTextEdit(d.key, d.value || "");
     } else if (d.type === "editImage") {
       openImagePick(d.key);
+    } else if (d.type === "draftContent") {
+      // Порядок блоков (order.*) / скрытие (hidden.*) — прямо в черновик, без модалки.
+      pendingContent[d.key] = d.value;
+      tellFrame({ type: "setContent", key: d.key, value: d.value });
+      updatePending();
     } else if (d.type === "ready") {
       // Сайт перезагрузился → возвращаем черновик в превью.
       if (pendingOrder[platform]) tellFrame({ type: "setOrder", order: pendingOrder[platform] });
