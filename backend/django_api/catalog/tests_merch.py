@@ -102,3 +102,83 @@ class MerchConsoleTests(TestCase):
         self.client.logout()
         r = self._post("/admin/merch/reorder", {"platform": "site", "order": []})
         self.assertIn(r.status_code, (302, 403))
+
+
+class MerchBannerTests(TestCase):
+    """Баннеры (промо): CRUD в конструкторе + раздельный порядок по площадкам."""
+
+    def setUp(self):
+        User.objects.create_superuser("bnr_admin", "b@t.dev", "pass12345")
+        self.client.login(username="bnr_admin", password="pass12345")
+
+    def _img(self):
+        from io import BytesIO
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        buf = BytesIO()
+        Image.new("RGB", (16, 16), (9, 9, 9)).save(buf, "PNG")
+        return SimpleUploadedFile("b.png", buf.getvalue(), content_type="image/png")
+
+    def test_create_then_list(self):
+        r = self.client.post("/admin/merch/banner-create", {"title": "Промо-1", "subtitle": "sub", "action": "Купить"})
+        self.assertEqual(r.status_code, 200)
+        bid = r.json()["banner"]["id"]
+        data = self.client.get("/admin/merch/banners?platform=site").json()["banners"]
+        self.assertEqual([b["id"] for b in data], [bid])
+        self.assertEqual(data[0]["title"], "Промо-1")
+
+    def test_create_requires_title(self):
+        self.assertEqual(self.client.post("/admin/merch/banner-create", {"subtitle": "x"}).status_code, 400)
+
+    def test_update_fields(self):
+        bid = self.client.post("/admin/merch/banner-create", {"title": "A"}).json()["banner"]["id"]
+        r = self.client.post("/admin/merch/banner/%d" % bid, {"title": "B", "isPublished": "0"})
+        self.assertEqual(r.status_code, 200)
+        from catalog.models import Banner
+        b = Banner.objects.get(id=bid)
+        self.assertEqual(b.title, "B")
+        self.assertFalse(b.is_published)
+
+    def test_update_image(self):
+        import tempfile
+
+        from django.test import override_settings
+        bid = self.client.post("/admin/merch/banner-create", {"title": "A"}).json()["banner"]["id"]
+        with override_settings(MEDIA_ROOT=tempfile.mkdtemp()):
+            r = self.client.post("/admin/merch/banner/%d" % bid, {"image": self._img()})
+            self.assertEqual(r.status_code, 200)
+            self.assertTrue(r.json()["banner"]["imageUrl"])
+
+    def test_delete(self):
+        bid = self.client.post("/admin/merch/banner-create", {"title": "A"}).json()["banner"]["id"]
+        self.assertEqual(self.client.post("/admin/merch/banner/%d/delete" % bid).status_code, 200)
+        from catalog.models import Banner
+        self.assertFalse(Banner.objects.filter(id=bid).exists())
+
+    def test_delete_404(self):
+        self.assertEqual(self.client.post("/admin/merch/banner/999999/delete").status_code, 404)
+
+    def test_reorder_per_platform(self):
+        a = self.client.post("/admin/merch/banner-create", {"title": "A"}).json()["banner"]["id"]
+        b = self.client.post("/admin/merch/banner-create", {"title": "B"}).json()["banner"]["id"]
+        r = self.client.post("/admin/merch/banner-reorder",
+                             data=json.dumps({"platform": "app", "order": [b, a]}),
+                             content_type="application/json")
+        self.assertEqual(r.status_code, 200)
+        from catalog.models import Banner
+        self.assertEqual(Banner.objects.get(id=b).sort_app, 0)
+        self.assertEqual(Banner.objects.get(id=a).sort_app, 1)
+        # порядок сайта не затронут
+        self.assertEqual(Banner.objects.get(id=a).sort_site, 0)
+
+    def test_reorder_bad_platform(self):
+        r = self.client.post("/admin/merch/banner-reorder",
+                             data=json.dumps({"platform": "x", "order": []}),
+                             content_type="application/json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_requires_staff(self):
+        self.client.logout()
+        self.assertIn(self.client.get("/admin/merch/banners").status_code, (302, 403))
+        self.assertIn(self.client.post("/admin/merch/banner-create", {"title": "x"}).status_code, (302, 403))

@@ -24,6 +24,7 @@
       <button type="button" data-platform="site" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Сайт</button>
       <button type="button" data-platform="app" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Приложение</button>
     </div>
+    <button type="button" id="merch-banners-btn" style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">🖼 Баннеры</button>
     <button type="button" id="merch-refresh" style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">Обновить превью</button>
     <span id="merch-pending" style="display:none;font-size:12px;font-weight:600;color:#b45309;background:#fef3c7;padding:5px 10px;border-radius:8px">Черновик: <span id="merch-pending-n">0</span></span>
     <button type="button" id="merch-publish" disabled style="padding:8px 16px;border:0;border-radius:8px;background:#9ca3af;color:#fff;cursor:not-allowed;font-size:13px;font-weight:700">Опубликовать на сайт</button>
@@ -96,6 +97,20 @@
     <div id="merch-anim-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
   </div>
 </div>
+
+<!-- Менеджер баннеров (промо) — CRUD перенесён из Django-админки -->
+<div id="merch-bnr" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;max-width:660px;width:94%;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <h2 style="font-size:17px;font-weight:700;margin:0">Баннеры (промо)</h2>
+      <button type="button" id="merch-bnr-close" style="border:0;background:none;font-size:22px;cursor:pointer;color:#6b7280">×</button>
+    </div>
+    <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Промо-стрип под шапкой. Изменения баннеров применяются <b>сразу</b> (это управление, как товары). Порядок — стрелками ↑↓ для активной площадки.</p>
+    <div id="merch-bnr-list"></div>
+    <button type="button" id="merch-bnr-add" style="margin-top:12px;padding:9px 16px;border:2px dashed #0a84ff;border-radius:10px;background:#eff6ff;color:#0a58ca;cursor:pointer;font-weight:600">➕ Добавить баннер</button>
+  </div>
+</div>
+<input type="file" id="merch-bnr-file" accept="image/*" style="display:none">
 
 {% verbatim %}
 <script>
@@ -341,6 +356,95 @@
     updatePending();
   }
 
+  // ── Менеджер баннеров (промо): CRUD, применяется сразу (перенос из админки) ──
+  var bnrModal = document.getElementById("merch-bnr");
+  var bnrFile = document.getElementById("merch-bnr-file");
+  var bnrPhotoId = null;
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function bnrErr(e) { alert("Ошибка баннера: " + (e && e.message || e)); }
+  function openBanners() { bnrModal.style.display = "flex"; loadBanners(); }
+  function closeBanners() { bnrModal.style.display = "none"; }
+  function loadBanners() {
+    var list = document.getElementById("merch-bnr-list");
+    list.textContent = "Загрузка…";
+    api("./banners?platform=" + platform)
+      .then(function (d) { renderBanners(d.banners || []); })
+      .catch(function (e) { list.textContent = "Ошибка: " + e.message; });
+  }
+  var BTN = "padding:6px 10px;border:1px solid #d1d5db;border-radius:7px;background:#fff;cursor:pointer;font-size:12px;font-weight:600";
+  function renderBanners(banners) {
+    var list = document.getElementById("merch-bnr-list");
+    list.innerHTML = "";
+    if (!banners.length) {
+      list.innerHTML = '<p style="color:#6b7280;font-size:13px">Пока нет баннеров. Нажмите «➕ Добавить баннер».</p>';
+      return;
+    }
+    banners.forEach(function (b, idx) {
+      var card = document.createElement("div");
+      card.style.cssText = "display:flex;gap:12px;align-items:flex-start;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-bottom:10px";
+      var thumb = b.imageUrl
+        ? '<img src="' + esc(b.imageUrl) + '" style="width:96px;height:64px;object-fit:cover;border-radius:8px;background:#f3f4f6">'
+        : '<div style="width:96px;height:64px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:11px">нет фото</div>';
+      card.innerHTML = thumb +
+        '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' +
+          '<input class="bnr-title" value="' + esc(b.title) + '" placeholder="Заголовок" style="padding:6px;border:1px solid #d1d5db;border-radius:6px;font-weight:600">' +
+          '<input class="bnr-sub" value="' + esc(b.subtitle) + '" placeholder="Подзаголовок" style="padding:6px;border:1px solid #d1d5db;border-radius:6px">' +
+          '<input class="bnr-action" value="' + esc(b.action) + '" placeholder="Текст кнопки/действие" style="padding:6px;border:1px solid #d1d5db;border-radius:6px">' +
+          '<label style="font-size:13px;display:flex;align-items:center;gap:6px"><input type="checkbox" class="bnr-pub"' + (b.isPublished ? " checked" : "") + "> Опубликован</label>" +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+            '<button type="button" class="bnr-save" style="' + BTN + ';border-color:#111;background:#111;color:#fff">Сохранить</button>' +
+            '<button type="button" class="bnr-photo" style="' + BTN + '">Фото</button>' +
+            '<button type="button" class="bnr-up" style="' + BTN + '">↑</button>' +
+            '<button type="button" class="bnr-down" style="' + BTN + '">↓</button>' +
+            '<button type="button" class="bnr-del" style="' + BTN + ';color:#dc2626">Удалить</button>' +
+          "</div>" +
+        "</div>";
+      card.querySelector(".bnr-save").addEventListener("click", function () { saveBanner(b.id, card, this); });
+      card.querySelector(".bnr-photo").addEventListener("click", function () { bnrPhotoId = b.id; bnrFile.value = ""; bnrFile.click(); });
+      card.querySelector(".bnr-del").addEventListener("click", function () { delBanner(b.id); });
+      card.querySelector(".bnr-up").addEventListener("click", function () { moveBanner(banners, idx, -1); });
+      card.querySelector(".bnr-down").addEventListener("click", function () { moveBanner(banners, idx, 1); });
+      list.appendChild(card);
+    });
+  }
+  function saveBanner(id, card, btn) {
+    var fd = new FormData();
+    fd.append("title", card.querySelector(".bnr-title").value);
+    fd.append("subtitle", card.querySelector(".bnr-sub").value);
+    fd.append("action", card.querySelector(".bnr-action").value);
+    fd.append("isPublished", card.querySelector(".bnr-pub").checked ? "1" : "0");
+    apiForm("./banner/" + id, fd).then(function () {
+      if (btn) { btn.textContent = "✓ Сохранено"; setTimeout(function () { btn.textContent = "Сохранить"; }, 1400); }
+      reloadFrame();
+    }).catch(bnrErr);
+  }
+  bnrFile.addEventListener("change", function () {
+    var f = bnrFile.files && bnrFile.files[0];
+    if (!f || !bnrPhotoId) return;
+    var fd = new FormData(); fd.append("image", f);
+    apiForm("./banner/" + bnrPhotoId, fd).then(function () { loadBanners(); reloadFrame(); }).catch(bnrErr);
+  });
+  function delBanner(id) {
+    if (!confirm("Удалить баннер? Это действие сразу применится к сайту.")) return;
+    api("./banner/" + id + "/delete", { method: "POST", body: "{}" }).then(function () { loadBanners(); reloadFrame(); }).catch(bnrErr);
+  }
+  function addBanner() {
+    var fd = new FormData(); fd.append("title", "Новый баннер");
+    apiForm("./banner-create", fd).then(function () { loadBanners(); reloadFrame(); }).catch(bnrErr);
+  }
+  function moveBanner(banners, idx, dir) {
+    var j = idx + dir;
+    if (j < 0 || j >= banners.length) return;
+    var ids = banners.map(function (b) { return b.id; });
+    var t = ids[idx]; ids[idx] = ids[j]; ids[j] = t;
+    api("./banner-reorder", { method: "POST", body: JSON.stringify({ platform: platform, order: ids }) })
+      .then(function () { loadBanners(); reloadFrame(); }).catch(bnrErr);
+  }
+
   // ── Публикация на реальный сайт (с подтверждением) ──
   function publish() {
     if (!pendingCount()) return;
@@ -399,6 +503,10 @@
   document.getElementById("merch-txt-save").addEventListener("click", saveText);
   document.getElementById("merch-anim-close").addEventListener("click", closeAnim);
   animModal.addEventListener("click", function (e) { if (e.target === animModal) closeAnim(); });
+  document.getElementById("merch-banners-btn").addEventListener("click", openBanners);
+  document.getElementById("merch-bnr-close").addEventListener("click", closeBanners);
+  document.getElementById("merch-bnr-add").addEventListener("click", addBanner);
+  bnrModal.addEventListener("click", function (e) { if (e.target === bnrModal) closeBanners(); });
   txtModal.addEventListener("click", function (e) { if (e.target === txtModal) closeText(); });
   modal.addEventListener("click", function (e) { if (e.target === modal) closeEdit(); });
   window.addEventListener("beforeunload", function (e) {
