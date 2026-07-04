@@ -181,3 +181,84 @@ class MeStatsTests(ApiTestCase):
 
     def test_me_stats_requires_auth(self):
         self.assertEqual(self.client.get("/v1/me/stats").status_code, 401)
+
+
+class ProfileEditTests(ApiTestCase):
+    """Централизованный профиль (аватар/email/структурный адрес — единые в экосистеме):
+    валидация и round-trip email/имени/адресов + настройки приватности."""
+
+    phone = "+79990004010"
+
+    def test_empty_name_rejected(self):
+        r = self.api_patch("/v1/profile", {"name": "   "})
+        self.assertEqual(r.status_code, 400)
+
+    def test_invalid_email_rejected(self):
+        r = self.api_patch("/v1/profile", {"email": "не-почта"})
+        self.assertEqual(r.status_code, 400)
+
+    def test_email_stored_lowercased(self):
+        r = self.api_patch("/v1/profile", {"email": "User@Test.DEV"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["email"], "user@test.dev")
+
+    def test_addresses_roundtrip(self):
+        # Структурный адрес (город/улица/дом/корпус/кв) — как в форме сайта/приложений.
+        addr = [{"city": "Якутск", "street": "Ленина", "house": "1", "flat": "5"}]
+        r = self.api_patch("/v1/profile", {"addresses": addr})
+        self.assertEqual(r.json()["addresses"], addr)
+        self.assertEqual(self.api_get("/v1/auth/me").json()["addresses"], addr)
+
+    def test_addresses_non_list_coerced_to_empty(self):
+        r = self.api_patch("/v1/profile", {"addresses": "мусор"})
+        self.assertEqual(r.json()["addresses"], [])  # не список → пустой, не падаем
+
+    def test_duplicate_email_conflict(self):
+        from accounts.models import Account
+
+        Account.objects.create(id="u_other_email", email="taken@test.dev")
+        r = self.api_patch("/v1/profile", {"email": "taken@test.dev"})
+        self.assertEqual(r.status_code, 409)  # email уже у другого аккаунта
+
+    def test_profile_requires_auth(self):
+        self.assertEqual(self.client.patch("/v1/profile").status_code, 401)
+
+    def test_privacy_defaults_private_then_patch(self):
+        priv = self.api_get("/v1/account/privacy").json()
+        self.assertEqual(
+            priv,
+            {"profilePublic": False, "routePublic": False, "realtimePublic": False},
+        )  # privacy by design — всё закрыто по умолчанию
+        upd = self.api_patch("/v1/account/privacy", {"profilePublic": True}).json()
+        self.assertTrue(upd["profilePublic"])
+        self.assertFalse(upd["routePublic"])  # частичный PATCH не трогает остальное
+
+    def test_privacy_requires_auth(self):
+        self.assertEqual(self.client.get("/v1/account/privacy").status_code, 401)
+
+
+class AccountDeletionTests(ApiTestCase):
+    """Удаление аккаунта (152-ФЗ, LR §13): нужен confirm:true, чистит персональные данные."""
+
+    phone = "+79990004011"
+
+    def test_delete_requires_confirm(self):
+        r = self.api_post("/v1/account/delete", {})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(self.api_get("/v1/auth/me").status_code, 200)  # аккаунт жив
+
+    def test_delete_purges_personal_data(self):
+        from accounts.models import Account
+        from loyalty.models import LoyaltyTransaction
+        from orders.models import Order
+
+        self.api_post("/v1/orders", {"id": "o1", "total": 500, "items": []})  # заказ + баллы
+        self.assertTrue(LoyaltyTransaction.objects.filter(user_id=self.uid).exists())
+        r = self.api_post("/v1/account/delete", {"confirm": True})
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(Account.objects.filter(id=self.uid).exists())
+        self.assertFalse(LoyaltyTransaction.objects.filter(user_id=self.uid).exists())
+        self.assertFalse(Order.objects.filter(user_id=self.uid).exists())
+
+    def test_delete_requires_auth(self):
+        self.assertEqual(self.client.post("/v1/account/delete").status_code, 401)
