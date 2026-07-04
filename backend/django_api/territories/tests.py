@@ -45,6 +45,50 @@ class TerritoryAwardTests(ApiTestCase):
         self.assertEqual(self.balance(), 0)
 
 
+class TerritoryViewTests(ApiTestCase):
+    """Чтение карты территорий и вечного следа: GET /territories (rel mine/enemy,
+    holdHoursLeft) и GET /footprint (накопление площади). Идём через реальный capture."""
+    phone = "+79990002005"
+
+    def _capture(self, capture_id="capV"):
+        return self.api_post(
+            "/v1/territories/capture", {"points": _POLY, "captureId": capture_id}
+        )
+
+    def test_captured_territory_listed_as_mine(self):
+        self._capture()
+        terr = self.api_get("/v1/territories").json()["territories"]
+        self.assertEqual(len(terr), 1)
+        self.assertEqual(terr[0]["rel"], "mine")
+        self.assertGreater(terr[0]["holdHoursLeft"], 0)  # только что взял — защита идёт
+
+    def test_other_owner_shows_as_enemy(self):
+        # Чужая свежая территория (прямой INSERT, далеко от моей) → для меня «enemy».
+        with connection.cursor() as cur:
+            cur.execute(
+                "INSERT INTO territories (id, owner_id, geom, captured_at) VALUES "
+                "('t_enemy','u_enemy',"
+                "ST_GeomFromText('MULTIPOLYGON(((10 10,10 11,11 11,11 10,10 10)))',4326), now())"
+            )
+        rels = [t["rel"] for t in self.api_get("/v1/territories").json()["territories"]]
+        self.assertEqual(rels, ["enemy"])
+
+    def test_footprint_accumulates_after_capture(self):
+        self.assertEqual(self.api_get("/v1/footprint").json()["areaM2"], 0)  # до забега
+        self._capture()
+        fp = self.api_get("/v1/footprint").json()
+        self.assertGreater(fp["areaM2"], 0)  # вечный след появился
+        self.assertIsNotNone(fp["geojson"])
+
+    def test_too_few_points_rejected(self):
+        r = self.api_post("/v1/territories/capture", {"points": _POLY[:2]})
+        self.assertEqual(r.status_code, 400)
+
+    def test_list_and_footprint_require_auth(self):
+        self.assertEqual(self.client.get("/v1/territories").status_code, 401)
+        self.assertEqual(self.client.get("/v1/footprint").status_code, 401)
+
+
 class TerritoryCleanupTests(TestCase):
     """Команда cleanup_territories удаляет ТОЛЬКО протухшее (>7д зоны, >24ч защита)."""
 
