@@ -1,7 +1,8 @@
 /**
  * Промо-баннеры из общего backend (/banners) → стрип под hero.
- * Источник управления — админка (Catalog → Banner). При офлайн/недоступном API
- * секция остаётся скрытой (graceful), сайт не ломается.
+ * Управление — в «Конструкторе» (/admin/merch/): в режиме ?edit=1 баннеры правятся
+ * ПРЯМО в стрипе (клик → правка, перетаскивание → порядок, плитка «➕ Добавить баннер»).
+ * На живом сайте: пусто/офлайн → секция скрыта, сайт не ломается.
  */
 (function () {
   "use strict";
@@ -13,14 +14,15 @@
     (typeof window !== "undefined" && window.STAW_API_BASE) ||
     (isDev ? "http://127.0.0.1:8000/v1" : PROD_API);
   var ORIGIN = API.replace(/\/v1\/?$/, "");
+  var EDIT = new URLSearchParams(location.search).get("edit") === "1";
 
   function esc(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
 
-  // Адаптер путей медиа бэкенда: "assets/images/products/X.jpg" → ORIGIN/media/products/X.jpg.
+  // Адаптер путей медиа бэкенда.
   function media(u) {
     if (!u) return "";
     if (u.indexOf("http") === 0) return u;
@@ -32,17 +34,17 @@
   function render(banners) {
     var sec = document.querySelector("[data-promo]");
     var track = document.querySelector("[data-promo-track]");
-    if (!sec || !track || !Array.isArray(banners) || banners.length === 0) return;
+    if (!sec || !track) return;
+    banners = Array.isArray(banners) ? banners : [];
+    if (!banners.length && !EDIT) return; // живой сайт: пусто → скрыто
 
-    track.innerHTML = banners
+    var html = banners
       .map(function (b) {
         var img = media(b.imageUrl);
-        var title = String(b.title || "")
-          .split("\n")
-          .map(esc)
-          .join("<br>");
+        var title = String(b.title || "").split("\n").map(esc).join("<br>");
+        var idAttr = b.id != null ? ' data-banner-id="' + esc(b.id) + '"' + (EDIT ? ' data-sid="' + esc(b.id) + '"' : "") : "";
         return (
-          '<article class="promo-card"' +
+          '<article class="promo-card"' + idAttr +
           (img ? " style=\"--bg:url('" + img + "')\"" : "") +
           ">" +
           '<div class="promo-card-body">' +
@@ -53,18 +55,21 @@
         );
       })
       .join("");
+    if (EDIT) {
+      track.setAttribute("data-sortable", "banners");
+      html += '<button type="button" class="promo-add-banner">➕ Добавить баннер</button>';
+    }
+    track.innerHTML = html;
     sec.hidden = false;
   }
 
   function load() {
-    fetch(API + "/banners?platform=site")
-      .then(function (r) {
-        return r.ok ? r.json() : Promise.reject();
-      })
+    // В правке показываем и неопубликованные (preview) — чтобы владелец их видел/правил.
+    var url = API + "/banners?platform=site" + (EDIT ? "&preview=1" : "");
+    fetch(url)
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(render)
-      .catch(function () {
-        /* офлайн/нет API — секция остаётся скрытой */
-      });
+      .catch(function () { if (EDIT) render([]); /* в правке — пустой стрип с «Добавить баннер» */ });
   }
 
   if (document.readyState === "loading") {

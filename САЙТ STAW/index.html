@@ -114,7 +114,7 @@
         </div>
         <div class="hero-content">
           <p class="eyebrow" data-anim="hero" data-edit="hero.eyebrow">Run · City · Weekend</p>
-          <h1 id="hero-title" class="brand-wordmark" aria-label="STAW">
+          <h1 id="hero-title" class="brand-wordmark" aria-label="STAW" data-edit="hero.brand">
             <span>S</span><span>T</span><span>A</span><span>W</span>
           </h1>
           <p class="hero-copy" data-anim="hero" data-edit="hero.copy">
@@ -138,9 +138,9 @@
 
       <section class="brand-motion scene" aria-label="Бренд STAW">
         <div class="brand-motion-word" aria-hidden="true">
-          <span>STAW</span>
-          <span>STAW</span>
-          <span>STAW</span>
+          <span data-edit="brand.word">STAW</span>
+          <span data-edit="brand.word">STAW</span>
+          <span data-edit="brand.word">STAW</span>
         </div>
         <div class="brand-motion-copy reveal">
           <p class="eyebrow" data-edit="brand.eyebrow">Brand signal</p>
@@ -187,7 +187,7 @@
         </div>
         <!-- Шаблон нового блока «кино» (репитер: «➕ Добавить блок» в конструкторе). -->
         <template data-block-template="cinema">
-          <article class="cinema-card reveal" data-sid="{sid}" data-hideable="{sid}">
+          <article class="cinema-card" data-sid="{sid}" data-hideable="{sid}">
             <img src="media/staw-clean-01.jpg" alt="STAW" loading="lazy" data-edit-img="cinema.{sid}.img" />
             <div>
               <h3 data-edit="cinema.{sid}.title">Новый блок</h3>
@@ -222,7 +222,7 @@
         </div>
         <!-- Шаблон нового блока-фичи (репитер). -->
         <template data-block-template="features">
-          <article class="feature-panel reveal" data-sid="{sid}" data-hideable="{sid}">
+          <article class="feature-panel" data-sid="{sid}" data-hideable="{sid}">
             <h3 data-edit="features.{sid}.title">Новый блок</h3>
             <p data-edit="features.{sid}.text">Описание — нажмите, чтобы изменить.</p>
           </article>
@@ -254,7 +254,7 @@
         </div>
         <!-- Шаблон нового блока-режима (репитер). -->
         <template data-block-template="modes">
-          <article class="mode-card reveal" data-sid="{sid}" data-hideable="{sid}">
+          <article class="mode-card" data-sid="{sid}" data-hideable="{sid}">
             <h3 data-edit="modes.{sid}.title">НОВЫЙ</h3>
             <p data-edit="modes.{sid}.text">Описание режима — нажмите, чтобы изменить.</p>
           </article>

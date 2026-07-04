@@ -138,6 +138,7 @@ class Banner(models.Model):
 
     def to_json(self) -> dict:
         return {
+            "id": self.id,
             "title": self.title,
             "subtitle": self.subtitle,
             "imageUrl": self.network_image_url(),
