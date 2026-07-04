@@ -107,3 +107,38 @@ class LevelBoundaryTests(TestCase):
         from loyalty.models import balance_of
 
         self.assertEqual(balance_of("u_nobody"), 0)
+
+
+class LoyaltyAccountCacheTests(ApiTestCase):
+    """Карточка лояльности GET /loyalty/account (баланс/уровень/история) — read-only,
+    кэш по uid + инвалидация из add_txn (D-29). Авторитетные проверки — мимо кэша."""
+
+    phone = "+79990002010"
+
+    def test_account_returns_balance_level_history(self):
+        add_txn(self.uid, 100, "runnerRun", "бег")
+        d = self.api_get("/v1/loyalty/account").json()
+        self.assertEqual(d["balance"], 100)
+        self.assertEqual(d["level"], "basic")
+        self.assertEqual(len(d["transactions"]), 1)
+
+    def test_account_cache_invalidated_on_txn(self):
+        self.assertEqual(self.api_get("/v1/loyalty/account").json()["balance"], 0)  # кэш
+        add_txn(self.uid, 250, "runnerRun")  # add_txn сбрасывает кэш
+        d = self.api_get("/v1/loyalty/account").json()
+        self.assertEqual(d["balance"], 250)
+        self.assertEqual(d["level"], "silver")  # пересчитано (баланс+уровень)
+
+    def test_redeem_uses_authoritative_balance_not_cache(self):
+        # Баланс 100, кэшируем показ. Redeem обязан списывать по РЕАЛЬНОМУ балансу,
+        # а не по (потенциально устаревшему) кэшу — иначе можно уйти в минус.
+        add_txn(self.uid, 100, "manual")
+        self.assertEqual(self.api_get("/v1/loyalty/account").json()["balance"], 100)  # кэш
+        r = self.api_post("/v1/loyalty/redeem", {"amount": 100, "orderId": "o1"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["balance"], 0)  # списано авторитетно
+        # Повторная трата — отклонена по реальному балансу 0, не по кэшу «100».
+        r2 = self.api_post("/v1/loyalty/redeem", {"amount": 50, "orderId": "o2"})
+        self.assertEqual(r2.status_code, 400)
+        # А показ после списания — свежий (redeem инвалидировал через add_txn).
+        self.assertEqual(self.api_get("/v1/loyalty/account").json()["balance"], 0)

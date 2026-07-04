@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from common.cache import LOYALTY_TTL, cache_json, loyalty_key
 from common.security import user_id_from_request
 
 from .models import LoyaltyTransaction, add_txn, balance_of, level_for
@@ -13,17 +14,23 @@ def account(request):
     uid = user_id_from_request(request)
     if not uid:
         return Response({"detail": "Нет токена"}, status=401)
-    balance = balance_of(uid)  # SQL-агрегат по всем транзакциям
+    # Read-only показ карточки лояльности — кэш по uid + инвалидация из add_txn (D-29).
+    # Redeem/add_txn НЕ читают этот кэш — там авторитетный balance_of.
+    data = cache_json(loyalty_key(uid), LOYALTY_TTL, lambda: _account_payload(uid))
+    return Response(data)
+
+
+def _account_payload(uid):
+    """Баланс (SQL-агрегат по всем транзакциям) + уровень + последние N операций."""
+    balance = balance_of(uid)
     rows = LoyaltyTransaction.objects.filter(user_id=uid).order_by("-created_at")[
         :_TX_LIMIT
     ]
-    return Response(
-        {
-            "balance": balance,
-            "level": level_for(balance),
-            "transactions": [r.to_json() for r in rows],
-        }
-    )
+    return {
+        "balance": balance,
+        "level": level_for(balance),
+        "transactions": [r.to_json() for r in rows],
+    }
 
 
 @api_view(["POST"])
