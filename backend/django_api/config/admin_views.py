@@ -156,3 +156,126 @@ def merch_site_image(request):
     obj.image = f
     obj.save()
     return JsonResponse({"ok": True, "content": {key: obj.to_json()}})
+
+
+# ── Баннеры (промо) в конструкторе: полный CRUD перенесён из Django-админки ───
+# Раньше баннеры правились только в Catalog → Banner. Теперь — визуально в
+# «Конструкторе» (владелец: всё визуальное в одном месте). Данные общие, порядок
+# раздельный по площадкам (sort_site/sort_app), как у товаров.
+
+def _banner_json(b):
+    return {
+        "id": b.id,
+        "title": b.title,
+        "subtitle": b.subtitle,
+        "action": b.action,
+        "imageUrl": b.network_image_url(),
+        "isPublished": b.is_published,
+        "sortSite": b.sort_site,
+        "sortApp": b.sort_app,
+    }
+
+
+_TRUE = ("1", "true", "True", "on", "yes", True)
+
+
+def _apply_banner_fields(b, post, files):
+    """Обновить поля баннера из multipart-формы (image опционально). Кидает ValueError."""
+    if "title" in post:
+        b.title = str(post.get("title") or "").strip()[:200]
+    if "subtitle" in post:
+        b.subtitle = str(post.get("subtitle") or "").strip()[:200]
+    if "action" in post:
+        b.action = str(post.get("action") or "").strip()[:80]
+    if "isPublished" in post:
+        b.is_published = post.get("isPublished") in _TRUE
+    f = files.get("image")
+    if f:
+        if f.size > 5 * 1024 * 1024:
+            raise ValueError("Файл слишком большой (макс 5 МБ)")
+        if not (f.content_type or "").startswith("image/"):
+            raise ValueError("Нужен файл-изображение")
+        b.image = f
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def merch_banners(request):
+    """Список баннеров для конструктора в порядке выбранной площадки."""
+    from catalog.models import Banner
+
+    platform = (request.GET.get("platform") or "site").strip().lower()
+    field = _PLATFORM_FIELD.get(platform, "sort")
+    qs = Banner.objects.all().order_by(field, "sort", "id")
+    return JsonResponse({"banners": [_banner_json(b) for b in qs]})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def merch_banner_create(request):
+    """Создать баннер (multipart: title/subtitle/action/isPublished + image)."""
+    from django.db.models import Max
+
+    from catalog.models import Banner
+
+    b = Banner()
+    try:
+        _apply_banner_fields(b, request.POST, request.FILES)
+    except ValueError as e:
+        return JsonResponse({"detail": str(e)}, status=400)
+    if not b.title:
+        return JsonResponse({"detail": "Нужен заголовок"}, status=400)
+    agg = Banner.objects.aggregate(s=Max("sort_site"), a=Max("sort_app"), g=Max("sort"))
+    b.sort_site = (agg["s"] if agg["s"] is not None else -1) + 1
+    b.sort_app = (agg["a"] if agg["a"] is not None else -1) + 1
+    b.sort = (agg["g"] if agg["g"] is not None else -1) + 1
+    b.save()
+    return JsonResponse({"ok": True, "banner": _banner_json(b)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def merch_banner(request, bid):
+    """Правка баннера (multipart, image опционально)."""
+    from catalog.models import Banner
+
+    b = Banner.objects.filter(id=bid).first()
+    if not b:
+        return JsonResponse({"detail": "Баннер не найден"}, status=404)
+    try:
+        _apply_banner_fields(b, request.POST, request.FILES)
+    except ValueError as e:
+        return JsonResponse({"detail": str(e)}, status=400)
+    b.save()
+    return JsonResponse({"ok": True, "banner": _banner_json(b)})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def merch_banner_delete(request, bid):
+    """Удалить баннер."""
+    from catalog.models import Banner
+
+    n, _ = Banner.objects.filter(id=bid).delete()
+    if not n:
+        return JsonResponse({"detail": "Баннер не найден"}, status=404)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def merch_banner_reorder(request):
+    """Порядок баннеров для площадки: {platform, order:[id,...]} → sort_site/app."""
+    from catalog.models import Banner
+
+    try:
+        data = json.loads(request.body or b"{}")
+    except ValueError:
+        return JsonResponse({"detail": "Некорректный JSON"}, status=400)
+    field = _PLATFORM_FIELD.get((data.get("platform") or "").strip().lower())
+    if not field:
+        return JsonResponse({"detail": "Неизвестная площадка"}, status=400)
+    order = data.get("order") or []
+    for i, bid in enumerate(order):
+        Banner.objects.filter(id=bid).update(**{field: i})
+    return JsonResponse({"ok": True, "count": len(order)})

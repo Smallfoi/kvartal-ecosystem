@@ -10,6 +10,11 @@ admin.site.index_title = "Управление: каталог, заказы, к
 from accounts import views as account_views
 from catalog import views as catalog_views
 from config.admin_views import (
+    merch_banner,
+    merch_banner_create,
+    merch_banner_delete,
+    merch_banner_reorder,
+    merch_banners,
     merch_console,
     merch_product,
     merch_products,
@@ -33,6 +38,12 @@ urlpatterns = [
     path("admin/merch/product/<str:pid>", merch_product, name="merch_product"),
     path("admin/merch/site-content", merch_site_content, name="merch_site_content"),
     path("admin/merch/site-image", merch_site_image, name="merch_site_image"),
+    # Баннеры (промо) — CRUD в конструкторе.
+    path("admin/merch/banners", merch_banners, name="merch_banners"),
+    path("admin/merch/banner-create", merch_banner_create, name="merch_banner_create"),
+    path("admin/merch/banner-reorder", merch_banner_reorder, name="merch_banner_reorder"),
+    path("admin/merch/banner/<int:bid>", merch_banner, name="merch_banner"),
+    path("admin/merch/banner/<int:bid>/delete", merch_banner_delete, name="merch_banner_delete"),
     path("admin/", admin.site.urls),
     path("v1/", include("core.urls")),
     path("v1/auth/", include("accounts.urls")),
