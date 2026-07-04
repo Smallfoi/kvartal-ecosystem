@@ -15,7 +15,8 @@
     <p style="font-size:13px;color:#6b7280;margin:4px 0 0">
       Это ваш <b>реальный сайт</b> в режиме правки — как увидят посетители. <b>Кликните</b> по любому
       тексту, кнопке или фото — правьте. <b>Перетаскивайте</b> карточки, фильтры и блоки — меняйте порядок.
-      Кнопка <b>«Скрыть ✕»</b> на блоке убирает его (можно вернуть). Всё копится в черновик — на сайт по «Опубликовать».
+      Кнопка <b>«Скрыть ✕»</b> убирает блок (можно вернуть), <b>«➕ Добавить блок»</b> — создаёт новый,
+      <b>«✨»</b> — задаёт анимацию, <b>⇤ ⇔ ⇥</b> — выравнивание. Всё копится в черновик — на сайт по «Опубликовать».
     </p>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
@@ -83,6 +84,18 @@
 </div>
 
 <input type="file" id="merch-img-input" accept="image/*" style="display:none">
+
+<!-- Пикер анимации блока (клик по «✨» на блоке сайта) -->
+<div id="merch-anim" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;max-width:440px;width:92%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="font-size:16px;font-weight:700;margin:0">Анимация блока</h2>
+      <button type="button" id="merch-anim-close" style="border:0;background:none;font-size:22px;cursor:pointer;color:#6b7280">×</button>
+    </div>
+    <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Как блок появляется на сайте. Применится после «Опубликовать».</p>
+    <div id="merch-anim-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+  </div>
+</div>
 
 {% verbatim %}
 <script>
@@ -190,6 +203,8 @@
       openTextEdit(d.key, d.value || "");
     } else if (d.type === "editImage") {
       openImagePick(d.key);
+    } else if (d.type === "editAnim") {
+      openAnimPick(d.key, d.value || "none");
     } else if (d.type === "draftContent") {
       // Порядок блоков (order.*) / скрытие (hidden.*) — прямо в черновик, без модалки.
       pendingContent[d.key] = d.value;
@@ -295,6 +310,37 @@
     reader.readAsDataURL(file);
   });
 
+  // ── Пикер анимации блока (в черновик) ──
+  var animModal = document.getElementById("merch-anim");
+  var animKey = null;
+  var ANIM_PRESETS = [["none", "Без анимации"], ["fade-up", "Появление снизу"], ["fade-in", "Плавное появление"],
+    ["slide-left", "Выезд слева"], ["slide-right", "Выезд справа"], ["zoom", "Приближение"], ["pulse", "Пульс"]];
+  function openAnimPick(key, current) {
+    animKey = key;
+    var list = document.getElementById("merch-anim-list");
+    list.innerHTML = "";
+    ANIM_PRESETS.forEach(function (p) {
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = p[1];
+      var on = (current || "none") === p[0];
+      b.style.cssText = "padding:10px;border:1px solid " + (on ? "#111" : "#d1d5db") + ";border-radius:8px;background:"
+        + (on ? "#111" : "#fff") + ";color:" + (on ? "#fff" : "#374151") + ";cursor:pointer;font-weight:600;font-size:13px";
+      b.addEventListener("click", function () { chooseAnim(p[0]); });
+      list.appendChild(b);
+    });
+    animModal.style.display = "flex";
+  }
+  function closeAnim() { animModal.style.display = "none"; animKey = null; }
+  function chooseAnim(val) {
+    if (!animKey) return;
+    var k = "anim." + animKey;
+    var v = val === "none" ? "" : val;
+    pendingContent[k] = v;                     // "" = снять анимацию (публикуется как пусто)
+    tellFrame({ type: "setContent", key: k, value: v });
+    closeAnim();
+    updatePending();
+  }
+
   // ── Публикация на реальный сайт (с подтверждением) ──
   function publish() {
     if (!pendingCount()) return;
@@ -351,6 +397,8 @@
   document.getElementById("merch-txt-close").addEventListener("click", closeText);
   document.getElementById("merch-txt-cancel").addEventListener("click", closeText);
   document.getElementById("merch-txt-save").addEventListener("click", saveText);
+  document.getElementById("merch-anim-close").addEventListener("click", closeAnim);
+  animModal.addEventListener("click", function (e) { if (e.target === animModal) closeAnim(); });
   txtModal.addEventListener("click", function (e) { if (e.target === txtModal) closeText(); });
   modal.addEventListener("click", function (e) { if (e.target === modal) closeEdit(); });
   window.addEventListener("beforeunload", function (e) {

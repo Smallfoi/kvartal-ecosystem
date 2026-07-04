@@ -120,7 +120,7 @@
           <p class="hero-copy" data-anim="hero" data-edit="hero.copy">
             Спортивная одежда для тех, кто двигается каждый день: пробежка утром, город днём, лёгкий маршрут на выходных.
           </p>
-          <div class="hero-actions" data-anim="hero" data-sortable="heroActions">
+          <div class="hero-actions" data-anim="hero" data-sortable="heroActions" data-align="heroActions">
             <a class="btn btn-primary" href="#catalog" data-sid="a1" data-edit="hero.btn1">Смотреть каталог</a>
             <a class="btn btn-ghost" href="#philosophy" data-sid="a2" data-edit="hero.btn2">Философия бренда</a>
           </div>
@@ -185,6 +185,15 @@
             </div>
           </article>
         </div>
+        <!-- Шаблон нового блока «кино» (репитер: «➕ Добавить блок» в конструкторе). -->
+        <template data-block-template="cinema">
+          <article class="cinema-card reveal" data-sid="{sid}" data-hideable="{sid}">
+            <img src="media/staw-clean-01.jpg" alt="STAW" loading="lazy" data-edit-img="cinema.{sid}.img" />
+            <div>
+              <h3 data-edit="cinema.{sid}.title">Новый блок</h3>
+            </div>
+          </article>
+        </template>
       </section>
 
       <section class="product-story scene" id="system">
@@ -211,6 +220,13 @@
             <p data-edit="feature3.text">Спортивная функция без ощущения формы только для зала.</p>
           </article>
         </div>
+        <!-- Шаблон нового блока-фичи (репитер). -->
+        <template data-block-template="features">
+          <article class="feature-panel reveal" data-sid="{sid}" data-hideable="{sid}">
+            <h3 data-edit="features.{sid}.title">Новый блок</h3>
+            <p data-edit="features.{sid}.text">Описание — нажмите, чтобы изменить.</p>
+          </article>
+        </template>
       </section>
 
       <section class="brand-modes scene" id="modes">
@@ -236,6 +252,13 @@
             <p data-edit="mode4.text">Городская повседневность: спортивная функция в одежде, которую носишь каждый день.</p>
           </article>
         </div>
+        <!-- Шаблон нового блока-режима (репитер). -->
+        <template data-block-template="modes">
+          <article class="mode-card reveal" data-sid="{sid}" data-hideable="{sid}">
+            <h3 data-edit="modes.{sid}.title">НОВЫЙ</h3>
+            <p data-edit="modes.{sid}.text">Описание режима — нажмите, чтобы изменить.</p>
+          </article>
+        </template>
       </section>
 
       <section class="catalog scene" id="catalog">
@@ -419,7 +442,15 @@
                 <p data-edit="loyalty.step3text">Применяешь баллы в корзине — до 30% от суммы заказа.</p>
               </article>
             </div>
-            <div class="loyalty-actions">
+            <!-- Шаблон нового шага лояльности (репитер). -->
+            <template data-block-template="loyaltySteps">
+              <article class="loyalty-step" data-sid="{sid}" data-hideable="{sid}">
+                <span class="loyalty-num">＋</span>
+                <h3 data-edit="loyaltySteps.{sid}.title">Новый шаг</h3>
+                <p data-edit="loyaltySteps.{sid}.text">Описание шага — нажмите, чтобы изменить.</p>
+              </article>
+            </template>
+            <div class="loyalty-actions" data-align="loyaltyActions">
               <button class="btn btn-primary" type="button" data-eco-login-cta data-edit="loyalty.loginBtn">Войти в аккаунт</button>
               <button class="btn btn-primary" type="button" data-eco-auth-only data-eco-profile-cta hidden data-edit="loyalty.profileBtn">Мой профиль</button>
               <a class="btn btn-ghost btn-ghost-dark" href="#catalog" data-edit="loyalty.catalogBtn">В каталог</a>
