@@ -52,3 +52,55 @@ class OrderAwardTests(ApiTestCase):
             )
             self.assertEqual(r.status_code, 403)
         self.assertEqual(self.balance(), 0)
+
+
+class OrderCheckoutTests(ApiTestCase):
+    """Edge-кейсы чекаута: валидация id, изоляция/порядок ленты, мелкий заказ,
+    повторный POST (обновление без задвоения), требование токена."""
+    phone = "+79990002006"
+
+    def test_missing_id_rejected(self):
+        self.assertEqual(self.api_post("/v1/orders", {"total": 100}).status_code, 400)
+
+    def test_get_lists_only_own_newest_first(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from orders.models import Order
+
+        self.api_post("/v1/orders", {"id": "old", "total": 100, "items": []})
+        self.api_post("/v1/orders", {"id": "new", "total": 100, "items": []})
+        # Детерминированно разводим по времени (иначе одинаковый created_at → неустойчивый порядок).
+        Order.objects.filter(user_id=self.uid, order_id="old").update(
+            created_at=timezone.now() - timedelta(hours=1)
+        )
+        Order.objects.create(
+            user_id="u_stranger", order_id="x", total=100, payload={"id": "x"}
+        )  # чужой — не должен попасть в ленту
+        ids = [o["id"] for o in self.api_get("/v1/orders").json()]
+        self.assertEqual(ids, ["new", "old"])
+
+    def test_tiny_order_registration_but_no_purchase_points(self):
+        # total=5 ₽: 5//10=0 покупочных баллов, но первый заказ → +50 регистрационных.
+        self.api_post("/v1/orders", {"id": "SS-T", "total": 5, "items": []})
+        self.assertEqual(self.balance(), 50)
+
+    def test_repeat_post_updates_status_without_reaward(self):
+        self.api_post(
+            "/v1/orders", {"id": "SS-U", "total": 1000, "status": "pending", "items": []}
+        )
+        self.assertEqual(self.balance(), 150)  # 100 + 50
+        self.api_post(
+            "/v1/orders", {"id": "SS-U", "total": 1000, "status": "shipped", "items": []}
+        )
+        self.assertEqual(self.balance(), 150)  # повтор не задваивает баллы
+        from orders.models import Order
+
+        self.assertEqual(
+            Order.objects.get(user_id=self.uid, order_id="SS-U").status, "shipped"
+        )  # статус обновился
+
+    def test_orders_require_auth(self):
+        self.assertEqual(self.client.get("/v1/orders").status_code, 401)
+        self.assertEqual(self.client.post("/v1/orders").status_code, 401)
