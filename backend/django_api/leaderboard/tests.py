@@ -91,3 +91,21 @@ class LeaderboardTests(ApiTestCase):
 
     def test_districts_requires_auth(self):
         self.assertEqual(self.client.get("/v1/leaderboard/districts").status_code, 401)
+
+    # ── Кэш (D-29) ────────────────────────────────────────────────────────────
+
+    def test_leaderboard_served_from_cache(self):
+        """Лейдерборд — горячий глобальный агрегат: короткий TTL, без пер-write
+        инвалидации. Проверяем, что второй запрос отдаётся из кэша (устаревший ожидаемо),
+        а после сброса кэша — пересчитывается."""
+        from django.core.cache import cache
+
+        self._run_txn(self.uid, 50)  # 5 км
+        first = self.api_get("/v1/leaderboard/users?period=all").json()
+        self.assertEqual(first["me"]["km"], 5.0)  # посчитано и закэшировано
+        self._run_txn(self.uid, 50)  # ещё 5 км, но лейдерборд не инвалидируется (TTL)
+        cached = self.api_get("/v1/leaderboard/users?period=all").json()
+        self.assertEqual(cached["me"]["km"], 5.0)  # отдано из кэша — устаревшее ожидаемо
+        cache.clear()
+        fresh = self.api_get("/v1/leaderboard/users?period=all").json()
+        self.assertEqual(fresh["me"]["km"], 10.0)  # после сброса — пересчитано

@@ -204,7 +204,16 @@ def me_stats(request):
     uid = user_id_from_request(request)
     if not uid:
         return Response({"detail": "Нет токена"}, status=401)
+    # Кэш на юзера (D-29): агрегаты тяжёлые, а меняются только при его транзакциях —
+    # add_txn сбрасывает кэш (invalidate_stats). Плюс safety-TTL на изменения мимо add_txn.
+    from common.cache import STATS_TTL, cache_json, stats_key
 
+    data = cache_json(stats_key(uid), STATS_TTL, lambda: _compute_stats(uid))
+    return Response(data)
+
+
+def _compute_stats(uid):
+    """Тяжёлый расчёт личной статистики (забеги/баллы/заказы). Кэшируется по uid."""
     from django.db.models import Count, Sum
 
     from loyalty.models import LoyaltyTransaction, balance_of
@@ -221,7 +230,7 @@ def me_stats(request):
     orders_agg = Order.objects.filter(user_id=uid).aggregate(
         c=Count("id"), total=Sum("total")
     )
-    return Response({
+    return {
         "runs": {
             "count": runs_agg["c"] or 0,
             "totalKm": round((km_agg["d"] or 0) / 1000.0, 1),
@@ -235,7 +244,7 @@ def me_stats(request):
             "count": orders_agg["c"] or 0,
             "totalSpent": int(orders_agg["total"] or 0),
         },
-    })
+    }
 
 
 @api_view(["POST"])

@@ -47,6 +47,11 @@ def add_txn(user_id, amount, source, description="", order_id=None, run_id=None)
     )
     if amount > 0:
         _notify_level_up(user_id, before, before + amount)
+    # Личная статистика юзера изменилась (баланс/заработано/потрачено; забег/заказ,
+    # породившие транзакцию, уже в БД) → сбрасываем её кэш (D-29).
+    from common.cache import invalidate_stats
+
+    invalidate_stats(user_id)
     return txn
 
 

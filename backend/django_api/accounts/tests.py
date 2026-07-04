@@ -179,6 +179,14 @@ class MeStatsTests(ApiTestCase):
         self.assertEqual(d["orders"]["count"], 1)
         self.assertEqual(d["orders"]["totalSpent"], 5000)
 
+    def test_stats_cached_and_invalidated_on_txn(self):
+        # Первый запрос — считает и кэширует (баланс 0).
+        self.assertEqual(self.api_get("/v1/me/stats").json()["loyalty"]["balance"], 0)
+        from loyalty.models import add_txn
+
+        add_txn(self.uid, 100, "runnerRun")  # новая транзакция сбрасывает кэш статистики
+        self.assertEqual(self.api_get("/v1/me/stats").json()["loyalty"]["balance"], 100)
+
     def test_me_stats_requires_auth(self):
         self.assertEqual(self.client.get("/v1/me/stats").status_code, 401)
 
