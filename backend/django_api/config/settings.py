@@ -6,6 +6,8 @@ Django-настройки бэкенда экосистемы STAW (этап п�
 import os
 from pathlib import Path
 
+from celery.schedules import crontab  # расписание beat (D-07)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-change-in-prod")
@@ -300,6 +302,30 @@ else:
     CACHES = {
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
     }
+
+# ── Celery: фоновые задачи/очереди/beat (D-07) ──────────────────────────────
+# Брокер — Redis (тот же REDIS_URL, что и кэш; отдельный CELERY_BROKER_URL перекрывает).
+# БЕЗ брокера — EAGER: задачи выполняются синхронно inline (dev/CI/тесты не требуют
+# Redis и работают как раньше). В проде поднимаем `celery worker` + `celery beat`.
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "") or _redis_url
+CELERY_RESULT_BACKEND = (
+    os.environ.get("CELERY_RESULT_BACKEND", "") or CELERY_BROKER_URL or None
+)
+CELERY_TASK_ALWAYS_EAGER = not CELERY_BROKER_URL  # нет брокера → синхронно inline
+CELERY_TASK_EAGER_PROPAGATES = True  # в eager-режиме исключения задач всплывают (тесты видят падения)
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# Периодические задачи (beat): статическое расписание — без django-celery-beat (меньше
+# движущихся частей). Чистка протухших зон/защит раз в сутки в 03:30 (Asia/Yakutsk).
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-territories-daily": {
+        "task": "territories.cleanup_expired_territories",
+        "schedule": crontab(hour=3, minute=30),
+    },
+}
 
 # ── Sentry (мониторинг/краши, D-25: self-host РФ) ───────────────────────────
 # Каркас: подключается ТОЛЬКО при заданном SENTRY_DSN. Без ключа — no-op, без

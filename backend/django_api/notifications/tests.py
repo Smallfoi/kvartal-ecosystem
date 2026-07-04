@@ -2,6 +2,8 @@
 import os
 from unittest import mock
 
+from django.test import override_settings
+
 from common.testutils import ApiTestCase
 from notifications.models import DeviceToken, create_notification
 from notifications.push import push_enabled, send_push
@@ -78,3 +80,24 @@ class NotificationFeedTests(ApiTestCase):
     def test_feed_requires_auth(self):
         self.assertEqual(self.client.get("/v1/notifications").status_code, 401)
         self.assertEqual(self.client.post("/v1/notifications/read").status_code, 401)
+
+
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
+class PushTaskTests(ApiTestCase):
+    """Пуш вынесен в Celery-задачу (D-07). EAGER-режим форсим — детерминированно и в
+    dev (брокер есть), и в CI (брокера нет): задача выполняется синхронно inline."""
+
+    phone = "+79990005003"
+
+    def test_send_push_task_runs_inline_noop(self):
+        from notifications.tasks import send_push_task
+
+        DeviceToken.objects.create(user_id=self.uid, token="t", platform="android")
+        # EAGER → .delay() выполняется синхронно; без PUSH_PROVIDER — 0 доставок.
+        self.assertEqual(send_push_task.delay(self.uid, "Привет", "тест").get(), 0)
+
+    def test_create_notification_dispatches_push_task(self):
+        with mock.patch("notifications.tasks.send_push_task.delay") as delayed:
+            n = create_notification(self.uid, "Заказ готов", "тест")
+        self.assertIsNotNone(n)  # уведомление создано
+        delayed.assert_called_once_with(self.uid, "Заказ готов", "тест")  # пуш ушёл в фон

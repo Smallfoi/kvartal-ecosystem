@@ -67,7 +67,15 @@ def create_notification(user_id, title, body="", type="system", order_id=None):
     n = Notification.objects.create(
         user_id=user_id, title=title, body=body, type=type, order_id=order_id,
     )
-    from .push import send_push
+    # Пуш — фоновой задачей (D-07), чтобы не блокировать ответ на провайдере. В EAGER
+    # (без брокера) выполнится синхронно. Если брокер задан, но недоступен — не роняем
+    # создание уведомления: шлём синхронно запасным путём.
+    from .tasks import send_push_task
 
-    send_push(user_id, title, body)  # no-op без PUSH_PROVIDER
+    try:
+        send_push_task.delay(user_id, title, body)
+    except Exception:
+        from .push import send_push
+
+        send_push(user_id, title, body)  # no-op без PUSH_PROVIDER
     return n

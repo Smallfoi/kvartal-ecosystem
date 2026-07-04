@@ -15,6 +15,11 @@
 **/*.keystore
 **/*.jks
 
+# === Celery beat (runtime-артефакты планировщика, D-07) ===
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
+
 # === Локальные dev-базы (содержат тестовых юзеров / PII) ===
 *.db
 *.sqlite

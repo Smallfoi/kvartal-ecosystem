@@ -2,7 +2,7 @@
 + плановая чистка протухших зон/защит (доводка Квартала)."""
 from django.core.management import call_command
 from django.db import connection
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from common.testutils import ApiTestCase
 
@@ -119,3 +119,28 @@ class TerritoryCleanupTests(TestCase):
             self.assertEqual(rows, ["o_new"])  # протухшая удалена, свежая осталась
             cur.execute("SELECT count(*) FROM recent_captures")
             self.assertEqual(cur.fetchone()[0], 1)  # истёкшая защита удалена
+
+
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
+class TerritoryCleanupTaskTests(TestCase):
+    """Чистка вынесена в Celery-задачу beat (D-07). EAGER → .delay() выполняет команду
+    синхронно; проверяем, что beat-обёртка удаляет ровно протухшее."""
+
+    _G = "ST_GeomFromText('MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))',4326)"
+
+    def test_cleanup_task_removes_expired(self):
+        from territories.tasks import cleanup_expired_territories
+
+        with connection.cursor() as cur:
+            cur.execute(
+                "INSERT INTO territories (id, owner_id, geom, captured_at) "
+                f"VALUES ('t_old','o_old',{self._G}, now() - interval '8 days')"
+            )
+            cur.execute(
+                "INSERT INTO territories (id, owner_id, geom, captured_at) "
+                f"VALUES ('t_new','o_new',{self._G}, now())"
+            )
+        cleanup_expired_territories.delay()  # EAGER → команда выполнится inline
+        with connection.cursor() as cur:
+            cur.execute("SELECT owner_id FROM territories")
+            self.assertEqual([r[0] for r in cur.fetchall()], ["o_new"])

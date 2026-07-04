@@ -7,3 +7,4 @@ Pillow>=10.0
 django-unfold>=0.40
 sentry-sdk[django]>=2.0
 redis>=5.0  # общий кэш в проде (rate-limit/OTP/бан), активен при REDIS_URL
+celery>=5.3  # фоновые задачи/очереди/beat (D-07); без брокера — EAGER (синхронно inline)

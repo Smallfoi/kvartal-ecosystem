@@ -16,6 +16,37 @@
 ---
 
 
+## 2026-07-04 — Claude — Инфра: Redis + Celery (D-07) с graceful degradation
+**Задача владельца:** после закрытия тест-вектора — следующий автономный вектор из «что осталось».
+Выбран **Redis + Celery (D-07)**: фоновые задачи/очереди/beat — фундамент под async-пуши, тяжёлые агрегаты,
+периодическую чистку. Не пересекается с параллельным чатом (он на админке/конструкторе/каталоге/сайте).
+**Сделано:**
+- **Celery-приложение** `config/celery.py` (`Celery("staw")`, конфиг из Django settings namespace `CELERY_*`,
+  autodiscover tasks), поднимается вместе с Django через `config/__init__.py` (`celery_app`).
+- **Конфиг в settings.py:** брокер/бэкенд = `REDIS_URL` (тот же, что кэш) или отдельный `CELERY_BROKER_URL`;
+  **без брокера → `CELERY_TASK_ALWAYS_EAGER`** (задачи inline, инфра не нужна — dev/CI/тесты как раньше);
+  beat-расписание `CELERY_BEAT_SCHEDULE` (чистка территорий ежедневно 03:30 Asia/Yakutsk).
+- **Первые задачи:** `notifications.send_push` (пуш вынесен из HTTP-цикла в фон; `create_notification` шлёт
+  через `.delay()` с фолбэком на синхронный путь, если брокер задан но недоступен) + `territories.cleanup_expired_territories`
+  (обёртка над командой `cleanup_territories`, дергается из beat).
+- **docker-compose:** сервисы `redis` (7-alpine, healthcheck) + `worker` (`celery -A config worker`) +
+  `beat` (`celery -A config beat`); общая среда/тома web/worker/beat через YAML-анкоры; web получил `REDIS_URL`
+  ⇒ в стеке кэш = Redis, брокер = Redis.
+- **Тесты (+3):** `send_push_task` inline (no-op=0), `create_notification` диспатчит задачу, beat-обёртка чистки
+  удаляет протухшее — все с `@override_settings(CELERY_TASK_ALWAYS_EAGER=True)` (детерминированно в dev и CI).
+- **requirements:** `celery>=5.3`. Обновлены DECISIONS (D-07 ✅), MODULES (Infra), PITFALLS (грабли ниже).
+**Пробовали — не вышло (в PITFALLS):** после добавления `celery` в requirements `docker compose exec web`
+падал `service not running`/ImportError — образ собран без пакета. **Пересобрать:** `docker compose up -d --build`
+(том монтирует код, но пакеты — на build). Тесты в dev-контейнере бьют по реальному брокеру (у web задан
+`REDIS_URL`) — детерминированность даёт только `override_settings(EAGER=True)`.
+**Проверено:** `manage.py check` чист; **163 теста зелёные**; worker зарегистрировал обе задачи и **вживую
+обработал** отправленную из web `cleanup_expired_territories[<id>]` (received→succeeded) + `send_push` (result 0).
+**Состояние:** полный стек `db + redis + web + worker + beat` поднимается `docker compose up -d`; async-путь
+работает end-to-end; CI без Redis проходит через EAGER.
+**Дальше:** при желании — перенос тяжёлых агрегатов (лейдерборд/статистика) в кэш Redis с инвалидацией;
+рассылочные пуши через worker (после FCM-провайдера владельца); Celery в проде (Yandex Cloud) — с хостингом.
+
+
 ## 2026-07-04 — Claude — Надёжность: расширение тест-покрытия бэкенда (99 → 160, +61)
 **Задача владельца:** параллельный чат делает админку/конструктор — «задай себе другой вектор, чтобы работы
 не пересекались». Выбран вектор **Надёжность/тесты**: закрыть тесты в областях, которых параллельный чат
