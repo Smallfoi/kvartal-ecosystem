@@ -64,6 +64,11 @@ def orders(request):
         from shoes.views import create_for_order
 
         create_for_order(uid, oid, d.get("items") or [])
+        if created:
+            # Аналитика (D-30): покупка (только на создании — повтор POST не задваивает).
+            from analytics.models import E_PURCHASE, track
+
+            track(E_PURCHASE, user_id=uid, source="store", total=total, orderId=oid)
         return Response(obj.to_json())
 
     # GET — заказы текущего пользователя

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "notifications",
     "legal",
     "runs",
+    "analytics",
 ]
 
 MIDDLEWARE = [
