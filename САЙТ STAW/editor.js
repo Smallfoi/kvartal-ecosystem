@@ -2,18 +2,14 @@
  * Режим редактирования сайта для «Конструктора» (мини-CMS, headless-подход).
  * Активируется ТОЛЬКО при ?edit=1 — на живом сайте не работает и не мешает.
  *
- * Что умеет (всё копится в ЧЕРНОВИК у родителя-конструктора, публикуется по кнопке):
- *  - клик по [data-edit]/[data-edit-img] → правка текста / фото;
+ * Правки копятся в ЧЕРНОВИК у родителя-конструктора (публикуются по кнопке):
+ *  - клик по [data-edit]/[data-edit-img] → правка текста/фото;
  *  - клик по товару (.product-card) → правка товара;
- *  - перетаскивание в группе [data-sortable] → порядок (order.<group>); товары — reorder;
- *  - «➕ Добавить блок» в группе с <template> → новый блок (extra.<group>);
- *  - «Скрыть ✕/Вернуть» на [data-hideable] → hidden.<key>; на добавленном блоке — «Удалить ✕»;
- *  - «✨» на блоке → выбор анимации (anim.<key>);
- *  - контрол ⇤ ⇔ ⇥ у [data-align] → выравнивание группы (align.<key>).
- *
- * Кросс-домен: логика ЖИВЁТ В САЙТЕ, шлёт правки родителю через postMessage; сохраняет
- * их родитель. content.js применяет ПУБЛИКОВАННОЕ как базу и шлёт staw-content-applied —
- * только после этого мы шлём ready, чтобы родитель наложил черновик поверх (без гонки).
+ *  - клик по баннеру (.promo-card) → правка баннера; drag баннеров → порядок;
+ *  - перетаскивание в группе [data-sortable] → порядок (order.<group>);
+ *  - «➕ Добавить блок» (плитка в сетке) → новый блок (extra.<group>);
+ *  - у блока по наведению — панель: «Скрыть/Вернуть» (или «Удалить» для добавленного) и «✨» (анимация).
+ * Добавленные блоки помечены зелёной обводкой. Кнопки показываются ПО НАВЕДЕНИЮ — не перекрывают текст.
  */
 (function () {
   "use strict";
@@ -29,16 +25,25 @@
     "html.staw-edit [data-edit],html.staw-edit [data-edit-img]{outline:2px dashed transparent;outline-offset:3px;cursor:pointer;transition:outline-color .12s}" +
     "html.staw-edit [data-edit]:hover,html.staw-edit [data-edit-img]:hover{outline-color:#0a84ff}" +
     "html.staw-edit [data-hideable]{position:relative}" +
+    "html.staw-edit [data-extra]{outline:2px solid #22c55e !important;outline-offset:2px}" +
     "html.staw-edit .staw-cms-hidden{opacity:.32;filter:grayscale(1)}" +
-    "html.staw-edit .staw-ui{font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer}" +
-    "html.staw-edit .staw-del,html.staw-edit .staw-anim-btn{position:absolute;top:6px;z-index:30;border:0;border-radius:6px;" +
-      "padding:3px 8px;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}" +
-    "html.staw-edit .staw-del{right:6px;background:rgba(17,24,39,.88)}" +
-    "html.staw-edit .staw-anim-btn{right:64px;background:rgba(124,58,237,.9)}" +
-    "html.staw-edit .staw-add{display:inline-flex;align-items:center;gap:6px;margin:12px auto;padding:9px 16px;" +
-      "border:2px dashed #0a84ff;border-radius:10px;background:#eff6ff;color:#0a58ca;width:auto}" +
+    // Панель управления блоком — ПО НАВЕДЕНИЮ (не перекрывает контент постоянно).
+    "html.staw-edit .staw-tools{position:absolute;top:6px;right:6px;z-index:40;display:flex;gap:4px;opacity:0;pointer-events:none;transition:opacity .12s}" +
+    "html.staw-edit [data-hideable]:hover>.staw-tools,html.staw-edit .staw-tools:hover{opacity:1;pointer-events:auto}" +
+    "html.staw-edit .staw-tools button{border:0;border-radius:6px;padding:4px 8px;color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}" +
+    "html.staw-edit .staw-del{background:rgba(17,24,39,.92)}" +
+    "html.staw-edit .staw-anim-btn{background:rgba(124,58,237,.95)}" +
+    // «Добавить блок» — плитка ВНУТРИ сетки (не ломает раскладку секции).
+    "html.staw-edit .staw-add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:64px;padding:14px;" +
+      "border:2px dashed #0a84ff;border-radius:12px;background:rgba(239,246,255,.9);color:#0a58ca;cursor:pointer;" +
+      "font:600 13px/1.2 system-ui,-apple-system,sans-serif;width:100%;box-sizing:border-box}" +
+    "html.staw-edit .promo-add-banner{display:flex;align-items:center;justify-content:center;min-width:180px;min-height:90px;" +
+      "margin-left:10px;border:2px dashed #0a84ff;border-radius:14px;background:rgba(239,246,255,.9);color:#0a58ca;cursor:pointer;" +
+      "font:600 13px/1.2 system-ui,-apple-system,sans-serif}" +
+    "html.staw-edit .promo-card{cursor:pointer;outline:2px dashed transparent;outline-offset:3px;transition:outline-color .12s}" +
+    "html.staw-edit .promo-card:hover{outline-color:#0a84ff}" +
     "html.staw-edit .staw-align-bar{display:flex;gap:4px;justify-content:center;margin:0 0 8px}" +
-    "html.staw-edit .staw-align-btn{border:1px solid #d1d5db;border-radius:6px;padding:3px 10px;background:#fff;color:#374151}" +
+    "html.staw-edit .staw-align-btn{border:1px solid #d1d5db;border-radius:6px;padding:3px 10px;background:#fff;color:#374151;cursor:pointer}" +
     "html.staw-edit .product-add,html.staw-edit [data-quick-view]{pointer-events:none}";
   document.documentElement.appendChild(css);
   document.documentElement.classList.add("staw-edit");
@@ -49,13 +54,14 @@
   var VOID_TAGS = { IMG: 1, INPUT: 1, BR: 1, HR: 1, AREA: 1, EMBED: 1 };
 
   function isItem(ch) { return ch.hasAttribute("data-sid") || (ch.classList && ch.classList.contains("product-card")); }
-  function sidsOf(container) { return [].filter.call(container.children, isItem).map(function (c) { return c.getAttribute("data-sid"); }); }
-  function extrasOf(container) {
-    return [].filter.call(container.children, function (c) { return c.hasAttribute("data-sid") && c.hasAttribute("data-extra"); })
-      .map(function (c) { return c.getAttribute("data-sid"); });
+  function sidsOf(c) { return [].filter.call(c.children, isItem).map(function (x) { return x.getAttribute("data-sid"); }); }
+  function extrasOf(c) {
+    return [].filter.call(c.children, function (x) { return x.hasAttribute("data-sid") && x.hasAttribute("data-extra"); })
+      .map(function (x) { return x.getAttribute("data-sid"); });
   }
+  function addTileOf(c) { for (var i = 0; i < c.children.length; i++) if (c.children[i].classList && c.children[i].classList.contains("staw-add")) return c.children[i]; return null; }
 
-  // ── Перетаскивание (товары + любые [data-sortable]) ──
+  // ── Перетаскивание (товары + баннеры + любые [data-sortable]) ──
   var dragged = null, dragContainer = null;
   function sortItem(node) { return node && node.closest ? node.closest("[data-sid], .product-card") : null; }
   function containerOf(item) {
@@ -68,7 +74,7 @@
     [].forEach.call(document.querySelectorAll("[data-product-grid] > .product-card"), function (el) { el.setAttribute("draggable", "true"); });
   }
   document.addEventListener("dragstart", function (e) {
-    if (e.target.closest && e.target.closest(".staw-ui")) return;
+    if (e.target.closest && e.target.closest(".staw-ui, .staw-tools")) return;
     var item = sortItem(e.target); if (!item) return;
     var c = containerOf(item); if (!c) return;
     dragged = item; dragContainer = c; item.classList.add("staw-dragging");
@@ -83,8 +89,10 @@
     if (!dragged || !dragContainer) return;
     e.preventDefault();
     var after = afterEl(dragContainer, e.clientX, e.clientY);
-    if (after == null) dragContainer.appendChild(dragged);
-    else if (after !== dragged) dragContainer.insertBefore(dragged, after);
+    if (after == null) {
+      var tile = addTileOf(dragContainer);          // держим «Добавить блок» последним
+      if (tile) dragContainer.insertBefore(dragged, tile); else dragContainer.appendChild(dragged);
+    } else if (after !== dragged) dragContainer.insertBefore(dragged, after);
   });
   function afterEl(c, x, y) {
     var els = [].filter.call(c.children, function (ch) { return isItem(ch) && !ch.classList.contains("staw-dragging"); });
@@ -97,17 +105,21 @@
   function saveOrder(c) {
     if (!c) return;
     if (c.hasAttribute("data-product-grid")) {
-      var ids = [].filter.call(c.children, isItem).map(function (ch) { return ch.getAttribute("data-id"); });
-      send({ type: "reorder", platform: PLATFORM, order: ids });
-    } else {
-      var g = c.getAttribute("data-sortable");
-      if (g) draft("order." + g, JSON.stringify(sidsOf(c)));
+      send({ type: "reorder", platform: PLATFORM, order: [].filter.call(c.children, isItem).map(function (x) { return x.getAttribute("data-id"); }) });
+      return;
     }
+    var g = c.getAttribute("data-sortable");
+    if (g === "banners") { send({ type: "bannerReorder", platform: PLATFORM, order: sidsOf(c) }); return; }
+    if (g) draft("order." + g, JSON.stringify(sidsOf(c)));
   }
 
-  // ── Клик: товар/фото/текст ──
+  // ── Клик: баннер/товар/фото/текст ──
   document.addEventListener("click", function (e) {
-    if (e.target.closest && e.target.closest(".staw-ui")) return;
+    if (e.target.closest && e.target.closest(".staw-ui, .staw-tools")) return;
+    var addb = e.target.closest && e.target.closest(".promo-add-banner");
+    if (addb) { e.preventDefault(); e.stopPropagation(); send({ type: "addBanner" }); return; }
+    var bnr = e.target.closest(".promo-card");
+    if (bnr && bnr.getAttribute("data-banner-id")) { e.preventDefault(); e.stopPropagation(); send({ type: "editBanner", id: bnr.getAttribute("data-banner-id") }); return; }
     var card = e.target.closest(".product-card");
     if (card) { e.preventDefault(); e.stopPropagation(); send({ type: "editProduct", id: card.getAttribute("data-id") }); return; }
     var img = e.target.closest("[data-edit-img]");
@@ -116,7 +128,7 @@
     if (ed) { e.preventDefault(); e.stopPropagation(); send({ type: "editContent", key: ed.getAttribute("data-edit"), value: ed.textContent.trim() }); }
   }, true);
 
-  // ── Репитеры: клонирование из <template> ──
+  // ── Репитеры ──
   function replaceTokens(node, sid) {
     var all = [node].concat([].slice.call(node.querySelectorAll ? node.querySelectorAll("*") : []));
     all.forEach(function (el) {
@@ -134,7 +146,8 @@
     var sid = makeSid();
     var node = tpl.content.firstElementChild.cloneNode(true);
     replaceTokens(node, sid); node.setAttribute("data-extra", "1");
-    container.appendChild(node);
+    var tile = addTileOf(container);
+    if (tile) container.insertBefore(node, tile); else container.appendChild(node);
     markDraggable(); initHideOn(node);
     draft("extra." + group, JSON.stringify(extrasOf(container)));
     draft("order." + group, JSON.stringify(sidsOf(container)));
@@ -151,17 +164,16 @@
   function initAdders() {
     [].forEach.call(document.querySelectorAll("[data-sortable]"), function (container) {
       var group = container.getAttribute("data-sortable");
-      if (!templateFor(group)) return;
-      if (container.parentNode.querySelector('.staw-add[data-add="' + group + '"]')) return;
+      if (!templateFor(group) || addTileOf(container)) return;
       var btn = document.createElement("button");
       btn.type = "button"; btn.className = "staw-ui staw-add"; btn.setAttribute("data-add", group);
       btn.textContent = "➕ Добавить блок";
-      container.parentNode.insertBefore(btn, container.nextSibling);
+      container.appendChild(btn);                 // плитка последней в сетке
       btn.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); addBlock(group, container); });
     });
   }
 
-  // ── Выравнивание группы ──
+  // ── Выравнивание ──
   var ALIGN = { left: "flex-start", center: "center", right: "flex-end" };
   function applyAlignLocal(el, val) {
     if (!el) return;
@@ -175,17 +187,14 @@
       var bar = document.createElement("div"); bar.className = "staw-ui staw-align-bar"; bar.setAttribute("data-align-for", key);
       [["left", "⇤"], ["center", "⇔"], ["right", "⇥"]].forEach(function (pair) {
         var b = document.createElement("button"); b.type = "button"; b.className = "staw-ui staw-align-btn"; b.textContent = pair[1];
-        b.addEventListener("click", function (e) {
-          e.preventDefault(); e.stopPropagation();
-          applyAlignLocal(container, pair[0]); draft("align." + key, pair[0]);
-        });
+        b.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); applyAlignLocal(container, pair[0]); draft("align." + key, pair[0]); });
         bar.appendChild(b);
       });
       container.parentNode.insertBefore(bar, container);
     });
   }
 
-  // ── Анимация блока ──
+  // ── Анимация ──
   function currentAnim(el) { var m = /\bstaw-anim-([\w-]+)/.exec(el.className); return m ? m[1] : ""; }
   function applyAnimLocal(key, val) {
     document.querySelectorAll('[data-hideable="' + key + '"]').forEach(function (el) {
@@ -194,7 +203,7 @@
     });
   }
 
-  // ── Кнопки блока: Скрыть/Вернуть (или Удалить для добавленного) + Анимация ──
+  // ── Панель блока (по наведению): Скрыть/Вернуть/Удалить + Анимация ──
   var hideBtns = {};
   function updateHideBtn(key) {
     var rec = hideBtns[key]; if (!rec) return;
@@ -202,14 +211,12 @@
     else rec.btn.textContent = rec.el.classList.contains("staw-cms-hidden") ? "Вернуть" : "Скрыть ✕";
   }
   function initHideOn(el) {
-    if (VOID_TAGS[el.tagName]) return; // в <img> кнопку не вложить
+    if (VOID_TAGS[el.tagName]) return;
     var key = el.getAttribute("data-hideable");
     if (!key || hideBtns[key]) return;
+    var tools = document.createElement("div"); tools.className = "staw-ui staw-tools";
     var del = document.createElement("button");
     del.type = "button"; del.className = "staw-ui staw-del"; del.draggable = false;
-    el.appendChild(del);
-    hideBtns[key] = { btn: del, el: el };
-    updateHideBtn(key);
     del.addEventListener("click", function (e) {
       e.preventDefault(); e.stopPropagation();
       if (el.hasAttribute("data-extra")) { delete hideBtns[key]; removeExtra(el); return; }
@@ -218,11 +225,11 @@
     });
     var anim = document.createElement("button");
     anim.type = "button"; anim.className = "staw-ui staw-anim-btn"; anim.draggable = false; anim.textContent = "✨";
-    el.appendChild(anim);
-    anim.addEventListener("click", function (e) {
-      e.preventDefault(); e.stopPropagation();
-      send({ type: "editAnim", key: key, value: currentAnim(el) });
-    });
+    anim.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); send({ type: "editAnim", key: key, value: currentAnim(el) }); });
+    tools.appendChild(del); tools.appendChild(anim);
+    el.appendChild(tools);
+    hideBtns[key] = { btn: del, el: el };
+    updateHideBtn(key);
   }
   function initHide() { [].forEach.call(document.querySelectorAll("[data-hideable]"), initHideOn); }
 
@@ -233,6 +240,7 @@
     kids.forEach(function (ch) { var s = ch.getAttribute && ch.getAttribute("data-sid"); if (s) byId[s] = ch; });
     order.forEach(function (sid) { if (byId[sid]) { container.appendChild(byId[sid]); delete byId[sid]; } });
     kids.forEach(function (ch) { var s = ch.getAttribute && ch.getAttribute("data-sid"); if (s && byId[s]) container.appendChild(ch); });
+    var tile = addTileOf(container); if (tile) container.appendChild(tile); // «Добавить» снова в конец
   }
   function materialize(group, val) {
     if (!safeId(group)) return;
@@ -244,7 +252,9 @@
       if (!safeId(sid) || container.querySelector('[data-sid="' + sid + '"]')) return;
       var node = tpl.content.firstElementChild.cloneNode(true);
       replaceTokens(node, sid); node.setAttribute("data-extra", "1");
-      container.appendChild(node); markDraggable(); initHideOn(node);
+      var tile = addTileOf(container);
+      if (tile) container.insertBefore(node, tile); else container.appendChild(node);
+      markDraggable(); initHideOn(node);
     });
   }
   function applyContent(key, value) {
@@ -263,8 +273,7 @@
     if (key.indexOf("align.") === 0) { var ak = key.slice(6); if (safeId(ak)) applyAlignLocal(document.querySelector('[data-align="' + ak + '"]'), value); return; }
     if (key.indexOf("anim.") === 0) { var nk = key.slice(5); if (safeId(nk)) applyAnimLocal(nk, value); return; }
     if (!safeId(key)) return;
-    var el = document.querySelector('[data-edit="' + key + '"]');
-    if (el && typeof value === "string") el.textContent = value;
+    if (typeof value === "string") document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
   }
 
   function cardById(id) {
@@ -302,6 +311,9 @@
   markDraggable(); initHide(); initAdders(); initAlign();
   var grid = document.querySelector("[data-product-grid]");
   if (grid && window.MutationObserver) new MutationObserver(markDraggable).observe(grid, { childList: true });
+  // Промо-стрип рендерится promo.js асинхронно — перематить баннеры после наполнения.
+  var track = document.querySelector("[data-promo-track]");
+  if (track && window.MutationObserver) new MutationObserver(markDraggable).observe(track, { childList: true });
 
   var readySent = false;
   function fireReady() { if (readySent) return; readySent = true; send({ type: "ready", platform: PLATFORM }); }
