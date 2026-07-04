@@ -25,7 +25,6 @@
       <button type="button" data-platform="app" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Приложение</button>
     </div>
     <button type="button" id="merch-banners-btn" style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">🖼 Баннеры</button>
-    <button type="button" id="merch-refresh" style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">Обновить превью</button>
     <span id="merch-pending" style="display:none;font-size:12px;font-weight:600;color:#b45309;background:#fef3c7;padding:5px 10px;border-radius:8px">Черновик: <span id="merch-pending-n">0</span></span>
     <button type="button" id="merch-publish" disabled style="padding:8px 16px;border:0;border-radius:8px;background:#9ca3af;color:#fff;cursor:not-allowed;font-size:13px;font-weight:700">Опубликовать на сайт</button>
   </div>
@@ -493,7 +492,6 @@
     });
   });
 
-  document.getElementById("merch-refresh").addEventListener("click", reloadFrame);
   document.getElementById("merch-m-close").addEventListener("click", closeEdit);
   document.getElementById("merch-m-cancel").addEventListener("click", closeEdit);
   document.getElementById("merch-m-save").addEventListener("click", saveEdit);
