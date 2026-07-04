@@ -72,3 +72,38 @@ class RedeemTests(ApiTestCase):
         r = self.api_post("/v1/loyalty/redeem", {"amount": 30, "orderId": "o1"}).json()
         self.assertTrue(r["deduped"])
         self.assertEqual(self.balance(), 70)  # списано один раз
+
+
+class LevelBoundaryTests(TestCase):
+    """Границы уровней (бизнес-логика): basic<200, silver 200–499, gold 500–999,
+    platinum≥1000 — фиксируем ровно на порогах, чтобы не съехали."""
+
+    def test_level_for_exact_boundaries(self):
+        from loyalty.models import level_for
+
+        cases = {
+            0: "basic", 199: "basic",
+            200: "silver", 499: "silver",
+            500: "gold", 999: "gold",
+            1000: "platinum", 5000: "platinum",
+        }
+        for balance, level in cases.items():
+            self.assertEqual(level_for(balance), level, f"баланс {balance}")
+
+    def test_level_for_negative_is_basic(self):
+        from loyalty.models import level_for
+
+        self.assertEqual(level_for(-100), "basic")
+
+    def test_balance_of_sums_positive_and_negative(self):
+        from loyalty.models import balance_of
+
+        add_txn("u_bal", 100, "runnerRun")
+        add_txn("u_bal", 50, "purchase")
+        add_txn("u_bal", -30, "redeem")
+        self.assertEqual(balance_of("u_bal"), 120)
+
+    def test_balance_of_unknown_user_zero(self):
+        from loyalty.models import balance_of
+
+        self.assertEqual(balance_of("u_nobody"), 0)
