@@ -22,6 +22,21 @@
   его). Проверять вручную: `node --check` + прогон реальных файлов в **jsdom** (см. как делалось в ночь-2:
   применение порядка/скрытия/текста/фото, edit vs live, хендшейк). Не полагаться только на «выглядит верно».
 
+## Redis / Celery (D-07, фоновые задачи)
+- **Новая Python-зависимость → пересобрать образ web/worker/beat.** Код монтируется томом
+  (`./django_api:/app`), но пакеты ставятся при **build**. Добавил `celery` в `requirements.txt`, а
+  `docker compose exec web ...` падал `service "web" is not running` / `ImportError`. Решение:
+  `docker compose up -d --build` (пересобирает образ со свежими зависимостями). `pip install` внутрь
+  живого контейнера — только для быстрой разовой проверки (теряется при recreate).
+- **Тесты в dev-контейнере бьют по РЕАЛЬНОМУ брокеру.** В compose у web задан `REDIS_URL` ⇒
+  `CELERY_TASK_ALWAYS_EAGER=False` ⇒ `create_notification` в тестах реально шлёт `send_push` в очередь
+  (worker их выполняет, no-op=0 — на assert'ы не влияет). Чтобы тест был детерминированным и в dev, и в
+  CI, форсируй eager: `@override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)`.
+- **CI не поднимает Redis** (сервис только `postgres`). Это ОК: без `REDIS_URL`/`CELERY_BROKER_URL` бэкенд
+  сам уходит в EAGER (задачи inline). НЕ завязывай тесты на живой брокер/worker — только eager.
+- **`crontab` для beat импортируется в settings** (`from celery.schedules import crontab`) — значит `celery`
+  обязан быть в requirements, иначе `manage.py check` падает на импорте settings. Он там есть.
+
 ## Dev-серверы после перезагрузки ПК (частый вопрос владельца)
 - Фоновые dev-серверы **не переживают перезагрузку**: бэкенд (Docker), витрина-сайт
   `:5500`, **превью сайта `:5577`**, **превью web-сборки приложения `:5578`**. После

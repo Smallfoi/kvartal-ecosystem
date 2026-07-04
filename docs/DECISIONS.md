@@ -249,7 +249,12 @@ Store/баллов/контента, HTTPS, бэкапы, мониторинг �
 **Решение:** Docker Compose для локальной инфраструктуры (Django, PostgreSQL/PostGIS, Redis, Celery worker/beat)
 вводим ПОСЛЕ старта Django, не на первом шаге. Порядок: GitHub/монорепо → Django scaffold → Postgres/PostGIS → Docker → Redis/Celery.
 **Причина:** консистентное окружение для обоих агентов и деплоя; но не блокировать текущие шаги. (Решение Codex.)
-**Статус:** запланировано.
+**Статус:** ✅ СДЕЛАНО (2026-07-04). Docker Compose: `db` (PostGIS) + `redis` + `web` (Django) + `worker` (Celery)
++ `beat` (расписание). Celery-приложение `config/celery.py`, конфиг из settings (namespace `CELERY_*`),
+брокер/бэкенд — `REDIS_URL` (тот же, что и кэш). **Graceful degradation:** без брокера (нет `REDIS_URL`/
+`CELERY_BROKER_URL`) — режим `CELERY_TASK_ALWAYS_EAGER`: задачи выполняются синхронно inline, отдельная инфра
+не нужна (dev/CI/тесты работают как раньше). Первые задачи: `notifications.send_push` (async-пуш, не блокирует
+HTTP-ответ) и `territories.cleanup_expired_territories` (beat — ежедневная чистка протухших зон/защит в 03:30).
 
 ## D-06 — Backend мигрируем на Django + DRF, но постепенно
 **Решение:** целевой бэкенд — Django + DRF + PostgreSQL/PostGIS. Django поднимать РЯДОМ с FastAPI,
