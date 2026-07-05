@@ -116,6 +116,10 @@ class Banner(models.Model):
     image = models.ImageField(upload_to="uploads/banners/", null=True, blank=True, verbose_name="Фото")
     action = models.CharField(max_length=80, blank=True, default="", verbose_name="Действие")
     is_published = models.BooleanField(default=True, db_index=True, verbose_name="Опубликован")
+    # Подгон фото баннера: cover — заполнить (обрезка); contain — фото целиком (не режется).
+    image_fit = models.CharField(max_length=10, default="cover", verbose_name="Подгон фото")
+    # Фокус-область (background-position), напр. "50% 30%".
+    image_focal = models.CharField(max_length=16, default="50% 50%", verbose_name="Фокус фото")
     sort = models.IntegerField(default=0, verbose_name="Порядок")
     # Раздельный порядок промо по площадкам (мерчендайзинг per-channel), как у товаров.
     sort_site = models.IntegerField(default=0, verbose_name="Порядок (сайт)")
@@ -143,6 +147,8 @@ class Banner(models.Model):
             "subtitle": self.subtitle,
             "imageUrl": self.network_image_url(),
             "action": self.action,
+            "imageFit": self.image_fit or "cover",
+            "imageFocal": self.image_focal or "50% 50%",
         }
 
 

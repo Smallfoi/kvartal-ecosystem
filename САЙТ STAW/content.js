@@ -122,6 +122,24 @@
       el.classList.toggle("staw-w-wide", val === "wide");
     });
   }
+  // Фокус-область фото: object-position (какая часть фото видна). val = "x% y%".
+  function applyFocal(key, val) {
+    if (!safeId(key)) return;
+    var ok = /^\d{1,3}% \d{1,3}%$/.test(val || "");
+    document.querySelectorAll('[data-edit-img="' + key + '"]').forEach(function (el) {
+      if (el.tagName === "IMG") el.style.objectPosition = ok ? val : "";
+      else el.style.backgroundPosition = ok ? val : "";
+    });
+  }
+  // Подгон фото: "contain" — фото целиком (не обрезается); иначе — заполнение (cover из CSS).
+  function applyFit(key, val) {
+    if (!safeId(key)) return;
+    var contain = val === "contain";
+    document.querySelectorAll('[data-edit-img="' + key + '"]').forEach(function (el) {
+      if (el.tagName === "IMG") el.style.objectFit = contain ? "contain" : "";
+      else el.style.backgroundSize = contain ? "contain" : "";
+    });
+  }
 
   function apply(content) {
     if (!content) return;
@@ -139,6 +157,8 @@
         if (key.indexOf("align.") === 0) { applyAlign(key.slice(6), c.value); return; }
         if (key.indexOf("anim.") === 0) { applyAnim(key.slice(5), c.value); return; }
         if (key.indexOf("size.") === 0) { applySize(key.slice(5), c.value); return; }
+        if (key.indexOf("focal.") === 0) { applyFocal(key.slice(6), c.value); return; }
+        if (key.indexOf("fit.") === 0) { applyFit(key.slice(4), c.value); return; }
         if (key.indexOf("extra.") === 0) { return; } // уже применили выше
         if (c.value && safeId(key)) {
           document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = c.value; });

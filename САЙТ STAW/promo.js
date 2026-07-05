@@ -43,9 +43,15 @@
         var img = media(b.imageUrl);
         var title = String(b.title || "").split("\n").map(esc).join("<br>");
         var idAttr = b.id != null ? ' data-banner-id="' + esc(b.id) + '"' + (EDIT ? ' data-sid="' + esc(b.id) + '"' : "") : "";
+        // Подгон/фокус фото баннера: contain — фото целиком; focal — какая часть видна.
+        var st = "";
+        if (img) st += "--bg:url('" + img + "');";
+        if (b.imageFit === "contain") st += "--bg-size:contain;";
+        var focal = /^\d{1,3}% \d{1,3}%$/.test(b.imageFocal || "") ? b.imageFocal : "";
+        if (focal) st += "--bg-pos:" + focal + ";";
         return (
           '<article class="promo-card"' + idAttr +
-          (img ? " style=\"--bg:url('" + img + "')\"" : "") +
+          (st ? ' style="' + st + '"' : "") +
           ">" +
           '<div class="promo-card-body">' +
           (b.subtitle ? '<p class="promo-sub">' + esc(b.subtitle) + "</p>" : "") +

@@ -557,7 +557,7 @@ html.js.motion-off .hero .brand-wordmark span {
   inset: 0;
   z-index: 0;
   background:
-    var(--bg) center / cover no-repeat,
+    var(--bg) var(--bg-pos, center) / var(--bg-size, cover) no-repeat,
     linear-gradient(155deg, #272c33, #16191e);
   transition: transform 700ms var(--ease-staw);
 }

@@ -140,6 +140,19 @@ class MerchBannerTests(TestCase):
         self.assertEqual(b.title, "B")
         self.assertFalse(b.is_published)
 
+    def test_banner_fit_focal_defaults_and_update(self):
+        r = self.client.post("/admin/merch/banner-create", {"title": "A"}).json()["banner"]
+        self.assertEqual(r["imageFit"], "cover")
+        self.assertEqual(r["imageFocal"], "50% 50%")
+        bid = r["id"]
+        upd = self.client.post("/admin/merch/banner/%d" % bid,
+                               {"imageFit": "contain", "imageFocal": "50% 0%"}).json()["banner"]
+        self.assertEqual(upd["imageFit"], "contain")
+        self.assertEqual(upd["imageFocal"], "50% 0%")
+        # публичный /v1/banners тоже отдаёт fit/focal
+        from catalog.models import Banner
+        self.assertEqual(Banner.objects.get(id=bid).to_json()["imageFit"], "contain")
+
     def test_update_image(self):
         import tempfile
 
