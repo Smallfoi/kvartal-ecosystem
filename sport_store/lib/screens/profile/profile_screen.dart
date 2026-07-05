@@ -14,6 +14,7 @@ import '../../providers/tab_notifier.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/remote_text.dart';
 import '../auth/auth_screen.dart';
 import '../loyalty/loyalty_screen.dart';
 import 'order_detail_screen.dart';
@@ -155,7 +156,8 @@ class _GuestBody extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                Text(
+                RemoteText(
+                  'app.profile.guest.title',
                   'ВОЙДИТЕ В\nАККАУНТ',
                   style: GoogleFonts.oswald(
                     fontSize: 36,
@@ -169,7 +171,8 @@ class _GuestBody extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                const Text(
+                const RemoteText(
+                  'app.profile.guest.subtitle',
                   'Отслеживайте заказы, сохраняйте\nизбранное и получайте персональные предложения',
                   style: TextStyle(
                     fontSize: 13,
@@ -187,7 +190,8 @@ class _GuestBody extends StatelessWidget {
                     height: 50,
                     color: Colors.white,
                     alignment: Alignment.center,
-                    child: Text(
+                    child: RemoteText(
+                      'app.profile.guest.login',
                       'ВОЙТИ',
                       style: GoogleFonts.oswald(
                         fontSize: 15,
@@ -211,7 +215,8 @@ class _GuestBody extends StatelessWidget {
                       border: Border.all(color: Colors.white38),
                     ),
                     alignment: Alignment.center,
-                    child: Text(
+                    child: RemoteText(
+                      'app.profile.guest.register',
                       'СОЗДАТЬ АККАУНТ',
                       style: GoogleFonts.oswald(
                         fontSize: 15,
@@ -233,6 +238,7 @@ class _GuestBody extends StatelessWidget {
             child: Column(
               children: [
                 _Benefit(
+                  keyBase: 'app.profile.benefit1',
                   icon: Icons.local_shipping_outlined,
                   title: 'Отслеживание заказов',
                   subtitle: 'Следите за статусом доставки в реальном времени',
@@ -240,6 +246,7 @@ class _GuestBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 _Benefit(
+                  keyBase: 'app.profile.benefit2',
                   icon: Icons.favorite_border,
                   title: 'Список избранного',
                   subtitle: 'Сохраняйте товары и покупайте позже',
@@ -247,6 +254,7 @@ class _GuestBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 _Benefit(
+                  keyBase: 'app.profile.benefit3',
                   icon: Icons.percent,
                   title: 'Скидка 10% на первый заказ',
                   subtitle: 'Только для зарегистрированных покупателей',
@@ -254,6 +262,7 @@ class _GuestBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 _Benefit(
+                  keyBase: 'app.profile.benefit4',
                   icon: Icons.notifications_none,
                   title: 'Уведомления о скидках',
                   subtitle: 'Узнавайте первыми о новых акциях',
@@ -269,12 +278,14 @@ class _GuestBody extends StatelessWidget {
 }
 
 class _Benefit extends StatelessWidget {
+  final String keyBase;
   final IconData icon;
   final String title;
   final String subtitle;
   final int delay;
 
   const _Benefit({
+    required this.keyBase,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -296,7 +307,8 @@ class _Benefit extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              RemoteText(
+                '$keyBase.title',
                 title,
                 style: const TextStyle(
                   fontSize: 14,
@@ -305,7 +317,8 @@ class _Benefit extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
+              RemoteText(
+                '$keyBase.subtitle',
                 subtitle,
                 style: const TextStyle(
                   fontSize: 12,
