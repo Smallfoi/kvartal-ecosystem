@@ -17,3 +17,13 @@ const bool consoleEditMode = String.fromEnvironment('CONSOLE_EDIT') == '1';
 
 /// Отправить новый порядок товаров (площадка app) родителю-конструктору.
 void postReorder(List<String> productIds) => impl.postReorder(productIds);
+
+/// Клик по редактируемому тексту приложения → правка в конструкторе (как editContent сайта).
+void postEditContent(String key, String value) => impl.postEditContent(key, value);
+
+/// Сигнал родителю-конструктору: приложение готово принимать черновик (setContent).
+void postReady() => impl.postReady();
+
+/// Подписка на черновые правки текста из конструктора (setContent {key,value}).
+void onConsoleSetContent(void Function(String key, String value) cb) =>
+    impl.onConsoleSetContent(cb);

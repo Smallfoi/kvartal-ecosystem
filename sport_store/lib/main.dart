@@ -16,6 +16,7 @@ import 'providers/catalog_provider.dart';
 import 'providers/loyalty_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/order_provider.dart';
+import 'providers/remote_content_provider.dart';
 import 'providers/tab_notifier.dart';
 import 'providers/wishlist_provider.dart';
 
@@ -76,6 +77,9 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (_) => CartProvider(prefs)),
         ChangeNotifierProvider(create: (_) => WishlistProvider(prefs)),
+        // Редактируемые тексты приложения (мини-CMS, ключи app.*): фолбэк — текущий
+        // текст; правятся в «Конструкторе», подтягиваются в проде.
+        ChangeNotifierProvider(create: (_) => RemoteContentProvider(api)),
         ChangeNotifierProxyProvider<AuthProvider, NotificationsProvider>(
           create: (_) => NotificationsProvider(prefs,
               api: api, serverBacked: ApiConfig.useApiNotifications && api != null),
