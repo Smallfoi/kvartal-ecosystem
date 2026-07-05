@@ -613,17 +613,29 @@ html.js.motion-off .hero .brand-wordmark span {
 
 .brand-motion-word {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: max-content;      /* ширина по контенту (две группы) — чтобы -50% = ровно одна группа */
   display: flex;
   align-items: center;
-  gap: 8vw;
   white-space: nowrap;
   color: rgba(255, 255, 255, 0.055);
   font-family: var(--font-display);
   font-size: clamp(120px, 24vw, 360px);
   font-weight: 800;
   line-height: 1;
-  animation: brandRail 22s linear infinite;
+  animation: brandRail 120s linear infinite; /* спокойный темп ≈ как в оригинале, но бесшовно */
+  will-change: transform;
+}
+/* Одна группа STAW; padding-right даёт равный интервал у стыка и в конце — для бесшовной петли. */
+.brand-motion-set {
+  display: flex;
+  align-items: center;
+  gap: 8vw;
+  padding-right: 8vw;
+  flex: none;
+  white-space: nowrap;
 }
 
 .brand-motion-copy {
@@ -2691,7 +2703,8 @@ html.js.motion-off .hero .brand-wordmark span {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-42%);
+    /* -50% = ровно одна из двух одинаковых групп → бесшовная петля без скачка */
+    transform: translateX(-50%);
   }
 }
 

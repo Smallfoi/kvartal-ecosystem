@@ -138,9 +138,18 @@
 
       <section class="brand-motion scene" aria-label="Бренд STAW" data-edit-bg="motion">
         <div class="brand-motion-word" aria-hidden="true">
-          <span data-edit="brand.word">STAW</span>
-          <span data-edit="brand.word">STAW</span>
-          <span data-edit="brand.word">STAW</span>
+          <!-- Две ОДИНАКОВЫЕ группы для бесшовной бегущей строки: сдвиг ровно на -50%
+               ставит вторую группу точно на место первой — стыка/скачка не видно. -->
+          <div class="brand-motion-set">
+            <span data-edit="brand.word">STAW</span>
+            <span data-edit="brand.word">STAW</span>
+            <span data-edit="brand.word">STAW</span>
+          </div>
+          <div class="brand-motion-set">
+            <span data-edit="brand.word">STAW</span>
+            <span data-edit="brand.word">STAW</span>
+            <span data-edit="brand.word">STAW</span>
+          </div>
         </div>
         <div class="brand-motion-copy reveal">
           <p class="eyebrow" data-edit="brand.eyebrow">Brand signal</p>
