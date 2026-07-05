@@ -35,6 +35,10 @@
     "html.staw-edit .staw-tools button{border:0;border-radius:6px;padding:4px 8px;color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}" +
     "html.staw-edit .staw-del{background:rgba(17,24,39,.92)}" +
     "html.staw-edit .staw-anim-btn{background:rgba(124,58,237,.95)}" +
+    "html.staw-edit .staw-bg-btn{position:absolute;top:6px;left:6px;z-index:36;border:0;border-radius:6px;padding:4px 9px;" +
+      "color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;background:rgba(16,122,87,.95);" +
+      "box-shadow:0 1px 5px rgba(0,0,0,.4);opacity:0;transition:opacity .12s}" +
+    "html.staw-edit [data-edit-bg]:hover>.staw-bg-btn,html.staw-edit .staw-bg-btn:hover{opacity:1}" +
     "html.staw-edit .staw-size-btn{background:rgba(37,99,235,.95)}" +
     // «Добавить блок» — плитка ВНУТРИ сетки (не ломает раскладку секции).
     "html.staw-edit .staw-add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:64px;padding:14px;" +
@@ -230,6 +234,56 @@
     });
   }
 
+  // ── Фон блока (фото/видео/градиент) — применение черновика в превью + кнопка «Фон» ──
+  function bgEl(key) { return safeId(key) ? document.querySelector('[data-edit-bg="' + key + '"]') : null; }
+  function refreshBg(el) {
+    if (!el) return;
+    var off = el._bgOff === "1", vid = el._bgVid || "", img = el._bgImg || "";
+    var focal = /^\d{1,3}% \d{1,3}%$/.test(el._bgFocal || "") ? el._bgFocal : "50% 50%";
+    var fit = el._bgFit === "contain" ? "contain" : "cover";
+    var layer = el.querySelector(":scope > .staw-bg-layer");
+    if (!off && vid) {
+      el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
+      if (!layer) {
+        layer = document.createElement("div"); layer.className = "staw-bg-layer";
+        var v = document.createElement("video");
+        v.autoplay = true; v.loop = true; v.muted = true; v.defaultMuted = true;
+        v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("autoplay", ""); v.setAttribute("loop", "");
+        layer.appendChild(v); el.insertBefore(layer, el.firstChild);
+      }
+      var vv = layer.querySelector("video");
+      if (vv.getAttribute("src") !== vid) vv.setAttribute("src", vid);
+      vv.style.objectFit = fit; vv.style.objectPosition = focal; el.classList.add("staw-bg-on");
+    } else if (!off && img) {
+      if (layer) layer.remove(); el.classList.remove("staw-bg-on");
+      el.style.backgroundImage = "linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5)), url('" + img + "')";
+      el.style.backgroundSize = "cover, " + (fit === "contain" ? "contain" : "cover");
+      el.style.backgroundPosition = "center, " + focal; el.style.backgroundRepeat = "no-repeat";
+    } else {
+      if (layer) layer.remove(); el.classList.remove("staw-bg-on");
+      el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
+    }
+  }
+  function setBgField(key, field, val) { var el = bgEl(key); if (!el) return; el[field] = val; refreshBg(el); }
+  function setBgImg(key, url) { var el = bgEl(key); if (!el) return; el._bgImg = url || ""; refreshBg(el); }
+  function initBg() {
+    [].forEach.call(document.querySelectorAll("[data-edit-bg]"), function (el) {
+      var key = el.getAttribute("data-edit-bg");
+      if (!key || el.querySelector(":scope > .staw-bg-btn")) return;
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "staw-ui staw-bg-btn"; b.textContent = "🖼 Фон"; b.draggable = false;
+      b.addEventListener("click", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        send({
+          type: "editBg", key: key,
+          img: el._bgImg || "", vid: el._bgVid || "", off: el._bgOff || "",
+          focal: el._bgFocal || "", fit: el._bgFit || "cover",
+        });
+      });
+      el.insertBefore(b, el.firstChild);
+    });
+  }
+
   // ── Панель блока (по наведению): Скрыть/Вернуть/Удалить + Анимация ──
   var hideBtns = {};
   function updateHideBtn(key) {
@@ -311,6 +365,10 @@
     if (key.indexOf("size.") === 0) { var zk = key.slice(5); if (safeId(zk)) document.querySelectorAll('[data-hideable="' + zk + '"]').forEach(function (el) { el.classList.toggle("staw-w-wide", value === "wide"); }); return; }
     if (key.indexOf("focal.") === 0) { var fk = key.slice(6); if (safeId(fk)) applyImgStyle(fk, "focal", value); return; }
     if (key.indexOf("fit.") === 0) { var itk = key.slice(4); if (safeId(itk)) applyImgStyle(itk, "fit", value); return; }
+    if (key.indexOf("bgfocal.") === 0) { setBgField(key.slice(8), "_bgFocal", value); return; }
+    if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", value); return; }
+    if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", value); return; }
+    if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", value); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
   }
@@ -341,13 +399,14 @@
     }
     if (d.type === "updateCard" && d.id && d.fields) { var card = cardById(d.id); if (card) applyCardFields(card, d.fields); return; }
     if (d.type === "setImage" && d.key && d.url) {
+      if (d.key.indexOf("bg.") === 0) { setBgImg(d.key.slice(3), d.url); return; }
       document.querySelectorAll('[data-edit-img="' + d.key + '"]').forEach(function (el) {
         if (el.tagName === "IMG") el.src = d.url; else el.style.backgroundImage = "url('" + d.url + "')";
       });
     }
   });
 
-  markDraggable(); initHide(); initAdders(); initAlign();
+  markDraggable(); initHide(); initAdders(); initAlign(); initBg();
   var grid = document.querySelector("[data-product-grid]");
   if (grid && window.MutationObserver) new MutationObserver(markDraggable).observe(grid, { childList: true });
   // Промо-стрип рендерится promo.js асинхронно — перематить баннеры после наполнения.

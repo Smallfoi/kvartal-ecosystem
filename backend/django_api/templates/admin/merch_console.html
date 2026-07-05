@@ -109,6 +109,34 @@
   </div>
 </div>
 
+<!-- Модалка ФОНА блока/секции: фото (с рамкой) / короткое видео (ссылка) / убрать (градиент) -->
+<div id="merch-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;max-width:480px;width:92%;max-height:92vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="font-size:16px;font-weight:700;margin:0">Фон блока</h2>
+      <button type="button" id="merch-bg-close" style="border:0;background:none;font-size:22px;cursor:pointer;color:#6b7280">×</button>
+    </div>
+    <p style="font-size:12px;color:#6b7280;margin:0 0 10px">На фон можно поставить <b>фото</b>, короткое <b>видео</b> или оставить <b>градиент</b> (по умолчанию). Так экраны можно чередовать.</p>
+    <p id="merch-bg-hint" style="font-size:12px;color:#6b7280;margin:0 0 6px">Фото: перетащите рамку — какая область фото на фоне:</p>
+    <div id="merch-bg-fp" style="position:relative;width:100%;height:180px;background:#111;border-radius:8px;overflow:hidden;margin-bottom:8px;touch-action:none;user-select:none;cursor:move">
+      <img id="merch-bg-fpimg" alt="" style="position:absolute;left:0;top:0;pointer-events:none;-webkit-user-drag:none">
+      <div id="merch-bg-fpframe" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);box-sizing:border-box;pointer-events:none"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <button type="button" id="merch-bg-photo" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:13px">Выбрать / заменить фото</button>
+      <button type="button" id="merch-bg-cover" style="padding:8px 12px;border:1px solid #111;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600;font-size:13px">Заполнить</button>
+      <button type="button" id="merch-bg-contain" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;cursor:pointer;font-weight:600;font-size:13px">Целиком</button>
+    </div>
+    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:12px">Видео на фон (ссылка .mp4/.webm) — короткое, без звука:
+      <input id="merch-bg-video" type="text" placeholder="https://…/clip.mp4" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
+    <div style="display:flex;justify-content:space-between;gap:10px">
+      <button type="button" id="merch-bg-remove" style="padding:9px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;cursor:pointer;font-weight:600">Убрать фон (градиент)</button>
+      <button type="button" id="merch-bg-done" style="padding:9px 18px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600">Готово</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="merch-bg-file" accept="image/*" style="display:none">
+
 <!-- Пикер анимации блока (клик по «✨» на блоке сайта) -->
 <div id="merch-anim" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:12px;max-width:440px;width:92%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
@@ -337,6 +365,8 @@
       openTextEdit(d.key, d.value || "");
     } else if (d.type === "editImage") {
       openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect);
+    } else if (d.type === "editBg") {
+      openBgEdit(d.key, d.img || "", d.vid || "", d.off || "", d.focal || "", d.fit || "cover");
     } else if (d.type === "editAnim") {
       openAnimPick(d.key, d.value || "none");
     } else if (d.type === "editBanner") {
@@ -489,6 +519,67 @@
       updatePending();
     };
     reader.readAsDataURL(file);
+  });
+
+  // ── Модалка ФОНА блока/секции: фото (рамка) / видео (ссылка) / убрать (градиент) ──
+  var bgModalEl = document.getElementById("merch-bg");
+  var bgFileInput = document.getElementById("merch-bg-file");
+  var bgKey = null, bgFocal = "50% 50%", bgFit = "cover", bgVid = "", bgCurImg = "";
+  var BG_ASPECT = 2.0;
+  var bgPicker = makeFocalPicker(
+    document.getElementById("merch-bg-fp"),
+    document.getElementById("merch-bg-fpimg"),
+    document.getElementById("merch-bg-fpframe")
+  );
+  function bgDraft(k, v) { pendingContent[k] = v; tellFrame({ type: "setContent", key: k, value: v }); updatePending(); }
+  function bgFitBtns() {
+    var base = "padding:8px 12px;border:1px solid;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;";
+    var on = "background:#111;color:#fff;border-color:#111", off = "background:#fff;color:#374151;border-color:#d1d5db";
+    document.getElementById("merch-bg-cover").style.cssText = base + (bgFit === "contain" ? off : on);
+    document.getElementById("merch-bg-contain").style.cssText = base + (bgFit === "contain" ? on : off);
+  }
+  function openBgEdit(key, img, vid, off, focal, fit) {
+    bgKey = key; bgVid = vid || "";
+    bgFocal = /^\d{1,3}% \d{1,3}%$/.test(focal) ? focal : "50% 50%";
+    bgFit = (fit === "contain") ? "contain" : "cover";
+    var pend = pendingImages["bg." + key];
+    bgCurImg = (pend && pend.url) || img || "";
+    document.getElementById("merch-bg-video").value = bgVid;
+    bgModalEl.style.display = "flex";
+    bgFitBtns();
+    bgPicker.set(bgCurImg, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + bgKey, pos); });
+  }
+  function bgClose() { bgModalEl.style.display = "none"; bgKey = null; }
+  function bgSetFit(fit) {
+    if (!bgKey) return;
+    bgFit = fit; bgFitBtns(); bgPicker.setEnabled(fit !== "contain");
+    bgDraft("bgfit." + bgKey, fit === "contain" ? "contain" : "");
+  }
+  function bgSetVideo() {
+    if (!bgKey) return;
+    var url = document.getElementById("merch-bg-video").value.trim();
+    if (url === bgVid) return;
+    bgVid = url; bgDraft("bgvid." + bgKey, url);
+    if (url) bgDraft("bgoff." + bgKey, "");
+  }
+  function bgRemove() {
+    if (!bgKey) return;
+    bgVid = ""; document.getElementById("merch-bg-video").value = "";
+    bgDraft("bgoff." + bgKey, "1"); bgDraft("bgvid." + bgKey, "");
+  }
+  bgFileInput.addEventListener("change", function () {
+    var f = bgFileInput.files && bgFileInput.files[0];
+    if (!f || !bgKey) return;
+    var key = bgKey, rd = new FileReader();
+    rd.onload = function () {
+      pendingImages["bg." + key] = { file: f, url: rd.result };
+      tellFrame({ type: "setImage", key: "bg." + key, url: rd.result });
+      bgVid = ""; document.getElementById("merch-bg-video").value = "";
+      bgDraft("bgoff." + key, ""); bgDraft("bgvid." + key, "");
+      bgCurImg = rd.result;
+      bgPicker.set(rd.result, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + key, pos); });
+    };
+    rd.readAsDataURL(f);
   });
 
   // ── Пикер анимации блока (в черновик) ──
@@ -653,6 +744,14 @@
   document.getElementById("merch-im-cover").addEventListener("click", function () { imSetFit("cover"); });
   document.getElementById("merch-im-contain").addEventListener("click", function () { imSetFit("contain"); });
   imEl.addEventListener("click", function (e) { if (e.target === imEl) imClose(); });
+  document.getElementById("merch-bg-close").addEventListener("click", bgClose);
+  document.getElementById("merch-bg-done").addEventListener("click", function () { bgSetVideo(); bgClose(); });
+  document.getElementById("merch-bg-photo").addEventListener("click", function () { bgFileInput.value = ""; bgFileInput.click(); });
+  document.getElementById("merch-bg-cover").addEventListener("click", function () { bgSetFit("cover"); });
+  document.getElementById("merch-bg-contain").addEventListener("click", function () { bgSetFit("contain"); });
+  document.getElementById("merch-bg-remove").addEventListener("click", bgRemove);
+  document.getElementById("merch-bg-video").addEventListener("change", bgSetVideo);
+  bgModalEl.addEventListener("click", function (e) { if (e.target === bgModalEl) bgClose(); });
   document.getElementById("merch-be-close").addEventListener("click", closeBannerEdit);
   document.getElementById("merch-be-save").addEventListener("click", saveBannerEdit);
   document.getElementById("merch-be-del").addEventListener("click", deleteBannerEdit);
