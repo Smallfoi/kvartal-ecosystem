@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
+import '../../widgets/remote_text.dart';
+
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
   const OnboardingScreen({super.key, required this.onComplete});
@@ -17,24 +19,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   static const _slides = [
     _SlideData(
+      keyBase: 'app.onb.s1',
       icon: Icons.bolt,
       title: 'ЭКИПИРОВКА\nДЛЯ ПОБЕД',
       subtitle:
           'Беговая одежда, кроссовки и аксессуары топовых брендов в одном месте',
     ),
     _SlideData(
+      keyBase: 'app.onb.s2',
       icon: Icons.local_shipping_outlined,
       title: 'БЫСТРАЯ\nДОСТАВКА',
       subtitle:
           'Курьер, СДЭК, Почта России или самовывоз — выбирайте удобный способ',
     ),
     _SlideData(
+      keyBase: 'app.onb.s3',
       icon: Icons.percent,
       title: 'ПЕРСОНАЛЬНЫЕ\nСКИДКИ',
       subtitle:
           'Регистрируйтесь и получайте скидку 10% на первый заказ и доступ к акциям',
     ),
     _SlideData(
+      keyBase: 'app.onb.s4',
       icon: Icons.favorite_border,
       title: 'ВСЁ ПОД\nРУКОЙ',
       subtitle:
@@ -78,7 +84,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   opacity: _isLast ? 0 : 1,
                   child: TextButton(
                     onPressed: _isLast ? null : widget.onComplete,
-                    child: const Text(
+                    child: const RemoteText(
+                      'app.onb.skip',
                       'Пропустить',
                       style: TextStyle(
                         color: Color(0xFF888888),
@@ -128,7 +135,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   alignment: Alignment.center,
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
-                    child: Text(
+                    child: RemoteText(
+                      _isLast ? 'app.onb.start' : 'app.onb.next',
                       _isLast ? 'НАЧАТЬ' : 'ДАЛЕЕ',
                       key: ValueKey(_isLast),
                       style: GoogleFonts.oswald(
@@ -150,10 +158,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class _SlideData {
+  final String keyBase;
   final IconData icon;
   final String title;
   final String subtitle;
   const _SlideData({
+    required this.keyBase,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -187,7 +197,8 @@ class _Slide extends StatelessWidget {
 
           const SizedBox(height: 40),
 
-          Text(
+          RemoteText(
+            '${data.keyBase}.title',
             data.title,
             style: GoogleFonts.oswald(
               fontSize: 40,
@@ -203,7 +214,8 @@ class _Slide extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          Text(
+          RemoteText(
+            '${data.keyBase}.subtitle',
             data.subtitle,
             style: const TextStyle(
               fontSize: 15,
