@@ -270,3 +270,34 @@ class AccountDeletionTests(ApiTestCase):
 
     def test_delete_requires_auth(self):
         self.assertEqual(self.client.post("/v1/account/delete").status_code, 401)
+
+
+class AccountExportTests(ApiTestCase):
+    """Выгрузка персональных данных (152-ФЗ §2 «портируемость»): всё своё — файлом."""
+
+    phone = "+79990004012"
+
+    def test_export_requires_auth(self):
+        self.assertEqual(self.client.get("/v1/account/export").status_code, 401)
+
+    def test_export_contains_personal_data(self):
+        self.api_post("/v1/orders", {"id": "o1", "total": 500, "items": []})  # заказ + баллы
+        r = self.api_get("/v1/account/export")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("attachment", r["Content-Disposition"])  # отдаётся файлом
+        d = r.json()
+        self.assertEqual(d["userId"], self.uid)
+        self.assertEqual(d["profile"]["id"], self.uid)
+        self.assertTrue(d["loyalty"]["transactions"])  # начисления за заказ попали
+        self.assertTrue(any(o.get("id") == "o1" for o in d["orders"]))
+        self.assertIn("exportedAt", d)
+        # структура покрывает удаляемые данные (зеркало delete_account)
+        for key in ("runs", "shoes", "notifications", "consents", "analyticsEvents"):
+            self.assertIn(key, d)
+
+    def test_export_isolated_per_user(self):
+        from loyalty.models import add_txn
+
+        add_txn("u_other_export", 100, "runnerRun")  # чужие баллы
+        d = self.api_get("/v1/account/export").json()
+        self.assertEqual(d["loyalty"]["transactions"], [])  # чужое не попадает

@@ -188,6 +188,7 @@ GET  /auth/me                                            → user   (incl. priva
 ```
 GET   /account/privacy                                   → { profilePublic, routePublic, realtimePublic }
 PATCH /account/privacy   { routePublic, ... }            → privacy   (по умолчанию всё закрыто)
+GET   /account/export                                    → JSON-файл со ВСЕМИ ПДн юзера (портируемость, §2)
 POST  /account/delete    { confirm: true }               → { ok, deleted{...} }  (необратимо, Bearer)
 ```
 
