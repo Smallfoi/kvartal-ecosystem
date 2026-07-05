@@ -79,6 +79,15 @@
   function markDraggable() {
     [].forEach.call(document.querySelectorAll("[data-sortable] > [data-sid]"), function (el) { el.setAttribute("draggable", "true"); });
     [].forEach.call(document.querySelectorAll("[data-product-grid] > .product-card"), function (el) { el.setAttribute("draggable", "true"); });
+    // <img> браузер делает «перетаскиваемым» по умолчанию: клик по фото с малейшим сдвигом
+    // мыши превращается в нативный drag картинки, и правка (editImage) не открывается —
+    // именно поэтому фото Бег/Тренировка/Город «не менялись», хотя кнопки/драг карточки работали.
+    // Гасим нативный drag на редактируемых фото, которые НЕ являются сами сорт-элементом
+    // (референс-картинка = сам <img data-sid> — её оставляем перетаскиваемой для реордера).
+    // Перетащить карточку за фото по-прежнему можно: тянется родитель article[data-sid].
+    [].forEach.call(document.querySelectorAll("[data-edit-img]"), function (el) {
+      if (el.tagName === "IMG" && !el.hasAttribute("data-sid")) el.setAttribute("draggable", "false");
+    });
   }
   document.addEventListener("dragstart", function (e) {
     if (e.target.closest && e.target.closest(".staw-ui, .staw-tools")) return;
