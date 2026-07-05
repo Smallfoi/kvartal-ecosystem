@@ -9,6 +9,7 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/remote_image.dart';
 import '../../widgets/remote_text.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -465,7 +466,12 @@ class _CategoryCardState extends State<_CategoryCard> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              ProductImage(path: widget.imageUrl),
+              RemoteImage(
+                '${widget.contentKey}.img',
+                fallbackAsset: widget.imageUrl,
+                width: 118,
+                height: 190,
+              ),
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
