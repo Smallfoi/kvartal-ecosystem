@@ -7,6 +7,7 @@ import '../../providers/catalog_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../util/console_bridge.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/remote_text.dart';
 
 // Сетка каталога (2 колонки) — общая для обычного и режима правки конструктора.
 const _catalogGrid = SliverGridDelegateWithFixedCrossAxisCount(
@@ -135,7 +136,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final items = _editOrder!;
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(title: const Text('КАТАЛОГ · правка')),
+      appBar: AppBar(
+          title: const RemoteText('app.catalog.title.edit', 'КАТАЛОГ · правка')),
       body: Column(
         children: [
           Container(
@@ -184,7 +186,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: const Text('КАТАЛОГ'),
+        title: const RemoteText('app.catalog.title', 'КАТАЛОГ'),
         actions: [
           _FilterButton(
             activeCount: _filters.activeCount,
@@ -268,7 +270,8 @@ class _ActiveFiltersBar extends StatelessWidget {
           const Spacer(),
           GestureDetector(
             onTap: onClear,
-            child: const Text(
+            child: const RemoteText(
+              'app.catalog.clear',
               'Сбросить',
               style: TextStyle(
                 fontSize: 13,
@@ -313,12 +316,14 @@ class _EmptyResult extends StatelessWidget {
         children: [
           const Icon(Icons.search_off, size: 56, color: AppColors.grey200),
           const SizedBox(height: 12),
-          const Text(
+          const RemoteText(
+            'app.catalog.empty.title',
             'Ничего не найдено',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          const Text(
+          const RemoteText(
+            'app.catalog.empty.subtitle',
             'Попробуйте изменить фильтры',
             style: TextStyle(fontSize: 13, color: AppColors.grey600),
           ),
@@ -329,7 +334,8 @@ class _EmptyResult extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               color: AppColors.black,
-              child: Text(
+              child: RemoteText(
+                'app.catalog.empty.reset',
                 'СБРОСИТЬ ФИЛЬТРЫ',
                 style: GoogleFonts.oswald(
                   fontSize: 13,
@@ -483,7 +489,8 @@ class _FilterSheetState extends State<_FilterSheet> {
               ),
               child: Row(
                 children: [
-                  Text(
+                  RemoteText(
+                    'app.catalog.filters',
                     'ФИЛЬТРЫ',
                     style: GoogleFonts.oswald(
                       fontSize: 18,
@@ -495,7 +502,8 @@ class _FilterSheetState extends State<_FilterSheet> {
                   const Spacer(),
                   TextButton(
                     onPressed: _reset,
-                    child: const Text(
+                    child: const RemoteText(
+                      'app.catalog.reset',
                       'Сбросить',
                       style: TextStyle(
                         color: AppColors.grey600,
@@ -520,7 +528,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                 children: [
                   // Price
-                  _SectionTitle('Цена, ₽'),
+                  _SectionTitle('app.catalog.filterPrice', 'Цена, ₽'),
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -551,7 +559,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                   const SizedBox(height: 16),
 
                   // Brand
-                  _SectionTitle('Бренд'),
+                  _SectionTitle('app.catalog.filterBrand', 'Бренд'),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
@@ -575,7 +583,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                   const SizedBox(height: 24),
 
                   // Size
-                  _SectionTitle('Размер'),
+                  _SectionTitle('app.catalog.filterSize', 'Размер'),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
@@ -600,14 +608,16 @@ class _FilterSheetState extends State<_FilterSheet> {
                   const SizedBox(height: 24),
 
                   // Toggles
-                  _SectionTitle('Дополнительно'),
+                  _SectionTitle('app.catalog.filterExtra', 'Дополнительно'),
                   const SizedBox(height: 8),
                   _ToggleRow(
+                    contentKey: 'app.catalog.onlySale',
                     label: 'Только со скидкой',
                     value: _onlySale,
                     onChanged: (v) => setState(() => _onlySale = v),
                   ),
                   _ToggleRow(
+                    contentKey: 'app.catalog.onlyNew',
                     label: 'Только новинки',
                     value: _onlyNew,
                     onChanged: (v) => setState(() => _onlyNew = v),
@@ -635,7 +645,8 @@ class _FilterSheetState extends State<_FilterSheet> {
                   height: 52,
                   color: AppColors.black,
                   alignment: Alignment.center,
-                  child: Text(
+                  child: RemoteText(
+                    'app.catalog.showProducts',
                     'ПОКАЗАТЬ ТОВАРЫ',
                     style: GoogleFonts.oswald(
                       fontSize: 15,
@@ -655,13 +666,16 @@ class _FilterSheetState extends State<_FilterSheet> {
 }
 
 class _SectionTitle extends StatelessWidget {
+  final String contentKey;
   final String text;
-  const _SectionTitle(this.text);
+  const _SectionTitle(this.contentKey, this.text);
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
+    return RemoteText(
+      contentKey,
+      text,
+      upper: true,
       style: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
@@ -739,11 +753,13 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _ToggleRow extends StatelessWidget {
+  final String contentKey;
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   const _ToggleRow({
+    required this.contentKey,
     required this.label,
     required this.value,
     required this.onChanged,
@@ -758,7 +774,8 @@ class _ToggleRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            Text(
+            RemoteText(
+              contentKey,
               label,
               style: const TextStyle(fontSize: 14, color: AppColors.black),
             ),
@@ -898,7 +915,8 @@ class _SortSheet extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text(
+              child: RemoteText(
+                'app.catalog.sort',
                 'СОРТИРОВКА',
                 style: TextStyle(
                   fontSize: 12,

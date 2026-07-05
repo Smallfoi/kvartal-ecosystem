@@ -6,7 +6,7 @@ import '../../models/product.dart';
 import '../../providers/catalog_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_card.dart';
-import '../../widgets/product_image.dart';
+import '../../widgets/remote_image.dart';
 
 // ─── Session-level recent searches ───────────────────────────────────────────
 final _recentSearches = <String>[];
@@ -489,7 +489,7 @@ class _CategoryCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ProductImage(path: imageUrl),
+          RemoteImage('app.search.cat.${category.id}.img', fallbackAsset: imageUrl),
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
