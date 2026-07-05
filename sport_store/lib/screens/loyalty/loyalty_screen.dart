@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/loyalty.dart';
 import '../../providers/loyalty_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 
 class LoyaltyScreen extends StatelessWidget {
   const LoyaltyScreen({super.key});
@@ -23,7 +24,8 @@ class LoyaltyScreen extends StatelessWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                  child: Text(
+                  child: RemoteText(
+                    'app.loyalty.history',
                     'ИСТОРИЯ',
                     style: GoogleFonts.oswald(
                       fontSize: 14,
@@ -87,7 +89,8 @@ class _Header extends StatelessWidget {
                         color: Colors.white, size: 22),
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  RemoteText(
+                    'app.loyalty.title',
                     'МОИ БАЛЛЫ',
                     style: GoogleFonts.oswald(
                       fontSize: 18,
@@ -125,7 +128,8 @@ class _Header extends StatelessWidget {
                 ],
               ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.05),
               const SizedBox(height: 4),
-              const Text(
+              const RemoteText(
+                'app.loyalty.rule',
                 '1 балл = 1 ₽ скидки · до 30% от заказа',
                 style: TextStyle(fontSize: 12, color: Color(0xFF888888)),
               ),
@@ -209,9 +213,11 @@ class _EarnHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      ('Бег и территории в «Квартал»', Icons.directions_run),
-      ('Покупки: +1 балл за каждые 10 ₽', Icons.shopping_bag_outlined),
-      ('Отзыв с фото: +10 баллов', Icons.rate_review_outlined),
+      ('app.loyalty.earn1', 'Бег и территории в «Квартал»', Icons.directions_run),
+      ('app.loyalty.earn2', 'Покупки: +1 балл за каждые 10 ₽',
+          Icons.shopping_bag_outlined),
+      ('app.loyalty.earn3', 'Отзыв с фото: +10 баллов',
+          Icons.rate_review_outlined),
     ];
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -220,7 +226,7 @@ class _EarnHint extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('КАК ЗАРАБОТАТЬ БАЛЛЫ',
+          RemoteText('app.loyalty.earnTitle', 'КАК ЗАРАБОТАТЬ БАЛЛЫ',
               style: GoogleFonts.oswald(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -231,10 +237,10 @@ class _EarnHint extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   children: [
-                    Icon(it.$2, size: 16, color: AppColors.black),
+                    Icon(it.$3, size: 16, color: AppColors.black),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(it.$1,
+                      child: RemoteText(it.$1, it.$2,
                           style: const TextStyle(
                               fontSize: 13, color: AppColors.black)),
                     ),
