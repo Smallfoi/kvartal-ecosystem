@@ -170,6 +170,13 @@ STATIC_ROOT = os.environ.get("DJANGO_STATIC_ROOT", "/app/staticfiles")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", "/srv/media")
 
+# Хранилище медиа (D-31): S3/Object Storage при заданных MEDIA_S3_* (прод), иначе
+# локальный диск (dev/CI). Загрузки строят URL через default_storage.url() → работают
+# в обоих режимах. django-storages/boto3 нужны только при активном S3.
+from common.media import media_storages  # noqa: E402
+
+STORAGES = media_storages(os.environ)
+
 # URL сайта для админ-превью (iframe). Dev — локальный http.server сайта;
 # прод — реальный домен витрины (задаётся env). Сайт читает ?preview=1.
 SITE_PREVIEW_URL = os.environ.get("SITE_PREVIEW_URL", "http://localhost:5577")

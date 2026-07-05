@@ -363,7 +363,7 @@ def club_logo(request, club_id):
     saved = default_storage.save(
         f"uploads/clubs/{club_id}_{secrets.token_hex(4)}.{ext}", f
     )
-    club.logo = f"/media/{saved}"
+    club.logo = default_storage.url(saved)  # локально /media/…, в проде S3/CDN (D-31)
     club.save(update_fields=["logo"])
     return Response(_detail(club, uid))
 
@@ -397,7 +397,7 @@ def club_cover(request, club_id):
     saved = default_storage.save(
         f"uploads/clubs/cover_{club_id}_{secrets.token_hex(4)}.{ext}", f
     )
-    club.cover = f"/media/{saved}"
+    club.cover = default_storage.url(saved)  # локально /media/…, в проде S3/CDN (D-31)
     club.save(update_fields=["cover"])
     return Response(_detail(club, uid))
 

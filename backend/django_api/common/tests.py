@@ -91,12 +91,67 @@ class LaunchReadinessTests(SimpleTestCase):
         self.assertTrue(self._by_key(infra(), "redis")["ready"])
 
     @mock.patch.dict(os.environ, {}, clear=True)
+    def test_infra_media_local_not_ready(self):
+        from common.launch import infra
+
+        self.assertFalse(self._by_key(infra(), "media")["ready"])  # локальный диск — не прод
+
+    @mock.patch.dict(
+        os.environ,
+        {"MEDIA_S3_BUCKET": "b", "MEDIA_S3_ACCESS_KEY": "a", "MEDIA_S3_SECRET_KEY": "s"},
+        clear=True,
+    )
+    def test_infra_media_ready_with_s3(self):
+        from common.launch import infra
+
+        self.assertTrue(self._by_key(infra(), "media")["ready"])
+
+    @mock.patch.dict(os.environ, {}, clear=True)
     def test_security_dev_mode_no_blockers(self):
         from common.launch import security
 
         sec = security()
         self.assertFalse(sec["prodMode"])  # DEBUG по умолчанию dev
         self.assertEqual(sec["insecure"], [])
+
+
+class MediaStorageTests(SimpleTestCase):
+    """Выбор хранилища медиа (D-31): S3 при ключах, иначе локальный диск (dev/CI)."""
+
+    def test_local_when_no_s3_env(self):
+        from common.media import media_backend_kind, media_storages
+
+        st = media_storages({})
+        self.assertIn("FileSystemStorage", st["default"]["BACKEND"])
+        self.assertEqual(media_backend_kind({}), "local")
+
+    def test_s3_when_fully_configured(self):
+        from common.media import media_backend_kind, media_storages
+
+        env = {"MEDIA_S3_BUCKET": "b", "MEDIA_S3_ACCESS_KEY": "a", "MEDIA_S3_SECRET_KEY": "s"}
+        st = media_storages(env)
+        self.assertIn("s3", st["default"]["BACKEND"].lower())
+        self.assertEqual(st["default"]["OPTIONS"]["bucket_name"], "b")
+        self.assertFalse(st["default"]["OPTIONS"]["querystring_auth"])  # публичные URL
+        self.assertEqual(media_backend_kind(env), "s3")
+
+    def test_partial_s3_env_falls_back_local(self):
+        from common.media import media_storages
+
+        # Есть бакет, но нет ключей → безопасный откат на локальный диск, не падаем.
+        st = media_storages({"MEDIA_S3_BUCKET": "b"})
+        self.assertIn("FileSystemStorage", st["default"]["BACKEND"])
+
+    def test_custom_domain_applied(self):
+        from common.media import media_storages
+
+        env = {
+            "MEDIA_S3_BUCKET": "b", "MEDIA_S3_ACCESS_KEY": "a", "MEDIA_S3_SECRET_KEY": "s",
+            "MEDIA_S3_CUSTOM_DOMAIN": "cdn.staw.ru",
+        }
+        self.assertEqual(
+            media_storages(env)["default"]["OPTIONS"]["custom_domain"], "cdn.staw.ru"
+        )
 
 
 class LegalGateTests(TestCase):

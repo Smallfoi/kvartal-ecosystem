@@ -8,6 +8,7 @@
 """
 import os
 
+from common.media import media_backend_kind
 from common.prodcheck import insecure_prod_settings
 
 
@@ -57,6 +58,13 @@ def infra():
             "name": "Sentry (мониторинг ошибок)",
             "ready": bool(_env("SENTRY_DSN")),
             "needs": "SENTRY_DSN (self-host РФ, D-25)",
+        },
+        {
+            "key": "media",
+            "name": "Медиа-хранилище (аватары/фото/баннеры)",
+            "ready": media_backend_kind(os.environ) == "s3",
+            "needs": "MEDIA_S3_BUCKET + MEDIA_S3_ACCESS_KEY/MEDIA_S3_SECRET_KEY "
+                     "(иначе локальный диск — не для прода; D-31)",
         },
     ]
 
