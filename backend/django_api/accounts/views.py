@@ -179,7 +179,7 @@ def profile_avatar(request):
     saved = default_storage.save(
         f"uploads/avatars/{uid}_{secrets.token_hex(4)}.{ext}", f
     )
-    acc.avatar_path = f"/media/{saved}"
+    acc.avatar_path = default_storage.url(saved)  # локально /media/…, в проде S3/CDN (D-31)
     acc.save(update_fields=["avatar_path"])
     return Response(acc.to_json())
 

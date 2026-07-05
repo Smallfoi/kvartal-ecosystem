@@ -240,4 +240,4 @@ def review_photo(request):
     saved = default_storage.save(
         f"uploads/reviews/{uid}_{secrets.token_hex(6)}.{ext}", f
     )
-    return Response({"url": f"/media/{saved}"})
+    return Response({"url": default_storage.url(saved)})  # локально /media/…, в проде S3/CDN (D-31)

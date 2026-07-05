@@ -204,6 +204,7 @@ Privacy by design для «Квартала»:
 | Push | `PUSH_PROVIDER=rustore` | `RUSTORE_PUSH_KEY` (или `FCM_SERVER_KEY`) | пуш — no-op (лента в приложении работает) |
 | Мониторинг | — | `SENTRY_DSN` | Sentry выключен |
 | Кэш/очереди | — | `REDIS_URL` | LocMem-кэш + Celery EAGER (только один воркер) |
+| Медиа (S3) | — | `MEDIA_S3_BUCKET`, `MEDIA_S3_ACCESS_KEY`, `MEDIA_S3_SECRET_KEY` (+ `MEDIA_S3_CUSTOM_DOMAIN` для CDN) | локальный диск `/srv/media` (D-31) |
 
 **Что осталось владельцу (НЕ автоматизируемо):** завести аккаунты провайдеров (smsc.ru /
 ЮKassa / RuStore или Firebase / Sentry), вписать ключи в прод-`.env`, поднять облако
