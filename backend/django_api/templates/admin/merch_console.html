@@ -92,20 +92,10 @@
       <h2 style="font-size:16px;font-weight:700;margin:0">Фото</h2>
       <button type="button" id="merch-im-close" style="border:0;background:none;font-size:22px;cursor:pointer;color:#6b7280">×</button>
     </div>
-    <div style="width:100%;height:200px;background:#f3f4f6;border-radius:8px;overflow:hidden;margin-bottom:12px">
-      <img id="merch-im-img" alt="" style="width:100%;height:100%;object-fit:cover;object-position:50% 50%">
-    </div>
-    <p style="font-size:12px;color:#6b7280;margin:0 0 6px">Область показа (какая часть фото видна):</p>
-    <div id="merch-im-grid" style="display:grid;grid-template-columns:repeat(3,34px);grid-auto-rows:34px;gap:4px;margin:0 0 14px">
-      <button type="button" class="merch-im-pos" data-pos="0% 0%">↖</button>
-      <button type="button" class="merch-im-pos" data-pos="50% 0%">↑</button>
-      <button type="button" class="merch-im-pos" data-pos="100% 0%">↗</button>
-      <button type="button" class="merch-im-pos" data-pos="0% 50%">←</button>
-      <button type="button" class="merch-im-pos" data-pos="50% 50%">●</button>
-      <button type="button" class="merch-im-pos" data-pos="100% 50%">→</button>
-      <button type="button" class="merch-im-pos" data-pos="0% 100%">↙</button>
-      <button type="button" class="merch-im-pos" data-pos="50% 100%">↓</button>
-      <button type="button" class="merch-im-pos" data-pos="100% 100%">↘</button>
+    <p id="merch-im-hint" style="font-size:12px;color:#6b7280;margin:0 0 6px">Перетащите рамку — выберите, какая область фото попадёт в блок:</p>
+    <div id="merch-im-fp" style="position:relative;width:100%;height:230px;background:#111;border-radius:8px;overflow:hidden;margin-bottom:12px;touch-action:none;user-select:none;cursor:move">
+      <img id="merch-im-fpimg" alt="" style="position:absolute;left:0;top:0;pointer-events:none;-webkit-user-drag:none">
+      <div id="merch-im-fpframe" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);box-sizing:border-box;pointer-events:none"></div>
     </div>
     <p style="font-size:12px;color:#6b7280;margin:0 0 6px">Подгон (для баннеров — «Целиком», чтобы фото не обрезалось):</p>
     <div style="display:flex;gap:8px;margin-bottom:16px">
@@ -118,7 +108,6 @@
     </div>
   </div>
 </div>
-<style>.merch-im-pos{border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:15px;line-height:1;color:#374151}.merch-im-pos:hover{border-color:#0a84ff;color:#0a58ca}</style>
 
 <!-- Пикер анимации блока (клик по «✨» на блоке сайта) -->
 <div id="merch-anim" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
@@ -140,7 +129,6 @@
       <button type="button" id="merch-be-close" style="border:0;background:none;font-size:22px;cursor:pointer;color:#6b7280">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <img id="merch-be-thumb" alt="" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;background:#f3f4f6;display:none">
       <label style="font-size:12px;font-weight:600;color:#374151">Заголовок
         <input id="merch-be-title" type="text" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
       <label style="font-size:12px;font-weight:600;color:#374151">Подзаголовок
@@ -148,17 +136,10 @@
       <label style="font-size:12px;font-weight:600;color:#374151">Текст кнопки / действие
         <input id="merch-be-action" type="text" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
       <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input id="merch-be-pub" type="checkbox"> Опубликован</label>
-      <p style="font-size:12px;color:#6b7280;margin:4px 0 4px">Область показа фото:</p>
-      <div id="merch-be-grid" style="display:grid;grid-template-columns:repeat(3,30px);grid-auto-rows:30px;gap:4px;margin:0 0 8px">
-        <button type="button" class="merch-im-pos" data-pos="0% 0%">↖</button>
-        <button type="button" class="merch-im-pos" data-pos="50% 0%">↑</button>
-        <button type="button" class="merch-im-pos" data-pos="100% 0%">↗</button>
-        <button type="button" class="merch-im-pos" data-pos="0% 50%">←</button>
-        <button type="button" class="merch-im-pos" data-pos="50% 50%">●</button>
-        <button type="button" class="merch-im-pos" data-pos="100% 50%">→</button>
-        <button type="button" class="merch-im-pos" data-pos="0% 100%">↙</button>
-        <button type="button" class="merch-im-pos" data-pos="50% 100%">↓</button>
-        <button type="button" class="merch-im-pos" data-pos="100% 100%">↘</button>
+      <p style="font-size:12px;color:#6b7280;margin:4px 0 4px">Перетащите рамку — область фото для баннера:</p>
+      <div id="merch-be-fp" style="position:relative;width:100%;height:170px;background:#111;border-radius:8px;overflow:hidden;margin:0 0 8px;touch-action:none;user-select:none;cursor:move">
+        <img id="merch-be-fpimg" alt="" style="position:absolute;left:0;top:0;pointer-events:none;-webkit-user-drag:none">
+        <div id="merch-be-fpframe" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);box-sizing:border-box;pointer-events:none"></div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:6px">
         <button type="button" id="merch-be-cover" style="padding:7px 12px;border:1px solid #111;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600;font-size:13px">Заполнить</button>
@@ -268,6 +249,79 @@
   }
   function cardFields(f) { return { price: Number(f.price) || 0, inStock: !!f.inStock }; }
 
+  // ── Пикер фокус-области (как во ВКонтакте): полное фото + перетаскиваемая пунктирная
+  //    рамка = область, которая попадёт в блок. Плавно, без «джойстика». Отдаёт "x% y%". ──
+  function clamp100(v) { return Math.max(0, Math.min(100, v)); }
+  // Размер рамки (cover-кроп целевого соотношения) внутри показанного фото.
+  function frameSize(imgAspect, targetAspect, dw, dh) {
+    var fw, fh;
+    if (imgAspect >= targetAspect) { fh = dh; fw = dh * targetAspect; }
+    else { fw = dw; fh = dw / targetAspect; }
+    return { fw: Math.min(fw, dw), fh: Math.min(fh, dh) };
+  }
+  // Новый фокус при перетаскивании: старт-фокус + смещение курсора / диапазон хода рамки.
+  function focalFromDrag(fx0, fy0, dxPx, dyPx, rangeX, rangeY) {
+    return {
+      fx: rangeX > 0 ? clamp100(fx0 + dxPx / rangeX * 100) : 50,
+      fy: rangeY > 0 ? clamp100(fy0 + dyPx / rangeY * 100) : 50,
+    };
+  }
+  function makeFocalPicker(box, img, frame) {
+    var natW = 0, natH = 0, aspect = 1.6, fx = 50, fy = 50, enabled = true, onChange = null, geom = null, drag = null;
+    function computeGeom() {
+      var bw = box.clientWidth, bh = box.clientHeight;
+      if (!natW || !natH || !bw || !bh) { geom = null; return; }
+      var ia = natW / natH, dw, dh;
+      if (ia > bw / bh) { dw = bw; dh = bw / ia; } else { dh = bh; dw = bh * ia; }
+      var dx = (bw - dw) / 2, dy = (bh - dh) / 2;
+      var fs = frameSize(ia, aspect, dw, dh);
+      geom = { dx: dx, dy: dy, dw: dw, dh: dh, fw: fs.fw, fh: fs.fh };
+      img.style.width = dw + "px"; img.style.height = dh + "px"; img.style.left = dx + "px"; img.style.top = dy + "px";
+      render();
+    }
+    function render() {
+      if (!geom) return;
+      var rx = geom.dw - geom.fw, ry = geom.dh - geom.fh;
+      frame.style.width = geom.fw + "px"; frame.style.height = geom.fh + "px";
+      frame.style.left = (geom.dx + rx * fx / 100) + "px";
+      frame.style.top = (geom.dy + ry * fy / 100) + "px";
+      frame.style.display = enabled ? "block" : "none";
+    }
+    function down(e) {
+      if (!enabled || !geom) return;
+      e.preventDefault();
+      var p = (e.touches && e.touches[0]) || e;
+      drag = { x: p.clientX, y: p.clientY, fx0: fx, fy0: fy };
+    }
+    function move(e) {
+      if (!drag || !geom) return;
+      e.preventDefault();
+      var p = (e.touches && e.touches[0]) || e;
+      var f = focalFromDrag(drag.fx0, drag.fy0, p.clientX - drag.x, p.clientY - drag.y, geom.dw - geom.fw, geom.dh - geom.fh);
+      fx = f.fx; fy = f.fy; render();
+      if (onChange) onChange(Math.round(fx) + "% " + Math.round(fy) + "%");
+    }
+    function up() { drag = null; }
+    box.addEventListener("mousedown", down);
+    box.addEventListener("touchstart", down, { passive: false });
+    window.addEventListener("mousemove", move);
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("mouseup", up);
+    window.addEventListener("touchend", up);
+    img.addEventListener("load", function () { natW = img.naturalWidth; natH = img.naturalHeight; computeGeom(); });
+    return {
+      set: function (url, focal, asp, en, cb) {
+        onChange = cb; aspect = (asp && asp > 0.05) ? asp : 1.6;
+        var m = /^(\d{1,3})% (\d{1,3})%$/.exec(focal || ""); fx = m ? +m[1] : 50; fy = m ? +m[2] : 50;
+        enabled = en !== false; box.style.cursor = enabled ? "move" : "default";
+        if (img.getAttribute("src") !== url) { natW = 0; natH = 0; img.src = url || ""; }
+        if (img.complete && img.naturalWidth) { natW = img.naturalWidth; natH = img.naturalHeight; computeGeom(); } else { render(); }
+        setTimeout(computeGeom, 60); // на случай, если модалка только что показана (clientWidth появился)
+      },
+      setEnabled: function (en) { enabled = en; box.style.cursor = en ? "move" : "default"; render(); },
+    };
+  }
+
   // ── Мост: сообщения от editor.js (сайт) и от приложения (Flutter web) ──
   window.addEventListener("message", function (e) {
     var d = e.data || {};
@@ -282,7 +336,7 @@
     } else if (d.type === "editContent") {
       openTextEdit(d.key, d.value || "");
     } else if (d.type === "editImage") {
-      openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover");
+      openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect);
     } else if (d.type === "editAnim") {
       openAnimPick(d.key, d.value || "none");
     } else if (d.type === "editBanner") {
@@ -380,39 +434,44 @@
     updatePending();
   }
 
-  // ── Модалка фото блока: замена + фокус-область (object-position) + подгон (в черновик) ──
+  // ── Модалка фото блока: перетаскиваемая рамка фокус-области + подгон + замена (в черновик) ──
   var imgInput = document.getElementById("merch-img-input");
   var imEl = document.getElementById("merch-im");
-  var imPrev = document.getElementById("merch-im-img");
-  var imgKey = null, imgFocal = "", imgFit = "cover";
-
-  function imApplyPreview() {
-    imPrev.style.objectFit = imgFit === "contain" ? "contain" : "cover";
-    imPrev.style.objectPosition = /^\d{1,3}% \d{1,3}%$/.test(imgFocal) ? imgFocal : "50% 50%";
-  }
+  var imgKey = null, imgFocal = "50% 50%", imgFit = "cover", imgAspect = 1.6;
+  var imPicker = makeFocalPicker(
+    document.getElementById("merch-im-fp"),
+    document.getElementById("merch-im-fpimg"),
+    document.getElementById("merch-im-fpframe")
+  );
   function imFitBtns() {
     var base = "padding:8px 12px;border:1px solid;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;";
     var on = "background:#111;color:#fff;border-color:#111", off = "background:#fff;color:#374151;border-color:#d1d5db";
     document.getElementById("merch-im-cover").style.cssText = base + (imgFit === "contain" ? off : on);
     document.getElementById("merch-im-contain").style.cssText = base + (imgFit === "contain" ? on : off);
+    document.getElementById("merch-im-hint").textContent = imgFit === "contain"
+      ? "Фото показывается целиком — область выбирать не нужно."
+      : "Перетащите рамку — выберите, какая область фото попадёт в блок:";
   }
-  function openImageEdit(key, url, focal, fit) {
-    imgKey = key; imgFocal = focal || ""; imgFit = (fit === "contain") ? "contain" : "cover";
-    imPrev.src = url || ""; imPrev.style.display = url ? "block" : "none";
-    imApplyPreview(); imFitBtns();
+  function openImageEdit(key, url, focal, fit, aspect) {
+    imgKey = key;
+    imgFocal = /^\d{1,3}% \d{1,3}%$/.test(focal) ? focal : "50% 50%";
+    imgFit = (fit === "contain") ? "contain" : "cover";
+    imgAspect = (aspect && aspect > 0.05) ? aspect : 1.6;
     imEl.style.display = "flex";
+    imFitBtns();
+    imPicker.set(url || "", imgFocal, imgAspect, imgFit !== "contain", imSetFocal);
   }
   function imClose() { imEl.style.display = "none"; imgKey = null; }
   function imSetFocal(pos) {
     if (!imgKey) return;
-    imgFocal = pos; imApplyPreview();
+    imgFocal = pos;
     pendingContent["focal." + imgKey] = pos;
     tellFrame({ type: "setContent", key: "focal." + imgKey, value: pos });
     updatePending();
   }
   function imSetFit(fit) {
     if (!imgKey) return;
-    imgFit = fit; imFitBtns(); imApplyPreview();
+    imgFit = fit; imFitBtns(); imPicker.setEnabled(fit !== "contain");
     var v = fit === "contain" ? "contain" : "";
     pendingContent["fit." + imgKey] = v;
     tellFrame({ type: "setContent", key: "fit." + imgKey, value: v });
@@ -426,7 +485,7 @@
     reader.onload = function () {
       pendingImages[key] = { file: file, url: reader.result };
       tellFrame({ type: "setImage", key: key, url: reader.result });
-      imPrev.src = reader.result; imPrev.style.display = "block"; imApplyPreview();
+      imPicker.set(reader.result, imgFocal, imgAspect, imgFit !== "contain", imSetFocal);
       updatePending();
     };
     reader.readAsDataURL(file);
@@ -467,12 +526,13 @@
   var beModal = document.getElementById("merch-be");
   var beFile = document.getElementById("merch-be-file");
   var beId = null, bePhoto = null, beFit = "cover", beFocal = "50% 50%";
+  var BANNER_ASPECT = 1.7;
+  var bePicker = makeFocalPicker(
+    document.getElementById("merch-be-fp"),
+    document.getElementById("merch-be-fpimg"),
+    document.getElementById("merch-be-fpframe")
+  );
   function beErr(m) { var e = document.getElementById("merch-be-err"); e.textContent = m; e.style.display = "block"; }
-  function beApplyThumb() {
-    var th = document.getElementById("merch-be-thumb");
-    th.style.objectFit = beFit === "contain" ? "contain" : "cover";
-    th.style.objectPosition = /^\d{1,3}% \d{1,3}%$/.test(beFocal) ? beFocal : "50% 50%";
-  }
   function beFitBtns() {
     var base = "padding:7px 12px;border:1px solid;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;";
     var on = "background:#111;color:#fff;border-color:#111", off = "background:#fff;color:#374151;border-color:#d1d5db";
@@ -490,11 +550,10 @@
       document.getElementById("merch-be-sub").value = b.subtitle || "";
       document.getElementById("merch-be-action").value = b.action || "";
       document.getElementById("merch-be-pub").checked = !!b.isPublished;
-      var th = document.getElementById("merch-be-thumb");
-      if (b.imageUrl) { th.src = b.imageUrl; th.style.display = "block"; } else { th.style.display = "none"; }
-      beApplyThumb(); beFitBtns();
       document.getElementById("merch-be-err").style.display = "none";
+      beFitBtns();
       beModal.style.display = "flex";
+      bePicker.set(b.imageUrl || "", beFocal, BANNER_ASPECT, beFit !== "contain", function (pos) { beFocal = pos; });
     }).catch(function (e) { alert("Ошибка: " + e.message); });
   }
   function closeBannerEdit() { beModal.style.display = "none"; beId = null; bePhoto = null; }
@@ -519,8 +578,9 @@
     var f = beFile.files && beFile.files[0];
     if (!f) return;
     bePhoto = f;
-    var th = document.getElementById("merch-be-thumb");
-    var rd = new FileReader(); rd.onload = function () { th.src = rd.result; th.style.display = "block"; }; rd.readAsDataURL(f);
+    var rd = new FileReader();
+    rd.onload = function () { bePicker.set(rd.result, beFocal, BANNER_ASPECT, beFit !== "contain", function (pos) { beFocal = pos; }); };
+    rd.readAsDataURL(f);
   });
   function addBanner() {
     var fd = new FormData(); fd.append("title", "Новый баннер");
@@ -592,19 +652,13 @@
   document.getElementById("merch-im-replace").addEventListener("click", function () { imgInput.value = ""; imgInput.click(); });
   document.getElementById("merch-im-cover").addEventListener("click", function () { imSetFit("cover"); });
   document.getElementById("merch-im-contain").addEventListener("click", function () { imSetFit("contain"); });
-  document.getElementById("merch-im-grid").addEventListener("click", function (e) {
-    var b = e.target.closest(".merch-im-pos"); if (b) imSetFocal(b.getAttribute("data-pos"));
-  });
   imEl.addEventListener("click", function (e) { if (e.target === imEl) imClose(); });
   document.getElementById("merch-be-close").addEventListener("click", closeBannerEdit);
   document.getElementById("merch-be-save").addEventListener("click", saveBannerEdit);
   document.getElementById("merch-be-del").addEventListener("click", deleteBannerEdit);
   document.getElementById("merch-be-photo").addEventListener("click", function () { beFile.value = ""; beFile.click(); });
-  document.getElementById("merch-be-cover").addEventListener("click", function () { beFit = "cover"; beFitBtns(); beApplyThumb(); });
-  document.getElementById("merch-be-contain").addEventListener("click", function () { beFit = "contain"; beFitBtns(); beApplyThumb(); });
-  document.getElementById("merch-be-grid").addEventListener("click", function (e) {
-    var b = e.target.closest(".merch-im-pos"); if (b) { beFocal = b.getAttribute("data-pos"); beApplyThumb(); }
-  });
+  document.getElementById("merch-be-cover").addEventListener("click", function () { beFit = "cover"; beFitBtns(); bePicker.setEnabled(true); });
+  document.getElementById("merch-be-contain").addEventListener("click", function () { beFit = "contain"; beFitBtns(); bePicker.setEnabled(false); });
   beModal.addEventListener("click", function (e) { if (e.target === beModal) closeBannerEdit(); });
   txtModal.addEventListener("click", function (e) { if (e.target === txtModal) closeText(); });
   modal.addEventListener("click", function (e) { if (e.target === modal) closeEdit(); });
