@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 import 'forgot_password_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -192,7 +193,8 @@ class _BlackHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              RemoteText(
+                'app.auth.brand',
                 'SPORT STORE',
                 style: GoogleFonts.oswald(
                   fontSize: 30,
@@ -202,7 +204,10 @@ class _BlackHeader extends StatelessWidget {
                 ),
               ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
               const SizedBox(height: 4),
-              Text(
+              RemoteText(
+                isLogin
+                    ? 'app.auth.subtitleLogin'
+                    : 'app.auth.subtitleRegister',
                 isLogin
                     ? 'Войдите, чтобы управлять заказами'
                     : 'Создайте аккаунт и получите скидку 10%',
@@ -232,20 +237,26 @@ class _TabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _Tab(label: 'ВХОД', isActive: isLogin, onTap: () => onToggle(true)),
+        _Tab(labelKey: 'app.auth.tabLogin', label: 'ВХОД', isActive: isLogin, onTap: () => onToggle(true)),
         const SizedBox(width: 28),
-        _Tab(label: 'РЕГИСТРАЦИЯ', isActive: !isLogin, onTap: () => onToggle(false)),
+        _Tab(labelKey: 'app.auth.tabRegister', label: 'РЕГИСТРАЦИЯ', isActive: !isLogin, onTap: () => onToggle(false)),
       ],
     );
   }
 }
 
 class _Tab extends StatelessWidget {
+  final String labelKey;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
 
-  const _Tab({required this.label, required this.isActive, required this.onTap});
+  const _Tab({
+    required this.labelKey,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +265,8 @@ class _Tab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          RemoteText(
+            labelKey,
             label,
             style: GoogleFonts.oswald(
               fontSize: 15,
@@ -345,7 +357,8 @@ class _LoginFormState extends State<_LoginForm> {
           alignment: Alignment.centerRight,
           child: GestureDetector(
             onTap: widget.onForgotPassword,
-            child: const Text(
+            child: const RemoteText(
+              'app.auth.forgot',
               'Забыли пароль?',
               style: TextStyle(
                 fontSize: 13,
@@ -364,6 +377,7 @@ class _LoginFormState extends State<_LoginForm> {
         const SizedBox(height: 24),
 
         _SubmitButton(
+          labelKey: 'app.auth.loginBtn',
           label: 'ВОЙТИ',
           onTap: widget.onSubmit,
         ).animate().fadeIn(duration: 350.ms, delay: 220.ms).slideY(begin: 0.1),
@@ -371,7 +385,8 @@ class _LoginFormState extends State<_LoginForm> {
         const SizedBox(height: 22),
         _Divider(),
         const SizedBox(height: 20),
-        Text(
+        RemoteText(
+          'app.auth.phoneHint',
           '\u0412\u0445\u043e\u0434 \u043f\u043e \u0435\u0434\u0438\u043d\u043e\u043c\u0443 \u043d\u043e\u043c\u0435\u0440\u0443',
           style: GoogleFonts.oswald(
             fontSize: 15,
@@ -398,6 +413,7 @@ class _LoginFormState extends State<_LoginForm> {
         ),
         const SizedBox(height: 14),
         _SubmitButton(
+          labelKey: 'app.auth.phoneBtn',
           label: '\u0412\u041e\u0419\u0422\u0418 \u041f\u041e \u0422\u0415\u041b\u0415\u0424\u041e\u041d\u0423',
           onTap: widget.onPhoneSubmit,
         ),
@@ -504,13 +520,15 @@ class _RegisterFormState extends State<_RegisterForm> {
         const SizedBox(height: 24),
 
         _SubmitButton(
+          labelKey: 'app.auth.registerBtn',
           label: 'СОЗДАТЬ АККАУНТ',
           onTap: widget.onSubmit,
         ).animate().fadeIn(duration: 350.ms, delay: 280.ms).slideY(begin: 0.1),
 
         const SizedBox(height: 14),
 
-        const Text(
+        const RemoteText(
+          'app.auth.consent',
           'Нажимая кнопку, вы соглашаетесь с условиями использования и политикой конфиденциальности',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -625,10 +643,15 @@ class _InputFieldState extends State<_InputField> {
 }
 
 class _SubmitButton extends StatelessWidget {
+  final String labelKey;
   final String label;
   final VoidCallback onTap;
 
-  const _SubmitButton({required this.label, required this.onTap});
+  const _SubmitButton({
+    required this.labelKey,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -650,7 +673,8 @@ class _SubmitButton extends StatelessWidget {
                       strokeWidth: 2,
                     ),
                   )
-                : Text(
+                : RemoteText(
+                    labelKey,
                     label,
                     style: GoogleFonts.oswald(
                       fontSize: 15,
@@ -699,7 +723,8 @@ class _Divider extends StatelessWidget {
         Expanded(child: Divider(color: AppColors.grey200)),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
+          child: RemoteText(
+            'app.auth.or',
             'или',
             style: TextStyle(fontSize: 13, color: AppColors.grey400),
           ),

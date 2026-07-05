@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 import 'account_data_screen.dart';
 import 'edit_profile_screen.dart';
 import 'stats_screen.dart';
@@ -23,11 +24,11 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: const Text('Выйти из аккаунта?'),
+        title: const RemoteText('app.settings.logoutDialog.title', 'Выйти из аккаунта?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Отмена', style: TextStyle(color: AppColors.grey600)),
+            child: const RemoteText('app.settings.logoutDialog.cancel', 'Отмена', style: TextStyle(color: AppColors.grey600)),
           ),
           TextButton(
             onPressed: () {
@@ -35,7 +36,7 @@ class SettingsScreen extends StatelessWidget {
               Navigator.of(context).pop(); // закрываем настройки
               auth.logout();
             },
-            child: const Text('Выйти', style: TextStyle(color: AppColors.red)),
+            child: const RemoteText('app.settings.logoutDialog.confirm', 'Выйти', style: TextStyle(color: AppColors.red)),
           ),
         ],
       ),
@@ -47,7 +48,8 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: Text(
+        title: RemoteText(
+          'app.settings.title',
           'НАСТРОЙКИ',
           style: GoogleFonts.oswald(
             fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 3,
@@ -59,27 +61,32 @@ class SettingsScreen extends StatelessWidget {
         children: [
           _SettingsTile(
             icon: Icons.person_outline,
+            contentKey: 'app.settings.editProfile',
             label: 'Редактировать профиль',
             onTap: () => _push(context, const EditProfileScreen()),
           ),
           _SettingsTile(
             icon: Icons.insights_outlined,
+            contentKey: 'app.settings.stats',
             label: 'Моя статистика',
             onTap: () => _push(context, const StatsScreen()),
           ),
           _SettingsTile(
             icon: Icons.notifications_none,
+            contentKey: 'app.settings.notifications',
             label: 'Уведомления',
             onTap: () => context.push('/notifications'),
           ),
           _SettingsTile(
             icon: Icons.privacy_tip_outlined,
+            contentKey: 'app.settings.privacy',
             label: 'Конфиденциальность и данные',
             onTap: () => _push(context, const AccountDataScreen()),
           ),
           const SizedBox(height: 12),
           _SettingsTile(
             icon: Icons.logout,
+            contentKey: 'app.settings.logout',
             label: 'Выйти из аккаунта',
             destructive: true,
             onTap: () => _confirmLogout(context),
@@ -92,12 +99,14 @@ class SettingsScreen extends StatelessWidget {
 
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
+  final String contentKey;
   final String label;
   final bool destructive;
   final VoidCallback onTap;
 
   const _SettingsTile({
     required this.icon,
+    required this.contentKey,
     required this.label,
     required this.onTap,
     this.destructive = false,
@@ -118,7 +127,8 @@ class _SettingsTile extends StatelessWidget {
         ),
         child: Icon(icon, size: 19, color: color),
       ),
-      title: Text(
+      title: RemoteText(
+        contentKey,
         label,
         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: color),
       ),

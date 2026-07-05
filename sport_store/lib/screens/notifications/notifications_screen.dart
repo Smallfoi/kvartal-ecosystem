@@ -7,6 +7,7 @@ import '../../models/app_notification.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 import '../profile/order_detail_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -35,7 +36,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back, size: 22),
         ),
-        title: Text(
+        title: RemoteText(
+          'app.notif.title',
           'УВЕДОМЛЕНИЯ',
           style: GoogleFonts.oswald(
             fontSize: 20,
@@ -49,7 +51,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               if (notif.items.isEmpty) return const SizedBox.shrink();
               return TextButton(
                 onPressed: () => _confirmClear(context, notif),
-                child: const Text(
+                child: const RemoteText(
+                  'app.notif.clear',
                   'Очистить',
                   style: TextStyle(color: AppColors.grey600, fontSize: 13),
                 ),
@@ -83,20 +86,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: const Text('Очистить уведомления?'),
-        content: const Text('Все уведомления будут удалены'),
+        title: const RemoteText(
+            'app.notif.clearDialog.title', 'Очистить уведомления?'),
+        content: const RemoteText(
+            'app.notif.clearDialog.body', 'Все уведомления будут удалены'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child:
-                const Text('Отмена', style: TextStyle(color: AppColors.grey600)),
+            child: const RemoteText('app.notif.clearDialog.cancel', 'Отмена',
+                style: TextStyle(color: AppColors.grey600)),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               notif.clear();
             },
-            child: const Text('Очистить', style: TextStyle(color: AppColors.red)),
+            child: const RemoteText('app.notif.clearDialog.confirm', 'Очистить',
+                style: TextStyle(color: AppColors.red)),
           ),
         ],
       ),
@@ -245,12 +251,14 @@ class _EmptyNotifications extends StatelessWidget {
         children: const [
           Icon(Icons.notifications_none, size: 56, color: AppColors.grey200),
           SizedBox(height: 12),
-          Text(
+          RemoteText(
+            'app.notif.empty.title',
             'Нет уведомлений',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 4),
-          Text(
+          RemoteText(
+            'app.notif.empty.subtitle',
             'Здесь появятся обновления по заказам',
             style: TextStyle(fontSize: 13, color: AppColors.grey600),
           ),

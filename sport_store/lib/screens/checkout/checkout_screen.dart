@@ -11,6 +11,7 @@ import '../../providers/loyalty_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/remote_text.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -320,7 +321,8 @@ class _EmptyCheckout extends StatelessWidget {
               color: AppColors.grey200,
             ),
             const SizedBox(height: 16),
-            const Text(
+            const RemoteText(
+              'app.checkout.empty',
               'Оформлять пока нечего',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -370,6 +372,7 @@ class _Header extends StatelessWidget {
   const _Header({required this.step, required this.onClose});
 
   static const _labels = ['КОНТАКТЫ', 'ДОСТАВКА', 'ОПЛАТА', 'ИТОГ'];
+  static const _stepKeys = ['contacts', 'delivery', 'payment', 'review'];
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +387,8 @@ class _Header extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(
+                  RemoteText(
+                    'app.checkout.title',
                     'ОФОРМЛЕНИЕ ЗАКАЗА',
                     style: GoogleFonts.oswald(
                       fontSize: 18,
@@ -454,7 +458,8 @@ class _Header extends StatelessWidget {
                                     ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
+                            RemoteText(
+                              'app.checkout.step.${_stepKeys[i]}',
                               _labels[i],
                               style: TextStyle(
                                 fontSize: 8,
@@ -511,7 +516,7 @@ class _ContactStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _StepTitle('Контактные данные'),
+          const _StepTitle('app.checkout.title.contacts', 'Контактные данные'),
           const SizedBox(height: 6),
           const Text(
             'Укажите данные для связи по заказу',
@@ -582,7 +587,7 @@ class _DeliveryStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _StepTitle('Способ доставки'),
+          const _StepTitle('app.checkout.title.delivery', 'Способ доставки'),
           const SizedBox(height: 20),
           ..._options.map(
             (opt) => Padding(
@@ -599,7 +604,7 @@ class _DeliveryStep extends StatelessWidget {
           ),
           if (needAddress) ...[
             const SizedBox(height: 20),
-            const _StepTitle('Адрес доставки'),
+            const _StepTitle('app.checkout.title.address', 'Адрес доставки'),
             const SizedBox(height: 16),
             _Field(
               ctrl: cityCtrl,
@@ -722,7 +727,8 @@ class _DeliveryOption extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  RemoteText(
+                    'app.checkout.opt.${type.name}.title',
                     label,
                     style: TextStyle(
                       fontSize: 14,
@@ -730,7 +736,8 @@ class _DeliveryOption extends StatelessWidget {
                       color: selected ? Colors.white : AppColors.black,
                     ),
                   ),
-                  Text(
+                  RemoteText(
+                    'app.checkout.opt.${type.name}.subtitle',
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
@@ -770,7 +777,7 @@ class _PaymentStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _StepTitle('Способ оплаты'),
+          const _StepTitle('app.checkout.title.payment', 'Способ оплаты'),
           const SizedBox(height: 20),
           _PaymentOption(
             type: PaymentType.card,
@@ -847,7 +854,8 @@ class _PaymentOption extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  RemoteText(
+                    'app.checkout.opt.${type.name}.title',
                     label,
                     style: TextStyle(
                       fontSize: 14,
@@ -855,7 +863,8 @@ class _PaymentOption extends StatelessWidget {
                       color: selected ? Colors.white : AppColors.black,
                     ),
                   ),
-                  Text(
+                  RemoteText(
+                    'app.checkout.opt.${type.name}.subtitle',
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
@@ -945,7 +954,7 @@ class _ReviewStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _StepTitle('Проверьте заказ'),
+          const _StepTitle('app.checkout.title.review', 'Проверьте заказ'),
           const SizedBox(height: 20),
 
           // Cart items
@@ -1290,7 +1299,8 @@ class _NavBar extends StatelessWidget {
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(
+                    : RemoteText(
+                        step < 3 ? 'app.checkout.next' : 'app.checkout.confirm',
                         step < 3 ? 'ДАЛЕЕ' : 'ПОДТВЕРДИТЬ ЗАКАЗ',
                         style: GoogleFonts.oswald(
                           fontSize: 15,
@@ -1311,12 +1321,14 @@ class _NavBar extends StatelessWidget {
 // ─── Shared widgets ───────────────────────────────────────────────────────────
 
 class _StepTitle extends StatelessWidget {
+  final String contentKey;
   final String text;
-  const _StepTitle(this.text);
+  const _StepTitle(this.contentKey, this.text);
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return RemoteText(
+      contentKey,
       text,
       style: GoogleFonts.oswald(
         fontSize: 20,
