@@ -98,6 +98,32 @@ class MerchConsoleTests(TestCase):
             got = self.client.get("/v1/site/content").json()
             self.assertTrue(got["hero.image"]["imageUrl"])
 
+    def test_site_video_upload(self):
+        import tempfile
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+
+        vid = SimpleUploadedFile("clip.mp4", b"\x00\x00\x00\x18ftypmp42fake",
+                                 content_type="video/mp4")
+        with override_settings(MEDIA_ROOT=tempfile.mkdtemp()):
+            r = self.client.post("/admin/merch/site-video", {"video": vid})
+            self.assertEqual(r.status_code, 200)
+            self.assertTrue(r.json()["url"].endswith(".mp4"))
+
+    def test_site_video_rejects_non_video(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        bad = SimpleUploadedFile("x.txt", b"hello", content_type="text/plain")
+        r = self.client.post("/admin/merch/site-video", {"video": bad})
+        self.assertEqual(r.status_code, 400)
+
+    def test_site_video_requires_staff(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.logout()
+        vid = SimpleUploadedFile("clip.mp4", b"x", content_type="video/mp4")
+        r = self.client.post("/admin/merch/site-video", {"video": vid})
+        self.assertIn(r.status_code, (302, 403))
+
     def test_requires_staff(self):
         self.client.logout()
         r = self._post("/admin/merch/reorder", {"platform": "site", "order": []})

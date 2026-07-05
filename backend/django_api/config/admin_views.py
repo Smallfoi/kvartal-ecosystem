@@ -158,6 +158,29 @@ def merch_site_image(request):
     return JsonResponse({"ok": True, "content": {key: obj.to_json()}})
 
 
+@staff_member_required
+@require_http_methods(["POST"])
+def merch_site_video(request):
+    """Загрузка короткого видео на фон блока: multipart video → сохраняем в
+    хранилище и возвращаем URL. URL кладётся фронтом в bgvid.<key> через /site-content
+    (как обычная ссылка) — отдельная модель/миграция не нужны."""
+    from django.core.files.storage import default_storage
+    from django.utils.text import get_valid_filename
+
+    f = request.FILES.get("video")
+    if not f:
+        return JsonResponse({"detail": "Нет файла"}, status=400)
+    if f.size > 25 * 1024 * 1024:
+        return JsonResponse({"detail": "Файл слишком большой (макс 25 МБ)"}, status=400)
+    ct = (f.content_type or "").lower()
+    name = (f.name or "").lower()
+    if not (ct.startswith("video/") or name.endswith((".mp4", ".webm", ".ogg", ".mov"))):
+        return JsonResponse({"detail": "Нужен видео-файл (.mp4/.webm)"}, status=400)
+    safe = get_valid_filename(f.name or "clip.mp4") or "clip.mp4"
+    saved = default_storage.save("uploads/site-video/" + safe, f)
+    return JsonResponse({"ok": True, "url": default_storage.url(saved)})
+
+
 # ── Баннеры (промо) в конструкторе: полный CRUD перенесён из Django-админки ───
 # Раньше баннеры правились только в Catalog → Banner. Теперь — визуально в
 # «Конструкторе» (владелец: всё визуальное в одном месте). Данные общие, порядок
