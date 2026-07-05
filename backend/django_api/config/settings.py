@@ -328,10 +328,20 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 # Периодические задачи (beat): статическое расписание — без django-celery-beat (меньше
 # движущихся частей). Чистка протухших зон/защит раз в сутки в 03:30 (Asia/Yakutsk).
+# Сроки хранения данных (152-ФЗ §2: авто-удаление данных «без цели»). 0 = не удалять.
+# События аналитики и ПРОЧИТАННЫЕ уведомления живут ограниченно; лояльность/заказы/забеги —
+# не трогаем (это история/финансы, нужны). Сырой GPS на бэке не хранится (приватность §2).
+ANALYTICS_EVENT_RETENTION_DAYS = int(os.environ.get("ANALYTICS_EVENT_RETENTION_DAYS", "365"))
+READ_NOTIFICATION_RETENTION_DAYS = int(os.environ.get("READ_NOTIFICATION_RETENTION_DAYS", "90"))
+
 CELERY_BEAT_SCHEDULE = {
     "cleanup-territories-daily": {
         "task": "territories.cleanup_expired_territories",
         "schedule": crontab(hour=3, minute=30),
+    },
+    "cleanup-old-data-daily": {
+        "task": "core.cleanup_old_data",
+        "schedule": crontab(hour=4, minute=0),
     },
 }
 
