@@ -171,6 +171,8 @@ def _banner_json(b):
         "action": b.action,
         "imageUrl": b.network_image_url(),
         "isPublished": b.is_published,
+        "imageFit": b.image_fit or "cover",
+        "imageFocal": b.image_focal or "50% 50%",
         "sortSite": b.sort_site,
         "sortApp": b.sort_app,
     }
@@ -189,6 +191,11 @@ def _apply_banner_fields(b, post, files):
         b.action = str(post.get("action") or "").strip()[:80]
     if "isPublished" in post:
         b.is_published = post.get("isPublished") in _TRUE
+    if "imageFit" in post:
+        b.image_fit = "contain" if post.get("imageFit") == "contain" else "cover"
+    if "imageFocal" in post:
+        v = str(post.get("imageFocal") or "").strip()[:16]
+        b.image_focal = v if v else "50% 50%"
     f = files.get("image")
     if f:
         if f.size > 5 * 1024 * 1024:

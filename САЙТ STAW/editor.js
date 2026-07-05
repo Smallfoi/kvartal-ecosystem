@@ -126,7 +126,17 @@
     var card = e.target.closest(".product-card");
     if (card) { e.preventDefault(); e.stopPropagation(); send({ type: "editProduct", id: card.getAttribute("data-id") }); return; }
     var img = e.target.closest("[data-edit-img]");
-    if (img) { e.preventDefault(); e.stopPropagation(); send({ type: "editImage", key: img.getAttribute("data-edit-img") }); return; }
+    if (img) {
+      e.preventDefault(); e.stopPropagation();
+      var isImg = img.tagName === "IMG";
+      var url = isImg ? img.getAttribute("src") : (img.style.backgroundImage || "").replace(/^url\(["']?/, "").replace(/["']?\)$/, "");
+      send({
+        type: "editImage", key: img.getAttribute("data-edit-img"), url: url || "",
+        focal: (isImg ? img.style.objectPosition : img.style.backgroundPosition) || "",
+        fit: ((isImg ? img.style.objectFit : img.style.backgroundSize) === "contain") ? "contain" : "cover",
+      });
+      return;
+    }
     var ed = e.target.closest("[data-edit]");
     if (ed) { e.preventDefault(); e.stopPropagation(); send({ type: "editContent", key: ed.getAttribute("data-edit"), value: ed.textContent.trim() }); }
   }, true);
@@ -203,6 +213,19 @@
     document.querySelectorAll('[data-hideable="' + key + '"]').forEach(function (el) {
       el.className = el.className.replace(/\s*\bstaw-anim-[\w-]+/g, "").trim();
       if (val && /^[\w-]+$/.test(val) && val !== "none") el.classList.add("staw-anim-" + val);
+    });
+  }
+  // Фокус-область (object-position) / подгон (object-fit) фото — применить к превью.
+  function applyImgStyle(key, type, value) {
+    document.querySelectorAll('[data-edit-img="' + key + '"]').forEach(function (el) {
+      var isImg = el.tagName === "IMG";
+      if (type === "focal") {
+        var ok = /^\d{1,3}% \d{1,3}%$/.test(value || "");
+        if (isImg) el.style.objectPosition = ok ? value : ""; else el.style.backgroundPosition = ok ? value : "";
+      } else {
+        var contain = value === "contain";
+        if (isImg) el.style.objectFit = contain ? "contain" : ""; else el.style.backgroundSize = contain ? "contain" : "";
+      }
     });
   }
 
@@ -285,6 +308,8 @@
     if (key.indexOf("align.") === 0) { var ak = key.slice(6); if (safeId(ak)) applyAlignLocal(document.querySelector('[data-align="' + ak + '"]'), value); return; }
     if (key.indexOf("anim.") === 0) { var nk = key.slice(5); if (safeId(nk)) applyAnimLocal(nk, value); return; }
     if (key.indexOf("size.") === 0) { var zk = key.slice(5); if (safeId(zk)) document.querySelectorAll('[data-hideable="' + zk + '"]').forEach(function (el) { el.classList.toggle("staw-w-wide", value === "wide"); }); return; }
+    if (key.indexOf("focal.") === 0) { var fk = key.slice(6); if (safeId(fk)) applyImgStyle(fk, "focal", value); return; }
+    if (key.indexOf("fit.") === 0) { var itk = key.slice(4); if (safeId(itk)) applyImgStyle(itk, "fit", value); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
   }
