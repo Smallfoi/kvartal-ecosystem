@@ -459,15 +459,22 @@
     updatePending();
   }
 
-  // ── Правка текста блока сайта (в черновик) ──
+  // ── Правка текста блока сайта (ТРАНЗАКЦИОННО) ──
+  // Пока окно открыто — меняется только ПРЕДПРОСМОТР (текст и цвет). В черновик
+  // (pendingContent) ничего не пишем до «Готово». «Отмена»/«×» → вернуть предпросмотр
+  // к состоянию «до». Так отменяются сразу и правка текста, и выбор цвета.
   var txtModal = document.getElementById("merch-txt");
-  var txtColor = "";  // текущий цвет-оверрайд текста ("" = по умолчанию)
+  var txtColor = "";       // рабочий цвет в окне
+  var txtOrigText = "";    // текст до открытия (для отмены)
+  var txtOrigColor = "";   // цвет до открытия (для отмены)
   function openTextEdit(key, value, color, hasColor) {
     txtKey = key;
+    txtOrigText = value;
+    // «до»: если по этому ключу уже был черновик цвета — берём его; иначе текущий видимый цвет.
+    txtOrigColor = ("color." + key) in pendingContent ? (pendingContent["color." + key] || "") : (hasColor ? (color || "") : "");
+    txtColor = txtOrigColor;
     document.getElementById("merch-txt-title").textContent = "Текст: " + key;
     document.getElementById("merch-txt-val").value = value;
-    txtColor = hasColor ? (color || "") : "";
-    // стартовое значение нативного пикера = текущий цвет текста (если пришёл hex)
     if (color && /^#[0-9a-fA-F]{6}$/.test(color)) document.getElementById("merch-txt-color").value = color;
     updateTxtColorUI();
     txtModal.style.display = "flex";
@@ -484,19 +491,31 @@
   function txtSetColor(c) {
     if (!txtKey) return;
     txtColor = c || "";
-    pendingContent["color." + txtKey] = txtColor;                       // в черновик
-    tellFrame({ type: "setContent", key: "color." + txtKey, value: txtColor }); // живой предпросмотр
+    tellFrame({ type: "setContent", key: "color." + txtKey, value: txtColor }); // ТОЛЬКО предпросмотр
     if (c && /^#[0-9a-fA-F]{6}$/.test(c)) document.getElementById("merch-txt-color").value = c;
     updateTxtColorUI();
-    updatePending();
   }
-  function closeText() { txtModal.style.display = "none"; txtKey = null; }
+  function txtPreviewText() { // живой предпросмотр текста (тоже только превью)
+    if (!txtKey) return;
+    tellFrame({ type: "setContent", key: txtKey, value: document.getElementById("merch-txt-val").value });
+  }
+  // «Отмена»/«×»: вернуть предпросмотр к состоянию «до», в черновик не пишем.
+  function cancelText() {
+    if (txtKey) {
+      tellFrame({ type: "setContent", key: txtKey, value: txtOrigText });
+      tellFrame({ type: "setContent", key: "color." + txtKey, value: txtOrigColor });
+    }
+    txtModal.style.display = "none"; txtKey = null;
+  }
+  // «Готово»: зафиксировать И текст, И цвет в черновик.
   function saveText() {
     if (!txtKey) return;
     var val = document.getElementById("merch-txt-val").value;
-    pendingContent[txtKey] = val;              // в черновик, НЕ на сайт
+    pendingContent[txtKey] = val;
+    pendingContent["color." + txtKey] = txtColor;
     tellFrame({ type: "setContent", key: txtKey, value: val });
-    closeText();
+    tellFrame({ type: "setContent", key: "color." + txtKey, value: txtColor });
+    txtModal.style.display = "none"; txtKey = null;
     updatePending();
   }
 
@@ -777,9 +796,10 @@
   document.getElementById("merch-m-cancel").addEventListener("click", closeEdit);
   document.getElementById("merch-m-save").addEventListener("click", saveEdit);
   publishBtn.addEventListener("click", publish);
-  document.getElementById("merch-txt-close").addEventListener("click", closeText);
-  document.getElementById("merch-txt-cancel").addEventListener("click", closeText);
+  document.getElementById("merch-txt-close").addEventListener("click", cancelText);
+  document.getElementById("merch-txt-cancel").addEventListener("click", cancelText);
   document.getElementById("merch-txt-save").addEventListener("click", saveText);
+  document.getElementById("merch-txt-val").addEventListener("input", txtPreviewText);
   [].forEach.call(document.querySelectorAll("#merch-txt-colors .merch-sw"), function (b) {
     b.addEventListener("click", function () { txtSetColor(b.getAttribute("data-color") || ""); });
   });
@@ -807,7 +827,7 @@
   document.getElementById("merch-be-cover").addEventListener("click", function () { beFit = "cover"; beFitBtns(); bePicker.setEnabled(true); });
   document.getElementById("merch-be-contain").addEventListener("click", function () { beFit = "contain"; beFitBtns(); bePicker.setEnabled(false); });
   beModal.addEventListener("click", function (e) { if (e.target === beModal) closeBannerEdit(); });
-  txtModal.addEventListener("click", function (e) { if (e.target === txtModal) closeText(); });
+  txtModal.addEventListener("click", function (e) { if (e.target === txtModal) cancelText(); });
   modal.addEventListener("click", function (e) { if (e.target === modal) closeEdit(); });
   window.addEventListener("beforeunload", function (e) {
     if (pendingCount()) { e.preventDefault(); e.returnValue = ""; }
