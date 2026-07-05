@@ -101,7 +101,7 @@
   function replaceTokens(node, sid) {
     var all = [node].concat([].slice.call(node.querySelectorAll ? node.querySelectorAll("*") : []));
     all.forEach(function (el) {
-      ["data-sid", "data-hideable", "data-edit", "data-edit-img"].forEach(function (a) {
+      ["data-sid", "data-hideable", "data-edit", "data-edit-img", "data-edit-bg"].forEach(function (a) {
         var v = el.getAttribute && el.getAttribute(a);
         if (v && v.indexOf("{sid}") >= 0) el.setAttribute(a, v.replace(/\{sid\}/g, sid));
       });
@@ -175,6 +175,17 @@
       else el.style.backgroundPosition = ok ? val : "";
     });
   }
+  // Цвет текста: val = "#rrggbb"/"rgb(...)" или "" (сброс к цвету темы). Ставим и
+  // webkit-text-fill-color, чтобы перебить брендовые gradient-заголовки, если они есть.
+  var COLOR_OK = /^#[0-9a-fA-F]{3,8}$|^rgba?\([\d.,\s%]+\)$/;
+  function applyColor(key, val) {
+    if (!safeId(key)) return;
+    var ok = COLOR_OK.test(val || "");
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.color = ok ? val : "";
+      el.style.webkitTextFillColor = ok ? val : "";
+    });
+  }
   // Подгон фото: "contain" — фото целиком (не обрезается); иначе — заполнение (cover из CSS).
   function applyFit(key, val) {
     if (!safeId(key)) return;
@@ -203,6 +214,7 @@
         if (key.indexOf("size.") === 0) { applySize(key.slice(5), c.value); return; }
         if (key.indexOf("focal.") === 0) { applyFocal(key.slice(6), c.value); return; }
         if (key.indexOf("fit.") === 0) { applyFit(key.slice(4), c.value); return; }
+        if (key.indexOf("color.") === 0) { applyColor(key.slice(6), c.value); return; }
         if (key.indexOf("bgfocal.") === 0) { setBgField(key.slice(8), "_bgFocal", c.value); return; }
         if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", c.value); return; }
         if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", c.value); return; }
