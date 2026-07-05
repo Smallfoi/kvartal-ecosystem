@@ -133,7 +133,9 @@
     if (img) {
       e.preventDefault(); e.stopPropagation();
       var isImg = img.tagName === "IMG";
-      var url = isImg ? img.getAttribute("src") : (img.style.backgroundImage || "").replace(/^url\(["']?/, "").replace(/["']?\)$/, "");
+      // ВАЖНО: img.src (абсолютный URL), а НЕ getAttribute("src") (относительный "media/…").
+      // Конструктор на :8000, картинки сайта на :5577 — относительный путь превью не загрузит.
+      var url = isImg ? img.src : (img.style.backgroundImage || "").replace(/^url\(["']?/, "").replace(/["']?\)$/, "");
       send({
         type: "editImage", key: img.getAttribute("data-edit-img"), url: url || "",
         focal: (isImg ? img.style.objectPosition : img.style.backgroundPosition) || "",
