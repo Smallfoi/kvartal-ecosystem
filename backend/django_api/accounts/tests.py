@@ -301,3 +301,52 @@ class AccountExportTests(ApiTestCase):
         add_txn("u_other_export", 100, "runnerRun")  # чужие баллы
         d = self.api_get("/v1/account/export").json()
         self.assertEqual(d["loyalty"]["transactions"], [])  # чужое не попадает
+
+
+class BroadcastAdminTests(TestCase):
+    """Массовая рассылка через админ-действие send_notification (AccountAdmin):
+    промежуточная форма → уведомление каждому выбранному пользователю."""
+
+    _SEL = "_selected_action"  # django.contrib.admin.helpers.ACTION_CHECKBOX_NAME
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        User.objects.create_superuser("boss", "boss@x.dev", "pass-12345")
+        self.assertTrue(self.client.login(username="boss", password="pass-12345"))
+
+    def test_form_shown_without_apply(self):
+        from accounts.models import Account
+
+        Account.objects.create(id="ua", email="a@t.local")
+        r = self.client.post("/admin/accounts/account/", {
+            "action": "send_notification", self._SEL: ["ua"],
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'name="title"')  # показана промежуточная форма
+
+    def test_broadcast_creates_notifications(self):
+        from accounts.models import Account
+        from notifications.models import Notification
+
+        Account.objects.create(id="ua", email="a@t.local")
+        Account.objects.create(id="ub", email="b@t.local")
+        self.client.post("/admin/accounts/account/", {
+            "action": "send_notification", self._SEL: ["ua", "ub"],
+            "apply": "1", "title": "Обновление", "body": "Новая функция",
+        }, follow=True)
+        self.assertEqual(Notification.objects.filter(title="Обновление").count(), 2)
+        self.assertEqual(
+            Notification.objects.get(user_id="ua", title="Обновление").body, "Новая функция"
+        )
+
+    def test_empty_title_sends_nothing(self):
+        from accounts.models import Account
+        from notifications.models import Notification
+
+        Account.objects.create(id="ua", email="a@t.local")
+        self.client.post("/admin/accounts/account/", {
+            "action": "send_notification", self._SEL: ["ua"],
+            "apply": "1", "title": "   ", "body": "x",
+        }, follow=True)
+        self.assertEqual(Notification.objects.count(), 0)  # пустой заголовок → ничего
