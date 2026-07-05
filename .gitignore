@@ -26,6 +26,10 @@ celerybeat.pid
 *.sqlite3
 backend/ecosystem.db
 
+# === Бэкапы БД (дампы содержат ПДн: телефоны/почта/GPS) — НИКОГДА не коммитить ===
+backups/
+*.sql.gz
+
 # === Flutter devtools (генерится IDE, не нужен в репо) ===
 **/devtools_options.yaml
 
