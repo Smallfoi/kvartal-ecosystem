@@ -30,12 +30,19 @@
     "html.staw-edit [data-extra]{outline:2px solid #22c55e !important;outline-offset:2px}" +
     "html.staw-edit .staw-cms-hidden{opacity:.32;filter:grayscale(1)}" +
     // Панель управления блоком — ПО НАВЕДЕНИЮ (не перекрывает контент постоянно).
-    "html.staw-edit .staw-tools{position:absolute;top:6px;right:6px;z-index:40;display:flex;gap:4px;opacity:0;pointer-events:none;transition:opacity .12s}" +
+    // ВАЖНО: жёстко фиксируем позицию/размер через !important. Панель — это <div>, и правила
+    // сайта вида «.cinema-card div{position:absolute;inset;z-index:1}» иначе ловят наш служебный
+    // div и растягивают его на всю карточку → он (даже прозрачный) перехватывает клик по фото.
+    "html.staw-edit .staw-tools{position:absolute!important;top:6px!important;right:6px!important;left:auto!important;bottom:auto!important;" +
+      "width:auto!important;height:auto!important;max-width:none!important;margin:0!important;padding:0!important;transform:none!important;" +
+      "z-index:50!important;display:flex!important;flex-direction:row!important;align-items:flex-start!important;gap:4px;opacity:0;pointer-events:none;transition:opacity .12s}" +
     "html.staw-edit [data-hideable]:hover>.staw-tools,html.staw-edit .staw-tools:hover{opacity:1;pointer-events:auto}" +
-    "html.staw-edit .staw-tools button{border:0;border-radius:6px;padding:4px 8px;color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}" +
+    "html.staw-edit .staw-tools button{position:static!important;width:auto!important;height:auto!important;min-height:0!important;flex:0 0 auto!important;" +
+      "border:0;border-radius:6px;padding:4px 8px;color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}" +
     "html.staw-edit .staw-del{background:rgba(17,24,39,.92)}" +
     "html.staw-edit .staw-anim-btn{background:rgba(124,58,237,.95)}" +
-    "html.staw-edit .staw-bg-btn{position:absolute;top:6px;left:6px;z-index:36;border:0;border-radius:6px;padding:4px 9px;" +
+    "html.staw-edit .staw-bg-btn{position:absolute!important;top:6px!important;left:6px!important;right:auto!important;bottom:auto!important;" +
+      "width:auto!important;height:auto!important;margin:0!important;transform:none!important;z-index:50!important;border:0;border-radius:6px;padding:4px 9px;" +
       "color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;background:rgba(16,122,87,.95);" +
       "box-shadow:0 1px 5px rgba(0,0,0,.4);opacity:0;transition:opacity .12s}" +
     "html.staw-edit [data-edit-bg]:hover>.staw-bg-btn,html.staw-edit .staw-bg-btn:hover{opacity:1}" +
@@ -130,6 +137,18 @@
   }
 
   // ── Клик: баннер/товар/фото/текст ──
+  function sendEditImage(img) {
+    var isImg = img.tagName === "IMG";
+    // ВАЖНО: img.src (абсолютный URL), а НЕ getAttribute("src") (относительный "media/…").
+    // Конструктор на :8000, картинки сайта на :5577 — относительный путь превью не загрузит.
+    var url = isImg ? img.src : (img.style.backgroundImage || "").replace(/^url\(["']?/, "").replace(/["']?\)$/, "");
+    send({
+      type: "editImage", key: img.getAttribute("data-edit-img"), url: url || "",
+      focal: (isImg ? img.style.objectPosition : img.style.backgroundPosition) || "",
+      fit: ((isImg ? img.style.objectFit : img.style.backgroundSize) === "contain") ? "contain" : "cover",
+      aspect: (img.clientWidth && img.clientHeight) ? (img.clientWidth / img.clientHeight) : 0,
+    });
+  }
   document.addEventListener("click", function (e) {
     if (e.target.closest && e.target.closest(".staw-ui, .staw-tools")) return;
     var addb = e.target.closest && e.target.closest(".promo-add-banner");
@@ -139,22 +158,18 @@
     var card = e.target.closest(".product-card");
     if (card) { e.preventDefault(); e.stopPropagation(); send({ type: "editProduct", id: card.getAttribute("data-id") }); return; }
     var img = e.target.closest("[data-edit-img]");
-    if (img) {
-      e.preventDefault(); e.stopPropagation();
-      var isImg = img.tagName === "IMG";
-      // ВАЖНО: img.src (абсолютный URL), а НЕ getAttribute("src") (относительный "media/…").
-      // Конструктор на :8000, картинки сайта на :5577 — относительный путь превью не загрузит.
-      var url = isImg ? img.src : (img.style.backgroundImage || "").replace(/^url\(["']?/, "").replace(/["']?\)$/, "");
-      send({
-        type: "editImage", key: img.getAttribute("data-edit-img"), url: url || "",
-        focal: (isImg ? img.style.objectPosition : img.style.backgroundPosition) || "",
-        fit: ((isImg ? img.style.objectFit : img.style.backgroundSize) === "contain") ? "contain" : "cover",
-        aspect: (img.clientWidth && img.clientHeight) ? (img.clientWidth / img.clientHeight) : 0,
-      });
-      return;
-    }
+    if (img) { e.preventDefault(); e.stopPropagation(); sendEditImage(img); return; }
     var ed = e.target.closest("[data-edit]");
-    if (ed) { e.preventDefault(); e.stopPropagation(); send({ type: "editContent", key: ed.getAttribute("data-edit"), value: ed.textContent.trim() }); }
+    if (ed) { e.preventDefault(); e.stopPropagation(); send({ type: "editContent", key: ed.getAttribute("data-edit"), value: ed.textContent.trim() }); return; }
+    // Fallback: у многих карточек поверх фото лежит декоративный оверлей/scrim
+    // (напр. .cinema-card::after{inset:0}) — тогда цель клика = карточка, а не <img>,
+    // и прямой поиск [data-edit-img] выше не срабатывает. Если клик попал в карточку/блок
+    // с фото и НЕ по тексту/ссылке/кнопке — правим фото этой карточки.
+    var host = e.target.closest("[data-sid], [data-hideable], .cinema-card");
+    if (host && !e.target.closest("a, button, input, textarea, select")) {
+      var hostImg = host.querySelector("[data-edit-img]");
+      if (hostImg) { e.preventDefault(); e.stopPropagation(); sendEditImage(hostImg); }
+    }
   }, true);
 
   // ── Репитеры ──
