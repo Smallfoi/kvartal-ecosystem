@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sport_store/providers/remote_content_provider.dart';
+import 'package:sport_store/widgets/remote_text.dart';
 
 void main() {
   group('RemoteContentProvider', () {
@@ -23,6 +25,43 @@ void main() {
       p.addListener(() => notified++);
       p.applyDraft('app.x', 'значение');
       expect(notified, 1);
+    });
+
+    test('color/focal/fit читаются из служебных ключей', () {
+      final p = RemoteContentProvider(null);
+      expect(p.color('app.home.title'), ''); // по умолчанию нет
+      p.applyDraft('color.app.home.title', '#ffffff');
+      p.applyDraft('focal.app.cat.shoes.img', '20% 80%');
+      p.applyDraft('fit.app.cat.shoes.img', 'contain');
+      expect(p.color('app.home.title'), '#ffffff');
+      expect(p.focal('app.cat.shoes.img'), '20% 80%');
+      expect(p.fit('app.cat.shoes.img'), 'contain');
+    });
+
+    test('applyImageDraft задаёт/снимает URL фото и уведомляет', () {
+      final p = RemoteContentProvider(null);
+      var notified = 0;
+      p.addListener(() => notified++);
+      expect(p.imageUrl('app.cat.shoes.img'), '');
+      p.applyImageDraft('app.cat.shoes.img', 'data:image/png;base64,AAAA');
+      expect(p.imageUrl('app.cat.shoes.img'), 'data:image/png;base64,AAAA'); // dataURL как есть
+      p.applyImageDraft('app.cat.shoes.img', ''); // пусто = снять → фолбэк
+      expect(p.imageUrl('app.cat.shoes.img'), '');
+      expect(notified, 2);
+    });
+  });
+
+  group('RemoteText.parseHex', () {
+    test('#rrggbb → непрозрачный Color', () {
+      expect(RemoteText.parseHex('#ffffff'), const Color(0xFFFFFFFF));
+      expect(RemoteText.parseHex('#111111'), const Color(0xFF111111));
+    });
+    test('#rgb расширяется', () {
+      expect(RemoteText.parseHex('#fff'), const Color(0xFFFFFFFF));
+    });
+    test('пустое/битое → null', () {
+      expect(RemoteText.parseHex(''), isNull);
+      expect(RemoteText.parseHex('красный'), isNull);
     });
   });
 }
