@@ -59,3 +59,28 @@ class CleanupTaskTests(TestCase):
         Event.objects.filter(pk=e.pk).update(created_at=timezone.now() - timedelta(days=400))
         cleanup_old_data.delay()
         self.assertFalse(Event.objects.filter(name="old").exists())
+
+
+class HealthTests(TestCase):
+    """Liveness /v1/health (db+cache) и readiness /v1/health/ready (200/503 для балансировщика)."""
+
+    def test_health_reports_db_and_cache(self):
+        d = self.client.get("/v1/health").json()
+        self.assertEqual(d["status"], "ok")
+        self.assertTrue(d["db"])
+        self.assertTrue(d["cache"])
+        self.assertEqual(d["service"], "staw-ecosystem-django")  # контракт сохранён
+
+    def test_readiness_ok_when_deps_up(self):
+        r = self.client.get("/v1/health/ready")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()["ready"])
+
+    def test_readiness_503_when_db_down(self):
+        from unittest import mock
+
+        with mock.patch("core.views._db_ok", return_value=False):
+            r = self.client.get("/v1/health/ready")
+        self.assertEqual(r.status_code, 503)  # инстанс выводят из ротации
+        self.assertFalse(r.json()["ready"])
+        self.assertFalse(r.json()["db"])
