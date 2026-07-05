@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/remote_text.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,7 +18,8 @@ class CartScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: Text(
+        title: RemoteText(
+          'app.cart.title',
           'КОРЗИНА',
           style: GoogleFonts.oswald(
             fontSize: 20,
@@ -31,7 +33,8 @@ class CartScreen extends StatelessWidget {
               if (cart.items.isEmpty) return const SizedBox.shrink();
               return TextButton(
                 onPressed: () => _confirmClear(context, cart),
-                child: const Text(
+                child: const RemoteText(
+                  'app.cart.clear',
                   'Очистить',
                   style: TextStyle(color: AppColors.grey600, fontSize: 13),
                 ),
@@ -82,12 +85,13 @@ class CartScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: const Text('Очистить корзину?'),
-        content: const Text('Все товары будут удалены из корзины'),
+        title: const RemoteText('app.cart.clearDialog.title', 'Очистить корзину?'),
+        content: const RemoteText(
+            'app.cart.clearDialog.body', 'Все товары будут удалены из корзины'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Отмена',
+            child: const RemoteText('app.cart.clearDialog.cancel', 'Отмена',
                 style: TextStyle(color: AppColors.grey600)),
           ),
           TextButton(
@@ -95,7 +99,7 @@ class CartScreen extends StatelessWidget {
               Navigator.of(ctx).pop();
               cart.clear();
             },
-            child: const Text('Очистить',
+            child: const RemoteText('app.cart.clearDialog.confirm', 'Очистить',
                 style: TextStyle(color: AppColors.red)),
           ),
         ],
@@ -140,7 +144,8 @@ class _CartHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                RemoteText(
+                  'app.cart.totalDue',
                   'Итого к оплате',
                   style: GoogleFonts.oswald(
                     fontSize: 14,
@@ -380,11 +385,13 @@ class _OrderSummary extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              const RemoteText(
+                'app.cart.delivery',
                 'Доставка',
                 style: TextStyle(fontSize: 13, color: AppColors.grey600),
               ),
-              const Text(
+              const RemoteText(
+                'app.cart.deliveryNote',
                 'Рассчитывается при оформлении',
                 style: TextStyle(fontSize: 12, color: AppColors.grey400),
               ),
@@ -394,7 +401,8 @@ class _OrderSummary extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              const RemoteText(
+                'app.cart.summaryTotal',
                 'Итого',
                 style: TextStyle(
                   fontSize: 15,
@@ -443,7 +451,8 @@ class _CheckoutButtonState extends State<_CheckoutButton> {
         height: 52,
         color: _pressed ? AppColors.grey800 : AppColors.black,
         alignment: Alignment.center,
-        child: Text(
+        child: RemoteText(
+          'app.cart.checkout',
           'ОФОРМИТЬ ЗАКАЗ',
           style: GoogleFonts.oswald(
             fontSize: 15,
@@ -485,7 +494,8 @@ class _EmptyCart extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            const Text(
+            const RemoteText(
+              'app.cart.empty.title',
               'Корзина пуста',
               style: TextStyle(
                 fontSize: 20,
@@ -499,7 +509,8 @@ class _EmptyCart extends StatelessWidget {
 
             const SizedBox(height: 8),
 
-            const Text(
+            const RemoteText(
+              'app.cart.empty.subtitle',
               'Добавьте товары из каталога,\nчтобы оформить заказ',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -520,7 +531,8 @@ class _EmptyCart extends StatelessWidget {
                 height: 50,
                 color: AppColors.black,
                 alignment: Alignment.center,
-                child: Text(
+                child: RemoteText(
+                  'app.cart.empty.toCatalog',
                   'ПЕРЕЙТИ В КАТАЛОГ',
                   style: GoogleFonts.oswald(
                     fontSize: 14,
@@ -545,7 +557,8 @@ class _EmptyCart extends StatelessWidget {
                   border: Border.all(color: AppColors.grey200),
                 ),
                 alignment: Alignment.center,
-                child: Text(
+                child: RemoteText(
+                  'app.cart.empty.toHome',
                   'НА ГЛАВНУЮ',
                   style: GoogleFonts.oswald(
                     fontSize: 14,

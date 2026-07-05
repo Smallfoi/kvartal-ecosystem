@@ -13,6 +13,7 @@ import '../../providers/wishlist_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/price_text.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/remote_text.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -85,7 +86,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (product == null) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('Товар не найден')),
+        body: const Center(
+            child: RemoteText('app.product.notFound', 'Товар не найден')),
       );
     }
 
@@ -177,7 +179,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(height: 24),
                       const Divider(),
                       const SizedBox(height: 20),
-                      const Text(
+                      const RemoteText(
+                        'app.product.descLabel',
                         'ОПИСАНИЕ',
                         style: TextStyle(
                           fontSize: 12,
@@ -321,7 +324,8 @@ class _SizeSelector extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Text(
+            const RemoteText(
+              'app.product.sizeLabel',
               'РАЗМЕР',
               style: TextStyle(
                 fontSize: 12,
@@ -398,7 +402,8 @@ class _ColorSelector extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Text(
+            const RemoteText(
+              'app.product.colorLabel',
               'ЦВЕТ',
               style: TextStyle(
                 fontSize: 12,
@@ -501,7 +506,7 @@ class _BottomBar extends StatelessWidget {
           Expanded(
             child: ElevatedButton(
               onPressed: onAddToCart,
-              child: const Text('ДОБАВИТЬ В КОРЗИНУ'),
+              child: const RemoteText('app.product.addToCart', 'ДОБАВИТЬ В КОРЗИНУ'),
             ),
           ),
         ],
@@ -560,7 +565,8 @@ class _AddedToCartSheet extends StatelessWidget {
                     curve: Curves.elasticOut,
                   ),
               const SizedBox(width: 12),
-              Text(
+              RemoteText(
+                'app.product.addedToCart',
                 'Добавлено в корзину',
                 style: GoogleFonts.oswald(
                   fontSize: 18,
@@ -636,7 +642,8 @@ class _AddedToCartSheet extends StatelessWidget {
               height: 52,
               color: AppColors.black,
               alignment: Alignment.center,
-              child: Text(
+              child: RemoteText(
+                'app.product.toCart',
                 'ПЕРЕЙТИ В КОРЗИНУ',
                 style: GoogleFonts.oswald(
                   fontSize: 15, fontWeight: FontWeight.w600,
@@ -650,7 +657,8 @@ class _AddedToCartSheet extends StatelessWidget {
 
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
-            child: const Text(
+            child: const RemoteText(
+              'app.product.continueShopping',
               'Продолжить покупки',
               style: TextStyle(
                 fontSize: 14, color: AppColors.grey600,
@@ -865,7 +873,8 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            const RemoteText(
+              'app.product.reviewsLabel',
               'ОТЗЫВЫ',
               style: TextStyle(
                 fontSize: 12,
@@ -877,7 +886,8 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
             if (d != null && d.canReview)
               TextButton(
                 onPressed: _writeReview,
-                child: Text(
+                child: RemoteText(
+                  d.hasMine ? 'app.product.editReview' : 'app.product.leaveReview',
                   d.hasMine ? 'Изменить' : 'Оставить отзыв',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
@@ -894,7 +904,10 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
             child: Center(child: CircularProgressIndicator()),
           )
         else if (d == null || d.reviews.isEmpty)
-          Text(
+          RemoteText(
+            d?.canReview == true
+                ? 'app.product.reviewsEmptyCanReview'
+                : 'app.product.reviewsEmpty',
             d?.canReview == true
                 ? 'Отзывов пока нет. Будьте первым!'
                 : 'Отзывов пока нет.',
@@ -1008,7 +1021,8 @@ class _ReviewFormState extends State<_ReviewForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const RemoteText(
+            'app.product.yourReview',
             'Ваш отзыв',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
@@ -1039,7 +1053,8 @@ class _ReviewFormState extends State<_ReviewForm> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          const RemoteText(
+            'app.product.photoOptional',
             'Фото (по желанию)',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
           ),
@@ -1100,7 +1115,7 @@ class _ReviewFormState extends State<_ReviewForm> {
                         color: AppColors.white,
                       ),
                     )
-                  : const Text('Отправить'),
+                  : const RemoteText('app.product.submit', 'Отправить'),
             ),
           ),
         ],
