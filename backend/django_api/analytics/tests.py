@@ -107,3 +107,46 @@ class RetentionTests(TestCase):
         cohorts = weekly_cohorts(weeks=3)
         self.assertEqual(len(cohorts), 3)
         self.assertTrue(all(c["size"] == 0 for c in cohorts))
+
+
+class FunnelTests(TestCase):
+    """Воронка активации регистрация→забег→покупка + активные + топ событий (D-30 фаза 2)."""
+
+    def _seed(self):
+        # A: полный путь; B: до забега; C: только регистрация; аноним — не в счёте.
+        for u in ("A", "B", "C"):
+            track(E_REGISTER, user_id=u)
+        for u in ("A", "B"):
+            track(E_RUN_FINISHED, user_id=u)
+        track(E_PURCHASE, user_id="A")
+        track("screen_view", user_id="")  # анонимное — не влияет на пользовательские метрики
+
+    def test_funnel_inclusive_and_and_conversion(self):
+        from analytics.funnel import funnel
+
+        self._seed()
+        rows = funnel(days=30)
+        self.assertEqual([r["users"] for r in rows], [3, 2, 1])  # рег/забег/покупка
+        self.assertEqual(rows[1]["pctOfFirst"], round(100 * 2 / 3, 1))  # 66.7%
+        self.assertEqual(rows[2]["pctOfPrev"], 50.0)  # 1 из 2
+
+    def test_active_users_excludes_anonymous(self):
+        from analytics.funnel import active_users
+
+        self._seed()
+        self.assertEqual(active_users(7), 3)  # A, B, C (аноним не считается)
+
+    def test_event_counts_desc(self):
+        from analytics.funnel import event_counts
+
+        self._seed()
+        counts = {e["event"]: e["count"] for e in event_counts(30)}
+        self.assertEqual(counts[E_REGISTER], 3)
+        self.assertEqual(counts[E_RUN_FINISHED], 2)
+        self.assertEqual(counts[E_PURCHASE], 1)
+
+    def test_funnel_empty_when_no_events(self):
+        from analytics.funnel import funnel
+
+        rows = funnel(days=30)
+        self.assertEqual([r["users"] for r in rows], [0, 0, 0])
