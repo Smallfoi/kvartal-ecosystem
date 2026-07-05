@@ -49,9 +49,53 @@
       "@keyframes staw-pl{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}" +
       ".staw-anim-pulse{animation:staw-pl 1.8s ease-in-out infinite}" +
       // Ширина блока: «шире» = занять 2 колонки грид-сетки (в 1-колоночных секциях — без эффекта).
-      ".staw-w-wide{grid-column:span 2}";
+      ".staw-w-wide{grid-column:span 2}" +
+      // Фон блока: слой видео (за контентом) + затемнение для читаемости; контент поднимаем над видео.
+      // position:relative только когда включён видео-фон (staw-bg-on) — не трогаем верстку остальных секций.
+      "[data-edit-bg].staw-bg-on{position:relative}" +
+      ".staw-bg-layer{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}" +
+      ".staw-bg-layer video{width:100%;height:100%;object-fit:cover;display:block}" +
+      ".staw-bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5))}" +
+      "[data-edit-bg].staw-bg-on>:not(.staw-bg-layer){position:relative;z-index:1}";
     (document.head || document.documentElement).appendChild(st);
   }
+
+  // ── Фон блока: фото (с затемнением) / видео (URL) / убрать (вернуть градиент из CSS) ──
+  function bgEl(key) { return safeId(key) ? document.querySelector('[data-edit-bg="' + key + '"]') : null; }
+  function refreshBg(el) {
+    if (!el) return;
+    var off = el._bgOff === "1";
+    var vid = el._bgVid || "";
+    var img = el._bgImg || "";
+    var focal = /^\d{1,3}% \d{1,3}%$/.test(el._bgFocal || "") ? el._bgFocal : "50% 50%";
+    var fit = el._bgFit === "contain" ? "contain" : "cover";
+    var layer = el.querySelector(":scope > .staw-bg-layer");
+    if (!off && vid) {
+      el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
+      if (!layer) {
+        layer = document.createElement("div"); layer.className = "staw-bg-layer";
+        var v = document.createElement("video");
+        v.autoplay = true; v.loop = true; v.muted = true; v.defaultMuted = true;
+        v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("autoplay", ""); v.setAttribute("loop", "");
+        layer.appendChild(v); el.insertBefore(layer, el.firstChild);
+      }
+      var vv = layer.querySelector("video");
+      if (vv.getAttribute("src") !== vid) vv.setAttribute("src", vid);
+      vv.style.objectFit = fit; vv.style.objectPosition = focal;
+      el.classList.add("staw-bg-on");
+    } else if (!off && img) {
+      if (layer) layer.remove(); el.classList.remove("staw-bg-on");
+      el.style.backgroundImage = "linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5)), url('" + img + "')";
+      el.style.backgroundSize = "cover, " + (fit === "contain" ? "contain" : "cover");
+      el.style.backgroundPosition = "center, " + focal;
+      el.style.backgroundRepeat = "no-repeat";
+    } else {
+      if (layer) layer.remove(); el.classList.remove("staw-bg-on");
+      el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
+    }
+  }
+  function setBgField(key, field, val) { var el = bgEl(key); if (!el) return; el[field] = val; refreshBg(el); }
+  function setBgImg(key, imageUrl) { var el = bgEl(key); if (!el) return; el._bgImg = imageUrl ? mediaUrl(imageUrl) : ""; refreshBg(el); }
 
   // ── Репитеры: клонировать добавленные блоки из <template> ──
   function replaceTokens(node, sid) {
@@ -159,6 +203,11 @@
         if (key.indexOf("size.") === 0) { applySize(key.slice(5), c.value); return; }
         if (key.indexOf("focal.") === 0) { applyFocal(key.slice(6), c.value); return; }
         if (key.indexOf("fit.") === 0) { applyFit(key.slice(4), c.value); return; }
+        if (key.indexOf("bgfocal.") === 0) { setBgField(key.slice(8), "_bgFocal", c.value); return; }
+        if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", c.value); return; }
+        if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", c.value); return; }
+        if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", c.value); return; }
+        if (key.indexOf("bg.") === 0) { setBgImg(key.slice(3), c.imageUrl); return; }
         if (key.indexOf("extra.") === 0) { return; } // уже применили выше
         if (c.value && safeId(key)) {
           document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = c.value; });
