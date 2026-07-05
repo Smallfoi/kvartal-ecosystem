@@ -134,6 +134,7 @@
         type: "editImage", key: img.getAttribute("data-edit-img"), url: url || "",
         focal: (isImg ? img.style.objectPosition : img.style.backgroundPosition) || "",
         fit: ((isImg ? img.style.objectFit : img.style.backgroundSize) === "contain") ? "contain" : "cover",
+        aspect: (img.clientWidth && img.clientHeight) ? (img.clientWidth / img.clientHeight) : 0,
       });
       return;
     }
