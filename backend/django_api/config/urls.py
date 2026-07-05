@@ -21,6 +21,7 @@ from config.admin_views import (
     merch_reorder,
     merch_site_content,
     merch_site_image,
+    merch_site_video,
 )
 from notifications import views as notif_views
 from legal import views as legal_views
@@ -39,6 +40,7 @@ urlpatterns = [
     path("admin/merch/product/<str:pid>", merch_product, name="merch_product"),
     path("admin/merch/site-content", merch_site_content, name="merch_site_content"),
     path("admin/merch/site-image", merch_site_image, name="merch_site_image"),
+    path("admin/merch/site-video", merch_site_video, name="merch_site_video"),
     # Баннеры (промо) — CRUD в конструкторе.
     path("admin/merch/banners", merch_banners, name="merch_banners"),
     path("admin/merch/banner-create", merch_banner_create, name="merch_banner_create"),

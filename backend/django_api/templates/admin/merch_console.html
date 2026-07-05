@@ -141,8 +141,12 @@
       <button type="button" id="merch-bg-cover" style="padding:8px 12px;border:1px solid #111;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600;font-size:13px">Заполнить</button>
       <button type="button" id="merch-bg-contain" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;cursor:pointer;font-weight:600;font-size:13px">Целиком</button>
     </div>
-    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:12px">Видео на фон (ссылка .mp4/.webm) — короткое, без звука:
+    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Видео на фон (короткое, без звука) — загрузите файл или вставьте ссылку:
       <input id="merch-bg-video" type="text" placeholder="https://…/clip.mp4" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <button type="button" id="merch-bg-video-upload" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:13px">⬆ Загрузить видео файлом</button>
+      <span id="merch-bg-video-status" style="font-size:12px;color:#6b7280"></span>
+    </div>
     <div style="display:flex;justify-content:space-between;gap:10px">
       <button type="button" id="merch-bg-remove" style="padding:9px 16px;border:1px solid #fca5a5;border-radius:8px;background:#fff;color:#dc2626;cursor:pointer;font-weight:600">Удалить фотографию</button>
       <button type="button" id="merch-bg-done" style="padding:9px 18px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600">Готово</button>
@@ -150,6 +154,7 @@
   </div>
 </div>
 <input type="file" id="merch-bg-file" accept="image/*" style="display:none">
+<input type="file" id="merch-bg-video-file" accept="video/*,.mp4,.webm,.mov" style="display:none">
 
 <!-- Пикер анимации блока (клик по «✨» на блоке сайта) -->
 <div id="merch-anim" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
@@ -600,6 +605,7 @@
     var pend = pendingImages["bg." + key];
     bgCurImg = (pend && pend.url) || img || "";
     document.getElementById("merch-bg-video").value = bgVid;
+    document.getElementById("merch-bg-video-status").textContent = "";
     bgModalEl.style.display = "flex";
     bgFitBtns();
     bgPicker.set(bgCurImg, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + bgKey, pos); });
@@ -643,6 +649,25 @@
       bgPicker.set(rd.result, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + key, pos); });
     };
     rd.readAsDataURL(f);
+  });
+  // Загрузка видео ФАЙЛОМ: грузим на сервер → получаем URL → кладём в bgvid (как ссылку).
+  var bgVideoFileInput = document.getElementById("merch-bg-video-file");
+  bgVideoFileInput.addEventListener("change", function () {
+    var f = bgVideoFileInput.files && bgVideoFileInput.files[0];
+    if (!f || !bgKey) return;
+    var key = bgKey, status = document.getElementById("merch-bg-video-status");
+    status.textContent = "Загрузка…";
+    var fd = new FormData(); fd.append("video", f);
+    apiForm("./site-video", fd).then(function (d) {
+      bgVid = d.url;
+      document.getElementById("merch-bg-video").value = d.url;
+      bgDraft("bgvid." + key, d.url);
+      bgDraft("bgoff." + key, "");
+      delete pendingImages["bg." + key];   // видео перекрывает фото
+      bgPicker.set("", bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + key, pos); });
+      status.textContent = "Загружено ✓";
+      updatePending();
+    }).catch(function (e) { status.textContent = "Ошибка: " + e.message; });
   });
 
   // ── Пикер анимации блока (в черновик) ──
@@ -815,6 +840,7 @@
   document.getElementById("merch-bg-close").addEventListener("click", bgClose);
   document.getElementById("merch-bg-done").addEventListener("click", function () { bgSetVideo(); bgClose(); });
   document.getElementById("merch-bg-photo").addEventListener("click", function () { bgFileInput.value = ""; bgFileInput.click(); });
+  document.getElementById("merch-bg-video-upload").addEventListener("click", function () { bgVideoFileInput.value = ""; bgVideoFileInput.click(); });
   document.getElementById("merch-bg-cover").addEventListener("click", function () { bgSetFit("cover"); });
   document.getElementById("merch-bg-contain").addEventListener("click", function () { bgSetFit("contain"); });
   document.getElementById("merch-bg-remove").addEventListener("click", bgRemove);
