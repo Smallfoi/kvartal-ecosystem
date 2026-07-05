@@ -65,6 +65,22 @@
   function send(msg) { msg.source = "staw-editor"; if (window.parent !== window) window.parent.postMessage(msg, "*"); }
   function draft(key, value) { send({ type: "draftContent", key: key, value: value }); }
   function safeId(s) { return typeof s === "string" && /^[\w.-]+$/.test(s); }
+  // rgb(a)(...) → #rrggbb (для стартового значения пикера цвета в конструкторе)
+  function rgbToHex(c) {
+    var m = /rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(c || "");
+    if (!m) return "";
+    function h(n) { n = (+n).toString(16); return n.length < 2 ? "0" + n : n; }
+    return "#" + h(m[1]) + h(m[2]) + h(m[3]);
+  }
+  var COLOR_OK = /^#[0-9a-fA-F]{3,8}$|^rgba?\([\d.,\s%]+\)$/;
+  // Цвет текста: value = "#rrggbb"/"rgb(...)" или "" (сброс к цвету темы).
+  function applyColorLocal(key, val) {
+    var ok = COLOR_OK.test(val || "");
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.color = ok ? val : "";
+      el.style.webkitTextFillColor = ok ? val : ""; // перебить брендовый gradient-text, если он есть
+    });
+  }
   var VOID_TAGS = { IMG: 1, INPUT: 1, BR: 1, HR: 1, AREA: 1, EMBED: 1 };
 
   function isItem(ch) { return ch.hasAttribute("data-sid") || (ch.classList && ch.classList.contains("product-card")); }
@@ -160,7 +176,12 @@
     var img = e.target.closest("[data-edit-img]");
     if (img) { e.preventDefault(); e.stopPropagation(); sendEditImage(img); return; }
     var ed = e.target.closest("[data-edit]");
-    if (ed) { e.preventDefault(); e.stopPropagation(); send({ type: "editContent", key: ed.getAttribute("data-edit"), value: ed.textContent.trim() }); return; }
+    if (ed) {
+      e.preventDefault(); e.stopPropagation();
+      send({ type: "editContent", key: ed.getAttribute("data-edit"), value: ed.textContent.trim(),
+        color: rgbToHex(getComputedStyle(ed).color), hasColor: !!ed.style.color });
+      return;
+    }
     // Fallback: у многих карточек поверх фото лежит декоративный оверлей/scrim
     // (напр. .cinema-card::after{inset:0}) — тогда цель клика = карточка, а не <img>,
     // и прямой поиск [data-edit-img] выше не срабатывает. Если клик попал в карточку/блок
@@ -176,7 +197,7 @@
   function replaceTokens(node, sid) {
     var all = [node].concat([].slice.call(node.querySelectorAll ? node.querySelectorAll("*") : []));
     all.forEach(function (el) {
-      ["data-sid", "data-hideable", "data-edit", "data-edit-img"].forEach(function (a) {
+      ["data-sid", "data-hideable", "data-edit", "data-edit-img", "data-edit-bg"].forEach(function (a) {
         var v = el.getAttribute && el.getAttribute(a);
         if (v && v.indexOf("{sid}") >= 0) el.setAttribute(a, v.replace(/\{sid\}/g, sid));
       });
@@ -395,6 +416,7 @@
     if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", value); return; }
     if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", value); return; }
     if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", value); return; }
+    if (key.indexOf("color.") === 0) { var ck = key.slice(6); if (safeId(ck)) applyColorLocal(ck, value); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
   }

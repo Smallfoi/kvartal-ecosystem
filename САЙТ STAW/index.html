@@ -207,22 +207,22 @@
           </p>
         </div>
         <div class="feature-stack" data-sortable="features">
-          <article class="feature-panel reveal" data-sid="f1" data-hideable="feature1">
+          <article class="feature-panel reveal" data-sid="f1" data-hideable="feature1" data-edit-bg="feature1">
             <h3 data-edit="feature1.title">Быстросохнущие материалы</h3>
             <p data-edit="feature1.text">Для жары, темпа и длинной городской активности.</p>
           </article>
-          <article class="feature-panel reveal" data-sid="f2" data-hideable="feature2">
+          <article class="feature-panel reveal" data-sid="f2" data-hideable="feature2" data-edit-bg="feature2">
             <h3 data-edit="feature2.title">Посадка для движения</h3>
             <p data-edit="feature2.text">Свобода шага, лёгкий вес, продуманная вентиляция.</p>
           </article>
-          <article class="feature-panel reveal" data-sid="f3" data-hideable="feature3">
+          <article class="feature-panel reveal" data-sid="f3" data-hideable="feature3" data-edit-bg="feature3">
             <h3 data-edit="feature3.title">Городская эстетика</h3>
             <p data-edit="feature3.text">Спортивная функция без ощущения формы только для зала.</p>
           </article>
         </div>
         <!-- Шаблон нового блока-фичи (репитер). -->
         <template data-block-template="features">
-          <article class="feature-panel" data-sid="{sid}" data-hideable="{sid}">
+          <article class="feature-panel" data-sid="{sid}" data-hideable="{sid}" data-edit-bg="{sid}">
             <h3 data-edit="features.{sid}.title">Новый блок</h3>
             <p data-edit="features.{sid}.text">Описание — нажмите, чтобы изменить.</p>
           </article>
@@ -235,26 +235,26 @@
           <h2 data-edit="modes.title">RUN · TRAIL · RACE · EVERYDAY</h2>
         </div>
         <div class="modes-grid" data-sortable="modes">
-          <article class="mode-card reveal" data-sid="m1" data-hideable="mode1">
+          <article class="mode-card reveal" data-sid="m1" data-hideable="mode1" data-edit-bg="mode1">
             <h3 data-edit="mode1.title">RUN</h3>
             <p data-edit="mode1.text">Городской бег: лёгкие ткани, вентиляция и чистый силуэт для ежедневных пробежек.</p>
           </article>
-          <article class="mode-card reveal" data-sid="m2" data-hideable="mode2">
+          <article class="mode-card reveal" data-sid="m2" data-hideable="mode2" data-edit-bg="mode2">
             <h3 data-edit="mode2.title">TRAIL</h3>
             <p data-edit="mode2.text">Лёгкий outdoor: защита, посадка и материалы для маршрутов за городом.</p>
           </article>
-          <article class="mode-card reveal" data-sid="m3" data-hideable="mode3">
+          <article class="mode-card reveal" data-sid="m3" data-hideable="mode3" data-edit-bg="mode3">
             <h3 data-edit="mode3.title">RACE</h3>
             <p data-edit="mode3.text">Соревновательный темп: минимум веса, максимум скорости и аэродинамики.</p>
           </article>
-          <article class="mode-card reveal" data-sid="m4" data-hideable="mode4">
+          <article class="mode-card reveal" data-sid="m4" data-hideable="mode4" data-edit-bg="mode4">
             <h3 data-edit="mode4.title">EVERYDAY</h3>
             <p data-edit="mode4.text">Городская повседневность: спортивная функция в одежде, которую носишь каждый день.</p>
           </article>
         </div>
         <!-- Шаблон нового блока-режима (репитер). -->
         <template data-block-template="modes">
-          <article class="mode-card" data-sid="{sid}" data-hideable="{sid}">
+          <article class="mode-card" data-sid="{sid}" data-hideable="{sid}" data-edit-bg="{sid}">
             <h3 data-edit="modes.{sid}.title">НОВЫЙ</h3>
             <p data-edit="modes.{sid}.text">Описание режима — нажмите, чтобы изменить.</p>
           </article>
@@ -426,17 +426,17 @@
               в баллы, а баллы — в скидку на одежду здесь и в магазине.
             </p>
             <div class="loyalty-steps" data-sortable="loyaltySteps">
-              <article class="loyalty-step" data-sid="ls1" data-hideable="loyaltyStep1">
+              <article class="loyalty-step" data-sid="ls1" data-hideable="loyaltyStep1" data-edit-bg="loyaltyStep1">
                 <span class="loyalty-num">01</span>
                 <h3 data-edit="loyalty.step1title">Бежишь в «Квартале»</h3>
                 <p data-edit="loyalty.step1text">Километры, захват территорий, соревнования — всё начисляет баллы.</p>
               </article>
-              <article class="loyalty-step" data-sid="ls2" data-hideable="loyaltyStep2">
+              <article class="loyalty-step" data-sid="ls2" data-hideable="loyaltyStep2" data-edit-bg="loyaltyStep2">
                 <span class="loyalty-num">02</span>
                 <h3 data-edit="loyalty.step2title">Копятся баллы</h3>
                 <p data-edit="loyalty.step2text">1 балл = 1 ₽ скидки. Баланс единый для сайта, магазина и приложения.</p>
               </article>
-              <article class="loyalty-step" data-sid="ls3" data-hideable="loyaltyStep3">
+              <article class="loyalty-step" data-sid="ls3" data-hideable="loyaltyStep3" data-edit-bg="loyaltyStep3">
                 <span class="loyalty-num">03</span>
                 <h3 data-edit="loyalty.step3title">Тратишь на STAW</h3>
                 <p data-edit="loyalty.step3text">Применяешь баллы в корзине — до 30% от суммы заказа.</p>
@@ -444,7 +444,7 @@
             </div>
             <!-- Шаблон нового шага лояльности (репитер). -->
             <template data-block-template="loyaltySteps">
-              <article class="loyalty-step" data-sid="{sid}" data-hideable="{sid}">
+              <article class="loyalty-step" data-sid="{sid}" data-hideable="{sid}" data-edit-bg="{sid}">
                 <span class="loyalty-num">＋</span>
                 <h3 data-edit="loyaltySteps.{sid}.title">Новый шаг</h3>
                 <p data-edit="loyaltySteps.{sid}.text">Описание шага — нажмите, чтобы изменить.</p>
