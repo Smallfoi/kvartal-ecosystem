@@ -256,6 +256,78 @@ def _compute_stats(uid):
     }
 
 
+@api_view(["GET"])
+def account_export(request):
+    """Выгрузка ВСЕХ персональных данных пользователя (152-ФЗ, LR §2 «портируемость»).
+    Зеркало delete_account: всё, что удаляется, — экспортируется. Отдаём JSON-файлом."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    acc = Account.objects.filter(id=uid).first()
+    if not acc:
+        return Response({"detail": "Пользователь не найден"}, status=404)
+
+    from django.db import connection
+
+    from analytics.models import Event
+    from clubs.models import Club, ClubJoinRequest, ClubMember
+    from legal.models import UserConsent
+    from loyalty.models import LoyaltyTransaction, balance_of
+    from notifications.models import Notification
+    from orders.models import Order
+    from runs.models import Run
+    from shoes.models import ShoeAsset
+
+    def rows(qs):
+        return list(qs.values())  # DRF-JSON сериализует datetime/Decimal сам
+
+    data = {
+        "userId": uid,
+        "profile": acc.to_json(),
+        "loyalty": {
+            "balance": balance_of(uid),
+            "transactions": [
+                t.to_json() for t in
+                LoyaltyTransaction.objects.filter(user_id=uid).order_by("created_at")
+            ],
+        },
+        "orders": [
+            o.to_json() for o in Order.objects.filter(user_id=uid).order_by("created_at")
+        ],
+        "runs": rows(Run.objects.filter(user_id=uid).order_by("created_at")),
+        "shoes": rows(ShoeAsset.objects.filter(user_id=uid)),
+        "notifications": rows(Notification.objects.filter(user_id=uid).order_by("created_at")),
+        "consents": rows(UserConsent.objects.filter(user_id=uid)),
+        "clubMemberships": rows(ClubMember.objects.filter(user_id=uid)),
+        "clubJoinRequests": rows(ClubJoinRequest.objects.filter(user_id=uid)),
+        "ownedClubs": rows(Club.objects.filter(owner_id=uid)),
+        "analyticsEvents": [
+            e.to_json() for e in Event.objects.filter(user_id=uid).order_by("created_at")
+        ],
+    }
+    # Гео (PostGIS, raw SQL): суммарная площадь территорий + вечный след.
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT COALESCE(SUM(ST_Area(geom::geography)),0) FROM territories WHERE owner_id=%s",
+            [uid],
+        )
+        terr = cur.fetchone()[0] or 0
+        cur.execute(
+            "SELECT COALESCE(ST_Area(geom::geography),0) FROM footprints WHERE owner_id=%s",
+            [uid],
+        )
+        fp_row = cur.fetchone()
+        cur.execute("SELECT now()")
+        now = cur.fetchone()[0]
+    data["territoriesAreaM2"] = round(terr)
+    data["footprintAreaM2"] = round((fp_row[0] if fp_row else 0) or 0)
+    data["exportedAt"] = now.isoformat()
+
+    resp = Response(data)
+    resp["Content-Disposition"] = 'attachment; filename="staw_data_export.json"'
+    return resp
+
+
 @api_view(["POST"])
 def delete_account(request):
     """Удаление аккаунта и всех персональных данных пользователя (152-ФЗ, LR §13).

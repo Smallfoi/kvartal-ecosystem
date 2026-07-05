@@ -52,6 +52,7 @@ urlpatterns = [
     path("v1/profile/avatar", account_views.profile_avatar),
     # Аккаунт: приватность (§2) и удаление аккаунта/данных (§13 LAUNCH_READINESS).
     path("v1/account/privacy", account_views.account_privacy),
+    path("v1/account/export", account_views.account_export),  # выгрузка ПДн (152-ФЗ §2)
     path("v1/account/delete", account_views.delete_account),
     path("v1/me/stats", account_views.me_stats),
     # Продуктовая аналитика (D-30): приём клиентских событий.
