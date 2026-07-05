@@ -86,3 +86,28 @@ jobs:
 
       - name: Tests (анти-чит + эндпоинты)
         run: python manage.py test --verbosity 2
+
+  site-js:
+    name: Site · JS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Синтакс-гейт клиентского JS сайта (content.js/editor.js/promo.js и др.):
+      # node --check ловит рецидивные синтакс-ошибки, ломавшие витрину/конструктор,
+      # и НЕ завязан на поведение (не бьётся при легитимных правках логики).
+      - name: Syntax-check site JS (node --check)
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r f; do
+            echo "node --check: $f"
+            node --check "$f"
+            count=$((count + 1))
+          done < <(find "САЙТ STAW" -maxdepth 1 -name '*.js' | sort)
+          echo "checked $count file(s)"
+          test "$count" -gt 0   # страховка: путь с кириллицей нашёлся, файлы проверены
