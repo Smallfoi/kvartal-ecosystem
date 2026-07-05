@@ -9,6 +9,7 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/remote_text.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,7 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: Text(
+        title: RemoteText(
+          'app.home.title',
           'SPORT STORE',
           style: GoogleFonts.oswald(
             fontSize: 22,
@@ -63,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 32),
 
-            _SectionHeader(title: 'КАТЕГОРИИ')
+            _SectionHeader(title: 'КАТЕГОРИИ', contentKey: 'app.home.catTitle')
                 .animate(delay: 100.ms)
                 .fadeIn(duration: 400.ms)
                 .slideX(begin: -0.15, curve: Curves.easeOut),
@@ -77,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             _SectionHeader(
                   title: 'РЕКОМЕНДУЕМ',
+                  contentKey: 'app.home.featTitle',
                   onTap: () => context.go('/catalog'),
                 )
                 .animate(delay: 220.ms)
@@ -92,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             _SectionHeader(
                   title: 'НОВИНКИ',
+                  contentKey: 'app.home.newTitle',
                   onTap: () => context.go('/catalog'),
                 )
                 .animate(delay: 340.ms)
@@ -305,8 +309,13 @@ class _BannerButtonState extends State<_BannerButton> {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
+  final String contentKey;
   final VoidCallback? onTap;
-  const _SectionHeader({required this.title, this.onTap});
+  const _SectionHeader({
+    required this.title,
+    required this.contentKey,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +325,8 @@ class _SectionHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
+          RemoteText(
+            contentKey,
             title,
             style: GoogleFonts.oswald(
               fontSize: 22,
@@ -330,7 +340,8 @@ class _SectionHeader extends StatelessWidget {
               onTap: onTap,
               child: Row(
                 children: const [
-                  Text(
+                  RemoteText(
+                    'app.home.seeAll',
                     'ВСЕ',
                     style: TextStyle(
                       fontSize: 12,
@@ -357,31 +368,37 @@ class _CategoryCards extends StatelessWidget {
     (
       id: 'tshirts',
       name: 'Футболки',
+      key: 'app.cat.tshirts',
       img: 'assets/images/products/1521572163474-6864f9cf17ab.jpg',
     ),
     (
       id: 'hoodies',
       name: 'Худи',
+      key: 'app.cat.hoodies',
       img: 'assets/images/products/1620799140408-edc6dcb6d633.jpg',
     ),
     (
       id: 'shoes',
       name: 'Кроссовки',
+      key: 'app.cat.shoes',
       img: 'assets/images/products/1542291026-7eec264c27ff.jpg',
     ),
     (
       id: 'jackets',
       name: 'Куртки',
+      key: 'app.cat.jackets',
       img: 'assets/images/products/1591047139829-d91aecb6caea.jpg',
     ),
     (
       id: 'pants',
       name: 'Брюки',
+      key: 'app.cat.pants',
       img: 'assets/images/products/1506629082955-511b1aa562c8.jpg',
     ),
     (
       id: 'accessories',
       name: 'Аксессуары',
+      key: 'app.cat.accessories',
       img: 'assets/images/products/1553062407-98eeb64c6a62.jpg',
     ),
   ];
@@ -397,7 +414,12 @@ class _CategoryCards extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, i) {
           final cat = _data[i];
-          return _CategoryCard(id: cat.id, name: cat.name, imageUrl: cat.img)
+          return _CategoryCard(
+                id: cat.id,
+                name: cat.name,
+                contentKey: cat.key,
+                imageUrl: cat.img,
+              )
               .animate(delay: (i * 70).ms)
               .fadeIn(duration: 350.ms)
               .slideX(begin: 0.15, duration: 350.ms, curve: Curves.easeOut);
@@ -410,10 +432,12 @@ class _CategoryCards extends StatelessWidget {
 class _CategoryCard extends StatefulWidget {
   final String id;
   final String name;
+  final String contentKey;
   final String imageUrl;
   const _CategoryCard({
     required this.id,
     required this.name,
+    required this.contentKey,
     required this.imageUrl,
   });
 
@@ -456,8 +480,10 @@ class _CategoryCardState extends State<_CategoryCard> {
                 left: 8,
                 right: 8,
                 bottom: 10,
-                child: Text(
-                  widget.name.toUpperCase(),
+                child: RemoteText(
+                  widget.contentKey,
+                  widget.name,
+                  upper: true,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.oswald(
