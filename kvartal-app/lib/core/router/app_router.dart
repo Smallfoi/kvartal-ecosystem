@@ -8,6 +8,9 @@ import '../../features/map/presentation/screens/map_screen.dart';
 import '../../features/run/presentation/screens/run_screen.dart';
 import '../../features/permissions/presentation/location_setup_sheet.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
+import '../../features/races/data/races_provider.dart';
+import '../../features/races/presentation/screens/races_screen.dart';
+import '../../features/races/presentation/screens/race_detail_screen.dart';
 import '../../features/club/presentation/screens/club_screen.dart';
 import '../../features/club/presentation/screens/club_scan_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -102,6 +105,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/leaderboard',
             pageBuilder: (_, __) =>
                 const NoTransitionPage(child: LeaderboardScreen()),
+          ),
+          GoRoute(
+            path: '/races',
+            pageBuilder: (_, __) => const NoTransitionPage(child: RacesScreen()),
+          ),
+          // Детали забега — маршрут внутри шелла (данные передаём через extra).
+          GoRoute(
+            path: '/races/detail',
+            builder: (_, state) =>
+                RaceDetailScreen(race: state.extra as RaceEvent),
           ),
           GoRoute(
             path: '/club',

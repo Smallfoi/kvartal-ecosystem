@@ -29,11 +29,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     if (location.startsWith('/leaderboard')) return 2;
     if (location.startsWith('/club')) return 3;
     if (location.startsWith('/profile')) return 4;
+    if (location.startsWith('/races')) return 5;
     return 0;
   }
 
   void _onTap(BuildContext context, int index) {
-    const routes = ['/map', '/run', '/leaderboard', '/club', '/profile'];
+    const routes = ['/map', '/run', '/leaderboard', '/club', '/profile', '/races'];
     // Закрываем открытый модальный лист (погода, выбор кроссовок и т.п.) на текущей
     // вкладке — иначе он висит поверх новой вкладки при переключении.
     final shellNav = shellNavigatorKey.currentState;
@@ -135,6 +136,13 @@ class _KvartalNavBar extends StatelessWidget {
                     label: AppStrings.tabProfile,
                     isActive: currentIndex == 4,
                     onTap: () => onTap(4),
+                  ),
+                  _NavItem(
+                    icon: CupertinoIcons.calendar,
+                    activeIcon: CupertinoIcons.calendar_today,
+                    label: AppStrings.tabEvents,
+                    isActive: currentIndex == 5,
+                    onTap: () => onTap(5),
                   ),
                 ],
               ),
