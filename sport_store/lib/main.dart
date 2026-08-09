@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'data/api/api_client.dart';
@@ -68,7 +69,7 @@ void main() async {
       ? ApiLoyaltyRepository(api!)
       : MockLoyaltyRepository();
 
-  runApp(
+  await _runWithSentry(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -108,5 +109,30 @@ void main() async {
       ],
       child: SportStoreApp(prefs: prefs),
     ),
+  );
+}
+
+/// Видимость ошибок (D-32): при заданном SENTRY_DSN (--dart-define) крэши и
+/// необработанные ошибки летят в GlitchTip. Без DSN — обычный запуск (no-op).
+/// PII не шлём (152-ФЗ). DSN приложения — из своего проекта GlitchTip.
+Future<void> _runWithSentry(Widget app) async {
+  const dsn = String.fromEnvironment('SENTRY_DSN');
+  if (dsn.isEmpty) {
+    runApp(app);
+    return;
+  }
+  await SentryFlutter.init(
+    (o) {
+      o.dsn = dsn;
+      o.environment = const String.fromEnvironment(
+        'SENTRY_ENVIRONMENT',
+        defaultValue: 'production',
+      );
+      const rel = String.fromEnvironment('SENTRY_RELEASE');
+      if (rel.isNotEmpty) o.release = rel;
+      o.tracesSampleRate = 0.0;
+      o.sendDefaultPii = false;
+    },
+    appRunner: () => runApp(app),
   );
 }
