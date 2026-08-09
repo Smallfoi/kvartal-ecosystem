@@ -55,6 +55,7 @@ dependencies:
   # audioplayers + пул плееров (round-robin) — для надёжного быстрого повтора звуков.
   audioplayers: ^6.1.0
   vibration: ^3.0.0
+  sentry_flutter: ^9.26.0
 
 dev_dependencies:
   flutter_test:
