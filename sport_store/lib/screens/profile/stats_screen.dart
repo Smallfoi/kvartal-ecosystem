@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 
 /// Личная статистика пользователя из общего бэка (/v1/me/stats):
 /// бег (Квартал) + баллы + заказы (Store) — единая витрина экосистемы.
@@ -24,7 +25,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(title: const Text('Моя статистика')),
+      appBar: AppBar(title: const RemoteText('app.stats.title', 'Моя статистика')),
       body: FutureBuilder<MeStats>(
         future: _future,
         builder: (context, snap) {
@@ -35,7 +36,8 @@ class _StatsScreenState extends State<StatsScreen> {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text(
+                child: RemoteText(
+                  'app.stats.error',
                   'Не удалось загрузить статистику.\nПроверьте подключение и попробуйте позже.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.grey600),
@@ -47,26 +49,27 @@ class _StatsScreenState extends State<StatsScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const _SectionTitle('Бег'),
+              const _SectionTitle('app.stats.section_run', 'Бег'),
               _StatRow([
-                _Stat('Забегов', '${s.runsCount}', Icons.directions_run),
-                _Stat('Дистанция', '${_km(s.totalKm)} км', Icons.route_outlined),
+                _Stat('app.stats.stat_runs', 'Забегов', '${s.runsCount}', Icons.directions_run),
+                _Stat('app.stats.stat_distance', 'Дистанция', '${_km(s.totalKm)} км', Icons.route_outlined),
               ]),
               const SizedBox(height: 22),
-              const _SectionTitle('Баллы'),
+              const _SectionTitle('app.stats.section_points', 'Баллы'),
               _StatRow([
-                _Stat('Баланс', '${s.balance}', Icons.star_border),
-                _Stat('Заработано', '${s.earned}', Icons.trending_up),
-                _Stat('Потрачено', '${s.spent}', Icons.trending_down),
+                _Stat('app.stats.stat_balance', 'Баланс', '${s.balance}', Icons.star_border),
+                _Stat('app.stats.stat_earned', 'Заработано', '${s.earned}', Icons.trending_up),
+                _Stat('app.stats.stat_spent', 'Потрачено', '${s.spent}', Icons.trending_down),
               ]),
               const SizedBox(height: 22),
-              const _SectionTitle('Заказы'),
+              const _SectionTitle('app.stats.section_orders', 'Заказы'),
               _StatRow([
-                _Stat('Заказов', '${s.ordersCount}', Icons.shopping_bag_outlined),
-                _Stat('На сумму', '${s.totalSpent} ₽', Icons.payments_outlined),
+                _Stat('app.stats.stat_orders', 'Заказов', '${s.ordersCount}', Icons.shopping_bag_outlined),
+                _Stat('app.stats.stat_total', 'На сумму', '${s.totalSpent} ₽', Icons.payments_outlined),
               ]),
               const SizedBox(height: 24),
-              const Text(
+              const RemoteText(
+                'app.stats.footer_note',
                 'Статистика едина во всех приложениях экосистемы: бег и баллы '
                 'зарабатываются в «Квартале», покупки — здесь.',
                 style: TextStyle(
@@ -84,13 +87,15 @@ class _StatsScreenState extends State<StatsScreen> {
 }
 
 class _SectionTitle extends StatelessWidget {
+  final String contentKey;
   final String text;
-  const _SectionTitle(this.text);
+  const _SectionTitle(this.contentKey, this.text);
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
-        child: Text(
+        child: RemoteText(
+          contentKey,
           text,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
         ),
@@ -98,10 +103,11 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _Stat {
+  final String contentKey;
   final String label;
   final String value;
   final IconData icon;
-  const _Stat(this.label, this.value, this.icon);
+  const _Stat(this.contentKey, this.label, this.value, this.icon);
 }
 
 class _StatRow extends StatelessWidget {
@@ -150,7 +156,8 @@ class _StatCard extends StatelessWidget {
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 2),
-            Text(
+            RemoteText(
+              stat.contentKey,
               stat.label,
               style: const TextStyle(fontSize: 12, color: AppColors.grey600),
             ),

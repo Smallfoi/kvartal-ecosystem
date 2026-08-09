@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 import 'reset_password_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -125,7 +126,8 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              RemoteText(
+                'app.forgot.brand',
                 'SPORT STORE',
                 style: GoogleFonts.oswald(
                   fontSize: 30,
@@ -184,7 +186,8 @@ class _FormBodyState extends State<_FormBody> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          const RemoteText(
+            'app.forgot.subtitle',
             'Введите email, указанный при регистрации. Мы отправим ссылку для создания нового пароля.',
             style: TextStyle(
               fontSize: 14,
@@ -199,7 +202,8 @@ class _FormBodyState extends State<_FormBody> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              const RemoteText(
+                'app.forgot.email_label',
                 'EMAIL',
                 style: TextStyle(
                   fontSize: 11,
@@ -289,7 +293,8 @@ class _FormBodyState extends State<_FormBody> {
                             strokeWidth: 2,
                           ),
                         )
-                      : Text(
+                      : RemoteText(
+                          'app.forgot.submit',
                           'ОТПРАВИТЬ ССЫЛКУ',
                           style: GoogleFonts.oswald(
                             fontSize: 15,
@@ -307,7 +312,8 @@ class _FormBodyState extends State<_FormBody> {
 
           GestureDetector(
             onTap: widget.onBack,
-            child: const Text(
+            child: const RemoteText(
+              'app.forgot.back_to_login',
               'Вернуться ко входу',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -357,7 +363,8 @@ class _SuccessBody extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          Text(
+          RemoteText(
+            'app.forgot.success_title',
             'ПИСЬМО ОТПРАВЛЕНО',
             style: GoogleFonts.oswald(
               fontSize: 22,
@@ -381,7 +388,8 @@ class _SuccessBody extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          const Text(
+          const RemoteText(
+            'app.forgot.success_hint',
             'Если письмо не пришло, проверьте папку «Спам»',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -398,7 +406,8 @@ class _SuccessBody extends StatelessWidget {
               height: 52,
               color: AppColors.black,
               alignment: Alignment.center,
-              child: Text(
+              child: RemoteText(
+                'app.forgot.reset_button',
                 'ЗАДАТЬ НОВЫЙ ПАРОЛЬ',
                 style: GoogleFonts.oswald(
                   fontSize: 15,
@@ -414,7 +423,8 @@ class _SuccessBody extends StatelessWidget {
 
           GestureDetector(
             onTap: onBack,
-            child: const Text(
+            child: const RemoteText(
+              'app.forgot.success_back_to_login',
               'Вернуться ко входу',
               textAlign: TextAlign.center,
               style: TextStyle(

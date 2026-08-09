@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -118,7 +119,8 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              RemoteText(
+                'app.reset.brand',
                 'SPORT STORE',
                 style: GoogleFonts.oswald(
                   fontSize: 30,
@@ -204,7 +206,8 @@ class _FormBodyState extends State<_FormBody> {
 
           const SizedBox(height: 8),
 
-          const Text(
+          const RemoteText(
+            'app.reset.subtitle',
             'Придумайте надёжный пароль — минимум 6 символов.',
             style: TextStyle(
               fontSize: 13,
@@ -261,7 +264,8 @@ class _FormBodyState extends State<_FormBody> {
                           child: CircularProgressIndicator(
                               color: AppColors.white, strokeWidth: 2),
                         )
-                      : Text(
+                      : RemoteText(
+                          'app.reset.submit',
                           'СОХРАНИТЬ ПАРОЛЬ',
                           style: GoogleFonts.oswald(
                             fontSize: 15,
@@ -279,7 +283,8 @@ class _FormBodyState extends State<_FormBody> {
 
           GestureDetector(
             onTap: widget.onBack,
-            child: const Text(
+            child: const RemoteText(
+              'app.reset.back',
               'Вернуться назад',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -317,7 +322,8 @@ class _SuccessBody extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          Text(
+          RemoteText(
+            'app.reset.success_title',
             'ПАРОЛЬ ОБНОВЛЁН',
             style: GoogleFonts.oswald(
               fontSize: 22,
@@ -329,7 +335,8 @@ class _SuccessBody extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          const Text(
+          const RemoteText(
+            'app.reset.success_subtitle',
             'Теперь вы можете войти\nс новым паролем',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -347,7 +354,8 @@ class _SuccessBody extends StatelessWidget {
               height: 52,
               color: AppColors.black,
               alignment: Alignment.center,
-              child: Text(
+              child: RemoteText(
+                'app.reset.login_button',
                 'ВОЙТИ',
                 style: GoogleFonts.oswald(
                   fontSize: 15,
