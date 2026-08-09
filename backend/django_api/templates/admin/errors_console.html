@@ -19,6 +19,11 @@
   .errs-note{padding:.8rem 1rem;border-radius:.5rem;background:#fff6e5;border:1px solid #f5d99a;color:#7a5b12;margin:0 0 1rem}
   .dark .errs-note{background:#3a2f12;border-color:#6b551f;color:#f0d9a0}
   .errs-title a{font-weight:600;text-decoration:none}
+  .errs-tabs{display:flex;gap:.4rem;margin:0 0 1rem;flex-wrap:wrap}
+  .errs-tab{padding:.4rem .85rem;border:1px solid #cbd2d6;border-radius:.5rem;text-decoration:none;color:#334;font-size:.88rem}
+  .dark .errs-tab{border-color:#374151;color:#cbd5e1}
+  .errs-tab.on{background:#20252b;color:#fff;border-color:#20252b}
+  .dark .errs-tab.on{background:#57bcd8;color:#0d0d0d;border-color:#57bcd8}
 </style>
 
 {% if not configured %}
@@ -31,15 +36,24 @@
   <div class="errs-note">{{ error }}</div>
 {% endif %}
 
+<div class="errs-tabs">
+  <a class="errs-tab {% if level == 'err' %}on{% endif %}"
+     href="?level=err&status={{ status }}{% if q %}&q={{ q|urlencode }}{% endif %}">🐞 Ошибки ({{ n_err }})</a>
+  <a class="errs-tab {% if level == 'info' %}on{% endif %}"
+     href="?level=info&status={{ status }}{% if q %}&q={{ q|urlencode }}{% endif %}">ℹ️ Информационные ({{ n_info }})</a>
+  <a class="errs-tab {% if level == 'all' %}on{% endif %}"
+     href="?level=all&status={{ status }}{% if q %}&q={{ q|urlencode }}{% endif %}">Все</a>
+</div>
+
 <div class="errs-sum">
-  <div class="errs-tile"><b>{{ summary.total }}</b><span>всего issues</span></div>
+  <div class="errs-tile"><b>{{ summary.total }}</b><span>показано</span></div>
   <div class="errs-tile"><b>{{ summary.unresolved }}</b><span>не решено</span></div>
-  <div class="errs-tile"><b>{{ summary.errors }}</b><span>error/fatal</span></div>
   <div class="errs-tile"><b>{{ summary.events }}</b><span>событий</span></div>
 </div>
 
 <form class="errs-form" method="get">
-  <input type="search" name="q" value="{{ q }}" placeholder="Поиск по тексту ошибки…">
+  <input type="hidden" name="level" value="{{ level }}">
+  <input type="search" name="q" value="{{ q }}" placeholder="Поиск по тексту…">
   <select name="status">
     <option value="unresolved"{% if status == "unresolved" %} selected{% endif %}>Не решённые</option>
     <option value="resolved"{% if status == "resolved" %} selected{% endif %}>Решённые</option>
@@ -69,6 +83,6 @@
   </tbody>
 </table>
 {% elif configured and not error %}
-  <p style="color:#6f7278">Ошибок нет 🎉 (по текущему фильтру).</p>
+  <p style="color:#6f7278">{% if level == 'info' %}Нет информационных сообщений{% else %}Ошибок нет 🎉{% endif %} (по текущему фильтру).</p>
 {% endif %}
 {% endblock %}

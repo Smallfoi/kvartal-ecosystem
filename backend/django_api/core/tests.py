@@ -99,7 +99,7 @@ class ErrorsConsoleTests(TestCase):
         # GlitchTip может быть не настроен (CI) — страница всё равно 200 (graceful).
         r = self.client.get("/admin/errors/")
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "всего issues")  # сводка отрисована
+        self.assertContains(r, "Информационные")  # переключатель уровней отрисован
 
     def test_errors_page_requires_staff(self):
         self.client.logout()
