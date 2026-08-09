@@ -345,9 +345,11 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-# ── Sentry (мониторинг/краши, D-25: self-host РФ) ───────────────────────────
+# ── Sentry / GlitchTip (видимость ошибок, D-25/D-32: self-host РФ) ───────────
 # Каркас: подключается ТОЛЬКО при заданном SENTRY_DSN. Без ключа — no-op, без
-# накладных расходов. Заполнит владелец, когда поднимет self-host Sentry.
+# накладных расходов. DSN даёт наш self-host GlitchTip (Sentry-совместимый) —
+# см. docs/OBSERVABILITY.md. `release` привязывает ошибки к версии (регрессии,
+# release-health). `send_default_pii=False` — 152-ФЗ, не шлём ПДн в события.
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 if SENTRY_DSN:
     import sentry_sdk
@@ -359,6 +361,7 @@ if SENTRY_DSN:
         environment=os.environ.get(
             "SENTRY_ENVIRONMENT", "dev" if DEBUG else "production"
         ),
+        release=os.environ.get("SENTRY_RELEASE") or None,  # git sha/версия → трекинг регрессий
         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0")),
         send_default_pii=False,  # 152-ФЗ: не отправляем ПДн в события по умолчанию
     )

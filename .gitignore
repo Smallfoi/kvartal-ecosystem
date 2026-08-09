@@ -30,6 +30,9 @@ backend/ecosystem.db
 backups/
 *.sql.gz
 
+# === Локальные docker-override (содержат локальные DSN/секреты, не для репо) ===
+**/docker-compose.override.yml
+
 # === Flutter devtools (генерится IDE, не нужен в репо) ===
 **/devtools_options.yaml
 

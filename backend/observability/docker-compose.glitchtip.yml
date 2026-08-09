@@ -1,0 +1,55 @@
+# GlitchTip — трекер ошибок (D-32, docs/OBSERVABILITY.md). ЛОКАЛЬНЫЙ демо-инстанс.
+# Изолирован от основного стека: свои postgres/redis (наружу не публикуем), панель на :8080.
+# Прод — перенести на Yandex Cloud (дата-резиденция РФ). SECRET_KEY здесь — демо, не прод-секрет.
+#
+# Запуск:  docker compose -f backend/observability/docker-compose.glitchtip.yml up -d
+# Панель:  http://localhost:8080
+x-gt-env: &gt-env
+  DATABASE_URL: postgres://postgres:postgres@gt-postgres:5432/postgres
+  REDIS_URL: redis://gt-redis:6379/0
+  SECRET_KEY: "${GLITCHTIP_SECRET_KEY:-local-demo-secret-not-for-prod-000111222333444}"
+  PORT: "8080"
+  EMAIL_URL: consolemail://
+  GLITCHTIP_DOMAIN: http://localhost:8080
+  DEFAULT_FROM_EMAIL: dev@localhost
+  CELERY_WORKER_AUTOSCALE: "1,3"
+  ENABLE_OPEN_USER_REGISTRATION: "true"
+
+services:
+  gt-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - gt-pg:/var/lib/postgresql/data
+
+  gt-redis:
+    image: redis:7-alpine
+
+  gt-web:
+    image: glitchtip/glitchtip
+    depends_on: [gt-postgres, gt-redis]
+    ports:
+      - "8080:8080"
+    environment: *gt-env
+    volumes:
+      - gt-uploads:/code/uploads
+
+  gt-worker:
+    image: glitchtip/glitchtip
+    command: ./bin/run-celery-with-beat.sh
+    depends_on: [gt-postgres, gt-redis]
+    environment: *gt-env
+    volumes:
+      - gt-uploads:/code/uploads
+
+  gt-migrate:
+    image: glitchtip/glitchtip
+    command: ./manage.py migrate
+    depends_on: [gt-postgres, gt-redis]
+    environment: *gt-env
+    restart: "no"
+
+volumes:
+  gt-pg:
+  gt-uploads:

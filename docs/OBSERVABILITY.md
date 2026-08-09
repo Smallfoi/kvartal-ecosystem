@@ -95,6 +95,22 @@
 - **Владелец:** поднять GlitchTip на Yandex Cloud, выдать DSN, завести Telegram-канал алертов, решить момент апгрейда на полный Sentry+Seer.
 - **Claude:** обогатить бэк-Sentry, вшить каркас в приложения, плитку в админку, держать ранбук; **быть слоем устранения корня** — разбирать топ ошибок и чинить причины + тесты.
 
+## 11а. Локальный демо-инстанс (ЗАПУЩЕН — 2026-08)
+
+Поднят локально для проверки метода до облака. **Только dev, пока включён ПК.**
+
+- **Панель:** http://localhost:8080 · вход `admin@staw.local` / `staw-glitchtip-2026`.
+- **Поднять/погасить:**
+  ```bash
+  docker compose -f backend/observability/docker-compose.glitchtip.yml up -d      # поднять
+  docker compose -f backend/observability/docker-compose.glitchtip.yml down       # погасить (данные в томе gt-pg)
+  ```
+- **Как подключён наш бэк:** локальный `backend/docker-compose.override.yml` (**gitignored**) задаёт
+  `SENTRY_DSN=http://<key>@host.docker.internal:8080/1` для web+worker → реальные ошибки бэка летят в GlitchTip.
+  Убрать файл и пересоздать web — бэк перестанет слать (вернётся к no-op).
+- **Проверено:** 3 тест-ошибки + 1 живое событие с бэка легли в панель, сгруппированы по типу (ValueError/KeyError/…).
+- **Прод-отличия:** инстанс переносится на Yandex Cloud (постоянный, РФ-резиденция), DSN — в прод-`.env`, а не в override.
+
 ## 11. Источники (по состоянию на 2026)
 
 Sentry (группировка/fingerprint, Seer Autofix→Claude Code), Firebase Crashlytics (группировка,
