@@ -28,6 +28,7 @@ from legal import views as legal_views
 from runs import views as runs_views
 from clubs import views as clubs_views
 from orders import views as orders_views
+from races import views as races_views
 from shoes import views as shoes_views
 from territories import views as territories_views
 from analytics import views as analytics_views
@@ -113,6 +114,8 @@ urlpatterns = [
     path("v1/legal/consents", legal_views.my_consents),
     # Кроссовки — трекер износа (связка Store ↔ Квартал, ECOSYSTEM_API §2.5).
     # Порядок: 'pending' раньше generic '<id>/...'.
+    path("v1/races", races_views.races),
+    path("v1/races/<str:race_id>", races_views.race_detail),
     path("v1/shoes", shoes_views.shoes),
     path("v1/shoes/pending", shoes_views.shoes_pending),
     path("v1/shoes/<str:shoe_id>/confirm", shoes_views.shoe_confirm),
