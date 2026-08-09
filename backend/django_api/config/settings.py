@@ -290,6 +290,15 @@ UNFOLD = {
                      "link": reverse_lazy("merch_console")},
                 ],
             },
+            {
+                "title": "Мониторинг",
+                "separator": True,
+                "items": [
+                    # «Вкладка Ошибки» внутри админки (GlitchTip по API, D-32).
+                    {"title": "Ошибки", "icon": "bug_report",
+                     "link": reverse_lazy("errors_console")},
+                ],
+            },
         ],
     },
 }

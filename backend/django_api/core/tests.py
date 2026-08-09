@@ -84,3 +84,24 @@ class HealthTests(TestCase):
         self.assertEqual(r.status_code, 503)  # инстанс выводят из ротации
         self.assertFalse(r.json()["ready"])
         self.assertFalse(r.json()["db"])
+
+
+class ErrorsConsoleTests(TestCase):
+    """Страница «Ошибки» в админке (D-32): staff-only, отрисовывается даже без GlitchTip."""
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        User.objects.create_superuser("boss2", "boss2@x.dev", "pass-12345")
+        self.client.login(username="boss2", password="pass-12345")
+
+    def test_errors_page_renders(self):
+        # GlitchTip может быть не настроен (CI) — страница всё равно 200 (graceful).
+        r = self.client.get("/admin/errors/")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "всего issues")  # сводка отрисована
+
+    def test_errors_page_requires_staff(self):
+        self.client.logout()
+        r = self.client.get("/admin/errors/")
+        self.assertEqual(r.status_code, 302)  # редирект на вход
