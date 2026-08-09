@@ -9,3 +9,4 @@ void postEditBg(String key,
 void postReady() {}
 void onConsoleSetContent(void Function(String key, String value) cb) {}
 void onConsoleSetImage(void Function(String key, String url) cb) {}
+void onConsoleSetEditMode(void Function(bool on) cb) {}

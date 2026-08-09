@@ -58,17 +58,22 @@ class RemoteText extends StatelessWidget {
       overflow: overflow,
       textAlign: textAlign,
     );
-    if (!consoleEditMode) return text;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => postEditContent(contentKey, value,
-          color: colorHex, hasColor: colorHex.isNotEmpty),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0x660A84FF)),
-        ),
-        child: text,
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: consoleEditNotifier,
+      builder: (context, editing, _) {
+        if (!editing) return text; // «Просмотр» → обычный текст, тап проходит дальше
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => postEditContent(contentKey, value,
+              color: colorHex, hasColor: colorHex.isNotEmpty),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0x660A84FF)),
+            ),
+            child: text,
+          ),
+        );
+      },
     );
   }
 }
