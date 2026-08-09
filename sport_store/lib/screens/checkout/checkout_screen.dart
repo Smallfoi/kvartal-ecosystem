@@ -332,7 +332,8 @@ class _EmptyCheckout extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            const RemoteText(
+              'app.checkout.empty.subtitle',
               'Добавьте товары в корзину, чтобы перейти к доставке и оплате',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -348,7 +349,8 @@ class _EmptyCheckout extends StatelessWidget {
                 height: 52,
                 color: AppColors.black,
                 alignment: Alignment.center,
-                child: Text(
+                child: RemoteText(
+                  'app.checkout.toCatalog',
                   'ПЕРЕЙТИ В КАТАЛОГ',
                   style: GoogleFonts.oswald(
                     fontSize: 15,
@@ -518,7 +520,8 @@ class _ContactStep extends StatelessWidget {
         children: [
           const _StepTitle('app.checkout.title.contacts', 'Контактные данные'),
           const SizedBox(height: 6),
-          const Text(
+          const RemoteText(
+            'app.checkout.contactsSubtitle',
             'Укажите данные для связи по заказу',
             style: TextStyle(fontSize: 13, color: AppColors.grey600),
           ),

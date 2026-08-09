@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/order.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 import '../profile/order_detail_screen.dart';
 
 class OrderSuccessScreen extends StatelessWidget {
@@ -47,7 +48,8 @@ class OrderSuccessScreen extends StatelessWidget {
 
                       const SizedBox(height: 32),
 
-                      Text(
+                      RemoteText(
+                        'app.ordersuccess.title',
                         'ЗАКАЗ ОФОРМЛЕН!',
                         style: GoogleFonts.oswald(
                           fontSize: 26,
@@ -75,7 +77,8 @@ class OrderSuccessScreen extends StatelessWidget {
                             .fadeIn(duration: 400.ms, delay: 400.ms)
                             .slideY(begin: 0.1),
                       ] else
-                        const Text(
+                        const RemoteText(
+                          'app.ordersuccess.subtitle',
                           'Ваш заказ принят в обработку',
                           style: TextStyle(
                             fontSize: 14,
@@ -115,7 +118,8 @@ class OrderSuccessScreen extends StatelessWidget {
                                 height: 52,
                                 color: AppColors.black,
                                 alignment: Alignment.center,
-                                child: Text(
+                                child: RemoteText(
+                                  'app.ordersuccess.detailsTitle',
                                   'ДЕТАЛИ ЗАКАЗА',
                                   style: GoogleFonts.oswald(
                                     fontSize: 15,
@@ -148,7 +152,8 @@ class OrderSuccessScreen extends StatelessWidget {
                                   ? AppColors.black
                                   : AppColors.white,
                               alignment: Alignment.center,
-                              child: Text(
+                              child: RemoteText(
+                                'app.ordersuccess.myOrders',
                                 'МОИ ЗАКАЗЫ',
                                 style: GoogleFonts.oswald(
                                   fontSize: 15,
@@ -178,7 +183,8 @@ class OrderSuccessScreen extends StatelessWidget {
                                 border: Border.all(color: AppColors.grey200),
                               ),
                               alignment: Alignment.center,
-                              child: Text(
+                              child: RemoteText(
+                                'app.ordersuccess.toHome',
                                 'НА ГЛАВНУЮ',
                                 style: GoogleFonts.oswald(
                                   fontSize: 15,
@@ -224,10 +230,15 @@ class _InfoCard extends StatelessWidget {
       decoration: BoxDecoration(border: Border.all(color: AppColors.grey200)),
       child: Column(
         children: [
-          _Row(label: 'Сумма заказа', value: '${order.total.toInt()} ₽'),
+          _Row(
+            label: 'Сумма заказа',
+            labelKey: 'app.ordersuccess.sumLabel',
+            value: '${order.total.toInt()} ₽',
+          ),
           const Divider(height: 20),
           _Row(
             label: 'Доставка',
+            labelKey: 'app.ordersuccess.deliveryLabel',
             value: OrderProvider.deliveryLabel(data.deliveryType),
           ),
           const SizedBox(height: 4),
@@ -240,11 +251,13 @@ class _InfoCard extends StatelessWidget {
           const Divider(height: 20),
           _Row(
             label: 'Оплата',
+            labelKey: 'app.ordersuccess.paymentLabel',
             value: OrderProvider.paymentLabel(data.paymentType),
           ),
           const Divider(height: 20),
           _Row(
             label: 'Статус',
+            labelKey: 'app.ordersuccess.statusLabel',
             value: OrderProvider.statusLabel(order.status),
             valueColor: AppColors.black,
           ),
@@ -256,12 +269,14 @@ class _InfoCard extends StatelessWidget {
 
 class _Row extends StatelessWidget {
   final String label;
+  final String? labelKey;
   final String value;
   final bool small;
   final Color? valueColor;
 
   const _Row({
     required this.label,
+    this.labelKey,
     required this.value,
     this.small = false,
     this.valueColor,
@@ -274,10 +289,16 @@ class _Row extends StatelessWidget {
         if (label.isNotEmpty)
           SizedBox(
             width: 110,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.grey600),
-            ),
+            child: labelKey == null
+                ? Text(
+                    label,
+                    style: const TextStyle(fontSize: 13, color: AppColors.grey600),
+                  )
+                : RemoteText(
+                    labelKey!,
+                    label,
+                    style: const TextStyle(fontSize: 13, color: AppColors.grey600),
+                  ),
           ),
         Expanded(
           child: Text(
