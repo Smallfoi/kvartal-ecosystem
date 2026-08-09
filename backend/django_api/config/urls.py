@@ -31,6 +31,7 @@ from orders import views as orders_views
 from shoes import views as shoes_views
 from territories import views as territories_views
 from analytics import views as analytics_views
+from config.errors_view import errors_console
 
 urlpatterns = [
     # Конструктор (live-превью + правка + публикация). Отдельные «Превью» убраны.
@@ -47,6 +48,8 @@ urlpatterns = [
     path("admin/merch/banner-reorder", merch_banner_reorder, name="merch_banner_reorder"),
     path("admin/merch/banner/<int:bid>", merch_banner, name="merch_banner"),
     path("admin/merch/banner/<int:bid>/delete", merch_banner_delete, name="merch_banner_delete"),
+    # «Ошибки» — GlitchTip внутри нашей админки (D-32). ДО admin/ catch-all.
+    path("admin/errors/", errors_console, name="errors_console"),
     path("admin/", admin.site.urls),
     path("v1/", include("core.urls")),
     path("v1/auth/", include("accounts.urls")),
