@@ -38,6 +38,20 @@ void main() {
       expect(p.fit('app.cat.shoes.img'), 'contain');
     });
 
+    test('value() читает служебные bg-поля; фон = imageUrl(bg.<k>)', () {
+      final p = RemoteContentProvider(null);
+      expect(p.value('bgvid.app.onb.bg'), '');
+      p.applyDraft('bgoff.app.onb.bg', '1');
+      p.applyDraft('bgvid.app.onb.bg', 'https://x/clip.mp4');
+      p.applyDraft('bgfocal.app.onb.bg', '30% 70%');
+      expect(p.value('bgoff.app.onb.bg'), '1');
+      expect(p.value('bgvid.app.onb.bg'), 'https://x/clip.mp4');
+      expect(p.value('bgfocal.app.onb.bg'), '30% 70%');
+      // фото фона идёт через imageUrl(bg.<k>)
+      p.applyImageDraft('bg.app.onb.bg', 'data:image/png;base64,AAAA');
+      expect(p.imageUrl('bg.app.onb.bg'), 'data:image/png;base64,AAAA');
+    });
+
     test('applyImageDraft задаёт/снимает URL фото и уведомляет', () {
       final p = RemoteContentProvider(null);
       var notified = 0;

@@ -45,6 +45,10 @@ class RemoteContentProvider extends ChangeNotifier {
   /// Абсолютный URL фото по ключу или '' (фолбэк-ассет решает виджет).
   String imageUrl(String key) => _images[key] ?? '';
 
+  /// Сырое значение по полному ключу или '' (для служебных bg-полей:
+  /// `bgvid.<k>`/`bgoff.<k>`/`bgfocal.<k>`/`bgfit.<k>`). Фото фона — `imageUrl('bg.<k>')`.
+  String value(String key) => _content[key] ?? '';
+
   Future<void> _init() async {
     await _load(); // сначала опубликованное как база
     if (consoleEditMode) {

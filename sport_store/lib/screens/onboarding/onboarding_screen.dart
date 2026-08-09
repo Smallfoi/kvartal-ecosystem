@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
+import '../../widgets/remote_background.dart';
 import '../../widgets/remote_text.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -71,7 +72,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
+      body: RemoteBackground(
+        'app.onb.bg',
+        fallbackColor: Colors.black,
+        child: SafeArea(
         child: Column(
           children: [
             // Skip
@@ -152,6 +156,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
