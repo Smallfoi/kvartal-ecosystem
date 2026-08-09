@@ -52,18 +52,18 @@
 
 {% if issues %}
 <table class="errs">
-  <thead><tr><th>Уровень</th><th>Ошибка</th><th>Событий</th><th>Статус</th><th>Последняя</th></tr></thead>
+  <thead><tr><th>Уровень</th><th>Ошибка</th><th>Событий</th><th>Статус</th><th>Зафиксирована (якут.)</th></tr></thead>
   <tbody>
     {% for i in issues %}
     <tr>
-      <td><span class="lvl lvl-{{ i.level|default:'error' }}">{{ i.level|default:'error' }}</span></td>
+      <td><span class="lvl lvl-{{ i.level|default:'error' }}">{{ i.level_ru }}</span></td>
       <td class="errs-title">
-        <a href="{{ i.gtlink }}" target="_blank">{{ i.title|default:'(без заголовка)' }}</a>
+        <a href="{% url 'error_detail' i.id %}">{{ i.title|default:'(без заголовка)' }}</a>
         {% if i.culprit %}<div style="color:#6f7278;font-size:.8rem">{{ i.culprit }}</div>{% endif %}
       </td>
       <td>{{ i.count|default:'—' }}</td>
-      <td>{{ i.status|default:'—' }}</td>
-      <td style="color:#6f7278;font-size:.82rem">{{ i.lastSeen|default:''|slice:":16" }}</td>
+      <td>{{ i.status_ru }}</td>
+      <td style="color:#6f7278;font-size:.82rem">{{ i.last_local }}</td>
     </tr>
     {% endfor %}
   </tbody>

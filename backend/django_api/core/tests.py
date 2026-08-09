@@ -105,3 +105,9 @@ class ErrorsConsoleTests(TestCase):
         self.client.logout()
         r = self.client.get("/admin/errors/")
         self.assertEqual(r.status_code, 302)  # редирект на вход
+
+    def test_error_detail_renders(self):
+        # Карточка ошибки внутри админки; без GlitchTip (CI) — 200 с сообщением.
+        r = self.client.get("/admin/errors/5/")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Все ошибки")  # ссылка назад к списку
