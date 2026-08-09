@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../data/api/api_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -278,7 +279,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           children: [
                             GestureDetector(
                               onTap: _pickAvatar,
-                              child: const Text(
+                              child: const RemoteText(
+                                'app.editprofile.changePhoto',
                                 'Изменить фото',
                                 style: TextStyle(
                                   fontSize: 13,
@@ -294,7 +296,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ),
                               GestureDetector(
                                 onTap: _removeAvatar,
-                                child: const Text(
+                                child: const RemoteText(
+                                  'app.editprofile.removePhoto',
                                   'Удалить',
                                   style: TextStyle(
                                     fontSize: 13,
@@ -319,7 +322,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           vertical: 5,
                         ),
                         color: AppColors.grey100,
-                        child: Text(
+                        child: RemoteText(
+                          'app.editprofile.phoneLogin',
                           'Вход по номеру телефона',
                           style: const TextStyle(
                             fontSize: 12,
@@ -390,7 +394,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           setState(() => _showPassSection = !_showPassSection),
                       child: Row(
                         children: [
-                          Text(
+                          RemoteText(
+                            'app.editprofile.changePassword',
                             'СМЕНИТЬ ПАРОЛЬ',
                             style: GoogleFonts.oswald(
                               fontSize: 14,
@@ -445,7 +450,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 28),
                   Row(
                     children: [
-                      Text(
+                      RemoteText(
+                        'app.editprofile.addresses',
                         'АДРЕСА ДОСТАВКИ',
                         style: GoogleFonts.oswald(
                           fontSize: 14,
@@ -477,7 +483,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 12),
 
                   if (user.addresses.isEmpty && !_showAddressForm)
-                    const Text(
+                    const RemoteText(
+                      'app.editprofile.noAddresses',
                       'Нет сохранённых адресов',
                       style: TextStyle(fontSize: 13, color: AppColors.grey600),
                     ),
@@ -573,7 +580,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             color: AppColors.grey600,
                           ),
                           const SizedBox(width: 6),
-                          Text(
+                          RemoteText(
+                            _showAddressForm
+                                ? 'app.editprofile.cancel'
+                                : 'app.editprofile.addAddress',
                             _showAddressForm ? 'Отмена' : 'Добавить адрес',
                             style: const TextStyle(
                               fontSize: 13,
@@ -667,7 +677,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             height: 46,
                             color: AppColors.black,
                             alignment: Alignment.center,
-                            child: Text(
+                            child: RemoteText(
+                              'app.editprofile.add',
                               'ДОБАВИТЬ',
                               style: GoogleFonts.oswald(
                                 fontSize: 14,
@@ -708,7 +719,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         size: 18,
                                       ),
                                       SizedBox(width: 8),
-                                      Text(
+                                      RemoteText(
+                                        'app.editprofile.saved',
                                         'СОХРАНЕНО',
                                         style: TextStyle(
                                           fontSize: 15,
@@ -728,7 +740,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : Text(
+                                : RemoteText(
+                                    'app.editprofile.save',
                                     'СОХРАНИТЬ',
                                     style: GoogleFonts.oswald(
                                       fontSize: 15,
@@ -788,7 +801,8 @@ class _Header extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
           child: Row(
             children: [
-              Text(
+              RemoteText(
+                'app.editprofile.title',
                 'РЕДАКТИРОВАТЬ ПРОФИЛЬ',
                 style: GoogleFonts.oswald(
                   fontSize: 18,

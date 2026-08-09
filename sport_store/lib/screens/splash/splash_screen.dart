@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../widgets/remote_text.dart';
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -145,7 +146,8 @@ class _SplashScreenState extends State<SplashScreen>
                             offset: Offset(-sw * _wordSlide.value, 0),
                             child: Opacity(
                               opacity: _wordFade.value,
-                              child: Text(
+                              child: RemoteText(
+                                'app.splash.brand1',
                                 'SPORT',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.oswald(
@@ -202,7 +204,8 @@ class _SplashScreenState extends State<SplashScreen>
                             offset: Offset(sw * _wordSlide.value, 0),
                             child: Opacity(
                               opacity: _wordFade.value,
-                              child: Text(
+                              child: RemoteText(
+                                'app.splash.brand2',
                                 'STORE',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.oswald(
@@ -222,7 +225,8 @@ class _SplashScreenState extends State<SplashScreen>
                         // Тэглайн
                         Opacity(
                           opacity: _taglineFade.value,
-                          child: const Text(
+                          child: const RemoteText(
+                            'app.splash.tagline',
                             'СПОРТИВНАЯ ОДЕЖДА И ЭКИПИРОВКА',
                             textAlign: TextAlign.center,
                             style: TextStyle(

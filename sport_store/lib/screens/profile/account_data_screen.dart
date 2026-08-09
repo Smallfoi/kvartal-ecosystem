@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/remote_text.dart';
 
 /// Конфиденциальность и данные (LAUNCH_READINESS §2/§13): видимость профиля
 /// (общая настройка аккаунта) + удаление аккаунта. Аккаунт единый с «Кварталом».
@@ -44,19 +45,20 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: const Text('Удалить аккаунт?'),
-        content: const Text(
+        title: const RemoteText('app.account.deleteDialog.title', 'Удалить аккаунт?'),
+        content: const RemoteText(
+          'app.account.deleteDialog.body',
           'Это навсегда удалит ваш аккаунт, баллы, заказы и историю во всей '
           'экосистеме (включая «Квартал»). Действие необратимо.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Отмена', style: TextStyle(color: AppColors.grey600)),
+            child: const RemoteText('app.account.deleteDialog.cancel', 'Отмена', style: TextStyle(color: AppColors.grey600)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Удалить', style: TextStyle(color: AppColors.red)),
+            child: const RemoteText('app.account.deleteDialog.confirm', 'Удалить', style: TextStyle(color: AppColors.red)),
           ),
         ],
       ),
@@ -81,7 +83,7 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: const Text('Конфиденциальность и данные'),
+        title: const RemoteText('app.account.title', 'Конфиденциальность и данные'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -94,9 +96,9 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
                     border: Border.all(color: AppColors.grey200),
                   ),
                   child: SwitchListTile(
-                    title: const Text('Открытый профиль',
+                    title: const RemoteText('app.account.publicProfile', 'Открытый профиль',
                         style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Другие могут видеть ваш профиль в экосистеме'),
+                    subtitle: const RemoteText('app.account.publicProfileSub', 'Другие могут видеть ваш профиль в экосистеме'),
                     value: _profilePublic,
                     activeColor: AppColors.black,
                     onChanged: _toggle,
@@ -136,7 +138,7 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
                               strokeWidth: 2, color: AppColors.red),
                         )
                       : const Icon(Icons.delete_outline, size: 20),
-                  label: const Text('Удалить аккаунт',
+                  label: const RemoteText('app.account.deleteAccount', 'Удалить аккаунт',
                       style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ],

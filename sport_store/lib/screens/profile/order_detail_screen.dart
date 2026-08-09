@@ -5,6 +5,7 @@ import '../../models/order.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/remote_text.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final Order order;
@@ -50,6 +51,7 @@ class OrderDetailScreen extends StatelessWidget {
 
                   // ── Delivery ──────────────────────────────────────────────
                   _Section(
+                    contentKey: 'app.orderdetail.section_delivery',
                     title: 'Доставка',
                     child: Column(
                       children: [
@@ -66,6 +68,7 @@ class OrderDetailScreen extends StatelessWidget {
                             icon: Icons.location_on_outlined,
                             label: 'Адрес',
                             value: _addressText,
+                            contentKey: 'app.orderdetail.info_address',
                           ),
                         ] else if (data.deliveryType ==
                             DeliveryType.pickup) ...[
@@ -74,6 +77,7 @@ class OrderDetailScreen extends StatelessWidget {
                             icon: Icons.store_outlined,
                             label: 'Адрес самовывоза',
                             value: 'г. Москва, ул. Спортивная, 5',
+                            contentKey: 'app.orderdetail.info_pickup_address',
                           ),
                         ],
                       ],
@@ -84,6 +88,7 @@ class OrderDetailScreen extends StatelessWidget {
 
                   // ── Contact ───────────────────────────────────────────────
                   _Section(
+                    contentKey: 'app.orderdetail.section_contact',
                     title: 'Контакт',
                     child: Column(
                       children: [
@@ -91,18 +96,21 @@ class OrderDetailScreen extends StatelessWidget {
                           icon: Icons.person_outline,
                           label: 'Получатель',
                           value: data.name,
+                          contentKey: 'app.orderdetail.info_recipient',
                         ),
                         const SizedBox(height: 10),
                         _InfoRow(
                           icon: Icons.phone_outlined,
                           label: 'Телефон',
                           value: data.phone,
+                          contentKey: 'app.orderdetail.info_phone',
                         ),
                         const SizedBox(height: 10),
                         _InfoRow(
                           icon: Icons.mail_outline,
                           label: 'Email',
                           value: data.email,
+                          contentKey: 'app.orderdetail.info_email',
                         ),
                       ],
                     ),
@@ -112,6 +120,7 @@ class OrderDetailScreen extends StatelessWidget {
 
                   // ── Payment ───────────────────────────────────────────────
                   _Section(
+                    contentKey: 'app.orderdetail.section_payment',
                     title: 'Оплата',
                     child: _InfoRow(
                       icon: _paymentIcon,
@@ -124,14 +133,17 @@ class OrderDetailScreen extends StatelessWidget {
 
                   // ── Price breakdown ───────────────────────────────────────
                   _Section(
+                    contentKey: 'app.orderdetail.section_total',
                     title: 'Сумма',
                     child: Column(
                       children: [
                         _PriceRow(
+                            contentKey: 'app.orderdetail.price_items',
                             label: 'Товары',
                             value: '${order.subtotal.toInt()} ₽'),
                         const SizedBox(height: 8),
                         _PriceRow(
+                          contentKey: 'app.orderdetail.price_delivery',
                           label: 'Доставка',
                           value: order.deliveryCost == 0
                               ? 'Бесплатно'
@@ -140,6 +152,7 @@ class OrderDetailScreen extends StatelessWidget {
                         if (order.pointsRedeemed > 0) ...[
                           const SizedBox(height: 8),
                           _PriceRow(
+                            contentKey: 'app.orderdetail.price_points',
                             label: 'Баллы',
                             value: '−${order.pointsRedeemed} ₽',
                           ),
@@ -151,7 +164,7 @@ class OrderDetailScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Итого',
+                            const RemoteText('app.orderdetail.total_label', 'Итого',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -327,7 +340,8 @@ class _StatusBar extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              RemoteText(
+                'app.orderdetail.status_label',
                 'Статус заказа',
                 style: TextStyle(
                     fontSize: 11, color: _color.withValues(alpha: 0.7)),
@@ -353,24 +367,33 @@ class _StatusBar extends StatelessWidget {
 class _Section extends StatelessWidget {
   final String title;
   final Widget child;
-  const _Section({required this.title, required this.child});
+  final String? contentKey;
+  const _Section({required this.title, required this.child, this.contentKey});
 
   @override
   Widget build(BuildContext context) {
+    const titleStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.2,
+      color: AppColors.grey600,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-              color: AppColors.grey600,
-            ),
-          ),
+          contentKey == null
+              ? Text(
+                  title.toUpperCase(),
+                  style: titleStyle,
+                )
+              : RemoteText(
+                  contentKey!,
+                  title,
+                  upper: true,
+                  style: titleStyle,
+                ),
           const SizedBox(height: 14),
           child,
         ],
@@ -497,8 +520,12 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final String? contentKey;
   const _InfoRow(
-      {required this.icon, required this.label, required this.value});
+      {required this.icon,
+      required this.label,
+      required this.value,
+      this.contentKey});
 
   @override
   Widget build(BuildContext context) {
@@ -511,9 +538,13 @@ class _InfoRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.grey600)),
+              contentKey == null
+                  ? Text(label,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.grey600))
+                  : RemoteText(contentKey!, label,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.grey600)),
               if (value.isNotEmpty)
                 Text(value,
                     style: const TextStyle(
@@ -533,16 +564,18 @@ class _InfoRow extends StatelessWidget {
 // ─── Price row ────────────────────────────────────────────────────────────────
 
 class _PriceRow extends StatelessWidget {
+  final String contentKey;
   final String label;
   final String value;
-  const _PriceRow({required this.label, required this.value});
+  const _PriceRow(
+      {required this.contentKey, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
+        RemoteText(contentKey, label,
             style: const TextStyle(
                 fontSize: 13, color: AppColors.grey600)),
         Text(value,
