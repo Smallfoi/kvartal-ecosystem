@@ -92,27 +92,30 @@ class RemoteBackground extends StatelessWidget {
       bg = Container(color: fallbackColor);
     }
 
-    return Stack(
-      fit: expand ? StackFit.expand : StackFit.loose,
-      children: [
-        Positioned.fill(child: bg),
-        child,
-        if (consoleEditMode)
-          Positioned(
-            top: 8,
-            left: 8,
-            child: _BgEditButton(
-              onTap: () => postEditBg(
-                contentKey,
-                img: rawImg,
-                vid: rawVid,
-                off: off ? '1' : '',
-                focal: prov.value('bgfocal.$contentKey'),
-                fit: prov.value('bgfit.$contentKey') == 'contain' ? 'contain' : 'cover',
+    return ValueListenableBuilder<bool>(
+      valueListenable: consoleEditNotifier,
+      builder: (context, editing, _) => Stack(
+        fit: expand ? StackFit.expand : StackFit.loose,
+        children: [
+          Positioned.fill(child: bg),
+          child,
+          if (editing)  // кнопка «Фон» только в режиме правки
+            Positioned(
+              top: 8,
+              left: 8,
+              child: _BgEditButton(
+                onTap: () => postEditBg(
+                  contentKey,
+                  img: rawImg,
+                  vid: rawVid,
+                  off: off ? '1' : '',
+                  focal: prov.value('bgfocal.$contentKey'),
+                  fit: prov.value('bgfit.$contentKey') == 'contain' ? 'contain' : 'cover',
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

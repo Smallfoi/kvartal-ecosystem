@@ -25,6 +25,8 @@
       <button type="button" data-platform="site" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Сайт</button>
       <button type="button" data-platform="app" class="merch-tab" style="padding:8px 16px;border:0;cursor:pointer;font-weight:600;font-size:13px">Приложение</button>
     </div>
+    <button type="button" id="merch-editmode" title="Переключить режим приложения: листать экраны ⇄ править"
+            style="display:none;padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;background:#fff">👁 Просмотр</button>
     <span id="merch-pending" style="display:none;font-size:12px;font-weight:600;color:#b45309;background:#fef3c7;padding:5px 10px;border-radius:8px">Черновик: <span id="merch-pending-n">0</span></span>
     <button type="button" id="merch-publish" disabled style="padding:8px 16px;border:0;border-radius:8px;background:#9ca3af;color:#fff;cursor:not-allowed;font-size:13px;font-weight:700">Опубликовать на сайт</button>
   </div>
@@ -221,6 +223,7 @@
   var modal = document.getElementById("merch-modal");
   var publishBtn = document.getElementById("merch-publish");
   var platform = "site";
+  var appEditMode = true;  // режим приложения: true=правка (перехват тапов), false=просмотр
   var products = [];
   var editId = null;
 
@@ -809,10 +812,26 @@
       b.style.background = on ? "#111" : "#fff";
       b.style.color = on ? "#fff" : "#374151";
     });
+    updateEditModeBtn();
   }
+  // Переключатель «Просмотр ⇄ Правка» — ТОЛЬКО на вкладке приложения (на сайте не нужен).
+  function updateEditModeBtn() {
+    var btn = document.getElementById("merch-editmode");
+    if (!btn) return;
+    if (platform !== "app") { btn.style.display = "none"; return; }
+    btn.style.display = "";
+    btn.textContent = appEditMode ? "👁 Просмотр" : "✏️ Правка";
+    btn.style.background = appEditMode ? "#fff" : "#dff45f";
+  }
+  document.getElementById("merch-editmode").addEventListener("click", function () {
+    appEditMode = !appEditMode;
+    tellFrame({ type: "setEditMode", value: appEditMode }); // приложению: перехват тапов вкл/выкл
+    updateEditModeBtn();
+  });
   [].slice.call(document.querySelectorAll(".merch-tab")).forEach(function (b) {
     b.addEventListener("click", function () {
       platform = b.getAttribute("data-platform");
+      appEditMode = true;  // фрейм перезагружается в режиме правки — синхронизируем
       setActiveTab(); setFrame(); loadProducts();
     });
   });

@@ -75,25 +75,30 @@ class RemoteImage extends StatelessWidget {
       );
     }
 
-    if (!consoleEditMode) return img;
     final aspect = (width != null && height != null && height! > 0)
         ? width! / height!
         : 0.0;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => postEditImage(
-        contentKey,
-        url,
-        focal: prov.focal(contentKey),
-        fit: prov.fit(contentKey) == 'contain' ? 'contain' : 'cover',
-        aspect: aspect,
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0x660A84FF), width: 2),
-        ),
-        child: img,
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: consoleEditNotifier,
+      builder: (context, editing, _) {
+        if (!editing) return img; // «Просмотр» → обычное фото, тап проходит дальше
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => postEditImage(
+            contentKey,
+            url,
+            focal: prov.focal(contentKey),
+            fit: prov.fit(contentKey) == 'contain' ? 'contain' : 'cover',
+            aspect: aspect,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0x660A84FF), width: 2),
+            ),
+            child: img,
+          ),
+        );
+      },
     );
   }
 

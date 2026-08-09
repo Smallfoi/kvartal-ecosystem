@@ -88,6 +88,19 @@ class _CatalogScreenState extends State<CatalogScreen> {
   void initState() {
     super.initState();
     _selectedCategory = widget.initialCategory ?? 'all';
+    // Переключение «Просмотр⇄Правка» из конструктора → пересобрать экран
+    // (в правке — редактор порядка, в просмотре — обычный каталог).
+    consoleEditNotifier.addListener(_onEditToggle);
+  }
+
+  void _onEditToggle() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    consoleEditNotifier.removeListener(_onEditToggle);
+    super.dispose();
   }
 
   List<Product> _filtered(CatalogProvider catalog) {
@@ -181,7 +194,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
-    if (consoleEditMode) return _buildEditor(context, catalog);
+    if (consoleEditNotifier.value) return _buildEditor(context, catalog);
     final products = _filtered(catalog);
     return Scaffold(
       backgroundColor: AppColors.white,

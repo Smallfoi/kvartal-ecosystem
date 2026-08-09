@@ -78,3 +78,23 @@ void onConsoleSetContent(void Function(String key, String value) cb) {
 void onConsoleSetImage(void Function(String key, String url) cb) {
   _listen('setImage', (msg) => cb(msg['key'] as String, (msg['url'] ?? '').toString()));
 }
+
+/// Переключение режима правки из конструктора: {source:'staw-console',
+/// type:'setEditMode', value: true/false}. У сообщения нет 'key', поэтому слушаем
+/// отдельно (не через _listen, который требует key).
+void onConsoleSetEditMode(void Function(bool on) cb) {
+  html.window.onMessage.listen((event) {
+    try {
+      final data = event.data;
+      final msg = data is String ? jsonDecode(data) : data;
+      if (msg is Map &&
+          msg['source'] == 'staw-console' &&
+          msg['type'] == 'setEditMode') {
+        final v = msg['value'];
+        cb(v == true || v == 1 || v == '1' || v == 'true');
+      }
+    } catch (_) {
+      // чужое/некорректное сообщение — игнорируем
+    }
+  });
+}

@@ -54,6 +54,7 @@ class RemoteContentProvider extends ChangeNotifier {
     if (consoleEditMode) {
       onConsoleSetContent(applyDraft); // текст/цвет из конструктора
       onConsoleSetImage(applyImageDraft); // фото из конструктора
+      onConsoleSetEditMode((on) => consoleEditNotifier.value = on); // Просмотр⇄Правка
       postReady(); // сигнал родителю: готовы принимать черновик
     }
   }

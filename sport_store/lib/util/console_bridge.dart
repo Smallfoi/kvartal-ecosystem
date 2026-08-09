@@ -5,6 +5,8 @@
 // поэтому правка живёт ВНУТРИ приложения, а событие отправляется родителю-
 // конструктору тем же сообщением, что шлёт editor.js сайта. Конструктор копит это
 // в черновик и публикует на бэкенд по кнопке (с подтверждением).
+import 'package:flutter/foundation.dart';
+
 import 'console_bridge_stub.dart'
     if (dart.library.html) 'console_bridge_web.dart' as impl;
 
@@ -14,6 +16,15 @@ import 'console_bridge_stub.dart'
 /// "true"/"false", а "1" считает за default (false). (URL ?edit=1 не годится:
 /// go_router на старте убирает query из адреса.)
 const bool consoleEditMode = String.fromEnvironment('CONSOLE_EDIT') == '1';
+
+/// РАНТАЙМ-режим правки: изначально = сборочный флаг, но конструктор может
+/// переключать его на лету (кнопка «Просмотр ⇄ Правка» на вкладке приложения).
+/// В «Просмотре» перехват тапов выключается → приложением можно свободно листать
+/// (онбординг, «Далее» и т.п.). Виджеты-обёртки слушают этот notifier.
+final ValueNotifier<bool> consoleEditNotifier = ValueNotifier<bool>(consoleEditMode);
+
+/// Подписка на команду конструктора «переключить режим правки» (setEditMode {value}).
+void onConsoleSetEditMode(void Function(bool on) cb) => impl.onConsoleSetEditMode(cb);
 
 /// Отправить новый порядок товаров (площадка app) родителю-конструктору.
 void postReorder(List<String> productIds) => impl.postReorder(productIds);
