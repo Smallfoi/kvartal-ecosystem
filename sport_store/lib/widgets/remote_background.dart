@@ -22,11 +22,17 @@ class RemoteBackground extends StatelessWidget {
   /// Прозрачность затемняющего слоя поверх фото (0..1) — чтобы текст читался.
   final double overlayOpacity;
 
+  /// true (по умолчанию) — фон на весь экран (StackFit.expand, нужен ограниченный
+  /// по высоте родитель, напр. body Scaffold). false — фон по размеру [child]
+  /// (для секции-героя внутри прокрутки, где высота не ограничена).
+  final bool expand;
+
   const RemoteBackground(
     this.contentKey, {
     required this.child,
     this.fallbackColor,
     this.overlayOpacity = 0.4,
+    this.expand = true,
     super.key,
   });
 
@@ -76,7 +82,7 @@ class RemoteBackground extends StatelessWidget {
     }
 
     return Stack(
-      fit: StackFit.expand,
+      fit: expand ? StackFit.expand : StackFit.loose,
       children: [
         Positioned.fill(child: bg),
         child,

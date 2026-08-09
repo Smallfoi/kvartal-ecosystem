@@ -14,6 +14,7 @@ import '../../providers/tab_notifier.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/remote_background.dart';
 import '../../widgets/remote_text.dart';
 import '../auth/auth_screen.dart';
 import '../loyalty/loyalty_screen.dart';
@@ -132,9 +133,12 @@ class _GuestBody extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Hero section
-          Container(
-            color: Colors.black,
+          // Hero section (фон редактируется в «Конструкторе» — app.profile.bg)
+          RemoteBackground(
+            'app.profile.bg',
+            fallbackColor: Colors.black,
+            expand: false,
+            child: Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(24, 40, 24, 36),
             child: Column(
@@ -230,6 +234,7 @@ class _GuestBody extends StatelessWidget {
                   .slideY(begin: 0.1),
               ],
             ),
+          ),
           ),
 
           // Benefits
