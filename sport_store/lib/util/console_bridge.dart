@@ -29,6 +29,11 @@ void postEditImage(String key, String url,
         {String focal = '', String fit = 'cover', double aspect = 0}) =>
     impl.postEditImage(key, url, focal: focal, fit: fit, aspect: aspect);
 
+/// Клик по кнопке «Фон» блока/экрана → та же модалка фона конструктора (editBg сайта).
+void postEditBg(String key,
+        {String img = '', String vid = '', String off = '', String focal = '', String fit = 'cover'}) =>
+    impl.postEditBg(key, img: img, vid: vid, off: off, focal: focal, fit: fit);
+
 /// Сигнал родителю-конструктору: приложение готово принимать черновик.
 void postReady() => impl.postReady();
 

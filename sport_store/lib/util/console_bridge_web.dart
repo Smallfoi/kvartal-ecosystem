@@ -37,6 +37,19 @@ void postEditImage(String key, String url,
   });
 }
 
+void postEditBg(String key,
+    {String img = '', String vid = '', String off = '', String focal = '', String fit = 'cover'}) {
+  _send({
+    'type': 'editBg',
+    'key': key,
+    'img': img,
+    'vid': vid,
+    'off': off,
+    'focal': focal,
+    'fit': fit,
+  });
+}
+
 void postReady() {
   _send({'type': 'ready', 'platform': 'app'});
 }
