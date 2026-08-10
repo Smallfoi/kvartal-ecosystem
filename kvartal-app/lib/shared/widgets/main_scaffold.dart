@@ -30,11 +30,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     if (location.startsWith('/club')) return 3;
     if (location.startsWith('/profile')) return 4;
     if (location.startsWith('/races')) return 5;
+    if (location.startsWith('/tools')) return 6;
     return 0;
   }
 
   void _onTap(BuildContext context, int index) {
-    const routes = ['/map', '/run', '/leaderboard', '/club', '/profile', '/races'];
+    const routes = ['/map', '/run', '/leaderboard', '/club', '/profile', '/races', '/tools'];
     // Закрываем открытый модальный лист (погода, выбор кроссовок и т.п.) на текущей
     // вкладке — иначе он висит поверх новой вкладки при переключении.
     final shellNav = shellNavigatorKey.currentState;
@@ -103,6 +104,8 @@ class _KvartalNavBar extends StatelessWidget {
             top: false,
             child: SizedBox(
               height: 62,
+              // Порядок слева→направо: Карта · Рейтинг · Инструменты · [БЕГ центр] ·
+              // Старты · Клуб · Профиль. «Бег» — акцентная центральная кнопка (3+центр+3).
               child: Row(
                 children: [
                   _NavItem(
@@ -119,9 +122,23 @@ class _KvartalNavBar extends StatelessWidget {
                     isActive: currentIndex == 2,
                     onTap: () => onTap(2),
                   ),
+                  _NavItem(
+                    icon: CupertinoIcons.wrench,
+                    activeIcon: CupertinoIcons.wrench_fill,
+                    label: AppStrings.tabTools,
+                    isActive: currentIndex == 6,
+                    onTap: () => onTap(6),
+                  ),
                   _RunNavItem(
                     isActive: currentIndex == 1,
                     onTap: () => onTap(1),
+                  ),
+                  _NavItem(
+                    icon: CupertinoIcons.calendar,
+                    activeIcon: CupertinoIcons.calendar_today,
+                    label: AppStrings.tabEvents,
+                    isActive: currentIndex == 5,
+                    onTap: () => onTap(5),
                   ),
                   _NavItem(
                     icon: CupertinoIcons.person_2,
@@ -136,13 +153,6 @@ class _KvartalNavBar extends StatelessWidget {
                     label: AppStrings.tabProfile,
                     isActive: currentIndex == 4,
                     onTap: () => onTap(4),
-                  ),
-                  _NavItem(
-                    icon: CupertinoIcons.calendar,
-                    activeIcon: CupertinoIcons.calendar_today,
-                    label: AppStrings.tabEvents,
-                    isActive: currentIndex == 5,
-                    onTap: () => onTap(5),
                   ),
                 ],
               ),
