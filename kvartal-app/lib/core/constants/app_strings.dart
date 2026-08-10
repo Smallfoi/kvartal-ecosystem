@@ -10,5 +10,5 @@
   static const tabClub = 'Клуб';
   static const tabProfile = 'Профиль';
   static const tabEvents = 'Старты';
-  static const tabTools = 'Инструменты';
+  static const tabTools = 'Сервис';
 }

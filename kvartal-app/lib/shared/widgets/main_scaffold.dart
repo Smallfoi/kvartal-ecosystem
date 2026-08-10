@@ -203,11 +203,13 @@ class _RunNavItem extends StatelessWidget {
             Text(
               AppStrings.tabRun,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 10,
+                height: 1.0,
+                letterSpacing: -0.2,
+                fontWeight: FontWeight.w700, // центр — акцент
                 color: isActive
                     ? AppColors.electricBlue
-                    : Colors.white.withValues(alpha: 0.45),
+                    : Colors.white.withValues(alpha: 0.55),
               ),
             ),
           ],
@@ -257,16 +259,21 @@ class _NavItem extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 3),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  color: color,
-                ),
+            // Единый фиксированный размер у ВСЕХ подписей (без FittedBox/scaleDown,
+            // который раньше ужимал длинные слова в разный кегль). Короткие подписи
+            // + мелкий ровный шрифт → ничего не «скачет» и не обрезается.
+            Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.visible,
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.0,
+                letterSpacing: -0.2,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                color: color,
               ),
             ),
           ],
