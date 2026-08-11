@@ -94,30 +94,37 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Календарь беговых событий',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                   ),
-                  if (region.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    const Icon(CupertinoIcons.placemark_fill,
-                        size: 12, color: AppColors.electricBlue),
-                    const SizedBox(width: 3),
-                    Flexible(
-                      child: Text(
-                        region,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.electricBlue,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  if (region.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(CupertinoIcons.placemark_fill,
+                              size: 13, color: AppColors.electricBlue),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              region,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.electricBlue,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
                 ],
               ),
             ),
