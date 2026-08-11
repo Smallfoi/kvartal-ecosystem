@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../profile/data/legal_provider.dart';
 import '../../data/auth_provider.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -57,7 +58,20 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         .read(authProvider.notifier)
         .verifyCode(_controller.text);
     if (success && mounted) {
-      context.go('/map');
+      // Есть ли непринятые обязательные документы? Если да — гейт согласия.
+      // Fail-open: любая ошибка проверки не должна запирать вход.
+      var toConsent = false;
+      final token = ref.read(authProvider).token;
+      if (token != null) {
+        try {
+          final docs = await fetchLegalDocs(token: token);
+          toConsent = pendingRequired(docs).isNotEmpty;
+        } catch (_) {
+          toConsent = false;
+        }
+      }
+      if (!mounted) return;
+      context.go(toConsent ? '/auth/consent' : '/map');
       return;
     }
     if (!success && mounted) {

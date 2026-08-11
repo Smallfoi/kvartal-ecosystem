@@ -2,7 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../data/api/api_client.dart';
+import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+
+/// Загрузить опубликованные документы. С токеном (ApiClient его подставляет)
+/// у каждого проставлен `accepted` (принят ли пользователем).
+Future<List<_LegalDoc>> _fetchLegalDocs(ApiClient? api) async {
+  if (api == null) return const [];
+  final data = await api.get('/legal/documents');
+  if (data is! List) return const [];
+  return data
+      .whereType<Map>()
+      .map((m) => _LegalDoc.fromJson(m.cast<String, dynamic>()))
+      .toList();
+}
+
+/// Есть ли у пользователя непринятые ОБЯЗАТЕЛЬНЫЕ документы (нужен вход).
+/// Fail-open: при ошибке возвращаем false — проверка не должна запирать вход.
+Future<bool> hasPendingRequiredLegal(ApiClient? api) async {
+  try {
+    final docs = await _fetchLegalDocs(api);
+    return docs.any((d) => d.required && d.accepted != true);
+  } catch (_) {
+    return false;
+  }
+}
 
 /// Правовые документы экосистемы STAW (соглашения, политика, согласия, оферта,
 /// правила баллов/сообщества). Единый источник правды — backend: документы
@@ -25,16 +49,7 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
     _future = _load();
   }
 
-  Future<List<_LegalDoc>> _load() async {
-    final api = context.read<ApiClient?>();
-    if (api == null) return const [];
-    final data = await api.get('/legal/documents');
-    if (data is! List) return const [];
-    return data
-        .whereType<Map>()
-        .map((m) => _LegalDoc.fromJson(m.cast<String, dynamic>()))
-        .toList();
-  }
+  Future<List<_LegalDoc>> _load() => _fetchLegalDocs(context.read<ApiClient?>());
 
   Future<void> _reload() async {
     setState(() => _future = _load());
@@ -307,4 +322,221 @@ class _LegalDoc {
         required: m['required'] == true,
         accepted: m['accepted'] is bool ? m['accepted'] as bool : null,
       );
+}
+
+/// Экран-гейт согласия: показывается ПОСЛЕ входа, если есть непринятые
+/// обязательные документы. Одна галочка → согласие пишется на сервер
+/// (`POST /legal/consent`, аудит 152-ФЗ) → возврат в приложение.
+class ConsentGateScreen extends StatefulWidget {
+  const ConsentGateScreen({super.key});
+
+  @override
+  State<ConsentGateScreen> createState() => _ConsentGateScreenState();
+}
+
+class _ConsentGateScreenState extends State<ConsentGateScreen> {
+  late Future<List<_LegalDoc>> _future;
+  bool _accepted = false;
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _loadPending();
+  }
+
+  Future<List<_LegalDoc>> _loadPending() async {
+    final docs = await _fetchLegalDocs(context.read<ApiClient?>());
+    final pending =
+        docs.where((d) => d.required && d.accepted != true).toList();
+    if (pending.isEmpty) _leave();
+    return pending;
+  }
+
+  void _leave() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  Future<void> _submit(List<_LegalDoc> pending) async {
+    final api = context.read<ApiClient?>();
+    if (api == null) {
+      _leave();
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await api.post('/legal/consent', body: {
+        'accept': pending.map((d) => d.type).toList(),
+        'source': 'store',
+      });
+      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _error = 'Не удалось сохранить согласие. Проверьте соединение.';
+        });
+      }
+    }
+  }
+
+  void _logout() {
+    context.read<AuthProvider>().logout();
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false, // назад только через «Принять» или «Выйти»
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: Text(
+            'ПОДТВЕРЖДЕНИЕ',
+            style: GoogleFonts.oswald(
+              fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 2,
+            ),
+          ),
+        ),
+        body: FutureBuilder<List<_LegalDoc>>(
+          future: _future,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snap.hasError) {
+              _leave(); // fail-open
+              return const Center(child: CircularProgressIndicator());
+            }
+            final pending = snap.data ?? const <_LegalDoc>[];
+            if (pending.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    children: [
+                      const Text(
+                        'Чтобы продолжить, ознакомьтесь и примите обязательные документы:',
+                        style: TextStyle(
+                            fontSize: 15,
+                            color: AppColors.black,
+                            height: 1.4),
+                      ),
+                      const SizedBox(height: 12),
+                      ...pending.map((d) => Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppColors.grey200),
+                            ),
+                            child: ListTile(
+                              leading: const Icon(Icons.description_outlined,
+                                  size: 19, color: AppColors.black),
+                              title: Text(d.title,
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.black)),
+                              subtitle: const Text('нажмите, чтобы прочитать',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.grey600)),
+                              trailing: const Icon(Icons.chevron_right,
+                                  size: 20, color: AppColors.grey400),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => _LegalDocView(doc: d)),
+                              ),
+                            ),
+                          )),
+                      if (_error != null) ...[
+                        const SizedBox(height: 4),
+                        Text(_error!,
+                            style: const TextStyle(
+                                color: AppColors.red, fontSize: 13)),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  decoration: const BoxDecoration(
+                    color: AppColors.grey100,
+                    border: Border(top: BorderSide(color: AppColors.grey200)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: () => setState(() => _accepted = !_accepted),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Checkbox(
+                                value: _accepted,
+                                onChanged: (v) =>
+                                    setState(() => _accepted = v ?? false),
+                                activeColor: AppColors.black,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              const SizedBox(width: 6),
+                              const Expanded(
+                                child: Padding(
+                                  padding: EdgeInsets.only(top: 10),
+                                  child: Text(
+                                    'Я ознакомился(-ась) и принимаю перечисленные документы',
+                                    style: TextStyle(
+                                        color: AppColors.black, fontSize: 13),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _accepted && !_submitting
+                              ? () => _submit(pending)
+                              : null,
+                          child: _submitting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: AppColors.white),
+                                )
+                              : const Text('ПРИНЯТЬ И ПРОДОЛЖИТЬ'),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _submitting ? null : _logout,
+                        child: const Text('Выйти',
+                            style: TextStyle(color: AppColors.grey600)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 }

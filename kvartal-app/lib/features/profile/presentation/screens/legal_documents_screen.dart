@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/data/auth_provider.dart';
 import '../../data/legal_provider.dart';
 
 /// Правовые документы экосистемы STAW — пункт в Настройках (как «Уведомления»,
@@ -228,6 +230,253 @@ class _Message extends StatelessWidget {
             const SizedBox(height: 16),
             OutlinedButton(onPressed: onRetry, child: const Text('Повторить')),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Экран-гейт согласия: показывается ПОСЛЕ входа, если у пользователя есть
+/// обязательные документы, которые он ещё не принял. Одна галочка → согласие
+/// пишется на сервер (`POST /legal/consent`, аудит 152-ФЗ) → в приложение.
+/// Fail-open: если проверить не удалось — пускаем дальше (не запираем вход).
+class ConsentGateScreen extends ConsumerStatefulWidget {
+  const ConsentGateScreen({super.key});
+
+  @override
+  ConsumerState<ConsentGateScreen> createState() => _ConsentGateScreenState();
+}
+
+class _ConsentGateScreenState extends ConsumerState<ConsentGateScreen> {
+  late Future<List<LegalDoc>> _future;
+  bool _accepted = false;
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<LegalDoc>> _load() async {
+    final token = ref.read(authProvider).token;
+    if (token == null) {
+      _leave();
+      return const [];
+    }
+    final docs = await fetchLegalDocs(token: token);
+    final pending = pendingRequired(docs);
+    if (pending.isEmpty) _leave();
+    return pending;
+  }
+
+  void _leave() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.go('/map');
+    });
+  }
+
+  Future<void> _submit(List<LegalDoc> pending) async {
+    final token = ref.read(authProvider).token;
+    if (token == null) {
+      _leave();
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await acceptLegalDocs(
+        token: token,
+        types: pending.map((d) => d.type).toList(),
+        source: 'kvartal',
+      );
+      if (mounted) context.go('/map');
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _error = 'Не удалось сохранить согласие. Проверьте соединение.';
+        });
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    await ref.read(authProvider.notifier).logout();
+    if (mounted) context.go('/auth/phone');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgDark,
+      appBar: AppBar(
+        backgroundColor: AppColors.bgDark,
+        automaticallyImplyLeading: false,
+        title: const Text('Подтверждение'),
+      ),
+      body: SafeArea(
+        child: FutureBuilder<List<LegalDoc>>(
+          future: _future,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final pending = snap.data ?? const <LegalDoc>[];
+            if (snap.hasError) {
+              // Fail-open: не удалось проверить — не запираем, уводим в приложение.
+              _leave();
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (pending.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    children: [
+                      const Text(
+                        'Чтобы продолжить, ознакомьтесь и примите обязательные документы:',
+                        style: TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                            height: 1.4),
+                      ),
+                      const SizedBox(height: 12),
+                      ...pending.map((d) => Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.bgCard,
+                              borderRadius: BorderRadius.circular(12),
+                              border:
+                                  Border.all(color: AppColors.separator),
+                            ),
+                            child: ListTile(
+                              leading: const Icon(CupertinoIcons.doc_text,
+                                  color: AppColors.accentBlue, size: 20),
+                              title: Text(d.title,
+                                  style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 14)),
+                              subtitle: const Text('нажмите, чтобы прочитать',
+                                  style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12)),
+                              trailing: const Icon(
+                                  CupertinoIcons.chevron_right,
+                                  color: AppColors.textDisabled,
+                                  size: 16),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => _LegalDocView(doc: d)),
+                              ),
+                            ),
+                          )),
+                      if (_error != null) ...[
+                        const SizedBox(height: 4),
+                        Text(_error!,
+                            style: const TextStyle(
+                                color: AppColors.error, fontSize: 13)),
+                      ],
+                    ],
+                  ),
+                ),
+                _AcceptBar(
+                  accepted: _accepted,
+                  submitting: _submitting,
+                  onToggle: (v) => setState(() => _accepted = v),
+                  onAccept:
+                      _accepted && !_submitting ? () => _submit(pending) : null,
+                  onLogout: _submitting ? null : _logout,
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _AcceptBar extends StatelessWidget {
+  final bool accepted;
+  final bool submitting;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback? onAccept;
+  final VoidCallback? onLogout;
+
+  const _AcceptBar({
+    required this.accepted,
+    required this.submitting,
+    required this.onToggle,
+    required this.onAccept,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      decoration: const BoxDecoration(
+        color: AppColors.bgSurface,
+        border: Border(top: BorderSide(color: AppColors.separator)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: () => onToggle(!accepted),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: accepted,
+                    onChanged: (v) => onToggle(v ?? false),
+                    activeColor: AppColors.accentBlue,
+                    materialTapTargetSize:
+                        MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const SizedBox(width: 6),
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 10),
+                      child: Text(
+                        'Я ознакомился(-ась) и принимаю перечисленные документы',
+                        style: TextStyle(
+                            color: AppColors.textPrimary, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onAccept,
+              child: submitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Принять и продолжить'),
+            ),
+          ),
+          TextButton(
+            onPressed: onLogout,
+            child: const Text('Выйти',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
         ],
       ),
     );
