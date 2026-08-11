@@ -5,10 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/app_strings.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/races/data/race_reminders.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await _clearMapAndRunDataOnStartup();
+  await RaceReminders.init(); // локальные напоминания о «Моих стартах»
   await _runWithSentry(const ProviderScope(child: KvartalApp()));
 }
 
