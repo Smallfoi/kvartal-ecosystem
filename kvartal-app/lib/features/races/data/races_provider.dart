@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_config.dart';
+import '../../auth/data/auth_provider.dart';
 
 /// Беговое соревнование (старт) для вкладки «Старты».
 /// Данные с общего backend (`GET /v1/races`). JSON — camelCase, парсим защитно.
@@ -65,6 +66,13 @@ class RaceEvent {
   }
 }
 
+/// Лента «Стартов»: забеги + разрешённый регион клиента (для подписи в шапке).
+class RacesFeed {
+  final List<RaceEvent> items;
+  final String region; // человекочитаемое имя региона, напр. «Республика Саха (Якутия)»
+  const RacesFeed({required this.items, required this.region});
+}
+
 final _racesDio = Dio(BaseOptions(
   baseUrl: ApiConfig.baseUrl,
   connectTimeout: ApiConfig.connectTimeout,
@@ -72,13 +80,22 @@ final _racesDio = Dio(BaseOptions(
   headers: {'Content-Type': 'application/json', 'Connection': 'close'},
 ));
 
-/// Афиша забегов (публичный эндпоинт — токен не нужен).
-/// TODO(след. шаг): передавать `region`/`city` клиента (из профиля/GPS) — бэкенд уже
-/// показывает федеральные всем, региональные/местные по региону. + авто-парсер источников.
-final racesProvider = FutureProvider.autoDispose<List<RaceEvent>>((ref) async {
-  final res = await _racesDio.get<Map<String, dynamic>>('/races');
-  return (res.data?['races'] as List? ?? const [])
+/// Афиша забегов (публичный эндпоинт — токен не нужен). СТРОГО по региону клиента:
+/// шлём город из профиля Квартала (`city`), бэкенд отдаёт только забеги этого региона
+/// (Якутск → Республика Саха; Москва → Москва и область). Регион меняется — лента
+/// перезапрашивается. TODO: добавить GPS lat/lng; авто-парсер источников (Celery).
+final racesProvider = FutureProvider.autoDispose<RacesFeed>((ref) async {
+  final city = ref.watch(authProvider.select((s) => s.user?.city))?.trim() ?? '';
+  final res = await _racesDio.get<Map<String, dynamic>>(
+    '/races',
+    queryParameters: {if (city.isNotEmpty) 'city': city},
+  );
+  final items = (res.data?['races'] as List? ?? const [])
       .whereType<Map<String, dynamic>>()
       .map(RaceEvent.fromJson)
       .toList();
+  return RacesFeed(
+    items: items,
+    region: res.data?['region']?.toString() ?? '',
+  );
 });
