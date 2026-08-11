@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
+import '../../../profile/presentation/screens/legal_documents_screen.dart';
 import '../../data/auth_provider.dart';
 
 class PhoneScreen extends ConsumerStatefulWidget {
@@ -154,11 +155,41 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               ),
               const Spacer(flex: 3),
               Center(
-                child: Text(
-                  'Нажимая «Получить код», вы соглашаетесь\nс условиями использования',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textDisabled,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const LegalDocumentsScreen()),
+                  ),
+                  behavior: HitTestBehavior.opaque,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(
+                            text:
+                                'Нажимая «Получить код», вы соглашаетесь с '),
+                        TextSpan(
+                          text: 'условиями использования',
+                          style: const TextStyle(
+                            color: AppColors.accentBlue,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.accentBlue,
+                          ),
+                        ),
+                        const TextSpan(text: ' и другими '),
+                        TextSpan(
+                          text: 'документами',
+                          style: const TextStyle(
+                            color: AppColors.accentBlue,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.accentBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textDisabled,
+                        ),
                   ),
                 ),
               ),

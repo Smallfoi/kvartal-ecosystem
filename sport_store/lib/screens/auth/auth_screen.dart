@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/remote_text.dart';
+import '../profile/legal_documents_screen.dart';
 import 'forgot_password_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -537,6 +538,27 @@ class _RegisterFormState extends State<_RegisterForm> {
             height: 1.5,
           ),
         ).animate().fadeIn(duration: 300.ms, delay: 320.ms),
+        const SizedBox(height: 6),
+        Center(
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LegalDocumentsScreen()),
+            ),
+            behavior: HitTestBehavior.opaque,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              child: Text(
+                'Открыть документы',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.black,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
+        ).animate().fadeIn(duration: 300.ms, delay: 340.ms),
         const SizedBox(height: 8),
       ],
     );
