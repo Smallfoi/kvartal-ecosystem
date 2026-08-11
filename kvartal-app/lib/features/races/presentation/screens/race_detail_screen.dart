@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../data/race_reminders.dart';
 import '../../data/races_provider.dart';
 
 const _months = [
@@ -154,11 +155,18 @@ class RaceDetailScreen extends ConsumerWidget {
                         final added = await ref
                             .read(plannedRacesProvider.notifier)
                             .toggle(race);
+                        // Локальные напоминания: планируем при добавлении, снимаем при удалении.
+                        if (added) {
+                          await RaceReminders.requestPermission();
+                          await RaceReminders.scheduleForRace(race);
+                        } else {
+                          await RaceReminders.cancelForRace(race.id);
+                        }
                         if (!context.mounted) return;
                         _snack(
                           context,
                           added
-                              ? 'Сохранено в «Мои старты» — не потеряешь'
+                              ? 'Сохранено в «Мои старты» — напомним перед стартом'
                               : 'Убрано из «Моих стартов»',
                         );
                       },
