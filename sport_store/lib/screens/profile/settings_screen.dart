@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/remote_text.dart';
 import 'account_data_screen.dart';
 import 'edit_profile_screen.dart';
+import 'legal_documents_screen.dart';
 import 'stats_screen.dart';
 
 /// Настройки профиля Store — единый стиль с шестерёнкой Квартала (экосистема):
@@ -82,6 +83,12 @@ class SettingsScreen extends StatelessWidget {
             contentKey: 'app.settings.privacy',
             label: 'Конфиденциальность и данные',
             onTap: () => _push(context, const AccountDataScreen()),
+          ),
+          _SettingsTile(
+            icon: Icons.description_outlined,
+            contentKey: 'app.settings.legal',
+            label: 'Документы',
+            onTap: () => _push(context, const LegalDocumentsScreen()),
           ),
           const SizedBox(height: 12),
           _SettingsTile(

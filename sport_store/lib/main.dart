@@ -72,6 +72,9 @@ void main() async {
   await _runWithSentry(
     MultiProvider(
       providers: [
+        // Общий HTTP-клиент экосистемы (хранит JWT) — чтобы экраны могли
+        // читать backend напрямую (напр. правовые документы /legal/documents).
+        Provider<ApiClient?>.value(value: api),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(prefs, authRepo,
               onSessionEnd: () => api?.authToken = null),
