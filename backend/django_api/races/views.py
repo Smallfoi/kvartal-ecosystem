@@ -1,32 +1,23 @@
 """Races API — публичная афиша забегов для вкладки «Старты» (токен не нужен).
 
-GET /v1/races?region=&city=&type=&month=YYYY-MM&when=upcoming|past
-  Регион клиента: федеральные крупные старты видны всем; региональные/местные —
-  только если совпал регион/город клиента (region/city из GPS или профиля Квартала).
+GET /v1/races?region=&city=&lat=&lng=&type=&month=YYYY-MM&when=upcoming|past
+  СТРОГО по региону клиента: показываем только те забеги, что проходят в регионе,
+  где находится клиент (Якутск → только Республика Саха; Москва → Москва и область).
+  Регион берём из region/city (профиль Квартала) или GPS lat/lng. Если регион не
+  передан — отдаём всё (веб/тесты).
 GET /v1/races/<id> — детали одного забега.
 """
-from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from .models import Race
+from .regions import canonical_region, region_display, resolve_client_region
 
 
 @require_http_methods(["GET"])
 def races(request):
     qs = Race.objects.filter(is_published=True)
-
-    region = (request.GET.get("region") or "").strip()
-    city = (request.GET.get("city") or "").strip()
-    # Регион клиента: федеральные — всем; региональные/местные — по совпадению.
-    if region or city:
-        cond = Q(scope=Race.SCOPE_FEDERAL)
-        if region:
-            cond |= Q(region__iexact=region)
-        if city:
-            cond |= Q(city__iexact=city)
-        qs = qs.filter(cond)
 
     rtype = (request.GET.get("type") or "").strip()
     if rtype:
@@ -49,7 +40,22 @@ def races(request):
     else:
         qs = qs.order_by("date", "id")
 
-    items = [r.to_json() for r in qs[:300]]
+    # Регион клиента: строгий фильтр по совпадению канонического региона.
+    region = (request.GET.get("region") or "").strip()
+    city = (request.GET.get("city") or "").strip()
+    client_slug = resolve_client_region(
+        region=region, city=city,
+        lat=request.GET.get("lat"), lng=request.GET.get("lng"),
+    )
+
+    races_qs = list(qs[:500])
+    if client_slug:
+        races_qs = [
+            r for r in races_qs
+            if canonical_region(r.region or r.city) == client_slug
+        ]
+
+    items = [r.to_json() for r in races_qs[:300]]
     cities = list(
         Race.objects.filter(is_published=True)
         .exclude(city="")
@@ -57,7 +63,12 @@ def races(request):
         .distinct()
         .order_by("city")
     )
-    return JsonResponse({"races": items, "cities": cities})
+    return JsonResponse({
+        "races": items,
+        "cities": cities,
+        # Разрешённый регион клиента (для подписи «Ваш регион: …» в приложении).
+        "region": region_display(client_slug, fallback=region or city),
+    })
 
 
 @require_http_methods(["GET"])

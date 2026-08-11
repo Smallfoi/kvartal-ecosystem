@@ -65,6 +65,7 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(racesProvider);
+    final region = async.valueOrNull?.region ?? '';
     return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -91,11 +92,33 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: Text(
-                'Календарь беговых событий',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Row(
+                children: [
+                  const Text(
+                    'Календарь беговых событий',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                  if (region.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    const Icon(CupertinoIcons.placemark_fill,
+                        size: 12, color: AppColors.electricBlue),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        region,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.electricBlue,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             Padding(
@@ -113,15 +136,20 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
                 ),
                 error: (_, __) =>
                     const _Empty('Не удалось загрузить старты. Проверьте связь.'),
-                data: (all) {
-                  final list = all.where((r) => _segment == 0 ? !r.isPast : r.isPast).toList();
+                data: (feed) {
+                  final list = feed.items
+                      .where((r) => _segment == 0 ? !r.isPast : r.isPast)
+                      .toList();
                   list.sort((a, b) {
                     final da = a.date, db = b.date;
                     if (da == null || db == null) return 0;
                     return _segment == 0 ? da.compareTo(db) : db.compareTo(da);
                   });
                   if (list.isEmpty) {
-                    return _Empty(_segment == 0 ? 'Пока нет ближайших стартов' : 'Архив пуст');
+                    final where = region.isNotEmpty ? ' в регионе «$region»' : '';
+                    return _Empty(_segment == 0
+                        ? 'Пока нет ближайших стартов$where'
+                        : 'Архив пуст$where');
                   }
                   return RefreshIndicator(
                     color: AppColors.electricBlue,
