@@ -150,6 +150,10 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
                     return _segment == 0 ? da.compareTo(db) : db.compareTo(da);
                   });
                   if (list.isEmpty) {
+                    if (sel.mode == RegionMode.saved) {
+                      return const _Empty(
+                          'В «Моих стартах» пока пусто.\nОтметь забег «Планирую поехать» — он появится здесь.');
+                    }
                     final where = region.isNotEmpty ? ' в регионе «$region»' : '';
                     return _Empty(_segment == 0
                         ? 'Пока нет ближайших стартов$where'
@@ -240,6 +244,7 @@ class _RegionPicker extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sel = ref.watch(raceSelectionProvider);
     final regionsAsync = ref.watch(raceRegionsProvider);
+    final plannedCount = ref.watch(plannedRacesProvider).length;
 
     void choose(RegionSelection s) {
       ref.read(raceSelectionProvider.notifier).state = s;
@@ -287,6 +292,14 @@ class _RegionPicker extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 children: [
+                  if (plannedCount > 0)
+                    _RegionOption(
+                      emoji: '⭐',
+                      title: 'Мои старты',
+                      subtitle: '$plannedCount ${_pluralRaces(plannedCount)} — планирую поехать',
+                      selected: sel.mode == RegionMode.saved,
+                      onTap: () => choose(RegionSelection.saved),
+                    ),
                   _RegionOption(
                     emoji: '📍',
                     title: 'Мой регион',

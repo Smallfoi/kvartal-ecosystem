@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/races_provider.dart';
@@ -26,7 +27,7 @@ List<Color> _grad(String type) {
   }
 }
 
-class RaceDetailScreen extends StatelessWidget {
+class RaceDetailScreen extends ConsumerWidget {
   final RaceEvent race;
   const RaceDetailScreen({super.key, required this.race});
 
@@ -39,10 +40,11 @@ class RaceDetailScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final d = race.date;
     final dateText = d == null ? '' : '${d.day} ${_months[d.month]} ${d.year}';
     final past = race.isPast;
+    final planned = ref.watch(plannedRacesProvider).any((r) => r.id == race.id);
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       body: CustomScrollView(
@@ -146,9 +148,20 @@ class RaceDetailScreen extends StatelessWidget {
                   ],
                   const SizedBox(height: 24),
                   if (!past) ...[
-                    _primaryBtn(
-                      race.regStatus == 'open' ? 'Я побегу' : 'Напомнить о старте',
-                      () => _snack(context, 'Отмечено! Напомним перед стартом (скоро)'),
+                    _planBtn(
+                      planned: planned,
+                      onTap: () async {
+                        final added = await ref
+                            .read(plannedRacesProvider.notifier)
+                            .toggle(race);
+                        if (!context.mounted) return;
+                        _snack(
+                          context,
+                          added
+                              ? 'Сохранено в «Мои старты» — не потеряешь'
+                              : 'Убрано из «Моих стартов»',
+                        );
+                      },
                     ),
                     const SizedBox(height: 10),
                     _ghostBtn(
@@ -187,17 +200,31 @@ class RaceDetailScreen extends StatelessWidget {
         ],
       );
 
-  Widget _primaryBtn(String text, VoidCallback onTap) => SizedBox(
+  Widget _planBtn({required bool planned, required VoidCallback onTap}) => SizedBox(
         width: double.infinity,
-        child: FilledButton(
+        child: FilledButton.icon(
           onPressed: onTap,
+          icon: Icon(
+            planned ? CupertinoIcons.checkmark_alt : CupertinoIcons.paperplane,
+            size: 18,
+            color: planned ? AppColors.success : Colors.white,
+          ),
+          label: Text(
+            planned ? 'В «Моих стартах»' : 'Планирую поехать',
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: planned ? AppColors.success : Colors.white),
+          ),
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.electricBlue,
+            backgroundColor:
+                planned ? const Color(0x1A30D158) : AppColors.electricBlue,
+            side: planned
+                ? const BorderSide(color: Color(0xFF1F5B47))
+                : BorderSide.none,
             padding: const EdgeInsets.symmetric(vertical: 15),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
-          child: Text(text,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
         ),
       );
 
