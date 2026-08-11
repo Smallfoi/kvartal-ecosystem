@@ -62,10 +62,24 @@ class RacesScreen extends ConsumerStatefulWidget {
 class _RacesScreenState extends ConsumerState<RacesScreen> {
   int _segment = 0; // 0 = ближайшие, 1 = прошедшие
 
+  void _openRegionPicker(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _RegionPicker(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(racesProvider);
+    final sel = ref.watch(raceSelectionProvider);
     final region = async.valueOrNull?.region ?? '';
+    // Подпись чипа: имя из ленты; пока грузится — запасная из выбора; иначе «Мой регион».
+    final chipLabel = region.isNotEmpty
+        ? region
+        : (sel.label.isNotEmpty ? sel.label : 'Мой регион');
     return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -101,30 +115,13 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
                     'Календарь беговых событий',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                   ),
-                  if (region.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(CupertinoIcons.placemark_fill,
-                              size: 13, color: AppColors.electricBlue),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              region,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppColors.electricBlue,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  const SizedBox(height: 6),
+                  // Кликабельный чип региона — открывает выбор (мой регион / вся Россия /
+                  // крупные марафоны / любой регион).
+                  _RegionChip(
+                    label: chipLabel,
+                    onTap: () => _openRegionPicker(context),
+                  ),
                 ],
               ),
             ),
@@ -171,6 +168,254 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
                 },
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Чип региона в шапке (открывает пикер) ─────────────────────────────────────
+
+class _RegionChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _RegionChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(11, 6, 9, 6),
+        decoration: BoxDecoration(
+          color: AppColors.electricBlue.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppColors.electricBlue.withValues(alpha: 0.42)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(CupertinoIcons.placemark_fill,
+                size: 13, color: AppColors.electricBlue),
+            const SizedBox(width: 5),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 230),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFDBE8FF),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 3),
+            const Icon(CupertinoIcons.chevron_down,
+                size: 12, color: AppColors.electricBlue),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Пикер региона (bottom sheet) ──────────────────────────────────────────────
+
+String _pluralRaces(int n) {
+  final a = n % 100, b = n % 10;
+  if (a >= 11 && a <= 14) return 'забегов';
+  if (b == 1) return 'забег';
+  if (b >= 2 && b <= 4) return 'забега';
+  return 'забегов';
+}
+
+class _RegionPicker extends ConsumerWidget {
+  const _RegionPicker();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sel = ref.watch(raceSelectionProvider);
+    final regionsAsync = ref.watch(raceRegionsProvider);
+
+    void choose(RegionSelection s) {
+      ref.read(raceSelectionProvider.notifier).state = s;
+      Navigator.of(context).pop();
+    }
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.72,
+      ),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0C1220),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(top: BorderSide(color: AppColors.separator)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 6, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Показать старты',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                children: [
+                  _RegionOption(
+                    emoji: '📍',
+                    title: 'Мой регион',
+                    selected: sel.mode == RegionMode.myRegion,
+                    onTap: () => choose(RegionSelection.my),
+                  ),
+                  _RegionOption(
+                    emoji: '🇷🇺',
+                    title: 'Вся Россия',
+                    subtitle: 'все забеги страны',
+                    selected: sel.mode == RegionMode.all,
+                    onTap: () => choose(RegionSelection.russia),
+                  ),
+                  _RegionOption(
+                    emoji: '⭐',
+                    title: 'Крупные марафоны',
+                    subtitle: 'главные старты страны — для поездок',
+                    selected: sel.mode == RegionMode.majors,
+                    onTap: () => choose(RegionSelection.majors),
+                  ),
+                  const Divider(color: AppColors.separator, height: 18),
+                  ...regionsAsync.when(
+                    loading: () => const [
+                      Padding(
+                        padding: EdgeInsets.all(18),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.electricBlue),
+                        ),
+                      ),
+                    ],
+                    error: (_, __) => const [
+                      Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Не удалось загрузить регионы',
+                            style: TextStyle(color: AppColors.textTertiary)),
+                      ),
+                    ],
+                    data: (regions) => regions
+                        .map((r) => _RegionOption(
+                              emoji: '📍',
+                              title: r.name,
+                              subtitle: '${r.count} ${_pluralRaces(r.count)}',
+                              selected: sel.mode == RegionMode.region &&
+                                  sel.slug == r.slug,
+                              onTap: () =>
+                                  choose(RegionSelection.region(r.slug, r.name)),
+                            ))
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RegionOption extends StatelessWidget {
+  final String emoji;
+  final String title;
+  final String? subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+  const _RegionOption({
+    required this.emoji,
+    required this.title,
+    this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.electricBlue.withValues(alpha: 0.14)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? AppColors.electricBlue.withValues(alpha: 0.42)
+                : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 26,
+              child: Text(emoji, style: const TextStyle(fontSize: 16)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Text(
+                        subtitle!,
+                        style: const TextStyle(
+                            color: AppColors.textTertiary, fontSize: 11.5),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (selected)
+              const Icon(CupertinoIcons.check_mark,
+                  size: 16, color: AppColors.electricBlue),
           ],
         ),
       ),
