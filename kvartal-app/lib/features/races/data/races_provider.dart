@@ -66,11 +66,44 @@ class RaceEvent {
   }
 }
 
-/// Лента «Стартов»: забеги + разрешённый регион клиента (для подписи в шапке).
+/// Лента «Стартов»: забеги + подпись выбранного режима/региона (для шапки).
 class RacesFeed {
   final List<RaceEvent> items;
-  final String region; // человекочитаемое имя региона, напр. «Республика Саха (Якутия)»
+  final String region; // подпись: «Республика Саха (Якутия)» / «Вся Россия» / «Крупные марафоны»
   const RacesFeed({required this.items, required this.region});
+}
+
+/// Режим показа афиши (переключатель региона в шапке «Стартов»).
+enum RegionMode { myRegion, all, majors, region }
+
+/// Текущий выбор региона. По умолчанию — «мой регион» (из профиля/GPS).
+class RegionSelection {
+  final RegionMode mode;
+  final String slug; // для mode == region
+  final String label; // запасная подпись до загрузки ленты
+  const RegionSelection({this.mode = RegionMode.myRegion, this.slug = '', this.label = ''});
+
+  static const my = RegionSelection();
+  static const russia = RegionSelection(mode: RegionMode.all, label: 'Вся Россия');
+  static const majors = RegionSelection(mode: RegionMode.majors, label: 'Крупные марафоны');
+  factory RegionSelection.region(String slug, String name) =>
+      RegionSelection(mode: RegionMode.region, slug: slug, label: name);
+}
+
+/// Выбранный режим/регион. Меняется из пикера — лента перезапрашивается.
+final raceSelectionProvider = StateProvider<RegionSelection>((ref) => RegionSelection.my);
+
+/// Регион с забегами (для пикера «показать другой регион»).
+class RaceRegion {
+  final String slug;
+  final String name;
+  final int count;
+  const RaceRegion({required this.slug, required this.name, required this.count});
+  factory RaceRegion.fromJson(Map<String, dynamic> j) => RaceRegion(
+        slug: j['slug']?.toString() ?? '',
+        name: j['name']?.toString() ?? '',
+        count: (j['count'] as num?)?.toInt() ?? 0,
+      );
 }
 
 final _racesDio = Dio(BaseOptions(
@@ -80,22 +113,43 @@ final _racesDio = Dio(BaseOptions(
   headers: {'Content-Type': 'application/json', 'Connection': 'close'},
 ));
 
-/// Афиша забегов (публичный эндпоинт — токен не нужен). СТРОГО по региону клиента:
-/// шлём город из профиля Квартала (`city`), бэкенд отдаёт только забеги этого региона
-/// (Якутск → Республика Саха; Москва → Москва и область). Регион меняется — лента
-/// перезапрашивается. TODO: добавить GPS lat/lng; авто-парсер источников (Celery).
+/// Афиша забегов (публичный эндпоинт — токен не нужен). Режим выбирается пикером:
+/// «мой регион» (город из профиля), «вся Россия», «крупные марафоны» или конкретный
+/// регион (слаг). Меняется выбор — лента перезапрашивается.
+/// TODO: GPS lat/lng для «мой регион»; авто-парсер источников (Celery).
 final racesProvider = FutureProvider.autoDispose<RacesFeed>((ref) async {
+  final sel = ref.watch(raceSelectionProvider);
   final city = ref.watch(authProvider.select((s) => s.user?.city))?.trim() ?? '';
-  final res = await _racesDio.get<Map<String, dynamic>>(
-    '/races',
-    queryParameters: {if (city.isNotEmpty) 'city': city},
-  );
+
+  final qp = <String, dynamic>{};
+  switch (sel.mode) {
+    case RegionMode.all:
+      qp['all'] = '1';
+      break;
+    case RegionMode.majors:
+      qp['scope'] = 'federal';
+      break;
+    case RegionMode.region:
+      qp['region'] = sel.slug;
+      break;
+    case RegionMode.myRegion:
+      if (city.isNotEmpty) qp['city'] = city;
+      break;
+  }
+
+  final res = await _racesDio.get<Map<String, dynamic>>('/races', queryParameters: qp);
   final items = (res.data?['races'] as List? ?? const [])
       .whereType<Map<String, dynamic>>()
       .map(RaceEvent.fromJson)
       .toList();
-  return RacesFeed(
-    items: items,
-    region: res.data?['region']?.toString() ?? '',
-  );
+  return RacesFeed(items: items, region: res.data?['region']?.toString() ?? '');
+});
+
+/// Список регионов с забегами (для пикера).
+final raceRegionsProvider = FutureProvider.autoDispose<List<RaceRegion>>((ref) async {
+  final res = await _racesDio.get<Map<String, dynamic>>('/races/regions');
+  return (res.data?['regions'] as List? ?? const [])
+      .whereType<Map<String, dynamic>>()
+      .map(RaceRegion.fromJson)
+      .toList();
 });

@@ -115,6 +115,8 @@ urlpatterns = [
     # Кроссовки — трекер износа (связка Store ↔ Квартал, ECOSYSTEM_API §2.5).
     # Порядок: 'pending' раньше generic '<id>/...'.
     path("v1/races", races_views.races),
+    # 'regions' раньше generic '<race_id>', иначе перехватится как id забега.
+    path("v1/races/regions", races_views.race_regions),
     path("v1/races/<str:race_id>", races_views.race_detail),
     path("v1/shoes", shoes_views.shoes),
     path("v1/shoes/pending", shoes_views.shoes_pending),

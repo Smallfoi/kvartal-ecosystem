@@ -82,6 +82,41 @@ class RacesApiTests(TestCase):
         self.assertIn("Казанский", titles)
         self.assertIn("Якутский ночной", titles)
 
+    def test_all_mode_ignores_region(self):
+        # «Вся Россия»: город передан, но all=1 → фильтр региона игнорируется.
+        r = self.client.get("/v1/races", {"city": "Якутск", "all": "1"}).json()
+        titles = [x["title"] for x in r["races"]]
+        self.assertIn("Московский марафон", titles)
+        self.assertIn("Якутский ночной", titles)
+        self.assertEqual(r["region"], "Вся Россия")
+
+    def test_scope_federal_majors_only(self):
+        # «Крупные марафоны»: только федеральные, независимо от региона клиента.
+        r = self.client.get("/v1/races", {"city": "Якутск", "scope": "federal"}).json()
+        titles = [x["title"] for x in r["races"]]
+        self.assertIn("Московский марафон", titles)      # federal
+        self.assertNotIn("Казанский", titles)             # regional
+        self.assertNotIn("Якутский ночной", titles)       # regional
+        self.assertEqual(r["region"], "Крупные марафоны")
+
+    def test_region_by_slug(self):
+        # Пикер шлёт слаг региона (moscow) — показываем Москву+область.
+        r = self.client.get("/v1/races", {"region": "moscow"}).json()
+        titles = [x["title"] for x in r["races"]]
+        self.assertIn("Московский марафон", titles)
+        self.assertIn("Подмосковный трейл", titles)
+        self.assertNotIn("Якутский ночной", titles)
+
+    def test_regions_list_endpoint(self):
+        r = self.client.get("/v1/races/regions").json()
+        slugs = {x["slug"] for x in r["regions"]}
+        self.assertIn("moscow", slugs)
+        self.assertIn("sakha", slugs)
+        self.assertIn("tatarstan", slugs)
+        names = {x["slug"]: x["name"] for x in r["regions"]}
+        self.assertEqual(names["sakha"], "Республика Саха (Якутия)")
+        self.assertGreaterEqual(r["majorsCount"], 1)
+
     def test_when_upcoming_and_past(self):
         today = timezone.localdate().isoformat()
         up = self.client.get("/v1/races", {"when": "upcoming"}).json()["races"]
