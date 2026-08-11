@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../data/api/api_client.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/remote_text.dart';
@@ -70,7 +71,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (err != null) {
       setState(() => _error = err);
     } else {
-      Navigator.of(context).pop();
+      await _afterLogin();
     }
   }
 
@@ -80,6 +81,20 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!mounted) return;
     if (err != null) {
       setState(() => _error = err);
+    } else {
+      await _afterLogin();
+    }
+  }
+
+  /// После успешного входа: если есть непринятые обязательные документы —
+  /// показываем гейт согласия вместо закрытия экрана. Иначе — закрываем вход.
+  Future<void> _afterLogin() async {
+    final hasPending = await hasPendingRequiredLegal(context.read<ApiClient?>());
+    if (!mounted) return;
+    if (hasPending) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const ConsentGateScreen()),
+      );
     } else {
       Navigator.of(context).pop();
     }

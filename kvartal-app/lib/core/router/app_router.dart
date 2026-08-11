@@ -80,6 +80,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/otp',
         pageBuilder: (_, __) => const NoTransitionPage(child: OtpScreen()),
       ),
+      // Гейт согласия после входа (вне шелла): показывается, если есть
+      // непринятые обязательные документы. redirect не трогает /auth/*.
+      GoRoute(
+        path: '/auth/consent',
+        pageBuilder: (_, __) =>
+            const NoTransitionPage(child: ConsentGateScreen()),
+      ),
       // Скан QR приглашения — полноэкранный (вне шелла), как камера в Тинькофф.
       GoRoute(
         path: '/club/scan',
