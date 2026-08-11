@@ -353,7 +353,17 @@ CELERY_BEAT_SCHEDULE = {
         "task": "core.cleanup_old_data",
         "schedule": crontab(hour=4, minute=0),
     },
+    # Авто-парсер афиши «Стартов»: раз в сутки в 05:00 (Asia/Yakutsk). Идемпотентно
+    # (upsert по source+external_id). Источники — races/importers/.
+    "import-races-daily": {
+        "task": "races.import_races",
+        "schedule": crontab(hour=5, minute=0),
+    },
 }
+
+# Авто-парсер «Стартов»: URL нормализованного JSON-фида забегов (races/importers/jsonfeed).
+# Пусто → JSON-фид-импортёр молчит (работает только демо-источник и ручные записи).
+RACES_IMPORT_FEED_URL = os.environ.get("RACES_IMPORT_FEED_URL", "")
 
 # ── Sentry / GlitchTip (видимость ошибок, D-25/D-32: self-host РФ) ───────────
 # Каркас: подключается ТОЛЬКО при заданном SENTRY_DSN. Без ключа — no-op, без
