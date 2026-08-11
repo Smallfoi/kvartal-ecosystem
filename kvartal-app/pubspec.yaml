@@ -49,6 +49,9 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
 
+  # Открытие внешних ссылок (напр. страница регистрации на забег).
+  url_launcher: ^6.3.1
+
   # Utils
   intl: ^0.20.2
   equatable: ^2.0.7

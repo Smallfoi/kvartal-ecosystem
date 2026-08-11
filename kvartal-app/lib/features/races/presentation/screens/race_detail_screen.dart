@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/race_reminders.dart';
@@ -38,6 +39,27 @@ class RaceDetailScreen extends ConsumerWidget {
       behavior: SnackBarBehavior.floating,
       backgroundColor: AppColors.bgElevated,
     ));
+  }
+
+  /// Открыть страницу регистрации/забега во внешнем браузере.
+  Future<void> _openReg(BuildContext context) async {
+    final url = race.regUrl.trim();
+    if (url.isEmpty) {
+      _snack(context, 'У этого забега пока нет ссылки на регистрацию');
+      return;
+    }
+    final uri = Uri.tryParse(url);
+    var ok = false;
+    if (uri != null) {
+      try {
+        ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        ok = false;
+      }
+    }
+    if (!ok && context.mounted) {
+      _snack(context, 'Не удалось открыть ссылку');
+    }
   }
 
   @override
@@ -174,7 +196,7 @@ class RaceDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 10),
                     _ghostBtn(
                       race.regUrl.isNotEmpty ? 'Регистрация' : 'Подробнее',
-                      () => _snack(context, 'Переход на страницу забега — скоро'),
+                      () => _openReg(context),
                     ),
                   ] else
                     _ghostBtn('Результаты и фото', () => _snack(context, 'Архив забега — скоро')),

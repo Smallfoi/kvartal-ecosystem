@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_config.dart';
@@ -183,10 +184,20 @@ final _racesDio = Dio(BaseOptions(
   headers: {'Content-Type': 'application/json', 'Connection': 'close'},
 ));
 
+/// Последняя известная позиция (без запроса свежего фикса — мгновенно, не блокирует).
+/// Для «моего региона» как fallback, если город в профиле не заполнен.
+Future<Position?> _lastKnownPosition() async {
+  try {
+    return await Geolocator.getLastKnownPosition();
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Афиша забегов (публичный эндпоинт — токен не нужен). Режим выбирается пикером:
-/// «мой регион» (город из профиля), «вся Россия», «крупные марафоны» или конкретный
-/// регион (слаг). Меняется выбор — лента перезапрашивается.
-/// TODO: GPS lat/lng для «мой регион»; авто-парсер источников (Celery).
+/// «мой регион» (город из профиля + GPS-fallback), «вся Россия», «крупные марафоны»
+/// или конкретный регион (слаг). Меняется выбор — лента перезапрашивается.
+/// TODO: авто-парсер источников (Celery).
 final racesProvider = FutureProvider.autoDispose<RacesFeed>((ref) async {
   final sel = ref.watch(raceSelectionProvider);
 
@@ -211,6 +222,12 @@ final racesProvider = FutureProvider.autoDispose<RacesFeed>((ref) async {
       break;
     case RegionMode.myRegion:
       if (city.isNotEmpty) qp['city'] = city;
+      // GPS-fallback: если города нет — регион определит бэкенд по координатам.
+      final pos = await _lastKnownPosition();
+      if (pos != null) {
+        qp['lat'] = pos.latitude;
+        qp['lng'] = pos.longitude;
+      }
       break;
     case RegionMode.saved:
       break; // обработано выше
