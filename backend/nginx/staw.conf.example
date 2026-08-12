@@ -6,8 +6,10 @@
 server {
     listen 80;
     server_name api.staw.ru;
-    # (для Let's Encrypt webroot — добавить location /.well-known/acme-challenge/)
-    return 301 https://$host$request_uri;
+    # ACME-проверка Let's Encrypt при обновлении (deploy/tls.sh renew) — ОБЯЗАТЕЛЬНО
+    # выше редиректа, иначе certbot получит 301 и обновление провалится.
+    location /.well-known/acme-challenge/ { root /var/www/certbot; }
+    location / { return 301 https://$host$request_uri; }
 }
 
 server {

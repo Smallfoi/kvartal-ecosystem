@@ -30,6 +30,12 @@ backend/ecosystem.db
 backups/
 *.sql.gz
 
+# === Прод-nginx: реальный конфиг с доменом + состояние TLS (создаётся на сервере) ===
+backend/nginx/staw.conf
+backend/nginx/certs/
+backend/nginx/letsencrypt/
+backend/nginx/certbot-www/
+
 # === Локальные docker-override (содержат локальные DSN/секреты, не для репо) ===
 **/docker-compose.override.yml
 
