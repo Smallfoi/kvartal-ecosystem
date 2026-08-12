@@ -18,6 +18,12 @@ class AuthProvider extends ChangeNotifier {
 
   AuthUser? _user;
   bool _isLoading = false;
+  bool _sessionExpired = false;
+
+  /// true один раз после того, как сервер отверг токен (401). UI показывает
+  /// «Сессия истекла — войдите снова» и вызывает [ackSessionExpired].
+  bool get sessionExpired => _sessionExpired;
+  void ackSessionExpired() => _sessionExpired = false;
 
   AuthProvider(this._prefs, this._repo, {this.onSessionEnd}) {
     _load();
@@ -284,6 +290,16 @@ class AuthProvider extends ChangeNotifier {
     _save();
     onSessionEnd?.call();
     notifyListeners();
+  }
+
+  /// Сервер отверг токен (401) — сессия недействительна/истекла. Чистим её и
+  /// поднимаем флаг, чтобы UI попросил войти заново. Идемпотентно: параллельные
+  /// 401 (несколько запросов сразу) не зациклят выход. Это и есть «самолечение»:
+  /// протухший токен больше не залипает — при первом 401 мы выходим из аккаунта.
+  void handleUnauthorized() {
+    if (_user == null) return; // уже вышли
+    _sessionExpired = true;
+    logout();
   }
 
   /// Видимость профиля (общая настройка приватности аккаунта).

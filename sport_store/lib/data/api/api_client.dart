@@ -23,6 +23,12 @@ class ApiClient {
   /// Вызывается при изменении токена — для персиста JWT (см. main.dart).
   void Function(String? token)? onTokenChanged;
 
+  /// Вызывается, когда сервер отверг токен (401 при наличии токена) — сессия
+  /// истекла/недействительна. Подписчик (AuthProvider через main.dart) должен
+  /// выйти из аккаунта и предложить войти заново. Без этого протухший токен
+  /// «залипает»: приложение думает, что залогинено, и молча ловит 401 везде.
+  void Function()? onUnauthorized;
+
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
   String? get authToken => _authToken;
@@ -118,6 +124,12 @@ class ApiClient {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return null;
       return jsonDecode(utf8.decode(res.bodyBytes));
+    }
+    // Токен есть, но сервер вернул 401 → он недействителен/протух. Сообщаем
+    // подписчику (авто-выход), только когда токен был — иначе это просто
+    // запрос гостя к защищённому эндпоинту, а не «истёкшая сессия».
+    if (res.statusCode == 401 && authToken != null) {
+      onUnauthorized?.call();
     }
     throw ApiException(res.statusCode, res.body);
   }
