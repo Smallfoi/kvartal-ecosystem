@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>STAW — Архитектура экосистемы</title>
+<style>
+  @page { size: 420mm 287mm; margin: 0; }
+  html,body { margin:0; padding:0; background:#070a14; }
+  svg { display:block; width:100%; height:100%; }
+  text { font-family:'Manrope','Segoe UI',system-ui,Arial,sans-serif; }
+  .t-title { font-weight:800; }
+  .t-h { font-weight:700; }
+  .t-sec { font-weight:700; letter-spacing:2.5px; }
+  .lbl { font-weight:600; letter-spacing:.3px; }
+</style>
+</head>
+<body>
+<svg viewBox="0 0 1720 1180" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="24%" cy="-8%" r="125%">
+      <stop offset="0%" stop-color="#13203b"/><stop offset="42%" stop-color="#0b1120"/><stop offset="100%" stop-color="#05070f"/>
+    </radialGradient>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#ffffff" opacity="0.03"/>
+    </pattern>
+    <linearGradient id="cardBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16223c"/><stop offset="1" stop-color="#0d1525"/></linearGradient>
+    <linearGradient id="cardCyan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f2533"/><stop offset="1" stop-color="#0a1622"/></linearGradient>
+    <linearGradient id="cardGreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#11281e"/><stop offset="1" stop-color="#0a1a14"/></linearGradient>
+    <linearGradient id="cardViolet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d1838"/><stop offset="1" stop-color="#120f25"/></linearGradient>
+    <linearGradient id="cardAmber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#251c0f"/><stop offset="1" stop-color="#17110a"/></linearGradient>
+    <linearGradient id="cardSlate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141a26"/><stop offset="1" stop-color="#0d121c"/></linearGradient>
+    <linearGradient id="djHead" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#14492c"/><stop offset="1" stop-color="#0f3a24"/></linearGradient>
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#34d399" stop-opacity="0.16"/><stop offset="100%" stop-color="#34d399" stop-opacity="0"/></radialGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="7" stdDeviation="11" flood-color="#000" flood-opacity="0.5"/></filter>
+    <filter id="softSm" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#000" flood-opacity="0.45"/></filter>
+    <marker id="aBlue" markerWidth="10" markerHeight="10" refX="7.5" refY="4" orient="auto"><path d="M0.5,0.7 L8,4 L0.5,7.3 L2.6,4 z" fill="#5e8fc9"/></marker>
+    <marker id="aAmber" markerWidth="10" markerHeight="10" refX="7.5" refY="4" orient="auto"><path d="M0.5,0.7 L8,4 L0.5,7.3 L2.6,4 z" fill="#d6a24e"/></marker>
+    <marker id="aViolet" markerWidth="10" markerHeight="10" refX="7.5" refY="4" orient="auto"><path d="M0.5,0.7 L8,4 L0.5,7.3 L2.6,4 z" fill="#9d7fd6"/></marker>
+    <marker id="aVioletS" markerWidth="10" markerHeight="10" refX="2.5" refY="4" orient="auto"><path d="M7.5,0.7 L0,4 L7.5,7.3 L5.4,4 z" fill="#9d7fd6"/></marker>
+    <marker id="aSlate" markerWidth="10" markerHeight="10" refX="7.5" refY="4" orient="auto"><path d="M0.5,0.7 L8,4 L0.5,7.3 L2.6,4 z" fill="#8b99b0"/></marker>
+    <marker id="aSlateS" markerWidth="10" markerHeight="10" refX="2.5" refY="4" orient="auto"><path d="M7.5,0.7 L0,4 L7.5,7.3 L5.4,4 z" fill="#8b99b0"/></marker>
+
+    <!-- icons (stroke inherits from <use>) -->
+    <symbol id="ic-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5" fill="none" stroke-width="1.8"/><line x1="10.5" y1="18.5" x2="13.5" y2="18.5" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="ic-bag" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8z" fill="none" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 8a3 3 0 0 1 6 0" fill="none" stroke-width="1.8"/></symbol>
+    <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke-width="1.7"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="1.7"/><path d="M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" fill="none" stroke-width="1.7"/></symbol>
+    <symbol id="ic-admin" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2" fill="none" stroke-width="1.8"/><line x1="8" y1="20.5" x2="16" y2="20.5" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="20" stroke-width="1.8"/></symbol>
+    <symbol id="ic-map" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" fill="none" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.6" fill="none" stroke-width="1.7"/></symbol>
+    <symbol id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5" fill="none" stroke-width="1.7"/><g stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5.2" y1="5.2" x2="7" y2="7"/><line x1="17" y1="17" x2="18.8" y2="18.8"/><line x1="18.8" y1="5.2" x2="17" y2="7"/><line x1="7" y1="17" x2="5.2" y2="18.8"/></g></symbol>
+    <symbol id="ic-gate" viewBox="0 0 24 24"><path d="M5 6l5 6-5 6M12 6l5 6-5 6" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-server" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="7" rx="2" fill="none" stroke-width="1.7"/><rect x="3.5" y="13" width="17" height="7" rx="2" fill="none" stroke-width="1.7"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="7.5" cy="16.5" r="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="ic-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7.5" ry="3" fill="none" stroke-width="1.7"/><path d="M4.5 6v12c0 1.6 3.4 3 7.5 3s7.5-1.4 7.5-3V6" fill="none" stroke-width="1.7"/><path d="M4.5 12c0 1.6 3.4 3 7.5 3s7.5-1.4 7.5-3" fill="none" stroke-width="1.5"/></symbol>
+    <symbol id="ic-bolt" viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z" fill="none" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-bucket" viewBox="0 0 24 24"><path d="M4 7l1.4 13a2 2 0 0 0 2 1.8h9.2a2 2 0 0 0 2-1.8L20 7" fill="none" stroke-width="1.7" stroke-linejoin="round"/><ellipse cx="12" cy="6.5" rx="8" ry="2.6" fill="none" stroke-width="1.7"/></symbol>
+    <symbol id="ic-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.8 2H4.2l1.8-2z" fill="none" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 20a2 2 0 0 0 4 0" fill="none" stroke-width="1.7"/></symbol>
+    <symbol id="ic-bug" viewBox="0 0 24 24"><ellipse cx="12" cy="13" rx="4.5" ry="5.5" fill="none" stroke-width="1.7"/><line x1="12" y1="8" x2="12" y2="18" stroke-width="1.5"/><g stroke-width="1.6" stroke-linecap="round"><line x1="7.5" y1="11" x2="4.5" y2="9"/><line x1="7.5" y1="16" x2="4.5" y2="18"/><line x1="16.5" y1="11" x2="19.5" y2="9"/><line x1="16.5" y1="16" x2="19.5" y2="18"/></g></symbol>
+    <symbol id="ic-msg" viewBox="0 0 24 24"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H9l-5 4V7a1.5 1.5 0 0 1 1.5-1.5z" fill="none" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-card" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2.5" fill="none" stroke-width="1.7"/><line x1="3" y1="10" x2="21" y2="10" stroke-width="1.7"/><line x1="7" y1="14.5" x2="12" y2="14.5" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="ic-store" viewBox="0 0 24 24"><path d="M4.5 9.5l1.2-4.5h12.6l1.2 4.5" fill="none" stroke-width="1.7" stroke-linejoin="round"/><path d="M4.5 9.5a2.4 2.4 0 0 0 4.8 0 2.4 2.4 0 0 0 4.8 0 2.4 2.4 0 0 0 4.8 0" fill="none" stroke-width="1.7"/><path d="M6 12v7.5h12V12" fill="none" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-watch" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2.5" fill="none" stroke-width="1.7"/><path d="M9.5 7l.6-3.5h3.8l.6 3.5M9.5 17l.6 3.5h3.8l.6-3.5" fill="none" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke-width="1.7"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1" fill="none" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <marker id="aGreen" markerWidth="10" markerHeight="10" refX="7.5" refY="4" orient="auto"><path d="M0.5,0.7 L8,4 L0.5,7.3 L2.6,4 z" fill="#34d399"/></marker>
+  </defs>
+
+  <rect width="1720" height="1180" fill="url(#bg)"/>
+  <rect width="1720" height="1180" fill="url(#dots)"/>
+
+  <!-- TITLE -->
+  <g>
+    <rect x="50" y="34" width="34" height="34" rx="9" fill="#0A84FF" opacity="0.16"/>
+    <text x="58" y="60" class="t-title" font-size="22" fill="#3b9bff">A</text>
+    <text x="98" y="54" class="t-title" font-size="29" fill="#ffffff" letter-spacing="0.5">STAW · Экосистема — архитектура и связи</text>
+    <text x="100" y="80" font-size="14" fill="#7d8ba3" font-weight="500">кто с кем работает · на каком языке · через какой протокол и формат данных</text>
+    <text x="1670" y="52" text-anchor="end" class="t-h" font-size="13" fill="#8896ad">актуально · 12.08.2026</text>
+    <text x="1670" y="80" text-anchor="end" font-size="11.5" fill="#5f6d84" font-weight="500">Docker · db + web + worker + beat + redis</text>
+  </g>
+  <line x1="50" y1="98" x2="1670" y2="98" stroke="#172339" stroke-width="1.5"/>
+
+  <!-- SECTION LABELS -->
+  <g class="t-sec" font-size="11.5">
+    <text x="72" y="124" fill="#d6a24e">ВНЕШНЕЕ · С КЛИЕНТА</text>
+    <text x="486" y="124" fill="#6aa6ef">КЛИЕНТЫ</text>
+    <text x="1316" y="124" fill="#d6a24e">ВНЕШНИЕ СЕРВИСЫ · С БЭКЕНДА</text>
+    <text x="486" y="798" fill="#b79cf0">ДАННЫЕ И ХРАНИЛИЩА</text>
+    <text x="486" y="922" fill="#94a3b8">ИНТЕГРАЦИИ · ПЛАН (пост-MVP)</text>
+  </g>
+
+  <!-- ===== CLIENTS ===== -->
+  <g filter="url(#soft)">
+    <rect x="486" y="138" width="190" height="96" rx="17" fill="url(#cardBlue)" stroke="#3b82f6" stroke-opacity="0.42" stroke-width="1.4"/>
+    <rect x="676" y="138" width="190" height="96" rx="17" fill="url(#cardBlue)" stroke="#3b82f6" stroke-opacity="0.42" stroke-width="1.4"/>
+    <rect x="884" y="138" width="166" height="96" rx="17" fill="url(#cardBlue)" stroke="#38bdf8" stroke-opacity="0.42" stroke-width="1.4"/>
+    <rect x="1068" y="138" width="186" height="96" rx="17" fill="url(#cardViolet)" stroke="#a78bfa" stroke-opacity="0.42" stroke-width="1.4"/>
+  </g>
+  <!-- Квартал -->
+  <rect x="504" y="156" width="34" height="34" rx="10" fill="#3b82f6" fill-opacity="0.16"/><use href="#ic-phone" x="508" y="160" width="26" height="26" stroke="#7fb0f7"/>
+  <text x="550" y="172" class="t-h" font-size="18" fill="#eef3fb">Квартал</text>
+  <text x="504" y="206" font-size="12" fill="#8fb6f5" font-weight="600">Flutter · Dart · Riverpod</text>
+  <text x="504" y="224" font-size="11" fill="#7d8ba3">бег · GPS · захват территорий</text>
+  <!-- SportStore -->
+  <rect x="694" y="156" width="34" height="34" rx="10" fill="#3b82f6" fill-opacity="0.16"/><use href="#ic-bag" x="698" y="160" width="26" height="26" stroke="#7fb0f7"/>
+  <text x="740" y="172" class="t-h" font-size="18" fill="#eef3fb">SportStore</text>
+  <text x="694" y="206" font-size="12" fill="#8fb6f5" font-weight="600">Flutter · Dart · Provider</text>
+  <text x="694" y="224" font-size="11" fill="#7d8ba3">магазин · заказы · баллы</text>
+  <!-- Site -->
+  <rect x="902" y="156" width="34" height="34" rx="10" fill="#38bdf8" fill-opacity="0.16"/><use href="#ic-globe" x="906" y="160" width="26" height="26" stroke="#7dd3f0"/>
+  <text x="948" y="172" class="t-h" font-size="17" fill="#eef3fb">Сайт STAW</text>
+  <text x="902" y="206" font-size="12" fill="#86d3f2" font-weight="600">HTML · CSS · JS</text>
+  <text x="902" y="224" font-size="11" fill="#7d8ba3">витрина · бренд</text>
+  <!-- Admin -->
+  <rect x="1086" y="156" width="34" height="34" rx="10" fill="#a78bfa" fill-opacity="0.16"/><use href="#ic-admin" x="1090" y="160" width="26" height="26" stroke="#c4b0fb"/>
+  <text x="1132" y="172" class="t-h" font-size="17" fill="#eef3fb">Django Admin</text>
+  <text x="1086" y="206" font-size="12" fill="#c4b0fb" font-weight="600">Python · django-unfold</text>
+  <text x="1086" y="224" font-size="11" fill="#7d8ba3">модерация · контент</text>
+
+  <!-- ===== LEFT EXTERNAL ===== -->
+  <g filter="url(#softSm)">
+    <rect x="72" y="146" width="224" height="84" rx="16" fill="url(#cardAmber)" stroke="#fbbf24" stroke-opacity="0.38" stroke-width="1.4"/>
+    <rect x="72" y="250" width="224" height="84" rx="16" fill="url(#cardAmber)" stroke="#fbbf24" stroke-opacity="0.38" stroke-width="1.4"/>
+  </g>
+  <rect x="88" y="162" width="32" height="32" rx="9" fill="#fbbf24" fill-opacity="0.15"/><use href="#ic-map" x="92" y="166" width="24" height="24" stroke="#f3cf86"/>
+  <text x="130" y="182" class="t-h" font-size="16" fill="#f4ead4">CARTO Voyager</text>
+  <text x="88" y="210" font-size="11.5" fill="#d9b06a" font-weight="600">растровые тайлы (D-26)</text>
+  <text x="88" y="226" font-size="10.5" fill="#8a7d63">онлайн · бесплатно · без ключа</text>
+  <rect x="88" y="266" width="32" height="32" rx="9" fill="#fbbf24" fill-opacity="0.15"/><use href="#ic-sun" x="92" y="270" width="24" height="24" stroke="#f3cf86"/>
+  <text x="130" y="286" class="t-h" font-size="16" fill="#f4ead4">MET Norway</text>
+  <text x="88" y="314" font-size="11.5" fill="#d9b06a" font-weight="600">погода · api.met.no (D-20)</text>
+  <text x="88" y="330" font-size="10.5" fill="#8a7d63">доступен из РФ</text>
+  <!-- arrows Квартал -> map/weather -->
+  <path d="M486 178 C 410 178 372 188 300 188" fill="none" stroke="#d6a24e" stroke-width="1.6" marker-end="url(#aAmber)"/>
+  <g><rect x="312" y="158" width="150" height="22" rx="11" fill="#0d1322" stroke="#2a2516" stroke-width="1"/><text x="324" y="173" class="lbl" font-size="10.5" fill="#e7c489">HTTPS · PNG-тайлы</text></g>
+  <path d="M486 206 C 392 214 372 292 300 292" fill="none" stroke="#d6a24e" stroke-width="1.6" marker-end="url(#aAmber)"/>
+  <g><rect x="312" y="282" width="166" height="22" rx="11" fill="#0d1322" stroke="#2a2516" stroke-width="1"/><text x="324" y="297" class="lbl" font-size="10.5" fill="#e7c489">HTTPS · JSON (погода)</text></g>
+
+  <!-- ===== NGINX ===== -->
+  <g filter="url(#soft)"><rect x="726" y="324" width="250" height="80" rx="17" fill="url(#cardCyan)" stroke="#22d3ee" stroke-opacity="0.45" stroke-width="1.5"/></g>
+  <rect x="744" y="344" width="36" height="36" rx="10" fill="#22d3ee" fill-opacity="0.15"/><use href="#ic-gate" x="748" y="348" width="28" height="28" stroke="#7de4f5"/>
+  <text x="792" y="358" class="t-h" font-size="18" fill="#e6fbff">Nginx 1.27</text>
+  <text x="792" y="380" font-size="12" fill="#7fd9ea" font-weight="600">reverse proxy · TLS / HTTPS</text>
+  <text x="792" y="397" font-size="10.5" fill="#6f93a3">терминация SSL · статика</text>
+  <!-- clients -> nginx -->
+  <path d="M576 234 C 640 290 740 300 812 324" fill="none" stroke="#5e8fc9" stroke-width="1.6" marker-end="url(#aBlue)"/>
+  <path d="M771 234 L 845 324" fill="none" stroke="#5e8fc9" stroke-width="1.6" marker-end="url(#aBlue)"/>
+  <path d="M967 234 C 940 290 920 300 895 324" fill="none" stroke="#5e8fc9" stroke-width="1.6" marker-end="url(#aBlue)"/>
+  <path d="M1161 234 C 1080 300 980 300 920 324" fill="none" stroke="#9d7fd6" stroke-width="1.6" marker-end="url(#aViolet)"/>
+  <g><rect x="566" y="270" width="280" height="24" rx="12" fill="#0d1322" stroke="#1c2740" stroke-width="1"/><text x="580" y="286" class="lbl" font-size="11.5" fill="#bcd4f0">HTTPS · REST/JSON · JWT (Bearer)</text></g>
+  <g><rect x="992" y="276" width="184" height="22" rx="11" fill="#0d1322" stroke="#241c34" stroke-width="1"/><text x="1004" y="291" class="lbl" font-size="10.5" fill="#cdb6e6">Admin · Session/RBAC</text></g>
+
+  <!-- ===== DJANGO CORE ===== -->
+  <ellipse cx="836" cy="568" rx="430" ry="210" fill="url(#coreGlow)"/>
+  <g filter="url(#soft)"><rect x="526" y="422" width="620" height="300" rx="20" fill="url(#cardGreen)" stroke="#34d399" stroke-opacity="0.5" stroke-width="1.8"/></g>
+  <path d="M526 442 a20 20 0 0 1 20-20 h580 a20 20 0 0 1 20 20 v24 h-620 z" fill="url(#djHead)"/>
+  <rect x="544" y="430" width="30" height="30" rx="8" fill="#34d399" fill-opacity="0.2"/><use href="#ic-server" x="547" y="433" width="24" height="24" stroke="#7eecbf"/>
+  <text x="586" y="451" class="t-h" font-size="18" fill="#cdf6df">Django REST API — Python 3 · Django 5.1 · DRF 3.15</text>
+  <text x="546" y="488" font-size="12" fill="#86c7a3" font-weight="500">JWT-auth (телефон, D-24) · Permissions · Throttling (Redis) · Filtering · источник правды (D-02)</text>
+  <line x1="546" y1="502" x2="1126" y2="502" stroke="#1d4d33" stroke-width="1"/>
+  <text x="546" y="524" class="t-sec" font-size="10.5" fill="#6fa589">ПРИЛОЖЕНИЯ · 15</text>
+  <g font-size="13" class="t-h" fill="#e3f5ec">
+    <text x="548" y="552">accounts</text><text x="548" y="586">runs</text><text x="548" y="620">territories</text><text x="548" y="654">loyalty</text><text x="548" y="688">leaderboard</text>
+    <text x="752" y="552">clubs</text><text x="752" y="586">catalog</text><text x="752" y="620">orders</text><text x="752" y="654">shoes</text><text x="752" y="688">notifications</text>
+    <text x="966" y="552">legal</text><text x="966" y="586">analytics</text><text x="966" y="620">races</text><text x="966" y="654">core</text><text x="966" y="688">common</text>
+  </g>
+  <g font-size="9.5" fill="#6f9a82">
+    <text x="548" y="567">аккаунт · JWT · удаление</text><text x="548" y="601">пробежки · трек</text><text x="548" y="635">захват · PostGIS · анти-чит</text><text x="548" y="669">баллы серверно (D-23)</text><text x="548" y="703">км · клубы · районы</text>
+    <text x="752" y="567">клубы · роли</text><text x="752" y="601">товары · цены · остатки</text><text x="752" y="635">заказы · история</text><text x="752" y="669">износ по км</text><text x="752" y="703">пуши · шаблоны</text>
+    <text x="966" y="567">документы · согласия (D-32)</text><text x="966" y="601">события · воронки (D-30)</text><text x="966" y="635">старты · афиша · авто-парсер</text><text x="966" y="669">health · конфиг (env)</text><text x="966" y="703">утилиты · безопасность</text>
+  </g>
+  <circle cx="540" cy="548" r="2.4" fill="#34d399"/><circle cx="540" cy="582" r="2.4" fill="#34d399"/><circle cx="540" cy="616" r="2.4" fill="#34d399"/><circle cx="540" cy="650" r="2.4" fill="#34d399"/><circle cx="540" cy="684" r="2.4" fill="#34d399"/>
+  <circle cx="744" cy="548" r="2.4" fill="#34d399"/><circle cx="744" cy="582" r="2.4" fill="#34d399"/><circle cx="744" cy="616" r="2.4" fill="#34d399"/><circle cx="744" cy="650" r="2.4" fill="#34d399"/><circle cx="744" cy="684" r="2.4" fill="#34d399"/>
+  <circle cx="958" cy="548" r="2.4" fill="#34d399"/><circle cx="958" cy="582" r="2.4" fill="#34d399"/><circle cx="958" cy="616" r="2.4" fill="#34d399"/><circle cx="958" cy="650" r="2.4" fill="#34d399"/><circle cx="958" cy="684" r="2.4" fill="#34d399"/>
+  <!-- nginx -> django -->
+  <path d="M851 404 L 851 422" fill="none" stroke="#5e8fc9" stroke-width="1.8" marker-end="url(#aBlue)"/>
+  <g><rect x="864" y="405" width="178" height="16" rx="8" fill="#0d1322" stroke="#1c2740" stroke-width="1"/><text x="876" y="417" class="lbl" font-size="10" fill="#bcd4f0">WSGI · Gunicorn :8000</text></g>
+
+  <!-- ===== DATA ===== -->
+  <g filter="url(#soft)">
+    <rect x="486" y="802" width="236" height="104" rx="17" fill="url(#cardViolet)" stroke="#a78bfa" stroke-opacity="0.42" stroke-width="1.4"/>
+    <rect x="754" y="802" width="196" height="104" rx="17" fill="url(#cardViolet)" stroke="#a78bfa" stroke-opacity="0.42" stroke-width="1.4"/>
+    <rect x="982" y="802" width="236" height="104" rx="17" fill="url(#cardViolet)" stroke="#a78bfa" stroke-opacity="0.42" stroke-width="1.4"/>
+  </g>
+  <rect x="504" y="820" width="34" height="34" rx="10" fill="#a78bfa" fill-opacity="0.16"/><use href="#ic-db" x="508" y="824" width="26" height="26" stroke="#c4b0fb"/>
+  <text x="550" y="836" class="t-h" font-size="17" fill="#efe7fb">PostgreSQL 16</text>
+  <text x="504" y="872" font-size="12.5" fill="#c4b0fb" font-weight="600">+ PostGIS 3.4</text>
+  <text x="504" y="891" font-size="10.5" fill="#8d80a8">геометрия · ST_Union / ST_Difference</text>
+  <rect x="772" y="820" width="34" height="34" rx="10" fill="#a78bfa" fill-opacity="0.16"/><use href="#ic-bolt" x="776" y="824" width="26" height="26" stroke="#c4b0fb"/>
+  <text x="818" y="836" class="t-h" font-size="17" fill="#efe7fb">Redis 7</text>
+  <text x="772" y="872" font-size="12.5" fill="#c4b0fb" font-weight="600">in-memory кэш</text>
+  <text x="772" y="891" font-size="10.5" fill="#8d80a8">rate-limit · OTP · Celery broker</text>
+  <rect x="1000" y="820" width="34" height="34" rx="10" fill="#a78bfa" fill-opacity="0.16"/><use href="#ic-bucket" x="1004" y="824" width="26" height="26" stroke="#c4b0fb"/>
+  <text x="1046" y="836" class="t-h" font-size="17" fill="#efe7fb">Object Storage</text>
+  <text x="1000" y="872" font-size="12.5" fill="#c4b0fb" font-weight="600">S3 · Yandex Cloud</text>
+  <text x="1000" y="891" font-size="10.5" fill="#8d80a8">медиа · фото · аватары</text>
+  <!-- django -> data -->
+  <path d="M604 722 L 604 802" fill="none" stroke="#9d7fd6" stroke-width="1.7" marker-end="url(#aViolet)" marker-start="url(#aVioletS)"/>
+  <g><rect x="450" y="730" width="186" height="22" rx="11" fill="#0d1322" stroke="#241c34" stroke-width="1"/><text x="462" y="745" class="lbl" font-size="10.5" fill="#dab6f0">SQL · psycopg3 · :5432</text></g>
+  <path d="M852 722 L 852 802" fill="none" stroke="#9d7fd6" stroke-width="1.7" marker-end="url(#aViolet)"/>
+  <g><rect x="790" y="730" width="124" height="22" rx="11" fill="#0d1322" stroke="#241c34" stroke-width="1"/><text x="802" y="745" class="lbl" font-size="10.5" fill="#dab6f0">RESP · :6379</text></g>
+  <path d="M1100 722 L 1100 802" fill="none" stroke="#9d7fd6" stroke-width="1.7" marker-end="url(#aViolet)" marker-start="url(#aVioletS)"/>
+  <g><rect x="1040" y="730" width="158" height="22" rx="11" fill="#0d1322" stroke="#241c34" stroke-width="1"/><text x="1052" y="745" class="lbl" font-size="10.5" fill="#dab6f0">S3 API · HTTPS</text></g>
+
+  <!-- ===== CELERY (worker + beat) ===== -->
+  <g filter="url(#softSm)"><rect x="72" y="800" width="224" height="106" rx="16" fill="url(#cardGreen)" stroke="#34d399" stroke-opacity="0.42" stroke-width="1.4"/></g>
+  <rect x="88" y="818" width="34" height="34" rx="10" fill="#34d399" fill-opacity="0.16"/><use href="#ic-gear" x="92" y="822" width="26" height="26" stroke="#7eecbf"/>
+  <text x="134" y="833" class="t-h" font-size="16" fill="#cdf6df">Celery</text>
+  <text x="134" y="850" font-size="10.5" fill="#7fd0a6" font-weight="600">worker + beat</text>
+  <text x="88" y="876" font-size="11" fill="#86c7a3" font-weight="600">фоновые задачи · расписание (D-07)</text>
+  <text x="88" y="894" font-size="9.8" fill="#6f9a82">афиша · ретеншн · очистка · брокер Redis</text>
+  <!-- core -> celery (enqueue) -->
+  <path d="M526 660 C 372 660 250 716 210 800" fill="none" stroke="#34d399" stroke-width="1.6" marker-end="url(#aGreen)"/>
+  <g><rect x="298" y="700" width="204" height="22" rx="11" fill="#0d1322" stroke="#153726" stroke-width="1"/><text x="310" y="715" class="lbl" font-size="10.5" fill="#a7e6c6">задачи в очередь · Redis broker</text></g>
+
+  <!-- ===== RIGHT EXTERNAL ===== -->
+  <g filter="url(#softSm)">
+    <rect x="1316" y="424" width="350" height="72" rx="15" fill="url(#cardAmber)" stroke="#fbbf24" stroke-opacity="0.38" stroke-width="1.4"/>
+    <rect x="1316" y="510" width="350" height="72" rx="15" fill="url(#cardAmber)" stroke="#fbbf24" stroke-opacity="0.38" stroke-width="1.4"/>
+    <rect x="1316" y="596" width="350" height="72" rx="15" fill="url(#cardSlate)" stroke="#94a3b8" stroke-opacity="0.4" stroke-width="1.3" stroke-dasharray="7 5"/>
+    <rect x="1316" y="682" width="350" height="72" rx="15" fill="url(#cardSlate)" stroke="#94a3b8" stroke-opacity="0.4" stroke-width="1.3" stroke-dasharray="7 5"/>
+  </g>
+  <rect x="1332" y="442" width="34" height="34" rx="10" fill="#fbbf24" fill-opacity="0.15"/><use href="#ic-bell" x="1336" y="446" width="26" height="26" stroke="#f3cf86"/>
+  <text x="1378" y="458" class="t-h" font-size="16" fill="#f4ead4">RuStore Push</text>
+  <text x="1378" y="480" font-size="11.5" fill="#d9b06a">пуш-уведомления (D-24/25)</text>
+  <rect x="1332" y="528" width="34" height="34" rx="10" fill="#fbbf24" fill-opacity="0.15"/><use href="#ic-bug" x="1336" y="532" width="26" height="26" stroke="#f3cf86"/>
+  <text x="1378" y="544" class="t-h" font-size="16" fill="#f4ead4">GlitchTip · self-host РФ</text>
+  <text x="1378" y="566" font-size="11.5" fill="#d9b06a">Sentry-совместимый · ошибки без PII (D-32)</text>
+  <rect x="1332" y="614" width="34" height="34" rx="10" fill="#94a3b8" fill-opacity="0.15"/><use href="#ic-msg" x="1336" y="618" width="26" height="26" stroke="#c4cedd"/>
+  <text x="1378" y="630" class="t-h" font-size="16" fill="#e7edf4">SMS · smsc.ru</text>
+  <text x="1378" y="652" font-size="11.5" fill="#9fb1cb">OTP-коды · сейчас dev-код 1234 · план</text>
+  <rect x="1332" y="700" width="34" height="34" rx="10" fill="#94a3b8" fill-opacity="0.15"/><use href="#ic-card" x="1336" y="704" width="26" height="26" stroke="#c4cedd"/>
+  <text x="1378" y="716" class="t-h" font-size="16" fill="#e7edf4">Платежи · ЮKassa / СБП</text>
+  <text x="1378" y="738" font-size="11.5" fill="#9fb1cb">оплата заказов · 54-ФЗ · план</text>
+  <!-- django -> right -->
+  <path d="M1146 460 L 1316 460" fill="none" stroke="#d6a24e" stroke-width="1.6" marker-end="url(#aAmber)"/>
+  <g><rect x="1156" y="438" width="150" height="21" rx="10.5" fill="#0d1322" stroke="#2a2516" stroke-width="1"/><text x="1167" y="453" class="lbl" font-size="10" fill="#e7c489">HTTPS · push-токены</text></g>
+  <path d="M1146 546 L 1316 546" fill="none" stroke="#d6a24e" stroke-width="1.6" marker-end="url(#aAmber)"/>
+  <g><rect x="1152" y="524" width="156" height="21" rx="10.5" fill="#0d1322" stroke="#2a2516" stroke-width="1"/><text x="1163" y="539" class="lbl" font-size="10" fill="#e7c489">HTTPS · события ошибок</text></g>
+  <path d="M1146 632 L 1316 632" fill="none" stroke="#8b99b0" stroke-width="1.5" stroke-dasharray="7 5" marker-end="url(#aSlate)"/>
+  <g><rect x="1172" y="610" width="118" height="21" rx="10.5" fill="#0d1322" stroke="#222834" stroke-width="1"/><text x="1183" y="625" class="lbl" font-size="10" fill="#c0ccdd">HTTPS · OTP</text></g>
+  <path d="M1146 718 L 1316 718" fill="none" stroke="#8b99b0" stroke-width="1.5" stroke-dasharray="7 5" marker-end="url(#aSlate)"/>
+  <g><rect x="1154" y="696" width="154" height="21" rx="10.5" fill="#0d1322" stroke="#222834" stroke-width="1"/><text x="1165" y="711" class="lbl" font-size="10" fill="#c0ccdd">HTTPS · оплата/возврат</text></g>
+
+  <!-- ===== FUTURE ===== -->
+  <g filter="url(#softSm)">
+    <rect x="486" y="934" width="332" height="96" rx="16" fill="url(#cardSlate)" stroke="#94a3b8" stroke-opacity="0.42" stroke-width="1.3" stroke-dasharray="8 5"/>
+    <rect x="846" y="934" width="332" height="96" rx="16" fill="url(#cardSlate)" stroke="#94a3b8" stroke-opacity="0.42" stroke-width="1.3" stroke-dasharray="8 5"/>
+  </g>
+  <rect x="504" y="952" width="34" height="34" rx="10" fill="#94a3b8" fill-opacity="0.15"/><use href="#ic-store" x="508" y="956" width="26" height="26" stroke="#c4cedd"/>
+  <text x="550" y="968" class="t-h" font-size="16.5" fill="#e7edf6">1С Розница 2.3 — офлайн-магазин</text>
+  <text x="504" y="998" font-size="11.5" fill="#9fb1cb">источник правды: товары · остатки · цены</text>
+  <text x="504" y="1017" font-size="10.5" fill="#7d8ba3">обмен заказами + единая лояльность online↔offline</text>
+  <rect x="864" y="952" width="34" height="34" rx="10" fill="#94a3b8" fill-opacity="0.15"/><use href="#ic-watch" x="868" y="956" width="26" height="26" stroke="#c4cedd"/>
+  <text x="910" y="968" class="t-h" font-size="16.5" fill="#e7edf6">Смарт-часы · Garmin / Coros</text>
+  <text x="864" y="998" font-size="11.5" fill="#9fb1cb">phone-free бег → облако вендора →</text>
+  <text x="864" y="1017" font-size="10.5" fill="#7d8ba3">webhook FIT/GPX → пробежки / территории (D-22)</text>
+  <!-- future -> django -->
+  <path d="M738 932 L 738 722" fill="none" stroke="#8b99b0" stroke-width="1.5" stroke-dasharray="8 5" marker-end="url(#aSlate)" marker-start="url(#aSlateS)"/>
+  <g><rect x="623" y="757" width="232" height="22" rx="11" fill="#0d1322" stroke="#222834" stroke-width="1"/><text x="635" y="772" class="lbl" font-size="10" fill="#c0ccdd">CommerceML / OData · API Key (↔)</text></g>
+  <path d="M966 932 L 966 722" fill="none" stroke="#8b99b0" stroke-width="1.5" stroke-dasharray="8 5" marker-end="url(#aSlate)"/>
+  <g><rect x="864" y="757" width="208" height="22" rx="11" fill="#0d1322" stroke="#222834" stroke-width="1"/><text x="876" y="772" class="lbl" font-size="10" fill="#c0ccdd">OAuth + webhook · FIT/GPX</text></g>
+
+  <!-- ===== LEGEND ===== -->
+  <g filter="url(#softSm)"><rect x="50" y="1064" width="1620" height="74" rx="16" fill="#0a0f1c" stroke="#172339" stroke-width="1.3"/></g>
+  <text x="74" y="1092" class="t-sec" font-size="11" fill="#9fb1cb">ОБОЗНАЧЕНИЯ</text>
+  <line x1="206" y1="1088" x2="252" y2="1088" stroke="#5e8fc9" stroke-width="2" marker-end="url(#aBlue)"/><text x="262" y="1092" font-size="11.5" fill="#c3d2e6">синхронный HTTPS / REST</text>
+  <line x1="470" y1="1088" x2="516" y2="1088" stroke="#9d7fd6" stroke-width="2" marker-end="url(#aViolet)" marker-start="url(#aVioletS)"/><text x="528" y="1092" font-size="11.5" fill="#c3d2e6">двунаправленный обмен (БД)</text>
+  <line x1="772" y1="1088" x2="818" y2="1088" stroke="#8b99b0" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#aSlate)"/><text x="830" y="1092" font-size="11.5" fill="#c3d2e6">пунктир = план (пост-MVP)</text>
+  <g font-size="11" transform="translate(74,1118)">
+    <rect x="0" y="-9" width="12" height="12" rx="3.5" fill="#3b82f6"/><text x="19" y="1" fill="#aebfd6">Клиенты · Flutter/Dart</text>
+    <rect x="196" y="-9" width="12" height="12" rx="3.5" fill="#22d3ee"/><text x="215" y="1" fill="#aebfd6">Edge · Nginx</text>
+    <rect x="330" y="-9" width="12" height="12" rx="3.5" fill="#34d399"/><text x="349" y="1" fill="#aebfd6">Backend · Django/Python</text>
+    <rect x="556" y="-9" width="12" height="12" rx="3.5" fill="#a78bfa"/><text x="575" y="1" fill="#aebfd6">Данные · Postgres/Redis/S3</text>
+    <rect x="800" y="-9" width="12" height="12" rx="3.5" fill="#fbbf24"/><text x="819" y="1" fill="#aebfd6">Внешние сервисы</text>
+    <rect x="968" y="-9" width="12" height="12" rx="3.5" fill="#94a3b8"/><text x="987" y="1" fill="#aebfd6">Интеграции · план</text>
+    <text x="1170" y="1" fill="#6f7f97">Стек: Flutter · Django + DRF · PostgreSQL/PostGIS · Redis · Celery · Docker · Yandex Cloud (РФ)</text>
+  </g>
+
+</svg>
+</body>
+</html>
