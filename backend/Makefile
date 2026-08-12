@@ -37,5 +37,9 @@ restore: ## восстановить БД: make restore FILE=backups/xxx.sql.gz
 	./deploy/restore.sh $(FILE)
 smoke: ## smoke-тест прод
 	./deploy/smoke.sh
+tls-issue: ## выпустить TLS-сертификат Let's Encrypt (первый раз)
+	./deploy/tls.sh issue
+tls-renew: ## обновить TLS-сертификат (в cron раз в неделю)
+	./deploy/tls.sh renew
 
-.PHONY: help up down logs test migrate shell prod-deploy prod-up prod-down prod-logs backup restore smoke
+.PHONY: help up down logs test migrate shell prod-deploy prod-up prod-down prod-logs backup restore smoke tls-issue tls-renew

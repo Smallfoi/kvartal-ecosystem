@@ -13,7 +13,11 @@
 
 ## 1. Backend (Django)
 
-**Готовый прод-стек** — `backend/docker-compose.prod.yml` (Django+gunicorn + PostGIS + nginx+TLS).
+> Пошаговый порядок закупки и подключения сервисов (облако → домен → S3 → TLS → SMS →
+> оплата → пуши) с ценами — `docs/YANDEX_CLOUD.md`. Здесь — техническая часть деплоя.
+
+**Готовый прод-стек** — `backend/docker-compose.prod.yml` (Django+gunicorn + PostGIS + Redis +
+Celery worker/beat + nginx+TLS).
 Шаблоны: `backend/.env.prod.example`, `backend/nginx/staw.conf.example`. Запуск:
 ```
 cd backend && cp .env.prod.example .env   # заполнить секреты!
@@ -21,7 +25,10 @@ cp nginx/staw.conf.example nginx/staw.conf # подставить домен; ce
 docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 web сам делает migrate → collectstatic → gunicorn (3 воркера); nginx форсит HTTPS, раздаёт /media, /static.
-**Обязательно:** бэкапы БД (авто `pg_dump` + проверка восстановления — баллы = деньги!); внешний пинг `/v1/health`+алерты; Redis для общего rate-limit/кэша на нескольких воркерах (D-07); сменить дефолтный пароль/логин админки + ограничить `/admin/` по IP.
+Сервисы `worker`/`beat` выполняют фоновые задачи (чистка данных с истёкшим сроком хранения —
+152-ФЗ, чистка территорий, парсер афиши «Стартов», рассылки). Их падение по API незаметно —
+поэтому `make smoke` отдельно проверяет, что оба подняты.
+**Обязательно:** бэкапы БД (авто `pg_dump` + выгрузка в Object Storage + проверка восстановления — баллы = деньги!); внешний пинг `/v1/health`+алерты; Redis для общего rate-limit/кэша на нескольких воркерах (D-07); сменить дефолтный пароль/логин админки + ограничить `/admin/` по IP.
 
 Задать переменные окружения (см. `backend/.env.prod.example`):
 
@@ -82,7 +89,9 @@ flutter build apk --release --target-platform android-arm64 \
 | Команда | Что делает |
 |---|---|
 | `make prod-deploy` | бэкап БД → сборка/миграции/collectstatic → smoke-тест (основной деплой/обновление) |
-| `make backup` | бэкап БД → `backups/staw_<дата>.sql.gz` (ротация 14 дней) |
+| `make backup` | бэкап БД → `backups/staw_<дата>.sql.gz` + выгрузка в Object Storage (ротация 14 дней) |
+| `make tls-issue` | выпустить TLS-сертификат Let's Encrypt (первый раз, nginx встанет на ~минуту) |
+| `make tls-renew` | обновить сертификат без простоя (в cron раз в неделю) |
 | `make restore FILE=backups/staw_….sql.gz` | восстановить БД из бэкапа (спросит подтверждение, сделает контрольный бэкап) |
 | `make smoke` | проверить health + каталог/баннеры изнутри web-контейнера |
 | `make prod-logs` | логи прод-web | 
@@ -96,10 +105,13 @@ flutter build apk --release --target-platform android-arm64 \
 
 **Откат:** `git checkout <tag-или-commit> && make prod-deploy`. Если откатить нужно и БД (после плохой миграции) — `make restore FILE=<последний-хороший-бэкап>`.
 
-**Бэкапы по расписанию (cron на сервере):**
+**Расписание на сервере (cron):**
 ```cron
 0 4 * * *  cd /path/to/backend && ./deploy/backup.sh >> backups/cron.log 2>&1
+0 3 * * 1  cd /path/to/backend && ./deploy/tls.sh renew >> logs/tls.log 2>&1
 ```
+Без `BACKUP_S3_BUCKET` дамп остаётся только на диске сервера — это не бэкап: диск умрёт
+вместе с БД и дампами. Бакет задаётся в `.env` (см. `.env.prod.example`).
 Раз в месяц — **проверка восстановления** на staging (`make restore` из свежего бэкапа): бэкап без проверенного restore не считается рабочим.
 
 **Troubleshooting:**
