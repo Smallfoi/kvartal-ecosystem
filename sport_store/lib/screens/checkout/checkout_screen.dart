@@ -143,6 +143,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       context.go('/cart');
       return;
     }
+    // Заказ уходит на общий backend по JWT. Если сессия мертва (истёкший токен
+    // → авто-выход через ApiClient.onUnauthorized), НЕ создаём «фантомный»
+    // локальный заказ и не чистим корзину — просим войти заново.
+    if (context.read<OrderProvider>().serverBacked &&
+        !context.read<AuthProvider>().isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Войдите в аккаунт, чтобы оформить заказ'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     setState(() => _placing = true);
 
     await Future.delayed(const Duration(milliseconds: 900));
