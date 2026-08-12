@@ -204,6 +204,7 @@ class LoyaltyProvider extends ChangeNotifier {
 
   String _redeemError(Object e) {
     if (e is ApiException) {
+      if (e.statusCode == 401) return 'Сессия истекла — войдите снова';
       try {
         final detail = (jsonDecode(e.message) as Map)['detail'];
         if (detail is String && detail.isNotEmpty) return detail;

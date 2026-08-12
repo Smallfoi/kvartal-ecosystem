@@ -76,8 +76,14 @@ void main() async {
         // читать backend напрямую (напр. правовые документы /legal/documents).
         Provider<ApiClient?>.value(value: api),
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(prefs, authRepo,
-              onSessionEnd: () => api?.authToken = null),
+          create: (_) {
+            final ap = AuthProvider(prefs, authRepo,
+                onSessionEnd: () => api?.authToken = null);
+            // Сервер отверг токен (401) → авто-выход + «Сессия истекла».
+            // Лечит «залипший» протухший токен (см. ApiClient.onUnauthorized).
+            api?.onUnauthorized = ap.handleUnauthorized;
+            return ap;
+          },
         ),
         ChangeNotifierProvider(create: (_) => CartProvider(prefs)),
         ChangeNotifierProvider(create: (_) => WishlistProvider(prefs)),

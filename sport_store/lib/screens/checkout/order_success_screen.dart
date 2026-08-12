@@ -141,16 +141,19 @@ class OrderSuccessScreen extends StatelessWidget {
                             onTap: () => context.go('/profile'),
                             child: Container(
                               height: 52,
-                              decoration: order == null
-                                  ? null
-                                  : BoxDecoration(
-                                      border: Border.all(
-                                        color: AppColors.grey200,
-                                      ),
-                                    ),
-                              color: order == null
-                                  ? AppColors.black
-                                  : AppColors.white,
+                              // ВАЖНО: цвет — ВНУТРИ decoration. Нельзя задавать
+                              // Container(color:) и Container(decoration:) вместе
+                              // (assert «color == null || decoration == null»),
+                              // а при order != null decoration был не-null → краш
+                              // на экране «Заказ оформлен».
+                              decoration: BoxDecoration(
+                                color: order == null
+                                    ? AppColors.black
+                                    : AppColors.white,
+                                border: order == null
+                                    ? null
+                                    : Border.all(color: AppColors.grey200),
+                              ),
                               alignment: Alignment.center,
                               child: RemoteText(
                                 'app.ordersuccess.myOrders',
