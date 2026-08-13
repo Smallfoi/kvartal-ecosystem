@@ -22,9 +22,10 @@ class OrderProvider extends ChangeNotifier {
   NotificationsProvider? _notifier;
   bool _lastLoggedIn = false;
 
-  /// Future последней отправки заказа на backend — чекаут его дожидается, чтобы
-  /// затем перечитать баланс (сервер начисляет очки за покупку при создании заказа).
-  Future<void>? lastSubmit;
+  /// Результат последней отправки заказа на backend: true — заказ реально принят
+  /// сервером (или mock-режим), false — отправка не удалась (сеть/сервер). Чекаут
+  /// дожидается его: показывать «оформлен» и чистить корзину можно ТОЛЬКО при true.
+  Future<bool>? lastSubmit;
 
   OrderProvider(this._prefs, this._repo, {this.serverBacked = false}) {
     _load();
@@ -139,13 +140,34 @@ class OrderProvider extends ChangeNotifier {
     _save();
     notifyListeners();
 
-    // Оптимистичная отправка на backend (в проде — реальный POST /orders).
-    // UI не ждёт ответа: заказ уже сохранён локально. Future сохраняем в lastSubmit,
-    // чтобы чекаут мог дождаться и перечитать баланс (сервер начислит очки за покупку).
-    lastSubmit = _repo.submitOrder(order).then<void>((_) {}).catchError((_) {});
+    // Отправка на backend с отслеживанием результата (в проде — реальный POST /orders).
+    // Чекаут дожидается `lastSubmit`: true — заказ принят сервером, false — НЕ долетел.
+    // Ошибку НЕ проглатываем: при провале заказ снимается локально (не «фантом»).
+    lastSubmit = _submit(order);
     unawaited(lastSubmit!);
 
-    // Первое уведомление + имитация прогресса доставки
+    return order;
+  }
+
+  /// Отправляет заказ на backend. Возвращает true при успехе (или в mock-режиме),
+  /// false — если отправка не удалась. При провале заказ снимается локально, чтобы
+  /// не было ситуации «заказ оформлен в приложении, но на сервере его нет».
+  Future<bool> _submit(Order order) async {
+    try {
+      await _repo.submitOrder(order);
+      _onSubmitted(order.id);
+      return true;
+    } catch (_) {
+      _onSubmitFailed(order.id);
+      return false;
+    }
+  }
+
+  /// Заказ принят сервером: первое уведомление + имитация прогресса доставки.
+  void _onSubmitted(String orderId) {
+    final i = _orders.indexWhere((o) => o.id == orderId);
+    if (i < 0) return;
+    final order = _orders[i];
     _notifier?.push(AppNotification(
       id: 'n-${DateTime.now().microsecondsSinceEpoch}',
       title: 'Заказ №${order.id} оформлен',
@@ -155,8 +177,15 @@ class OrderProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
     ));
     _scheduleStatusProgress(order.id);
+  }
 
-    return order;
+  /// Отправка не удалась: снимаем локальный заказ, чтобы не создавать «фантом»
+  /// (показан оформленным, но на сервере его нет). Чекаут покажет ошибку и
+  /// сохранит корзину/баллы для повторной попытки.
+  void _onSubmitFailed(String orderId) {
+    _orders.removeWhere((o) => o.id == orderId);
+    _save();
+    notifyListeners();
   }
 
   /// Имитация жизненного цикла заказа: каждый этап шлёт уведомление.

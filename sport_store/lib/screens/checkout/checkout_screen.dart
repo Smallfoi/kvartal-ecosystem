@@ -188,6 +188,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       data,
       pointsRedeemed: redeem,
     );
+
+    // Дожидаемся РЕАЛЬНОЙ отправки заказа на сервер. Пока не подтверждена — НЕ чистим
+    // корзину, НЕ списываем баллы и НЕ показываем «оформлен». При провале заказ уже
+    // снят провайдером — предлагаем повторить, ничего не потеряв (корзина/баллы целы).
+    final submitted = await (orders.lastSubmit ?? Future.value(true));
+    if (!mounted) return;
+    if (!submitted) {
+      setState(() => _placing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Не удалось оформить заказ. Проверьте соединение и попробуйте снова.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Заказ принят сервером — завершаем покупку.
     cart.clear();
 
     if (redeem > 0) {
@@ -201,12 +220,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     if (!mounted) return;
     // Начисление за покупку считает СЕРВЕР при создании заказа (/orders, анти-чит
-    // S-04 Phase 2). При serverBacked клиент не минтит — дожидаемся отправки заказа
-    // и перечитываем баланс с сервера; в mock-режиме начисляем локально для демо.
+    // S-04 Phase 2). При serverBacked перечитываем баланс с сервера; в mock-режиме
+    // начисляем локально для демо.
     if (loyalty.serverBacked) {
-      try {
-        await orders.lastSubmit;
-      } catch (_) {}
       await loyalty.load();
     } else {
       loyalty.earnForPurchase(
