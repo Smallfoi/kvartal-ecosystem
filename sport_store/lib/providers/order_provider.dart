@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/repositories/order_repository.dart';
 import '../models/app_notification.dart';
@@ -157,8 +158,23 @@ class OrderProvider extends ChangeNotifier {
       await _repo.submitOrder(order);
       _onSubmitted(order.id);
       return true;
-    } catch (_) {
+    } catch (e, st) {
       _onSubmitFailed(order.id);
+      // Важный «тихий» провал: заказ не долетел до сервера. Заказ уже откачен
+      // локально (не «фантом»), но САМ факт делаем видимым в мониторинге (D-32),
+      // не ломая UX. Без SENTRY_DSN (сборка без --dart-define) — безопасный no-op.
+      await Sentry.captureException(
+        e,
+        stackTrace: st,
+        withScope: (scope) {
+          scope.setTag('area', 'order_submit');
+          scope.setContexts('order', {
+            'id': order.id,
+            'total': order.total,
+            'items': order.items.length,
+          });
+        },
+      );
       return false;
     }
   }
