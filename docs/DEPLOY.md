@@ -1,4 +1,4 @@
-# Деплой / прод-конфиг экосистемы STAW
+# Деплой / прод-конфиг экосистемы МАТА
 
 Чеклист перехода dev → прод. **В dev ничего настраивать не нужно** — везде заданы
 рабочие dev-значения по умолчанию (backend `127.0.0.1:8000`, CORS открыт). Прод
@@ -67,9 +67,9 @@ flutter build apk --release --target-platform android-arm64 \
 На HTTPS не нужен cleartext — но `usesCleartextTraffic`/`INTERNET` в манифестах оставлены
 (не мешают прод; нужны для dev по HTTP). Связь телефон↔dev-бек по USB: `adb reverse tcp:8000 tcp:8000`.
 
-## 3. Сайт STAW
+## 3. Сайт МАТА
 
-Раздавать по HTTPS. База API в `САЙТ STAW/ecosystem.js`:
+Раздавать по HTTPS. База API в `САЙТ МАТА/ecosystem.js`:
 - на `localhost`/`127.0.0.1` сам берёт dev (`127.0.0.1:8000/v1`);
 - на проде берёт `PROD_API` — **заменить `https://api.staw.ru/v1` на реальный домен**
   (или задать `window.STAW_API_BASE = "https://..."` в `<head>` до подключения `ecosystem.js`).

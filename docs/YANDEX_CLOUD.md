@@ -1,4 +1,4 @@
-# Подключение прод-инфраструктуры STAW — по порядку
+# Подключение прод-инфраструктуры МАТА — по порядку
 
 Пошаговый порядок «от нуля до работающего прода»: что покупаем, что настраиваем, чем
 проверяем каждый шаг. Конкретизирует D-28 (бюджетная конфигурация) и D-17 (выбор облака);
@@ -105,7 +105,7 @@ sudo usermod -aG docker $USER && exit   # перезайти, чтобы гру�
 ## Шаг 5. Деплой бэкенда
 
 ```bash
-git clone https://github.com/Smallfoi/kvartal-ecosystem.git && cd kvartal-ecosystem/backend
+git clone https://github.com/Smallfoi/mata-ecosystem.git && cd mata-ecosystem/backend
 cp .env.prod.example .env && nano .env
 python3 -c "import secrets; print(secrets.token_urlsafe(64))"   # ×2 — для двух разных секретов
 cp nginx/staw.conf.example nginx/staw.conf && nano nginx/staw.conf   # подставить домен
@@ -142,7 +142,7 @@ make tls-issue     # первый выпуск, nginx встанет на ~ми�
 Автообновление — в cron (Let's Encrypt живёт 90 дней, обновляется без простоя):
 
 ```cron
-0 3 * * 1  cd /home/yc-user/kvartal-ecosystem/backend && ./deploy/tls.sh renew >> logs/tls.log 2>&1
+0 3 * * 1  cd /home/yc-user/mata-ecosystem/backend && ./deploy/tls.sh renew >> logs/tls.log 2>&1
 ```
 
 **Проверка:** `curl -I https://api.staw.ru/v1/health` → `200`, `http://` редиректит на `https://`.
@@ -150,7 +150,7 @@ make tls-issue     # первый выпуск, nginx встанет на ~ми�
 ## Шаг 7. Бэкапы и мониторинг
 
 ```cron
-0 4 * * *  cd /home/yc-user/kvartal-ecosystem/backend && ./deploy/backup.sh >> backups/cron.log 2>&1
+0 4 * * *  cd /home/yc-user/mata-ecosystem/backend && ./deploy/backup.sh >> backups/cron.log 2>&1
 ```
 
 `backup.sh` делает дамп, проверяет что он непустой, **выгружает в `staw-backups`** и чистит
@@ -197,7 +197,7 @@ flutter build apk --release --target-platform android-arm64 \
   --dart-define=KVARTAL_API_BASE_URL=https://api.staw.ru/v1
 ```
 
-Сайт: в `САЙТ STAW/ecosystem.js` заменить `PROD_API` на реальный домен.
+Сайт: в `САЙТ МАТА/ecosystem.js` заменить `PROD_API` на реальный домен.
 
 **Проверка:** войти одним номером в оба приложения и на сайт — баланс баллов везде одинаковый.
 

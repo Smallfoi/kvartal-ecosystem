@@ -1,4 +1,4 @@
-# AGENTS.md — Codex, читай это (правила экосистемы STAW)
+# AGENTS.md — Codex, читай это (правила экосистемы МАТА)
 
 Над этим монорепо **по очереди** работают два ИИ-агента — **Codex** и **Claude** — и
 владелец проекта. Вы одна команда: один вектор, один общий опыт. Главное:
@@ -32,8 +32,8 @@
 ## Окружение
 - Windows. Кириллица в PowerShell бьётся — UTF-8 писать через файловый инструмент.
 - Бэкенд (общий, Django+PostGIS в Docker): `cd backend && docker compose up -d` (на :8000). Docker иногда сам падает — проверяй `/v1/health`, при падении перезапусти.
-- Телефон↔бек: `adb reverse tcp:8000 tcp:8000`. GitHub: `Smallfoi/kvartal-ecosystem` (public).
+- Телефон↔бек: `adb reverse tcp:8000 tcp:8000`. GitHub: `Smallfoi/mata-ecosystem` (public).
 
 ## Состав экосистемы
-`kvartal-app/` (Квартал, Flutter) · `sport_store/` (Store, Flutter) · `САЙТ STAW/` (сайт) ·
+`kvartal-app/` (Квартал, Flutter) · `sport_store/` (Store, Flutter) · `САЙТ МАТА/` (сайт) ·
 `backend/` (общий Django + PostGIS, Docker). Единый аккаунт (SSO по телефону) + общий баланс баллов. Контракт — `ECOSYSTEM_API.md`.

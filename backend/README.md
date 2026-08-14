@@ -1,4 +1,4 @@
-# STAW Ecosystem Backend (walking skeleton)
+# МАТА Ecosystem Backend (walking skeleton)
 
 Общий backend экосистемы (Квартал + Store + Сайт). Реализует часть контракта
 `../ECOSYSTEM_API.md`: **Auth (SSO/JWT) + Loyalty (единый баланс баллов)**.

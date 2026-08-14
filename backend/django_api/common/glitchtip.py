@@ -6,7 +6,7 @@
   GLITCHTIP_API_URL   — базовый URL для запросов С БЭКА (лок.: http://host.docker.internal:8080)
   GLITCHTIP_WEB_URL   — URL для ссылок в БРАУЗЕР владельца (лок.: http://localhost:8080)
   GLITCHTIP_API_TOKEN — API-токен (Bearer)
-  GLITCHTIP_ORG       — slug организации (по умолчанию 'staw')
+  GLITCHTIP_ORG       — slug организации (по умолчанию 'mata')
 Не настроено/недоступно → пустой список + понятное сообщение (страница не падает).
 """
 import json
@@ -57,7 +57,7 @@ def _cfg():
         "api": api,
         "web": (os.environ.get("GLITCHTIP_WEB_URL") or api).rstrip("/"),
         "token": os.environ.get("GLITCHTIP_API_TOKEN") or "",
-        "org": os.environ.get("GLITCHTIP_ORG") or "staw",
+        "org": os.environ.get("GLITCHTIP_ORG") or "mata",
     }
 
 

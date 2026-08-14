@@ -324,7 +324,7 @@ def account_export(request):
     data["exportedAt"] = now.isoformat()
 
     resp = Response(data)
-    resp["Content-Disposition"] = 'attachment; filename="staw_data_export.json"'
+    resp["Content-Disposition"] = 'attachment; filename="mata_data_export.json"'
     return resp
 
 

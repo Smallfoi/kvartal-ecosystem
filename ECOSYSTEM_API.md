@@ -1,4 +1,4 @@
-# Единый контракт данных экосистемы STAW
+# Единый контракт данных экосистемы МАТА
 
 > **Единый источник правды** для трёх продуктов: «Квартал» (Runner App), Sport Store (App) и Сайт.
 > Все три приложения и backend реализуют ОДНИ и те же сущности, эндпоинты и потоки.
@@ -65,7 +65,7 @@
 {
   "id": "3",
   "name": "Кроссовки Air Runner X1",
-  "brand": "STAW",
+  "brand": "МАТА",
   "categoryId": "shoes",
   "price": 12990,
   "oldPrice": 15990,
@@ -88,7 +88,7 @@
   "id": "SS-61439",
   "userId": "u_123",
   "items": [
-    { "productId": "2", "productName": "Худи Essential Fleece", "productBrand": "STAW",
+    { "productId": "2", "productName": "Худи Essential Fleece", "productBrand": "МАТА",
       "imageUrl": "…", "price": 5990, "size": "L", "color": "Тёмно-синий", "quantity": 1 }
   ],
   "subtotal": 5990,
