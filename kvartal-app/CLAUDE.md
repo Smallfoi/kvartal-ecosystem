@@ -87,7 +87,7 @@ lib/
 Этот проект не является отдельным продуктом. Он является частью общей экосистемы:
 
 - `kvartal-app` / «Квартал» — мобильное приложение для бегунов: захват территорий, баллы, клубы, соревнования.
-- `САЙТ STAW` — сайт бренда/магазина, который далее будет переименован под общий бренд.
+- `САЙТ МАТА` — сайт бренда/магазина экосистемы МАТА.
 - `sport_store` — мобильное приложение спортивного магазина.
 
 Перед началом работы обязательно прочитать `RECOMMENDATION.md`. Это общее рекомендательное письмо для всех трёх проектов: в нём собраны выводы по Nike, Adidas, Puma, Gymshark, Under Armour и описана стратегия общей экосистемы, а не изолированных приложений.
@@ -99,7 +99,7 @@ lib/
 Project owner approved a new direction:
 
 - All future work should move to GitHub-based workflow.
-- Preferred repository model: monorepo `kvartal-ecosystem` containing KVARTAL, SportStore, website/admin and backend.
+- Preferred repository model: monorepo `mata-ecosystem` containing KVARTAL, SportStore, website/admin and backend.
 - Backend will be migrated gradually from current FastAPI prototype to Django + Django REST Framework.
 - Do not delete FastAPI until Django has compatible endpoints and mobile apps are verified.
 - Keep API contracts stable during migration, especially auth/profile endpoints.

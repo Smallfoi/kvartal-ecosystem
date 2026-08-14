@@ -1,4 +1,4 @@
-# django_api — бэкенд экосистемы STAW на Django (этап перехода)
+# django_api — бэкенд экосистемы МАТА на Django (этап перехода)
 
 Цель (D-06/D-07): постепенный переезд бэкенда с FastAPI на **Django + DRF + PostgreSQL/PostGIS**.
 FastAPI (`backend/main.py`, порт 8000) пока работает и обслуживает приложения. Django поднимаем

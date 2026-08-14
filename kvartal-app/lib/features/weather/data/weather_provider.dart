@@ -48,7 +48,7 @@ Future<WeatherData> _fetchWeather(LatLng at) async {
       receiveTimeout: const Duration(seconds: 15),
       // met.no без User-Agent с контактом блокирует запрос (403).
       headers: const {
-        'User-Agent': 'STAW-Kvartal/1.0 (github.com/Smallfoi/kvartal-ecosystem)',
+        'User-Agent': 'MATA-Kvartal/1.0 (github.com/Smallfoi/mata-ecosystem)',
       },
     ),
   );

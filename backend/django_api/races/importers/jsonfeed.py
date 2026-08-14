@@ -29,7 +29,7 @@ class JsonFeedImporter:
         if not url:
             return []
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "STAW-races-importer/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "MATA-races-importer/1.0"})
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
         except Exception:

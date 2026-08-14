@@ -1,4 +1,4 @@
-// observability.js — единый журнал ошибок сайта STAW → GlitchTip (Sentry-совместимый).
+// observability.js — единый журнал ошибок сайта МАТА → GlitchTip (Sentry-совместимый).
 //
 // Ошибки JS сайта (window.onerror + unhandledrejection + ручной window.stawCapture)
 // уходят в ТОТ ЖЕ GlitchTip, что и backend и приложения (Квартал/Store) — единый

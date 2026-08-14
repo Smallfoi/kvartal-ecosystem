@@ -1,5 +1,5 @@
 """
-Django-настройки бэкенда экосистемы STAW (этап перехода с FastAPI).
+Django-настройки бэкенда экосистемы МАТА (этап перехода с FastAPI).
 Конфиг через переменные окружения (см. docker-compose.yml / .env.example).
 БД — PostgreSQL (+ PostGIS включим для модуля территорий, D-09).
 """
@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-change-in-prod")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
-# Прод: DJANGO_ALLOWED_HOSTS="api.staw.ru,staw.ru". Dev (по умолчанию) — "*".
+# Прод: DJANGO_ALLOWED_HOSTS="api.mata-store.ru,mata-store.ru". Dev (по умолчанию) — "*".
 ALLOWED_HOSTS = [
     h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()
 ]
@@ -89,7 +89,7 @@ DATABASES = {
     }
 }
 
-# CORS. Прод: DJANGO_CORS_ORIGINS="https://staw.ru,https://www.staw.ru" — тогда
+# CORS. Прод: DJANGO_CORS_ORIGINS="https://mata-store.ru,https://www.mata-store.ru" — тогда
 # разрешаем только их. Dev (переменная пуста) — разрешаем всё (приложения и сайт
 # ходят с устройства/localhost).
 _cors_origins = [

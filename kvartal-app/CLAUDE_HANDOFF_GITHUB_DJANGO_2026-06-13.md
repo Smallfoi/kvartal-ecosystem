@@ -19,7 +19,7 @@ Recommended repository model: monorepo.
 Proposed future structure:
 
 ```text
-kvartal-ecosystem/
+mata-ecosystem/
   apps/
     kvartal_app/
     sport_store/
@@ -74,7 +74,7 @@ Until the monorepo is created, keep changes documented in the current project an
 
 ## Immediate GitHub Setup Tasks
 
-1. Create private GitHub repository: `kvartal-ecosystem`.
+1. Create private GitHub repository: `mata-ecosystem`.
 2. Prepare `.gitignore` for Flutter, Python, Django, Android, local DBs and secrets.
 3. Move or copy current projects into monorepo structure:
    - current KVARTAL app;
