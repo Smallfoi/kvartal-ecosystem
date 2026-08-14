@@ -1,9 +1,25 @@
-"""Регрессии начисления за покупку (S-04 Phase 2) + каркас оплаты."""
+"""Регрессии начисления за покупку (S-04 Phase 2) + оплата ЮKassa."""
+import json
 import os
 from unittest import mock
 
 from common.testutils import ApiTestCase
-from orders.payment import payment_enabled
+from orders.models import Order
+from orders.payment import PaymentError, payment_enabled
+
+# Боевой режим оплаты: провайдер + ключи магазина. Сеть в тестах не трогаем —
+# подменяется orders.payment._http (единственная точка сетевого ввода-вывода).
+_YK_ENV = {
+    "PAYMENT_PROVIDER": "yookassa",
+    "YOOKASSA_SHOP_ID": "654321",
+    "YOOKASSA_SECRET_KEY": "test_secret_key",
+    "YOOKASSA_RETURN_URL": "https://example.test/orders",
+}
+
+
+def _yk(status="pending", pid="pay_1", url="https://yoomoney.ru/checkout/pay_1"):
+    """Ответ ЮKassa в формате API v3."""
+    return {"id": pid, "status": status, "confirmation": {"confirmation_url": url}}
 
 
 class PaymentScaffoldTests(ApiTestCase):
@@ -20,11 +36,138 @@ class PaymentScaffoldTests(ApiTestCase):
         self.assertEqual(self.api_post("/v1/orders/NOPE/pay", {}).status_code, 404)
 
     @mock.patch.dict(os.environ, {"PAYMENT_PROVIDER": "yookassa"})
-    def test_provider_mode_pending_without_key(self):
+    def test_provider_mode_without_keys_is_502_not_silent_pending(self):
+        """Провайдер включён, а ключей нет — это ошибка конфигурации, и она должна
+        быть громкой. Молчаливый «pending» с пустой ссылкой = заказ, который
+        покупатель не может оплатить, и никто об этом не узнает."""
         self.assertTrue(payment_enabled())
         self.api_post("/v1/orders", {"id": "SS-P2", "total": 500, "items": []})
         r = self.api_post("/v1/orders/SS-P2/pay", {})
-        self.assertEqual(r.json()["status"], "pending")  # нет YOOKASSA_SECRET_KEY
+        self.assertEqual(r.status_code, 502)
+
+
+class YooKassaPaymentTests(ApiTestCase):
+    """Боевой режим оплаты: создание платежа, вебхук, привязка баллов к оплате."""
+    phone = "+79990002007"
+
+    def _order(self, oid, total=1000):
+        self.api_post("/v1/orders", {"id": oid, "total": total, "items": []})
+
+    def _webhook(self, payment_id, event="payment.succeeded"):
+        """Вебхук приходит БЕЗ токена — эндпоинт публичный."""
+        return self.client.post(
+            "/v1/payments/webhook",
+            data=json.dumps({"event": event, "object": {"id": payment_id}}),
+            content_type="application/json",
+        )
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    @mock.patch("orders.payment._http")
+    def test_creates_payment_and_returns_confirmation_url(self, http):
+        http.return_value = _yk()
+        self._order("SS-Y1", total=500)
+        r = self.api_post("/v1/orders/SS-Y1/pay", {"returnUrl": "https://example.test/ok"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["confirmationUrl"], "https://yoomoney.ru/checkout/pay_1")
+        self.assertEqual(r.json()["status"], "pending")
+
+        method, url, payload, headers = http.call_args[0]
+        self.assertEqual(method, "POST")
+        self.assertTrue(url.endswith("/payments"))
+        self.assertEqual(payload["amount"], {"value": "500.00", "currency": "RUB"})
+        self.assertEqual(payload["confirmation"]["return_url"], "https://example.test/ok")
+        self.assertTrue(headers["Authorization"].startswith("Basic "))
+        self.assertIn("Idempotence-Key", headers)  # защита от двойного списания
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    @mock.patch("orders.payment._http")
+    def test_same_order_reuses_idempotence_key(self, http):
+        http.return_value = _yk()
+        self._order("SS-Y2", total=700)
+        self.api_post("/v1/orders/SS-Y2/pay", {})
+        self.api_post("/v1/orders/SS-Y2/pay", {})
+        keys = [c[0][3]["Idempotence-Key"] for c in http.call_args_list]
+        self.assertEqual(keys[0], keys[1])  # повтор «Оплатить» → тот же платёж
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    @mock.patch("orders.payment._http")
+    def test_provider_failure_keeps_order_unpaid(self, http):
+        http.side_effect = PaymentError("ЮKassa 500: internal")
+        self._order("SS-Y3")
+        r = self.api_post("/v1/orders/SS-Y3/pay", {})
+        self.assertEqual(r.status_code, 502)
+        self.assertEqual(Order.objects.get(order_id="SS-Y3").payment_status, "none")
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    @mock.patch("orders.payment._http")
+    def test_points_wait_for_confirmed_payment(self, http):
+        """Ключевая защита: баллы = деньги, за неоплаченный заказ их быть не должно."""
+        http.return_value = _yk()
+        self._order("SS-Y4", total=1000)
+        self.assertEqual(self.balance(), 0)
+
+        self.api_post("/v1/orders/SS-Y4/pay", {})
+        self.assertEqual(self.balance(), 0)  # ссылка выдана, деньги ещё не пришли
+
+        http.return_value = _yk(status="succeeded")
+        self.assertEqual(self._webhook("pay_1").status_code, 200)
+        self.assertEqual(self.balance(), 150)  # 100 за сумму + 50 за первый заказ
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    @mock.patch("orders.payment._http")
+    def test_webhook_repeat_does_not_double_points(self, http):
+        http.return_value = _yk()
+        self._order("SS-Y5", total=1000)
+        self.api_post("/v1/orders/SS-Y5/pay", {})
+        http.return_value = _yk(status="succeeded")
+        self._webhook("pay_1")
+        self._webhook("pay_1")  # ЮKassa повторяет доставку при сбоях
+        self.assertEqual(self.balance(), 150)
+        self.assertEqual(Order.objects.get(order_id="SS-Y5").payment_status, "paid")
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    @mock.patch("orders.payment._http")
+    def test_forged_webhook_cannot_mark_paid(self, http):
+        """Тело вебхука не подписано: злоумышленник шлёт «succeeded» на наш публичный
+        адрес. Верим только ответу API по нашим ключам — заказ оплаченным не станет."""
+        http.return_value = _yk()
+        self._order("SS-Y6", total=1000)
+        self.api_post("/v1/orders/SS-Y6/pay", {})
+
+        http.return_value = _yk(status="pending")  # правда от API: не оплачен
+        self._webhook("pay_1", event="payment.succeeded")  # ложь в теле
+        self.assertEqual(Order.objects.get(order_id="SS-Y6").payment_status, "pending")
+        self.assertEqual(self.balance(), 0)
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    @mock.patch("orders.payment._http")
+    def test_canceled_payment_returns_redeemed_points(self, http):
+        from loyalty.models import add_txn
+
+        http.return_value = _yk()
+        self._order("SS-Y7", total=1000)
+        add_txn(self.uid, 300, "run", "Баллы за бег")
+        add_txn(self.uid, -100, "redeem", "Оплата баллами", "SS-Y7")
+        self.assertEqual(self.balance(), 200)
+
+        self.api_post("/v1/orders/SS-Y7/pay", {})
+        http.return_value = _yk(status="canceled")
+        self._webhook("pay_1", event="payment.canceled")
+        self.assertEqual(self.balance(), 300)  # списанные баллы вернулись
+        self._webhook("pay_1", event="payment.canceled")
+        self.assertEqual(self.balance(), 300)  # повтор не начисляет второй раз
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    @mock.patch("orders.payment._http")
+    def test_webhook_for_unknown_payment_is_404(self, http):
+        http.return_value = _yk(status="succeeded", pid="pay_stranger")
+        self.assertEqual(self._webhook("pay_stranger").status_code, 404)
+
+    def test_webhook_without_payment_id_is_400(self):
+        r = self.client.post(
+            "/v1/payments/webhook", data=json.dumps({}), content_type="application/json"
+        )
+        self.assertEqual(r.status_code, 400)
 
 
 class OrderAwardTests(ApiTestCase):

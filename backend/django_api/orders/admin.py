@@ -1,9 +1,11 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from unfold.admin import ModelAdmin
 
 from common.adminutils import ExportCsvMixin, UserRefMixin
 
+from .awards import refund_redeemed_points
 from .models import Order
+from .payment import PaymentError, create_refund
 
 
 @admin.register(Order)
@@ -28,7 +30,38 @@ class OrderAdmin(ExportCsvMixin, UserRefMixin, ModelAdmin):
     export_fields = ("order_id", "user_id", "total", "status", "payment_status",
                      "points_redeemed", "created_at")
     actions = ("mark_paid", "mark_shipped", "mark_delivered", "mark_cancelled",
-               "export_as_csv")
+               "refund_payment", "export_as_csv")
+
+    @admin.action(description="Вернуть деньги покупателю (ЮKassa)")
+    def refund_payment(self, request, queryset):
+        """Полный возврат оплаченного заказа + возврат списанных баллов.
+
+        Возврат делает ЮKassa по нашему запросу; заказ помечается «возвращён».
+        Заказы без платежа (dev-режим, неоплаченные) пропускаем — возвращать нечего.
+        """
+        done, skipped, failed = 0, 0, []
+        for order in queryset:
+            if not order.payment_id or order.payment_status != "paid":
+                skipped += 1
+                continue
+            try:
+                create_refund(order.payment_id, order.total, f"Возврат заказа {order.order_id}")
+            except PaymentError as e:
+                failed.append(f"{order.order_id}: {e}")
+                continue
+            order.payment_status = "refunded"
+            order.status = "cancelled"
+            order.save(update_fields=["payment_status", "status"])
+            refund_redeemed_points(order)  # баллы, потраченные на этот заказ, — назад
+            done += 1
+        if done:
+            self.message_user(request, f"Возвращено заказов: {done}", messages.SUCCESS)
+        if skipped:
+            self.message_user(
+                request, f"Пропущено (нет оплаты): {skipped}", messages.WARNING
+            )
+        for err in failed:
+            self.message_user(request, f"Ошибка возврата — {err}", messages.ERROR)
 
     @admin.action(description="Отметить: Оплачен")
     def mark_paid(self, request, queryset):
