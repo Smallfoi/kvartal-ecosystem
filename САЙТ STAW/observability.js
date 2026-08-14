@@ -17,7 +17,7 @@
     var DSN =
       (typeof window !== "undefined" && window.STAW_SENTRY_DSN) ||
       (isDev
-        ? "http://d9d7c9f7-ae3f-40d9-8b75-16ab2820a58b@localhost:8080/1"
+        ? "http://0a767332bdf84e14b8f7c76eacf861ab@localhost:8080/4" // проект «site»
         : PROD_DSN);
     if (!DSN) return; // без DSN — тихий no-op
 
