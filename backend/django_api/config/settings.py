@@ -166,7 +166,7 @@ STATIC_URL = "static/"
 STATIC_ROOT = os.environ.get("DJANGO_STATIC_ROOT", "/app/staticfiles")
 
 # Медиа: фото товаров для экосистемы (Квартал тянет мини-фото кроссовок по сети).
-# В dev файлы примонтированы из sport_store/assets (см. docker-compose: web → /srv/media).
+# В dev файлы примонтированы из mata_store/assets (см. docker-compose: web → /srv/media).
 # Прод — отдаёт реальный веб-сервер/CDN.
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", "/srv/media")

@@ -78,7 +78,7 @@ class UserConsent(models.Model):
         LegalDocument, on_delete=models.PROTECT, related_name="consents", verbose_name="Документ"
     )
     accepted_at = models.DateTimeField(default=timezone.now, verbose_name="Принято")
-    source = models.CharField(max_length=30, blank=True, default="", verbose_name="Источник")  # kvartal|sport_store|site
+    source = models.CharField(max_length=30, blank=True, default="", verbose_name="Источник")  # kvartal|mata_store|site
     revoked_at = models.DateTimeField(null=True, blank=True, verbose_name="Отозвано")
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Создано")
 

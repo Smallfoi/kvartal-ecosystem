@@ -9,8 +9,8 @@
 > Меняешь один — синхронизируй второй.
 
 ## Состав экосистемы
-- `kvartal-app/` — «Квартал», Flutter + Riverpod. Бег, захват территорий, баллы, клубы.
-- `sport_store/` — SportStore, Flutter + Provider. Магазин.
+- `mata_kvartal/` — «Квартал», Flutter + Riverpod. Бег, захват территорий, баллы, клубы.
+- `mata_store/` — SportStore, Flutter + Provider. Магазин.
 - `САЙТ МАТА/` — сайт бренда (статика).
 - `backend/` — ОБЩИЙ бэкенд: **Django 5 + DRF + PostgreSQL/PostGIS в Docker** (`backend/django_api/`). Единый аккаунт + общие баллы для всех.
 - `ECOSYSTEM_API.md` — контракт API, единый источник правды по эндпоинтам для всех трёх продуктов.

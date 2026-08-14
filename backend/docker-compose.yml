@@ -21,7 +21,7 @@ x-django-volumes: &django-volumes
   - ./django_api:/app
   # Фото товаров (dev): отдаём существующие ассеты Store по сети как /media/products/*,
   # чтобы Квартал показывал мини-фото кроссовок. Прод — реальный CDN/медиа-хранилище.
-  - ../sport_store/assets/images/products:/srv/media/products:ro
+  - ../mata_store/assets/images/products:/srv/media/products:ro
   # Загруженные через админку фото — отдельный записываемый том (/media/uploads/*).
   - media_uploads:/srv/media/uploads
 

@@ -5,7 +5,7 @@
 > Менять контракт — только здесь, синхронно во всех проектах. Связанные документы: `RECOMMENDATION.md`, `ECOSYSTEM.md`.
 >
 > Статус: контракт согласован с уже реализованными в Sport Store моделями (DTO) и репозиториями
-> (`sport_store/lib/data/repositories/*`, `sport_store/lib/models/*`). Backend пока не поднят
+> (`mata_store/lib/data/repositories/*`, `mata_store/lib/models/*`). Backend пока не поднят
 > (`ApiConfig.useMock = true`). При запуске backend все три приложения переключаются на эти эндпоинты.
 
 ---
