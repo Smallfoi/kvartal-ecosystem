@@ -8,6 +8,14 @@ from common.testutils import ApiTestCase
 from notifications.models import DeviceToken, create_notification
 from notifications.push import push_enabled, send_push
 
+# Боевой режим пушей: провайдер + ключи проекта RuStore. Сеть в тестах не трогаем —
+# подменяется notifications.push._http (единственная точка сетевого ввода-вывода).
+_RS_ENV = {
+    "PUSH_PROVIDER": "rustore",
+    "RUSTORE_PROJECT_ID": "proj-42",
+    "RUSTORE_PUSH_KEY": "service-token-xyz",
+}
+
 
 class PushScaffoldTests(ApiTestCase):
     phone = "+79990005001"
@@ -31,10 +39,66 @@ class PushScaffoldTests(ApiTestCase):
         self.assertIsNotNone(n)  # уведомление создано, пуш — no-op
 
     @mock.patch.dict(os.environ, {"PUSH_PROVIDER": "rustore"})
-    def test_rustore_stub_without_key_sends_zero(self):
+    def test_rustore_without_keys_sends_zero(self):
         self.assertTrue(push_enabled())
         DeviceToken.objects.create(user_id=self.uid, token="t2", platform="android")
-        self.assertEqual(send_push(self.uid, "x", "y"), 0)  # нет RUSTORE_PUSH_KEY
+        self.assertEqual(send_push(self.uid, "x", "y"), 0)  # нет ключей проекта
+
+
+class RuStorePushTests(ApiTestCase):
+    """Боевая отправка через RuStore Push (VK PNS). Сеть подменена."""
+    phone = "+79990005005"
+
+    def _token(self, value):
+        DeviceToken.objects.create(user_id=self.uid, token=value, platform="android")
+
+    @mock.patch.dict(os.environ, _RS_ENV)
+    @mock.patch("notifications.push._http")
+    def test_sends_to_all_devices_with_correct_request(self, http):
+        http.return_value = {}
+        self._token("dev-1")
+        self._token("dev-2")
+        self.assertEqual(send_push(self.uid, "Заказ готов", "Ждём вас"), 2)
+
+        url, payload, headers = http.call_args[0]
+        self.assertEqual(url, "https://vkpns.rustore.ru/v1/projects/proj-42/messages:send")
+        self.assertEqual(headers["Authorization"], "Bearer service-token-xyz")
+        self.assertEqual(payload["message"]["notification"]["title"], "Заказ готов")
+        self.assertEqual(payload["message"]["notification"]["body"], "Ждём вас")
+        self.assertIn(payload["message"]["token"], ("dev-1", "dev-2"))
+
+    @mock.patch.dict(os.environ, _RS_ENV)
+    @mock.patch("notifications.push._http")
+    def test_dead_token_is_deleted(self, http):
+        """Приложение удалили → NOT_FOUND. Такой токен мёртв, чистим базу."""
+        from notifications.push import DeadToken
+
+        http.side_effect = DeadToken("нет такого токена")
+        self._token("stale")
+        self.assertEqual(send_push(self.uid, "x", "y"), 0)
+        self.assertFalse(DeviceToken.objects.filter(token="stale").exists())
+
+    @mock.patch.dict(os.environ, _RS_ENV)
+    @mock.patch("notifications.push._http")
+    def test_provider_error_keeps_token_and_does_not_raise(self, http):
+        """Отказ провайдера (например, неверный ключ) не должен ни ронять поток,
+        ни удалять живой токен устройства."""
+        from notifications.push import PushError
+
+        http.side_effect = PushError("RuStore 403 PERMISSION_DENIED: bad key")
+        self._token("alive")
+        self.assertEqual(send_push(self.uid, "x", "y"), 0)
+        self.assertTrue(DeviceToken.objects.filter(token="alive").exists())
+
+    @mock.patch.dict(os.environ, _RS_ENV)
+    @mock.patch("notifications.push._http")
+    def test_notification_created_even_if_push_fails(self, http):
+        from notifications.push import PushError
+
+        http.side_effect = PushError("RuStore недоступен")
+        self._token("alive")
+        n = create_notification(self.uid, "Заказ принят", "тест")
+        self.assertIsNotNone(n)  # лента важнее доставки на телефон
 
 
 class NotificationFeedTests(ApiTestCase):
