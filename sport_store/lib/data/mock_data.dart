@@ -16,7 +16,7 @@ class MockData {
     Product(
       id: '1',
       name: 'Беговая футболка Pro Dry',
-      brand: 'SportStore',
+      brand: 'МАТА',
       categoryId: 'tshirts',
       price: 2990,
       oldPrice: 4500,
@@ -76,7 +76,7 @@ class MockData {
     Product(
       id: '4',
       name: 'Спортивные брюки Taper Fit',
-      brand: 'SportStore',
+      brand: 'МАТА',
       categoryId: 'pants',
       price: 4490,
       imageUrls: [
@@ -224,7 +224,7 @@ class MockData {
     Product(
       id: '12',
       name: 'Футболка Statement',
-      brand: 'SportStore',
+      brand: 'МАТА',
       categoryId: 'tshirts',
       price: 2490,
       oldPrice: 3290,
@@ -280,7 +280,7 @@ class MockData {
     Product(
       id: '15',
       name: 'Бутылка Thermo 750 мл',
-      brand: 'SportStore',
+      brand: 'МАТА',
       categoryId: 'accessories',
       price: 1490,
       imageUrls: [

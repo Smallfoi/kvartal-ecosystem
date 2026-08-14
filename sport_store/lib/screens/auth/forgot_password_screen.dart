@@ -128,7 +128,7 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 8),
               RemoteText(
                 'app.forgot.brand',
-                'SPORT STORE',
+                'МАТА STORE',
                 style: GoogleFonts.oswald(
                   fontSize: 30,
                   fontWeight: FontWeight.w700,

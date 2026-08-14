@@ -57,7 +57,7 @@ class StatsScreen extends ConsumerWidget {
             const SizedBox(height: 22),
             const Text(
               'Статистика едина во всех приложениях экосистемы: покупки и заказы '
-              'учитываются из STAW Store.',
+              'учитываются из МАТА Store.',
               style: TextStyle(fontSize: 13, height: 1.4, color: Colors.white54),
             ),
           ],

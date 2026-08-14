@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: RemoteText(
           'app.home.title',
-          'SPORT STORE',
+          'МАТА STORE',
           style: GoogleFonts.oswald(
             fontSize: 22,
             fontWeight: FontWeight.w700,

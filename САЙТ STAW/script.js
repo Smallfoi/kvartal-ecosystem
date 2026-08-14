@@ -433,7 +433,7 @@ if (coModal) {
     err.textContent = "";
 
     const submitBtn = coModal.querySelector("[data-co-submit]");
-    const orderId = "STAW-" + String(Math.floor(Math.random() * 900000) + 100000);
+    const orderId = "МАТА-" + String(Math.floor(Math.random() * 900000) + 100000);
     const goods = cartTotalValue();
     const delivery = (coModal.querySelector('input[name="co-delivery"]:checked') || {}).value || "courier";
     const pay = (coModal.querySelector('input[name="co-pay"]:checked') || {}).value || "card";
@@ -549,9 +549,9 @@ function prSetView(view) {
 
 // Демо-заказы (фолбэк, если бэкенд недоступен).
 const PR_ORDERS_DEMO = [
-  { id: "STAW-205990", source: "Сайт", date: "сегодня", items: "Everyday Training Layer", total: 3190, status: "Принят" },
-  { id: "STAW-198003", source: "Приложение «Квартал»", date: "18 июня", items: "City Motion Tee ×2", total: 2980, status: "Доставлен" },
-  { id: "SS-191244", source: "STAW Store", date: "5 июня", items: "Marathon Training Shorts", total: 2490, status: "Доставлен" },
+  { id: "МАТА-205990", source: "Сайт", date: "сегодня", items: "Everyday Training Layer", total: 3190, status: "Принят" },
+  { id: "МАТА-198003", source: "Приложение «Квартал»", date: "18 июня", items: "City Motion Tee ×2", total: 2980, status: "Доставлен" },
+  { id: "SS-191244", source: "МАТА Store", date: "5 июня", items: "Marathon Training Shorts", total: 2490, status: "Доставлен" },
 ];
 
 function prStatusMap(s) {
@@ -568,8 +568,8 @@ function prOrderSource(o) {
   var cd = o.checkoutData || {};
   if (cd.source) return cd.source;
   var id = String(o.id || "");
-  if (/^SS-/i.test(id)) return "STAW Store";
-  if (/^STAW-/i.test(id)) return "Сайт";
+  if (/^SS-/i.test(id)) return "МАТА Store";
+  if (/^(STAW|МАТА)-/i.test(id)) return "Сайт";
   return "Экосистема";
 }
 

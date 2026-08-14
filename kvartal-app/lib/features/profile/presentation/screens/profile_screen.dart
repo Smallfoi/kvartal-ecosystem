@@ -516,7 +516,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       context: context,
       builder: (ctx) => CupertinoActionSheet(
         title: const Text('Фото профиля'),
-        message: const Text('Один аватар для всех приложений экосистемы STAW.'),
+        message: const Text('Один аватар для всех приложений экосистемы МАТА.'),
         actions: [
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(ctx, 'upload'),
@@ -1259,7 +1259,7 @@ class _ShoesCard extends ConsumerWidget {
           : '$n новых пар — подтвердите';
       value = null;
     } else if (!st.hasShoes) {
-      subtitle = 'купи в магазине STAW';
+      subtitle = 'купи в МАТА Store';
       value = null;
     } else if (active != null) {
       subtitle = 'активная пара · износ ${active.wearPercent}%';

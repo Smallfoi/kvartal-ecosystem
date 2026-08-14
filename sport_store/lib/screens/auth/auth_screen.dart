@@ -211,7 +211,7 @@ class _BlackHeader extends StatelessWidget {
               const SizedBox(height: 8),
               RemoteText(
                 'app.auth.brand',
-                'SPORT STORE',
+                'МАТА STORE',
                 style: GoogleFonts.oswald(
                   fontSize: 30,
                   fontWeight: FontWeight.w700,
