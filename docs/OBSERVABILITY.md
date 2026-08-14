@@ -38,7 +38,9 @@
 
 - **Бэкенд:** `sentry-sdk[django]` в requirements; init по `SENTRY_DSN` в `config/settings.py` (без ключа — no-op); статус в `check_launch_readiness`.
 - **Мониторинг живости:** `/v1/health` (db+cache) и `/v1/health/ready` (200/503 для балансировщика).
-- **Приложения:** crash-reporting **пока НЕТ** (это этап 3).
+- **Приложения:** `sentry_flutter` подключён и инициализирован в обоих (`main.dart`
+  Квартала и Store) — ждёт только реального DSN. Осталось от этапа 3: обогащение
+  контекста (release/платформа/`user_id`), breadcrumbs и деобфускация символов.
 
 ## 5. Структура вкладки «Ошибки» (что видим)
 

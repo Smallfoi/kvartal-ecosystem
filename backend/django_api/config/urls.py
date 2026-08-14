@@ -99,7 +99,10 @@ urlpatterns = [
     path("v1/site/content", catalog_views.site_content),
     # Заказы Store (D-13)
     path("v1/orders", orders_views.orders),
-    path("v1/orders/<str:order_id>/pay", orders_views.pay_order),  # оплата (каркас)
+    path("v1/orders/<str:order_id>/pay", orders_views.pay_order),  # инициировать оплату
+    # Вебхук ЮKassa: адрес прописывается в личном кабинете магазина. Без токена —
+    # тело не подписано, подтверждение статуса идёт перезапросом к API (см. views).
+    path("v1/payments/webhook", orders_views.payment_webhook),
     # Уведомления (лента экосистемы)
     path("v1/notifications", notif_views.notifications),
     path("v1/notifications/read", notif_views.notifications_read),

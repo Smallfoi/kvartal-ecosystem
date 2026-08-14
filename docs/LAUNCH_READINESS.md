@@ -206,11 +206,16 @@ Privacy by design для «Квартала»:
 **Каркасы интеграций готовы и работают как no-op в dev** — активируются переменными
 окружения (провайдер + ключи аккаунта владельца), код менять не нужно:
 
-| Интеграция | Флаг вкл. | Ключи (env) | Dev-поведение (без ключей) |
-|---|---|---|---|
-| SMS-вход | `SMS_PROVIDER=smsc` | `SMS_LOGIN`, `SMS_PASSWORD` | код входа всегда `1234` |
-| Оплата | `PAYMENT_PROVIDER=yookassa` | `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` | заказ сразу «оплачено» |
-| Push | `PUSH_PROVIDER=rustore` | `RUSTORE_PUSH_KEY` (или `FCM_SERVER_KEY`) | пуш — no-op (лента в приложении работает) |
+> ⚠️ **Различай «каркас» и «реализацию».** Каркас = переключение по env есть, но
+> реального вызова провайдера нет: вставишь ключи — работать НЕ начнёт. Ниже это
+> указано в столбце «Реализация» честно, потому что раньше формулировка «каркас
+> готов, активируется ключами» вводила в заблуждение по оплате.
+
+| Интеграция | Флаг вкл. | Ключи (env) | Dev-поведение (без ключей) | Реализация |
+|---|---|---|---|---|
+| SMS-вход | `SMS_PROVIDER=smsc` | `SMS_LOGIN`, `SMS_PASSWORD` | код входа всегда `1234` | ✅ реальный вызов smsc.ru |
+| Оплата | `PAYMENT_PROVIDER=yookassa` | `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, `YOOKASSA_RETURN_URL` | заказ сразу «оплачено» | ✅ ЮKassa API v3: платёж, вебхук, возврат |
+| Push | `PUSH_PROVIDER=rustore` | `RUSTORE_PUSH_KEY` (или `FCM_SERVER_KEY`) | пуш — no-op (лента в приложении работает) | ❌ **заглушка**: `send()` всегда `False`, HTTP-вызова нет |
 | Мониторинг | — | `SENTRY_DSN` | Sentry выключен |
 | Кэш/очереди | — | `REDIS_URL` | LocMem-кэш + Celery EAGER (только один воркер) |
 | Медиа (S3) | — | `MEDIA_S3_BUCKET`, `MEDIA_S3_ACCESS_KEY`, `MEDIA_S3_SECRET_KEY` (+ `MEDIA_S3_CUSTOM_DOMAIN` для CDN) | локальный диск `/srv/media` (D-31) |
