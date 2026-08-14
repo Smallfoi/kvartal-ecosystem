@@ -38,8 +38,9 @@ def integrations():
             "key": "push",
             "name": "Push-уведомления",
             "provider": push_p or "—",
-            "ready": bool(push_p) and bool(_env("RUSTORE_PUSH_KEY") or _env("FCM_SERVER_KEY")),
-            "needs": "PUSH_PROVIDER=rustore + RUSTORE_PUSH_KEY (или FCM_SERVER_KEY)",
+            # RuStore Push шлёт по адресу проекта — без PROJECT_ID один ключ бесполезен.
+            "ready": bool(push_p) and bool(_env("RUSTORE_PROJECT_ID") and _env("RUSTORE_PUSH_KEY")),
+            "needs": "PUSH_PROVIDER=rustore + RUSTORE_PROJECT_ID + RUSTORE_PUSH_KEY",
         },
     ]
 
