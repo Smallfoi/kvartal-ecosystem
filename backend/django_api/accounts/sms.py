@@ -59,7 +59,7 @@ def request_code(phone) -> None:
     """Сгенерировать и отправить одноразовый код на телефон."""
     code = f"{secrets.randbelow(1_000_000):06d}"
     cache.set(f"otp:{phone}", {"code": code, "attempts": 0}, _OTP_TTL)
-    _provider().send(phone, f"Код входа в STAW: {code}")
+    _provider().send(phone, f"Код входа в МАТА: {code}")
 
 
 def check_code(phone, code) -> bool:

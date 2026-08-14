@@ -194,8 +194,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 from django.urls import reverse_lazy  # noqa: E402
 
 UNFOLD = {
-    "SITE_TITLE": "STAW Админка",
-    "SITE_HEADER": "STAW — администрирование",
+    "SITE_TITLE": "МАТА Админка",
+    "SITE_HEADER": "МАТА — администрирование",
     "SITE_SUBHEADER": "Экосистема: Квартал · Store · Сайт",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,

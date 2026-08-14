@@ -3,8 +3,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-admin.site.site_header = "STAW — администрирование экосистемы"
-admin.site.site_title = "STAW Admin"
+admin.site.site_header = "МАТА — администрирование экосистемы"
+admin.site.site_title = "МАТА Admin"
 admin.site.index_title = "Управление: каталог, заказы, клубы, баллы"
 
 from accounts import views as account_views

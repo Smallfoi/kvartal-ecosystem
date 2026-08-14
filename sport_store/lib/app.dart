@@ -73,7 +73,7 @@ class _SportStoreAppState extends State<SportStoreApp> {
     }
 
     return MaterialApp.router(
-      title: 'SportStore',
+      title: 'МАТА Store',
       theme: AppTheme.light,
       scaffoldMessengerKey: _messengerKey,
       routerConfig: appRouter,

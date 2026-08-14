@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen>
   // Линия: вырастает из центра
   late final Animation<double> _lineScale;
 
-  // Слова: SPORT слева, STORE справа → летят к центру
+  // Слова: МАТА слева, STORE справа → летят к центру
   late final Animation<double> _wordSlide;   // 1.0 → 0.0
   late final Animation<double> _wordFade;    // 0.0 → 1.0
 
@@ -148,7 +148,7 @@ class _SplashScreenState extends State<SplashScreen>
                               opacity: _wordFade.value,
                               child: RemoteText(
                                 'app.splash.brand1',
-                                'SPORT',
+                                'МАТА',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.oswald(
                                   fontSize: 88,

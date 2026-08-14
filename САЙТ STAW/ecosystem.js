@@ -202,11 +202,11 @@
     });
     if (ecoMode === "register") {
       nameI.hidden = false;
-      title.textContent = "Регистрация в STAW";
+      title.textContent = "Регистрация в МАТА";
       submit.textContent = "Зарегистрироваться";
     } else {
       nameI.hidden = true;
-      title.textContent = "Вход в STAW";
+      title.textContent = "Вход в МАТА";
       submit.textContent = "Войти";
     }
     modal.querySelector("[data-eco-err]").textContent = "";
@@ -216,13 +216,13 @@
     modal = document.createElement("div");
     modal.className = "eco-modal";
     modal.innerHTML =
-      '<div class="eco-card" role="dialog" aria-label="Вход и регистрация STAW">' +
+      '<div class="eco-card" role="dialog" aria-label="Вход и регистрация МАТА">' +
       '<button class="eco-close" type="button" data-eco-x aria-label="Закрыть">×</button>' +
       '<div class="eco-tabs">' +
       '<button type="button" class="eco-tab is-active" data-eco-mode="login">Вход</button>' +
       '<button type="button" class="eco-tab" data-eco-mode="register">Регистрация</button>' +
       "</div>" +
-      '<h3 data-eco-title>Вход в STAW</h3>' +
+      '<h3 data-eco-title>Вход в МАТА</h3>' +
       '<p class="eco-sub">Единый аккаунт экосистемы: баллы из «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
       '<input data-eco-name type="text" placeholder="Имя и фамилия" autocomplete="name" hidden />' +
       '<input data-eco-phone type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +

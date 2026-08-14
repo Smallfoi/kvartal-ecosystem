@@ -37,7 +37,7 @@
   function cardHtml(p) {
     var img = imgUrl(p);
     var cat = p.categoryId || ""; // для фильтра каталога
-    var catLabel = p.categoryLabel || p.brand || "STAW";
+    var catLabel = p.categoryLabel || p.brand || "МАТА";
     var sizes = Array.isArray(p.sizes) && p.sizes.length ? p.sizes : ["S", "M", "L", "XL"];
     var colors = Array.isArray(p.colors) && p.colors.length ? p.colors : ["#2b2f36", "#8a93a3"];
     var stock = p.inStock === false ? "Скоро в продаже" : "В наличии";

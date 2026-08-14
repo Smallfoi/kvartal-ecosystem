@@ -130,7 +130,7 @@ class _Empty extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              'Купи кроссовки в магазине STAW — мы спросим, добавить ли их '
+              'Купи кроссовки в МАТА Store — мы спросим, добавить ли их '
               'в трекер, и будем считать пробег и износ.',
               textAlign: TextAlign.center,
               style: Theme.of(context)
