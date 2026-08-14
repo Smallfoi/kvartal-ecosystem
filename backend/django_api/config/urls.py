@@ -128,5 +128,5 @@ urlpatterns = [
     path("v1/shoes/<str:shoe_id>", shoes_views.shoe_delete),  # DELETE
 ]
 
-# Фото товаров по сети (dev: из примонтированной папки sport_store; прод — CDN).
+# Фото товаров по сети (dev: из примонтированной папки mata_store; прод — CDN).
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

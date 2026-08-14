@@ -7,8 +7,8 @@
 ## Что сделал Codex
 
 - Нашёл актуальную рабочую директорию проекта: `C:\Users\crypt\kvartal_app`.
-- Подтвердил, что старая папка `C:\Users\crypt\kvartal-app` больше не является актуальной.
-- Прочитал Claude memory project summary из `.claude\projects\c--Users-crypt-kvartal-app\memory`.
+- Подтвердил, что старая папка `C:\Users\crypt\mata_kvartal` больше не является актуальной.
+- Прочитал Claude memory project summary из `.claude\projects\c--Users-crypt-mata_kvartal\memory`.
 - Проверил наличие в проекте `AGENTS.md`, `CLAUDE.md`, `HISTORY.md`, `PRD.md`, Flutter-структуры и основных файлов `lib/`.
 - Добавил `CODEX_HANDOFF.md` как общий файл передачи смены для Claude и Codex.
 - Подготовил эту запись сессии для истории.

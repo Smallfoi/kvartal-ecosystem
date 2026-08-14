@@ -1,4 +1,4 @@
-# КВАРТАЛ — CLAUDE.md
+# КВАРТАЛ — AGENTS.md
 
 ## Проект
 Городское беговое соревновательное приложение для Якутска.  
@@ -8,7 +8,7 @@
 - **Frontend:** Flutter 3.32 (Dart) — iOS + Android
 - **Backend:** общий **Django + DRF + PostgreSQL/PostGIS** в Docker (`backend/django_api/`, D-12)
 - **State:** Riverpod 2.x
-- **Maps:** flutter_map, ТОЛЬКО онлайн (D-26): растровые тайлы CARTO Voyager. Офлайн и векторный OpenFreeMap убраны (вектор рендерился серым).
+- **Maps:** flutter_map + растровые тайлы (CARTO)
 - **GPS:** geolocator + нативный foreground-сервис (Android)
 - **Navigation:** go_router
 - **Auth:** JWT по телефону (dev-код 1234). Планы: реальный SMS (smsc.ru), VK/Google/Apple
@@ -86,23 +86,10 @@ lib/
 
 Этот проект не является отдельным продуктом. Он является частью общей экосистемы:
 
-- `kvartal-app` / «Квартал» — мобильное приложение для бегунов: захват территорий, баллы, клубы, соревнования.
+- `mata_kvartal` / «Квартал» — мобильное приложение для бегунов: захват территорий, баллы, клубы, соревнования.
 - `САЙТ МАТА` — сайт бренда/магазина экосистемы МАТА.
-- `sport_store` — мобильное приложение спортивного магазина.
+- `mata_store` — мобильное приложение спортивного магазина.
 
 Перед началом работы обязательно прочитать `RECOMMENDATION.md`. Это общее рекомендательное письмо для всех трёх проектов: в нём собраны выводы по Nike, Adidas, Puma, Gymshark, Under Armour и описана стратегия общей экосистемы, а не изолированных приложений.
 
 Общий смысл: приложения и сайт должны развиваться как связанная система — единый бренд, единые пользователи, заказы, лояльность, баллы, уведомления, контент и будущая backend/admin архитектура.
-
-## Update 2026-06-13: GitHub workflow and Django migration
-
-Project owner approved a new direction:
-
-- All future work should move to GitHub-based workflow.
-- Preferred repository model: monorepo `mata-ecosystem` containing KVARTAL, SportStore, website/admin and backend.
-- Backend will be migrated gradually from current FastAPI prototype to Django + Django REST Framework.
-- Do not delete FastAPI until Django has compatible endpoints and mobile apps are verified.
-- Keep API contracts stable during migration, especially auth/profile endpoints.
-
-Read: `CLAUDE_HANDOFF_GITHUB_DJANGO_2026-06-13.md` before backend or repository-structure work.
-

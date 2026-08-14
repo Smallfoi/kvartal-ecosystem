@@ -22,7 +22,7 @@ Proposed future structure:
 mata-ecosystem/
   apps/
     kvartal_app/
-    sport_store/
+    mata_store/
     website/
     admin_panel/
 

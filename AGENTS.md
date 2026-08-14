@@ -35,5 +35,5 @@
 - Телефон↔бек: `adb reverse tcp:8000 tcp:8000`. GitHub: `Smallfoi/mata-ecosystem` (public).
 
 ## Состав экосистемы
-`kvartal-app/` (Квартал, Flutter) · `sport_store/` (Store, Flutter) · `САЙТ МАТА/` (сайт) ·
+`mata_kvartal/` (Квартал, Flutter) · `mata_store/` (Store, Flutter) · `САЙТ МАТА/` (сайт) ·
 `backend/` (общий Django + PostGIS, Docker). Единый аккаунт (SSO по телефону) + общий баланс баллов. Контракт — `ECOSYSTEM_API.md`.

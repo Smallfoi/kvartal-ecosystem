@@ -6,11 +6,11 @@
 
 Актуальный проект находится здесь:
 
-`D:\MyProjectsCLAUDE\kvartal-app`
+`D:\MyProjectsCLAUDE\mata_kvartal`
 
 Не путать со старой папкой:
 
-`D:\MyProjectsCLAUDE\kvartal-app`
+`D:\MyProjectsCLAUDE\mata_kvartal`
 
 Старая папка с дефисом была промежуточной и больше не является рабочей директорией.
 
@@ -91,7 +91,7 @@
 ### Как запускать для тестирования
 ```
 # 1. Запустить сервер (держать открытым)
-cd D:\MyProjectsCLAUDE\kvartal-app\backend
+cd D:\MyProjectsCLAUDE\mata_kvartal\backend
 .\kvartal_server.exe
 
 # 2. Пробросить порт через USB (в другом PowerShell)
@@ -116,8 +116,8 @@ C:\Android\platform-tools\adb.exe reverse tcp:3000 tcp:3000
 
 ## Решения и договорённости
 
-- Рабочая директория: `D:\MyProjectsCLAUDE\kvartal-app`.
-- Старую папку `kvartal-app` не использовать как источник истины.
+- Рабочая директория: `D:\MyProjectsCLAUDE\mata_kvartal`.
+- Старую папку `mata_kvartal` не использовать как источник истины.
 - Основной стек остаётся Flutter + Riverpod + GoRouter + flutter_map + geolocator.
 - Документы истории должны быть понятны и Claude, и Codex.
 - Не полагаться только на скрытые `.claude` memory/session файлы: важное состояние проекта должно быть продублировано в репозитории.
@@ -142,9 +142,9 @@ C:\Android\platform-tools\adb.exe reverse tcp:3000 tcp:3000
 
 Проект перенесён с C: на D: — новый рабочий путь:
 
-`D:\MyProjectsCLAUDE\kvartal-app`
+`D:\MyProjectsCLAUDE\mata_kvartal`
 
-Старые пути C:\Users\crypt\kvartal_app и C:\Users\crypt\kvartal-app — **удалены**.
+Старые пути C:\Users\crypt\kvartal_app и C:\Users\crypt\mata_kvartal — **удалены**.
 
 ---
 
@@ -187,7 +187,7 @@ Codex провёл обзор проекта без изменения кода 
 
 Актуальный рабочий путь после переименования корневой папки:
 
-`D:\MyProjectsCLAUDE\kvartal-app`
+`D:\MyProjectsCLAUDE\mata_kvartal`
 
 Сборка из нового пути прошла успешно:
 

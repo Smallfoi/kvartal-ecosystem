@@ -10,7 +10,7 @@
 $ErrorActionPreference = "Continue"
 $root  = "D:\MyProjectsCLAUDE"
 $site  = "$root\САЙТ STAW"
-$web   = "$root\sport_store\build\web"
+$web   = "$root\mata_store\build\web"
 $serve = "$root\scripts\serve_static.py"
 $adb   = "C:\Android\platform-tools\adb.exe"
 
@@ -41,7 +41,7 @@ if (Test-Path "$web\index.html") {
     Start-Process python -ArgumentList "`"$serve`"", "5578", "`"$web`"" -WindowStyle Hidden
 } else {
     Write-Host "  ! web-сборки нет ($web). Превью приложения (5578) пропущено." -ForegroundColor Yellow
-    Write-Host "    Собрать: cd sport_store; flutter build web --pwa-strategy=none --dart-define=PREVIEW=1" -ForegroundColor Yellow
+    Write-Host "    Собрать: cd mata_store; flutter build web --pwa-strategy=none --dart-define=PREVIEW=1" -ForegroundColor Yellow
 }
 
 Write-Host "[5/5] Проверка + открываю админку и сайт..." -ForegroundColor Cyan

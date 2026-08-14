@@ -377,7 +377,7 @@ HTTP-ответ) и `territories.cleanup_expired_territories` (beat — ежед
 **Решение:** целевой бэкенд — Django + DRF + PostgreSQL/PostGIS. Django поднимать РЯДОМ с FastAPI,
 сперва повторить контракт (`auth/phone/verify`, `auth/me`, `profile`, `loyalty`), затем переключать приложения. FastAPI не удалять до готовности Django.
 **Причина:** нужна админка, удобная ORM, PostGIS для территорий, масштаб. Но FastAPI уже работает — спешить нельзя.
-**Статус:** запланировано (Phase 2+). Детали: `kvartal-app/CLAUDE_HANDOFF_GITHUB_DJANGO_2026-06-13.md`.
+**Статус:** запланировано (Phase 2+). Детали: `mata_kvartal/CLAUDE_HANDOFF_GITHUB_DJANGO_2026-06-13.md`.
 
 ## D-05 — Репозиторий публичный
 **Решение:** `Smallfoi/mata-ecosystem` — PUBLIC.
@@ -391,7 +391,7 @@ HTTP-ответ) и `territories.cleanup_expired_territories` (beat — ежед
 **Статус:** активно.
 
 ## D-03 — Монорепо без перемещения папок
-**Решение:** `git init` в корне `D:\MyProjectsCLAUDE`; папки проектов на местах (`kvartal-app/`, `sport_store/`, `САЙТ МАТА/`, `backend/`).
+**Решение:** `git init` в корне `D:\MyProjectsCLAUDE`; папки проектов на местах (`mata_kvartal/`, `mata_store/`, `САЙТ МАТА/`, `backend/`).
 **Причина:** монорепо как требует стратегия, но без рискованных перемещений до согласования структуры.
 **Статус:** активно.
 

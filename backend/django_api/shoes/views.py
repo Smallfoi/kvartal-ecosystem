@@ -25,7 +25,7 @@ def _pk_from_shoe_id(shoe_id: str):
 def _media_url(image_path: str) -> str:
     """Путь-ассет Store ('assets/images/products/X.jpg') → URL бэка
     ('/media/products/X.jpg'), который Квартал может загрузить по сети.
-    Бэк отдаёт эти файлы из примонтированной папки sport_store (см. docker-compose)."""
+    Бэк отдаёт эти файлы из примонтированной папки mata_store (см. docker-compose)."""
     p = str(image_path or "").strip()
     if not p:
         return ""

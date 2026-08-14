@@ -32,7 +32,7 @@ docker compose up -d        # db (postgis) + web (Django) на :8000
 | GET | /v1/health | проверка |
 
 ## Подключение мобильного приложения (Store)
-Телефон обращается к ПК по локальной сети. В `sport_store/lib/data/api/api_config.dart`:
+Телефон обращается к ПК по локальной сети. В `mata_store/lib/data/api/api_config.dart`:
 - `baseUrl = 'http://<IP_ПК>:8000/v1'` (например `http://192.168.1.56:8000/v1`)
 - включить API для Auth и Loyalty (per-service флаги)
 - Android: разрешить cleartext HTTP для dev (debug manifest)
