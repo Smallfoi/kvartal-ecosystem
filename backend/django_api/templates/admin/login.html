@@ -53,12 +53,24 @@
       @keyframes staw-card-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 
       /* стаггер-появление внутренних блоков */
-      .staw-card > * { animation: staw-rise .6s ease both; }
+      .staw-card > * { animation: staw-rise .5s cubic-bezier(.16,.84,.44,1) both; }
       .staw-card > *:nth-child(1) { animation-delay: .10s; }
       .staw-card > *:nth-child(2) { animation-delay: .18s; }
       .staw-card > *:nth-child(3) { animation-delay: .26s; }
       .staw-card > *:nth-child(4) { animation-delay: .34s; }
       @keyframes staw-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+      /* возврат после ошибки: без повторной хореографии — быстрый фейд + шейк ошибки */
+      .staw-card.staw-returning { animation: staw-fade .18s cubic-bezier(0.23, 1, 0.32, 1) both; }
+      .staw-card.staw-returning > * { animation: none; opacity: 1; transform: none; }
+      @keyframes staw-fade { from { opacity: 0; } to { opacity: 1; } }
+      .staw-returning .staw-errors { animation: staw-shake .32s cubic-bezier(.36,.07,.19,.97) both; }
+      @keyframes staw-shake {
+        10%, 90% { transform: translateX(-2px); }
+        20%, 80% { transform: translateX(3px); }
+        30%, 50%, 70% { transform: translateX(-4px); }
+        40%, 60% { transform: translateX(4px); }
+      }
 
       /* ── Поля: плавная accent-подсветка при фокусе ────────────────── */
       #login-form input {
@@ -72,13 +84,13 @@
       /* ── Кнопка «Войти»: аккуратный подъём + блик на ховере ───────── */
       #login-form .submit-row {
         position: relative; overflow: hidden;
-        transition: transform .2s ease, box-shadow .25s ease;
+        transition: transform .16s cubic-bezier(0.23, 1, 0.32, 1), box-shadow .25s ease;
       }
       #login-form .submit-row:hover {
         transform: translateY(-1px);
         box-shadow: 0 10px 26px -8px rgba(10, 132, 255, .4);
       }
-      #login-form .submit-row:active { transform: translateY(0); }
+      #login-form .submit-row:active { transform: translateY(0) scale(.98); }
       #login-form .submit-row::after {
         content: ""; position: absolute; inset: 0;
         background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
@@ -93,7 +105,7 @@
 
       /* ── Доступность: убираем движение по системной настройке ─────── */
       @media (prefers-reduced-motion: reduce) {
-        .staw-aurora b, .staw-card, .staw-card > *,
+        .staw-aurora b, .staw-card, .staw-card > *, .staw-returning .staw-errors,
         #login-form .submit-row:hover::after { animation: none !important; }
         .staw-card { opacity: 1; transform: none; }
       }
@@ -107,14 +119,14 @@
 {% block content %}
     <div class="staw-aurora" aria-hidden="true"><b></b><b></b><b></b><b></b></div>
 
-    <div class="staw-card">
+    <div class="staw-card{% if form.errors or form.non_field_errors %} staw-returning{% endif %}">
         {% comment %}Русский заголовок вместо непереведённой строки Unfold.{% endcomment %}
         {% include "unfold/helpers/unauthenticated_title.html" with title=site_title|default:"МАТА Админка" subtitle="С возвращением," %}
 
         {% include "unfold/helpers/messages.html" %}
 
         {% if form.errors or form.non_field_errors %}
-            <div class="flex flex-col gap-4 mb-8 *:mb-0">
+            <div class="staw-errors flex flex-col gap-4 mb-8 *:mb-0">
                 {% include "unfold/helpers/messages/errornote.html" with errors=form.errors %}
 
                 {% include "unfold/helpers/messages/error.html" with errors=form.non_field_errors %}
