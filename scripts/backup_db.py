@@ -1,4 +1,4 @@
-"""Бэкап/восстановление PostgreSQL-БД экосистемы STAW (launch §13).
+"""Бэкап/восстановление PostgreSQL-БД экосистемы МАТА (launch §13).
 
 БД крутится в docker-compose (сервис `db`, PostGIS). Скрипт делает логический дамп через
 `pg_dump`, кладёт gzip в `backups/` и умеет восстанавливать. Команда `verify` доказывает,
@@ -118,7 +118,7 @@ def restore(dump_path, db):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Бэкап/восстановление БД STAW")
+    p = argparse.ArgumentParser(description="Бэкап/восстановление БД МАТА")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("backup")
     sub.add_parser("verify")
