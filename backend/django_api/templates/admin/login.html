@@ -7,86 +7,50 @@
     {{ form.media }}
     {% comment %}Премиальная анимация входа (только админка). Всё на CSS/GPU (transform/opacity), фирменные цвета приложений не трогаем. Уважаем prefers-reduced-motion.{% endcomment %}
     <style>
-      /* ── Живой aurora-фон (заметное движение) ─────────────────────── */
+      /* ── Тихий ambient-фон (деликатно, почти неподвижно) ──────────── */
       .staw-aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
       .staw-aurora b {
-        position: absolute; border-radius: 50%; filter: blur(60px);
-        opacity: .6; will-change: transform;   /* светлая тема: обычное наложение */
+        position: absolute; border-radius: 50%; filter: blur(72px);
+        opacity: .26; will-change: transform;
       }
-      html.dark .staw-aurora b { opacity: .55; mix-blend-mode: screen; }   /* тёмная: свечение */
+      html.dark .staw-aurora b { opacity: .3; mix-blend-mode: screen; }
       .staw-aurora b:nth-child(1) {
-        width: 44vmax; height: 44vmax; left: -10vmax; top: -12vmax;
-        background: radial-gradient(circle at 35% 35%, #0A84FF, transparent 60%);
-        animation: staw-drift1 13s ease-in-out infinite;
+        width: 42vmax; height: 42vmax; left: -12vmax; top: -14vmax;
+        background: radial-gradient(circle at 40% 40%, #0A84FF, transparent 62%);
+        animation: staw-drift1 36s ease-in-out infinite;
       }
       .staw-aurora b:nth-child(2) {
-        width: 38vmax; height: 38vmax; right: -8vmax; top: 6vmax;
-        background: radial-gradient(circle at 50% 50%, #22d3ee, transparent 62%);
-        animation: staw-drift2 16s ease-in-out infinite;
+        width: 36vmax; height: 36vmax; right: -10vmax; top: 4vmax;
+        background: radial-gradient(circle at 50% 50%, #22d3ee, transparent 64%);
+        animation: staw-drift2 44s ease-in-out infinite;
       }
       .staw-aurora b:nth-child(3) {
-        width: 36vmax; height: 36vmax; left: 22vmax; bottom: -16vmax;
-        background: radial-gradient(circle at 50% 50%, #a78bfa, transparent 60%);
-        animation: staw-drift3 15s ease-in-out infinite;
+        width: 34vmax; height: 34vmax; left: 18vmax; bottom: -18vmax;
+        background: radial-gradient(circle at 50% 50%, #a78bfa, transparent 62%);
+        animation: staw-drift1 52s ease-in-out infinite reverse;
       }
-      .staw-aurora b:nth-child(4) {
-        width: 26vmax; height: 26vmax; right: 12vmax; bottom: -8vmax;
-        background: radial-gradient(circle at 50% 50%, #34d399, transparent 62%);
-        animation: staw-drift2 19s ease-in-out infinite reverse;
-      }
-      @keyframes staw-drift1 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(11vmax,-7vmax,0) scale(1.28)} }
-      @keyframes staw-drift2 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(-12vmax,8vmax,0) scale(1.22)} }
-      @keyframes staw-drift3 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(8vmax,10vmax,0) scale(1.32)} }
+      .staw-aurora b:nth-child(4) { display: none; }
+      @keyframes staw-drift1 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(2.5vmax,-1.5vmax,0) scale(1.06)} }
+      @keyframes staw-drift2 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(-2.5vmax,1.5vmax,0) scale(1.05)} }
 
-      /* лёгкая «звёздная пыль» поверх */
-      .staw-aurora::after {
-        content: ""; position: absolute; inset: 0; opacity: .045;
-        background-image: radial-gradient(#fff 1px, transparent 1.4px);
-        background-size: 3px 3px;
-      }
-
-      /* ── Стеклянная карточка + ВРАЩАЮЩЕЕСЯ цветное свечение ────────── */
+      /* ── Стеклянная карточка + мягкое появление ───────────────────── */
       .staw-card {
-        position: relative; z-index: 1; isolation: isolate;
+        position: relative; z-index: 1;
         padding: 34px 30px 30px;
         border-radius: 22px;
-        background: rgba(255, 255, 255, .86);
-        border: 1px solid rgba(255, 255, 255, .6);
-        box-shadow: 0 24px 70px -20px rgba(6, 12, 26, .35), 0 2px 8px rgba(6,12,26,.08);
-        -webkit-backdrop-filter: blur(18px) saturate(1.3);
-        backdrop-filter: blur(18px) saturate(1.3);
-        animation: staw-card-in .8s cubic-bezier(.16,.84,.44,1) both;
-      }
-      /* halo — крутится вокруг карточки постоянно */
-      .staw-card::before {
-        content: ""; position: absolute; inset: -16px; z-index: -1;
-        border-radius: 34px;
-        background: conic-gradient(from 0deg, #0A84FF, #22d3ee, #a78bfa, #34d399, #f59e0b, #0A84FF);
-        filter: blur(26px); opacity: .55;
-        animation: staw-spin 7s linear infinite;
+        background: rgba(255, 255, 255, .82);
+        border: 1px solid rgba(255, 255, 255, .55);
+        box-shadow: 0 22px 60px -22px rgba(6, 12, 26, .3), 0 2px 8px rgba(6,12,26,.07);
+        -webkit-backdrop-filter: blur(16px) saturate(1.2);
+        backdrop-filter: blur(16px) saturate(1.2);
+        animation: staw-card-in .7s cubic-bezier(.16,.84,.44,1) both;
       }
       html.dark .staw-card {
-        background: rgba(18, 24, 38, .72);
+        background: rgba(18, 24, 38, .6);
         border-color: rgba(255, 255, 255, .08);
-        box-shadow: 0 30px 80px -24px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.04) inset;
+        box-shadow: 0 26px 70px -26px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
       }
-      html.dark .staw-card::before { opacity: .75; }
-      @keyframes staw-spin { to { transform: rotate(360deg); } }
-      @keyframes staw-card-in { from { opacity: 0; transform: translateY(22px) scale(.975); } to { opacity: 1; transform: none; } }
-
-      /* световой блик, проходящий по карточке (заметное движение) */
-      .staw-shine {
-        position: absolute; inset: 0; border-radius: 22px; overflow: hidden;
-        pointer-events: none; z-index: 2;
-      }
-      .staw-shine::before {
-        content: ""; position: absolute; top: -60%; left: -70%;
-        width: 55%; height: 220%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
-        transform: rotate(16deg); filter: blur(2px);
-        animation: staw-swipe 4.5s ease-in-out infinite;
-      }
-      @keyframes staw-swipe { 0% { left: -70%; } 55%, 100% { left: 135%; } }
+      @keyframes staw-card-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 
       /* стаггер-появление внутренних блоков */
       .staw-card > * { animation: staw-rise .6s ease both; }
@@ -105,20 +69,14 @@
         border-color: rgba(10, 132, 255, .8) !important;
       }
 
-      /* ── Кнопка «Войти»: подъём + световой блик ───────────────────── */
+      /* ── Кнопка «Войти»: аккуратный подъём + блик на ховере ───────── */
       #login-form .submit-row {
         position: relative; overflow: hidden;
         transition: transform .2s ease, box-shadow .25s ease;
-        animation: staw-pulse 2.8s ease-in-out infinite;
-      }
-      @keyframes staw-pulse {
-        0%, 100% { box-shadow: 0 6px 18px -8px rgba(10, 132, 255, .5); }
-        50% { box-shadow: 0 12px 32px -6px rgba(10, 132, 255, .8); }
       }
       #login-form .submit-row:hover {
-        animation: none;
         transform: translateY(-1px);
-        box-shadow: 0 10px 28px -6px rgba(10, 132, 255, .55);
+        box-shadow: 0 10px 26px -8px rgba(10, 132, 255, .4);
       }
       #login-form .submit-row:active { transform: translateY(0); }
       #login-form .submit-row::after {
@@ -135,8 +93,8 @@
 
       /* ── Доступность: убираем движение по системной настройке ─────── */
       @media (prefers-reduced-motion: reduce) {
-        .staw-aurora b, .staw-card, .staw-card::before, .staw-shine::before, .staw-card > *,
-        #login-form .submit-row, #login-form .submit-row:hover::after { animation: none !important; }
+        .staw-aurora b, .staw-card, .staw-card > *,
+        #login-form .submit-row:hover::after { animation: none !important; }
         .staw-card { opacity: 1; transform: none; }
       }
     </style>
@@ -150,7 +108,6 @@
     <div class="staw-aurora" aria-hidden="true"><b></b><b></b><b></b><b></b></div>
 
     <div class="staw-card">
-        <span class="staw-shine" aria-hidden="true"></span>
         {% comment %}Русский заголовок вместо непереведённой строки Unfold.{% endcomment %}
         {% include "unfold/helpers/unauthenticated_title.html" with title=site_title|default:"МАТА Админка" subtitle="С возвращением," %}
 
