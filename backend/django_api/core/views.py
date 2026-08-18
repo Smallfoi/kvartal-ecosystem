@@ -34,7 +34,7 @@ def health(_request):
     return Response(
         {
             "status": "ok" if db_ok else "degraded",
-            "service": "staw-ecosystem-django",
+            "service": "mata-ecosystem-django",
             "db": db_ok,
             "cache": _cache_ok(),
             "time": datetime.now(timezone.utc).isoformat(),

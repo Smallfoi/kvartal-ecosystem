@@ -69,7 +69,7 @@ class HealthTests(TestCase):
         self.assertEqual(d["status"], "ok")
         self.assertTrue(d["db"])
         self.assertTrue(d["cache"])
-        self.assertEqual(d["service"], "staw-ecosystem-django")  # контракт сохранён
+        self.assertEqual(d["service"], "mata-ecosystem-django")  # контракт: поле есть и стабильно
 
     def test_readiness_ok_when_deps_up(self):
         r = self.client.get("/v1/health/ready")
