@@ -198,6 +198,9 @@
 
   function apply(content) {
     if (!content) return;
+    // Публикуем контент глобально: модалки/элементы, которые строятся из JS позже
+    // (напр. экран входа в ecosystem.js), читают переопределения отсюда.
+    try { window.STAW_CONTENT = content; } catch (e) {}
     injectAnimCss();
     // 1) сначала материализуем добавленные блоки — чтобы их ключи было куда применять
     Object.keys(content).forEach(function (k) {
