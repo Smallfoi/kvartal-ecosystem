@@ -20,5 +20,15 @@ echo "Контрольный бэкап текущей БД перед восс�
 ./deploy/backup.sh || echo "(пропускаю контрольный бэкап)"
 
 echo "Восстанавливаю..."
-gzip -dc "$FILE" | $COMPOSE exec -T db psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
+# Зашифрованный дамп (.enc) расшифровываем на лету — на диск открытым не кладём.
+case "$FILE" in
+  *.enc)
+    [ -n "${BACKUP_ENCRYPT_PASSPHRASE:-}" ] || {
+      echo "Файл зашифрован, а BACKUP_ENCRYPT_PASSPHRASE не задан в .env"; exit 1; }
+    openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000       -in "$FILE" -pass env:BACKUP_ENCRYPT_PASSPHRASE       | gzip -dc | $COMPOSE exec -T db psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
+    ;;
+  *)
+    gzip -dc "$FILE" | $COMPOSE exec -T db psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
+    ;;
+esac
 echo "Готово. Проверь приложение и /v1/health."
