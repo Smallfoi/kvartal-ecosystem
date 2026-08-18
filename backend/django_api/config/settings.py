@@ -56,6 +56,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Анти-брутфорс формы входа в админку: лимиты DRF её не покрывают (D-39).
+    "common.adminsec.AdminLoginRateLimitMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -116,6 +118,11 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # Сессия админки живёт рабочий день, а не две недели (дефолт Django): за админкой
+    # деньги и ПДн, а сессия на чужом/забытом устройстве — самый дешёвый способ туда
+    # попасть. Закрыл браузер — сессия недействительна (D-39).
+    SESSION_COOKIE_AGE = 8 * 60 * 60
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # P0-страховка: НЕ стартуем прод (DEBUG=0) с дефолтными секретами/ALLOWED_HOSTS=*.
 # Защита от катастрофы №1 — выкатить прод с публичным dev-секретом.
