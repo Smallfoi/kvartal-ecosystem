@@ -6,7 +6,7 @@ import '../api/api_client.dart';
 /// здесь — обращение к backend (или его имитация).
 abstract class AuthRepository {
   Future<AuthUser> login(String email, String password);
-  Future<AuthUser> loginByPhone(String phone, String code);
+  Future<AuthUser> loginByPhone(String phone, String code, {String? name});
   Future<AuthUser> register(String name, String email, String password);
   Future<void> sendPasswordReset(String email);
   Future<void> resetPassword(String newPassword);
@@ -51,11 +51,15 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthUser> loginByPhone(String phone, String code) async {
+  Future<AuthUser> loginByPhone(
+    String phone,
+    String code, {
+    String? name,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 800));
     return AuthUser(
       id: 'local-phone-${phone.replaceAll(RegExp(r'\D'), '')}',
-      name: 'Бегун',
+      name: (name == null || name.trim().isEmpty) ? 'Бегун' : name.trim(),
       email: 'runner_${phone.replaceAll(RegExp(r'\D'), '')}@kvartal.local',
       phone: phone.trim(),
       provider: LoginProvider.phone,
@@ -151,10 +155,18 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthUser> loginByPhone(String phone, String code) async {
+  Future<AuthUser> loginByPhone(
+    String phone,
+    String code, {
+    String? name,
+  }) async {
     final data = await _client.post(
       '/auth/phone/verify',
-      body: {'phone': phone, 'code': code, 'name': 'Бегун'},
+      body: {
+        'phone': phone,
+        'code': code,
+        'name': (name == null || name.trim().isEmpty) ? 'Бегун' : name.trim(),
+      },
     );
     final map = data as Map<String, dynamic>;
     _client.authToken = map['token'] as String?;
@@ -246,7 +258,10 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<bool> setProfilePublic(bool value) async {
-    final data = await _client.patch('/account/privacy', body: {'profilePublic': value});
+    final data = await _client.patch(
+      '/account/privacy',
+      body: {'profilePublic': value},
+    );
     return (data as Map<String, dynamic>)['profilePublic'] == true;
   }
 

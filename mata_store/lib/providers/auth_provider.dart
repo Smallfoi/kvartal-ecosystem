@@ -90,13 +90,19 @@ class AuthProvider extends ChangeNotifier {
     return null;
   }
 
-  Future<String?> loginByPhone(String phone, String code) async {
+  /// Вход/регистрация по телефону (единственный способ входа). [name] —
+  /// имя при регистрации: verify создаёт аккаунт при первом входе.
+  Future<String?> loginByPhone(
+    String phone,
+    String code, {
+    String? name,
+  }) async {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 10) return 'Введите корректный номер';
     if (code.trim().length != 4) return 'Введите код из SMS';
     _setLoading(true);
     try {
-      _user = await _repo.loginByPhone(phone, code);
+      _user = await _repo.loginByPhone(phone, code, name: name);
       _save();
       return null;
     } catch (e) {
@@ -158,8 +164,13 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       _user = _mergeKeepingLocal(
-        await _repo.updateProfile(_user!,
-            name: name, phone: phone, city: city, email: email),
+        await _repo.updateProfile(
+          _user!,
+          name: name,
+          phone: phone,
+          city: city,
+          email: email,
+        ),
       );
       _save();
       return null;

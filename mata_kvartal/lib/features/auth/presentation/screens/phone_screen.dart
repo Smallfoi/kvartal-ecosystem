@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/brand_sweep.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
 import '../../../profile/presentation/screens/legal_documents_screen.dart';
 import '../../data/auth_provider.dart';
@@ -29,22 +28,13 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   bool get _canSubmit =>
       _controller.text.replaceAll(RegExp(r'\D'), '').length == 10;
 
+  // Переход к вводу кода — без шторки-проезда (владелец отклонил её для
+  // мобильных приложений 2026-08-19).
   Future<void> _submit() async {
     if (!_canSubmit) return;
     final digits = _controller.text.replaceAll(RegExp(r'\D'), '');
-    _focus.unfocus();
-    // Запрос кода идёт ПАРАЛЛЕЛЬНО шторке-проезду (эталон Auth Slider):
-    // под полным покрытием ждём сервер и переходим к вводу кода.
-    final send = ref.read(authProvider.notifier).sendCode('+7$digits');
-    await playBrandSweep(
-      context,
-      title: 'Код из SMS',
-      subtitle: 'Отправили 4-значный код на +7$digits',
-      onCovered: () async {
-        await send;
-        if (mounted) context.go('/auth/otp');
-      },
-    );
+    await ref.read(authProvider.notifier).sendCode('+7$digits');
+    if (mounted) context.go('/auth/otp');
   }
 
   @override
