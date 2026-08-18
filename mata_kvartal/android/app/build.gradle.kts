@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.kvartal.kvartal_app"
+    namespace = "ru.mata.kvartal"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.kvartal.kvartal_app"
+        applicationId = "ru.mata.kvartal"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // mobile_scanner (скан QR клуба) требует minSdk 23 — иначе manifest merger падает.

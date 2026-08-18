@@ -177,7 +177,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 urlTemplate:
                     'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
-                userAgentPackageName: 'com.kvartal.kvartal_app',
+                userAgentPackageName: 'ru.mata.kvartal',
                 maxNativeZoom: 19,
                 errorTileCallback: (_, __, ___) => _handleTileError(),
               ),

@@ -1,4 +1,4 @@
-﻿package com.kvartal.kvartal_app
+﻿package ru.mata.kvartal
 
 import android.content.Intent
 import android.os.Build

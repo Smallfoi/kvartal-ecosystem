@@ -1,4 +1,4 @@
-﻿package com.kvartal.kvartal_app
+﻿package ru.mata.kvartal
 
 import android.Manifest
 import android.app.Notification
@@ -222,8 +222,8 @@ class KvartalLocationService : Service(), LocationListener {
     }
 
     companion object {
-        const val ACTION_START = "com.kvartal.kvartal_app.location.START"
-        const val ACTION_STOP = "com.kvartal.kvartal_app.location.STOP"
+        const val ACTION_START = "ru.mata.kvartal.location.START"
+        const val ACTION_STOP = "ru.mata.kvartal.location.STOP"
         private const val CHANNEL_ID = "kvartal_location_tracking"
         private const val NOTIFICATION_ID = 4271
         private const val PREFS_NAME = "FlutterSharedPreferences"

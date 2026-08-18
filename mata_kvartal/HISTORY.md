@@ -637,6 +637,7 @@ C:\Android\platform-tools\adb.exe reverse tcp:3000 tcp:3000
   - Android `android:label` заменён на `КВАРТАЛ`;
   - видимые тексты `КВАРТАЛ/КВАРТАЛ` заменены на `КВАРТАЛ` в splash, auth, run, profile и notification-текстах;
   - технический `applicationId/namespace com.kvartal.kvartal_app` оставлен без изменения, чтобы APK устанавливался поверх текущего приложения.
+    (2026-08-18: сменён на `ru.mata.kvartal` — см. запись о переводе идентификаторов на МАТА.)
 - UI/анимация:
   - добавлен `lib/shared/widgets/kvartal_logo.dart` с `KvartalLogoMark` и `KvartalLogoBadge`;
   - логотип встроен в splash screen с новой анимацией появления;
