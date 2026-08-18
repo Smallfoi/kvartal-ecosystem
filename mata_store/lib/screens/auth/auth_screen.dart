@@ -568,22 +568,43 @@ class _InputFieldState extends State<_InputField> {
               ),
               decoration: InputDecoration(
                 hintText: widget.hint,
-                prefixText: widget.prefixText,
-                // Префикс «+7» НЕ выделяется: тот же размер и то же начертание,
-                // что и вводимые цифры (замечание владельца — без жирности).
-                prefixStyle: const TextStyle(
+                // Образец в подсказке — ТОТ ЖЕ шрифт/размер, что «+7» и
+                // вводимые цифры; «образцовость» передаёт только прозрачность
+                // (замечание владельца: высота/размер не должны отличаться).
+                hintStyle: TextStyle(
+                  color: AppColors.black.withValues(alpha: 0.32),
                   fontSize: 15,
-                  color: AppColors.black,
                   fontWeight: FontWeight.w400,
                 ),
-                hintStyle: const TextStyle(
-                  color: AppColors.grey400,
-                  fontSize: 14,
+                // Несъёмный префикс («+7 ») живёт в prefixIcon — в отличие от
+                // prefixText он виден ВСЕГДА, а не только при фокусе
+                // (замечание владельца). Начертание — как у вводимых цифр.
+                prefixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(width: 12),
+                    Icon(
+                      widget.icon,
+                      size: 18,
+                      color: _focused ? AppColors.black : AppColors.grey400,
+                    ),
+                    if (widget.prefixText != null) ...[
+                      const SizedBox(width: 10),
+                      Text(
+                        widget.prefixText!,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: AppColors.black,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ] else
+                      const SizedBox(width: 12),
+                  ],
                 ),
-                prefixIcon: Icon(
-                  widget.icon,
-                  size: 18,
-                  color: _focused ? AppColors.black : AppColors.grey400,
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 44,
+                  minHeight: 44,
                 ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
