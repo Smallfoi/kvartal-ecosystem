@@ -569,10 +569,12 @@ class _InputFieldState extends State<_InputField> {
               decoration: InputDecoration(
                 hintText: widget.hint,
                 prefixText: widget.prefixText,
+                // Префикс «+7» НЕ выделяется: тот же размер и то же начертание,
+                // что и вводимые цифры (замечание владельца — без жирности).
                 prefixStyle: const TextStyle(
                   fontSize: 15,
                   color: AppColors.black,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w400,
                 ),
                 hintStyle: const TextStyle(
                   color: AppColors.grey400,
