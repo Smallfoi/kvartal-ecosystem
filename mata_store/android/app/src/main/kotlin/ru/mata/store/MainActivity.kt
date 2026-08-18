@@ -1,4 +1,4 @@
-package com.sportstore.sport_store
+package ru.mata.store
 
 import io.flutter.embedding.android.FlutterActivity
 
