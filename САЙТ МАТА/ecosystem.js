@@ -178,6 +178,14 @@
       + ".eco-err{color:#c0392b;font-size:13px;min-height:18px;margin:6px 0 0}"
       + ".eco-card .eco-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;opacity:.5}"
       // ── Ввод кода: хореография «OTP V5» (стандарт анимаций экосистемы) ──
+      // Поле телефона: несъёмный «+7» виден ВСЕГДА (тем же начертанием, что
+      // и вводимые цифры), пользователь набирает только 10 цифр.
+      + ".eco-phone{display:flex;align-items:center;margin:6px 0;border:1px solid #d9d6cd;"
+      + "border-radius:12px;background:#fff}"
+      + ".eco-phone:focus-within{border-color:#20252b}"
+      + ".eco-phone-prefix{padding:12px 0 12px 14px;color:#20252b;font:inherit}"
+      + ".eco-card .eco-phone input{border:0;margin:0;flex:1;min-width:0;background:transparent;"
+      + "padding:12px 14px 12px 6px;border-radius:12px;outline:none}"
       + ".eco-otp{position:relative;height:196px;margin:10px 0 0;cursor:text}"
       + ".eco-card input.eco-otp-input{position:absolute;left:50%;top:50%;width:1px;height:1px;"
       + "opacity:0;border:0;padding:0;margin:0;background:transparent}"
@@ -297,6 +305,20 @@
     if (otpReg) otpReg.softReset();
   }
 
+  // Телефон: пользователь вводит ТОЛЬКО 10 цифр после несъёмного «+7».
+  // Ведущие «7»/«8» (набор или вставка «89148278470», «+7914…») отбрасываются —
+  // мобильные номера РФ начинаются с 9.
+  function setupPhoneInput(input) {
+    input.addEventListener("input", function () {
+      var d = input.value.replace(/\D/g, "");
+      if (d.charAt(0) === "7" || d.charAt(0) === "8") d = d.slice(1);
+      input.value = d.slice(0, 10);
+    });
+  }
+  function phoneDigits(input) {
+    return input.value.replace(/\D/g, "");
+  }
+
   function focusActive() {
     var el = modal.querySelector(
       ecoMode === "register" ? "[data-reg-name]" : "[data-login-phone]"
@@ -315,7 +337,8 @@
       '<div class="eco-half eco-half--login"><div class="eco-form">' +
       '<h3 data-edit="auth.loginTitle">Вход в МАТА</h3>' +
       '<p class="eco-sub" data-edit="auth.loginSub">Баллы «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
-      '<input data-login-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
+      '<div class="eco-phone"><span class="eco-phone-prefix">+7</span>' +
+      '<input data-login-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" placeholder="999 000-00-00" autocomplete="tel" /></div>' +
       '<div class="eco-otp" data-login-otp>' +
       '<input data-login-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
       '<p class="eco-err" data-login-err></p>' +
@@ -326,7 +349,8 @@
       '<h3 data-edit="auth.regTitle">Регистрация в МАТА</h3>' +
       '<p class="eco-sub" data-edit="auth.regSub">Единый аккаунт экосистемы. Dev-код: 1234.</p>' +
       '<input data-reg-name data-edit-ph="auth.namePh" type="text" placeholder="Имя и фамилия" autocomplete="name" />' +
-      '<input data-reg-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
+      '<div class="eco-phone"><span class="eco-phone-prefix">+7</span>' +
+      '<input data-reg-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" placeholder="999 000-00-00" autocomplete="tel" /></div>' +
       '<div class="eco-otp" data-reg-otp>' +
       '<input data-reg-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
       '<p class="eco-err" data-reg-err></p>' +
@@ -363,9 +387,9 @@
       errEl: modal.querySelector("[data-login-err]"),
       btn: modal.querySelector("[data-login-submit]"),
       getPayload: function () {
-        var phone = modal.querySelector("[data-login-phone]").value.trim();
-        if (!phone) return { error: "Введите телефон" };
-        return { phone: phone, name: "" };
+        var digits = phoneDigits(modal.querySelector("[data-login-phone]"));
+        if (digits.length < 10) return { error: "Введите номер полностью" };
+        return { phone: "+7" + digits, name: "" };
       }
     });
     otpReg = createOtpField({
@@ -375,12 +399,14 @@
       btn: modal.querySelector("[data-reg-submit]"),
       getPayload: function () {
         var name = modal.querySelector("[data-reg-name]").value.trim();
-        var phone = modal.querySelector("[data-reg-phone]").value.trim();
+        var digits = phoneDigits(modal.querySelector("[data-reg-phone]"));
         if (!name) return { error: "Введите имя" };
-        if (!phone) return { error: "Введите телефон" };
-        return { phone: phone, name: name };
+        if (digits.length < 10) return { error: "Введите номер полностью" };
+        return { phone: "+7" + digits, name: name };
       }
     });
+    setupPhoneInput(modal.querySelector("[data-login-phone]"));
+    setupPhoneInput(modal.querySelector("[data-reg-phone]"));
     modal.querySelector("[data-login-submit]").addEventListener("click", function () {
       otpLogin.trySubmit();
     });
