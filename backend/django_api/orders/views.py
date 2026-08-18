@@ -7,6 +7,7 @@ from common.security import user_id_from_request
 
 from .awards import accrue_purchase_points, refund_redeemed_points
 from .models import Order
+from .pricing import total_is_acceptable
 from .payment import PaymentError, create_payment, fetch_payment, payment_enabled
 
 
@@ -98,6 +99,16 @@ def orders(request):
         if not oid:
             return Response({"detail": "Нет id заказа"}, status=400)
         total = float(d.get("total") or 0)
+        # Сумму присылает клиент — сверяем её с ценами каталога (D-37). Иначе корзину
+        # на 50 000 ₽ можно оформить с total: 1, заплатить рубль и получить товар.
+        if not total_is_acceptable(total, d.get("items"), uid, oid):
+            return Response(
+                {"detail": "Сумма заказа не совпадает с ценами каталога"}, status=400
+            )
+        # Оплаченный заказ переоформить нельзя — иначе сумму меняют задним числом.
+        already = Order.objects.filter(user_id=uid, order_id=oid).first()
+        if already and already.payment_status == "paid" and float(already.total) != total:
+            return Response({"detail": "Заказ уже оплачен"}, status=409)
         obj, created = Order.objects.update_or_create(
             user_id=uid,
             order_id=oid,
