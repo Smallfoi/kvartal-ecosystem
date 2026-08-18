@@ -454,6 +454,19 @@
     var d = e.data || {};
     if (d.source !== "staw-console") return;
     if (d.type === "reload") { location.reload(); return; }
+    // Экран входа/регистрации (строится из JS): консоль просит открыть/закрыть/
+    // переключить его — показываем НА МЕСТЕ, как на живом сайте.
+    if (d.type === "authScreen") {
+      try {
+        if (!window.MATA_AUTH) return;
+        if (d.op === "close") { window.MATA_AUTH.close(); return; }
+        window.MATA_AUTH.open(d.mode === "register" ? "register" : "login");
+        // Модалка строится из JS уже после инициализации редактора — до-навешиваем
+        // на её элементы кнопки «🖼 Фон» (панель Вход/Регистрация) и drag/фото.
+        setTimeout(function () { try { initBg(); markDraggable(); } catch (e) {} }, 60);
+      } catch (e) {}
+      return;
+    }
     if (d.type === "setContent" && d.key) { applyContent(d.key, d.value); return; }
     if (d.type === "setOrder" && d.order && d.order.length) {
       var g = document.querySelector("[data-product-grid]");

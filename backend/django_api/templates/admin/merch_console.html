@@ -27,6 +27,15 @@
     </div>
     <button type="button" id="merch-editmode" title="Переключить режим приложения: листать экраны ⇄ править"
             style="display:none;padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;background:#fff">👁 Просмотр</button>
+    <!-- Экран входа/регистрации сайта: открыть на месте + переключить сторону (только вкладка «Сайт»). -->
+    <div id="merch-auth" style="display:none;align-items:center;gap:6px">
+      <button type="button" id="merch-auth-toggle" title="Показать экран входа/регистрации прямо в превью и править его"
+              style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;background:#fff">🔑 Экран входа</button>
+      <div id="merch-auth-modes" style="display:none;border:1px solid #d1d5db;border-radius:8px;overflow:hidden">
+        <button type="button" class="merch-authmode" data-authmode="login" style="padding:8px 12px;border:0;cursor:pointer;font-weight:600;font-size:12px">Вход</button>
+        <button type="button" class="merch-authmode" data-authmode="register" style="padding:8px 12px;border:0;cursor:pointer;font-weight:600;font-size:12px">Регистрация</button>
+      </div>
+    </div>
     <span id="merch-pending" style="display:none;font-size:12px;font-weight:600;color:#b45309;background:#fef3c7;padding:5px 10px;border-radius:8px">Черновик: <span id="merch-pending-n">0</span></span>
     <button type="button" id="merch-publish" disabled style="padding:8px 16px;border:0;border-radius:8px;background:#9ca3af;color:#fff;cursor:not-allowed;font-size:13px;font-weight:700">Опубликовать на сайт</button>
   </div>
@@ -228,6 +237,7 @@
   var publishBtn = document.getElementById("merch-publish");
   var platform = "site";
   var appEditMode = true;  // режим приложения: true=правка (перехват тапов), false=просмотр
+  var authOpen = false, authMode = "login";  // экран входа/регистрации сайта в превью
   var products = [];
   var editId = null;
 
@@ -253,7 +263,10 @@
   function frameSrc() {
     // Передаём фрейму свой origin, чтобы он тоже отвечал только нам, а не всем подряд.
     var c = "&console=" + encodeURIComponent(location.origin);
-    return platform === "app" ? (APP_URL + "?edit=1" + c) : (SITE_URL + "&edit=1" + c);
+    // Анти-кэш: каждая загрузка фрейма тянет СВЕЖУЮ версию (сайт — сразу, приложение —
+    // после пересборки web-бандла). Иначе браузер показывает старую сборку из кэша.
+    var v = "&_=" + Date.now();
+    return platform === "app" ? (APP_URL + "?edit=1" + c + v) : (SITE_URL + "&edit=1" + c + v);
   }
   function setFrame() {
     frame.src = frameSrc();
@@ -279,7 +292,7 @@
       ? "ЧЕРНОВИК приложения (как на телефоне): в разделе «Каталог» зажмите товар и перетащите. На витрину — по «Опубликовать»."
       : "Это ЧЕРНОВИК: правки видны в превью, но на реальный сайт попадут только после «Опубликовать».";
   }
-  function reloadFrame() { frame.src = frameSrc(); }
+  function reloadFrame() { authOpen = false; updateAuthCtrls(); frame.src = frameSrc(); }
   function tellFrame(msg) {
     msg.source = "staw-console";
     // Адресно: "*" разослал бы содержимое правок любому, кто окажется во фрейме.
@@ -826,6 +839,24 @@
       b.style.color = on ? "#fff" : "#374151";
     });
     updateEditModeBtn();
+    updateAuthCtrls();
+  }
+  // Экран входа/регистрации — ТОЛЬКО на вкладке «Сайт». Открывается на месте (по центру),
+  // как на живом сайте; сторона (Вход/Регистрация) переключается кнопками.
+  function updateAuthCtrls() {
+    var box = document.getElementById("merch-auth");
+    if (!box) return;
+    if (platform !== "site") { box.style.display = "none"; return; }
+    box.style.display = "inline-flex";
+    var toggle = document.getElementById("merch-auth-toggle");
+    toggle.textContent = authOpen ? "✕ Скрыть экран" : "🔑 Экран входа";
+    toggle.style.background = authOpen ? "#dff45f" : "#fff";
+    document.getElementById("merch-auth-modes").style.display = authOpen ? "inline-flex" : "none";
+    [].slice.call(document.querySelectorAll(".merch-authmode")).forEach(function (b) {
+      var on = b.getAttribute("data-authmode") === authMode;
+      b.style.background = on ? "#111" : "#fff";
+      b.style.color = on ? "#fff" : "#374151";
+    });
   }
   // Переключатель «Просмотр ⇄ Правка» — ТОЛЬКО на вкладке приложения (на сайте не нужен).
   function updateEditModeBtn() {
@@ -841,10 +872,26 @@
     tellFrame({ type: "setEditMode", value: appEditMode }); // приложению: перехват тапов вкл/выкл
     updateEditModeBtn();
   });
+  // Экран входа: открыть/скрыть его в превью сайта (на месте, по центру).
+  document.getElementById("merch-auth-toggle").addEventListener("click", function () {
+    authOpen = !authOpen;
+    tellFrame({ type: "authScreen", op: authOpen ? "open" : "close", mode: authMode });
+    updateAuthCtrls();
+  });
+  // Переключить сторону (Вход ⇄ Регистрация) — на месте, с фирменной анимацией слайдера.
+  [].slice.call(document.querySelectorAll(".merch-authmode")).forEach(function (b) {
+    b.addEventListener("click", function () {
+      authMode = b.getAttribute("data-authmode") === "register" ? "register" : "login";
+      authOpen = true;
+      tellFrame({ type: "authScreen", op: "open", mode: authMode });
+      updateAuthCtrls();
+    });
+  });
   [].slice.call(document.querySelectorAll(".merch-tab")).forEach(function (b) {
     b.addEventListener("click", function () {
       platform = b.getAttribute("data-platform");
       appEditMode = true;  // фрейм перезагружается в режиме правки — синхронизируем
+      authOpen = false;    // фрейм перезагрузится — экран входа закрыт
       setActiveTab(); setFrame(); loadProducts();
     });
   });

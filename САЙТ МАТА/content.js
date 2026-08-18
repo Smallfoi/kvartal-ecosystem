@@ -97,6 +97,19 @@
   function setBgField(key, field, val) { var el = bgEl(key); if (!el) return; el[field] = val; refreshBg(el); }
   function setBgImg(key, imageUrl) { var el = bgEl(key); if (!el) return; el._bgImg = imageUrl ? mediaUrl(imageUrl) : ""; refreshBg(el); }
 
+  // Точечно применить фон/видео из общего контента к элементу [data-edit-bg="key"].
+  // Нужно модалкам, которые строятся из JS ПОСЛЕ загрузки контента (напр. экран входа):
+  // они зовут это, когда их data-edit-bg уже в DOM. Переиспользует ту же bg-логику.
+  window.STAW_applyBg = function (key) {
+    var C = window.STAW_CONTENT; if (!C || !safeId(key)) return;
+    var g = function (k) { return (C[k] || {}).value; };
+    if (C["bgoff." + key] !== undefined) setBgField(key, "_bgOff", g("bgoff." + key));
+    if (C["bgfocal." + key] !== undefined) setBgField(key, "_bgFocal", g("bgfocal." + key));
+    if (C["bgfit." + key] !== undefined) setBgField(key, "_bgFit", g("bgfit." + key));
+    if (C["bgvid." + key] !== undefined) setBgField(key, "_bgVid", g("bgvid." + key));
+    if (C["bg." + key] !== undefined) setBgImg(key, (C["bg." + key] || {}).imageUrl);
+  };
+
   // ── Репитеры: клонировать добавленные блоки из <template> ──
   function replaceTokens(node, sid) {
     var all = [node].concat([].slice.call(node.querySelectorAll ? node.querySelectorAll("*") : []));
