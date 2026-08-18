@@ -4,7 +4,9 @@ import secrets
 
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
+
+from common.throttling import PUBLIC_READ
 from rest_framework.response import Response
 
 from accounts.models import Account
@@ -37,11 +39,13 @@ def _platform_order(request):
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def categories(request):
     return Response([c.to_json() for c in Category.objects.all()])
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def products(request):
     qs = _visible_products(request)
     cat = request.query_params.get("category")
@@ -56,6 +60,7 @@ def products(request):
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def product_search(request):
     q = (request.query_params.get("q") or "").strip()
     qs = _visible_products(request)
@@ -67,6 +72,7 @@ def product_search(request):
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def product_price_range(request):
     vals = list(Product.objects.values_list("price", flat=True))
     if not vals:
@@ -75,6 +81,7 @@ def product_price_range(request):
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def product_detail(request, pid):
     p = Product.objects.filter(id=pid).first()
     if not p or (not p.is_published and not _is_preview(request)):
@@ -83,11 +90,13 @@ def product_detail(request, pid):
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def brands(request):
     return Response(sorted(set(Product.objects.values_list("brand", flat=True))))
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def sizes(request):
     order = ["XS", "S", "M", "L", "XL", "XXL", "39", "40", "41", "42", "43", "44", "45"]
     found = set()
@@ -101,6 +110,7 @@ def sizes(request):
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def banners(request):
     qs = Banner.objects.all()
     if not _is_preview(request):
@@ -110,6 +120,7 @@ def banners(request):
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def site_content(request):
     """Редактируемый контент сайта (тексты/фото шапки, hero, секций) для мини-CMS.
     Сайт подставляет по data-edit / data-edit-img. Публичный (как каталог)."""
@@ -155,6 +166,7 @@ def _review_json(r, uid):
 
 
 @api_view(["GET", "POST"])
+@throttle_classes(PUBLIC_READ)
 def product_reviews(request, pid):
     """GET — список отзывов товара (+ можно ли оставить). POST — оставить/обновить
     свой отзыв (только купившие товар). Рейтинг товара пересчитывается."""
