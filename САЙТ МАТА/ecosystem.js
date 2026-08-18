@@ -102,12 +102,63 @@
       + ".eco-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;"
       + "justify-content:center;background:rgba(10,12,16,.55);backdrop-filter:blur(4px)}"
       + ".eco-modal.is-open{display:flex}"
-      + ".eco-card{background:#fffdf8;color:#20252b;width:min(92vw,360px);border-radius:18px;"
-      + "padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.3)}"
-      + ".eco-tabs{display:flex;gap:6px;margin:6px 0 14px;background:#f0ede5;padding:4px;border-radius:12px}"
-      + ".eco-tab{flex:1;border:0;background:transparent;font:inherit;font-weight:700;color:#6f7278;"
-      + "padding:9px;border-radius:9px;cursor:pointer}"
-      + ".eco-tab.is-active{background:#fff;color:#20252b;box-shadow:0 1px 4px rgba(0,0,0,.08)}"
+      + ".eco-card{background:#fffdf8;color:#20252b;border-radius:18px;"
+      + "box-shadow:0 24px 60px rgba(0,0,0,.3)}"
+      // ── Карточка-слайдер «Auth Slider» (эталон: панель 600мс ease-in-out-sine,
+      //    параллакс текста ±200%, формы только opacity 220мс delay 360мс) ──
+      + ".eco-card--slider{--dur:600ms;--ease:cubic-bezier(.37,0,.63,1);--pad:10px;"
+      + "position:relative;width:min(94vw,760px);aspect-ratio:1089/724;padding:var(--pad);overflow:hidden}"
+      + ".eco-card--slider .eco-close{position:absolute;top:8px;right:12px;z-index:9;float:none;"
+      + "color:#fff;mix-blend-mode:difference;opacity:.8;font-size:22px}"
+      + ".eco-half{position:absolute;top:var(--pad);bottom:var(--pad);width:calc(50% - var(--pad));"
+      + "display:flex;align-items:center;justify-content:center;overflow-y:auto;"
+      + "transition:opacity 220ms ease 360ms}"
+      + ".eco-half--login{left:var(--pad);opacity:0}"
+      + ".eco-half--reg{right:var(--pad);opacity:1}"
+      + ".eco-card--slider.isLogin .eco-half--login{opacity:1}"
+      + ".eco-card--slider.isLogin .eco-half--reg{opacity:0}"
+      + ".eco-form{width:100%;max-width:330px;padding:0 22px;text-align:center}"
+      + ".eco-cover{position:absolute;top:var(--pad);left:var(--pad);bottom:var(--pad);"
+      + "width:calc(50% - var(--pad));border-radius:14px;overflow:hidden;z-index:5;"
+      + "transform:translateX(0);transition:transform var(--dur) var(--ease)}"
+      + ".eco-card--slider.isLogin .eco-cover{transform:translateX(100%)}"
+      + ".eco-photo{position:absolute;inset:0;background:linear-gradient(160deg,#2b3240,#171a22 55%,#0c0e13)}"
+      + ".eco-photo::after{content:'МАТА';position:absolute;left:50%;top:13%;transform:translateX(-50%);"
+      + "font-size:64px;font-weight:800;letter-spacing:10px;color:#fff;opacity:.07}"
+      + ".eco-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,12,10,.18),rgba(10,12,10,.42))}"
+      + ".eco-side{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;"
+      + "justify-content:center;padding:0 26px;text-align:center;color:#fff;"
+      + "transition:transform var(--dur) var(--ease)}"
+      + ".eco-sideA{transform:translateX(0)}"
+      + ".eco-sideB{transform:translateX(200%)}"
+      + ".eco-card--slider.isLogin .eco-sideA{transform:translateX(-200%)}"
+      + ".eco-card--slider.isLogin .eco-sideB{transform:translateX(0)}"
+      + ".eco-side h3{margin:0 0 10px;font-size:24px}"
+      + ".eco-side p{margin:0 0 20px;font-size:13.5px;line-height:1.55;color:rgba(255,255,255,.92)}"
+      + ".eco-ghost{height:44px;padding:0 36px;border-radius:22px;cursor:pointer;background:transparent;"
+      + "border:1.5px solid rgba(255,255,255,.85);color:#fff;font:inherit;font-weight:600;"
+      + "letter-spacing:1.4px;font-size:12.5px;transition:background .22s,transform .18s}"
+      + ".eco-ghost:hover{background:rgba(255,255,255,.14);transform:translateY(-2px)}"
+      + ".eco-ghost:active{transform:scale(.97)}"
+      // мобильный столбик: панель сверху, движение панели отключено (по спеке)
+      + "@media(max-width:719px){"
+      + ".eco-card--slider{display:flex;flex-direction:column;aspect-ratio:auto;"
+      + "width:min(92vw,380px);max-height:92vh;overflow-y:auto}"
+      + ".eco-cover{position:relative;order:-1;top:0;left:0;bottom:auto;width:100%;height:118px;"
+      + "flex:0 0 auto;transform:none!important;border-radius:12px}"
+      + ".eco-half{position:static;width:100%;opacity:1!important;transition:none;display:none;"
+      + "padding:18px 0 8px}"
+      + ".eco-card--slider.isLogin .eco-half--login{display:flex}"
+      + ".eco-card--slider:not(.isLogin) .eco-half--reg{display:flex}"
+      + ".eco-side{transform:none!important;transition:opacity 220ms ease}"
+      + ".eco-sideA{opacity:1}.eco-sideB{opacity:0}"
+      + ".eco-card--slider.isLogin .eco-sideA{opacity:0}"
+      + ".eco-card--slider.isLogin .eco-sideB{opacity:1}"
+      + ".eco-side p{display:none}.eco-side h3{font-size:17px;margin:0 0 8px}"
+      + ".eco-ghost{height:36px;padding:0 26px;font-size:11.5px}"
+      + ".eco-photo::after{font-size:40px;top:16%}}"
+      + "@media(prefers-reduced-motion:reduce){"
+      + ".eco-cover,.eco-side,.eco-half{transition-duration:.01ms!important;transition-delay:0ms!important}}"
       + ".eco-card h3{margin:0 0 4px;font-size:20px}"
       + ".eco-card p.eco-sub{margin:0 0 16px;opacity:.6;font-size:13px}"
       + ".eco-card input{width:100%;box-sizing:border-box;margin:6px 0;padding:12px 14px;"
@@ -219,83 +270,135 @@
     return '<span class="eco-avatar eco-avatar--ini">' + escapeHtml(ini) + "</span>";
   }
 
-  // ── login / register modal ────────────────────────────────────────────────
-  var modal;
+  // ── login / register modal: карточка-слайдер (эталон Auth Slider) ─────────
+  // Панель-«фото» едет ровно на свою ширину (600 мс, cubic-bezier(.37,0,.63,1)),
+  // текст панели — параллакс ±200% (вдвое быстрее, в обратную сторону),
+  // формы не двигаются вообще — только opacity 220 мс с задержкой 360 мс.
+  // Вся анимация — три CSS-перехода; JS лишь переключает класс isLogin.
+  var modal, card;
   var ecoMode = "login"; // "login" | "register"
+  var otpLogin = null, otpReg = null;
 
   function setMode(m) {
     ecoMode = m === "register" ? "register" : "login";
-    var nameI = modal.querySelector("[data-eco-name]");
-    var title = modal.querySelector("[data-eco-title]");
-    var submit = modal.querySelector("[data-eco-submit]");
-    modal.querySelectorAll("[data-eco-mode]").forEach(function (b) {
-      b.classList.toggle("is-active", b.getAttribute("data-eco-mode") === ecoMode);
-    });
-    if (ecoMode === "register") {
-      nameI.hidden = false;
-      title.textContent = "Регистрация в МАТА";
-      submit.textContent = "Зарегистрироваться";
-    } else {
-      nameI.hidden = true;
-      title.textContent = "Вход в МАТА";
-      submit.textContent = "Войти";
-    }
-    modal.querySelector("[data-eco-err]").textContent = "";
+    if (!card) return;
+    card.classList.toggle("isLogin", ecoMode === "login");
+    modal.querySelectorAll(".eco-err").forEach(function (e) { e.textContent = ""; });
+    if (otpLogin) otpLogin.softReset();
+    if (otpReg) otpReg.softReset();
+  }
+
+  function focusActive() {
+    var el = modal.querySelector(
+      ecoMode === "register" ? "[data-reg-name]" : "[data-login-phone]"
+    );
+    if (el) el.focus();
   }
 
   function buildModal() {
     modal = document.createElement("div");
     modal.className = "eco-modal";
     modal.innerHTML =
-      '<div class="eco-card" role="dialog" aria-label="Вход и регистрация МАТА">' +
+      '<div class="eco-card eco-card--slider" role="dialog" aria-label="Вход и регистрация МАТА">' +
       '<button class="eco-close" type="button" data-eco-x aria-label="Закрыть">×</button>' +
-      '<div class="eco-tabs">' +
-      '<button type="button" class="eco-tab is-active" data-eco-mode="login">Вход</button>' +
-      '<button type="button" class="eco-tab" data-eco-mode="register">Регистрация</button>' +
-      "</div>" +
-      '<h3 data-eco-title>Вход в МАТА</h3>' +
-      '<p class="eco-sub">Единый аккаунт экосистемы: баллы из «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
-      '<input data-eco-name type="text" placeholder="Имя и фамилия" autocomplete="name" hidden />' +
-      '<input data-eco-phone type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
-      '<div class="eco-otp" data-eco-otp>' +
-      '<input data-eco-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" />' +
-      "</div>" +
-      '<p class="eco-err" data-eco-err></p>' +
-      '<button class="eco-primary" type="button" data-eco-submit>Войти</button>' +
-      "</div>";
+      // левая половина — Вход (видна, когда панель уехала вправо)
+      '<div class="eco-half eco-half--login"><div class="eco-form">' +
+      '<h3>Вход в МАТА</h3>' +
+      '<p class="eco-sub">Баллы «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
+      '<input data-login-phone type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
+      '<div class="eco-otp" data-login-otp>' +
+      '<input data-login-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
+      '<p class="eco-err" data-login-err></p>' +
+      '<button class="eco-primary" type="button" data-login-submit>Войти</button>' +
+      "</div></div>" +
+      // правая половина — Регистрация (видна в исходном положении панели)
+      '<div class="eco-half eco-half--reg"><div class="eco-form">' +
+      '<h3>Регистрация в МАТА</h3>' +
+      '<p class="eco-sub">Единый аккаунт экосистемы. Dev-код: 1234.</p>' +
+      '<input data-reg-name type="text" placeholder="Имя и фамилия" autocomplete="name" />' +
+      '<input data-reg-phone type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
+      '<div class="eco-otp" data-reg-otp>' +
+      '<input data-reg-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
+      '<p class="eco-err" data-reg-err></p>' +
+      '<button class="eco-primary" type="button" data-reg-submit>Зарегистрироваться</button>' +
+      "</div></div>" +
+      // панель: тёмный бренд-фон вместо фото (утверждённых фото пока нет),
+      // стороны A/B — параллакс ±200%
+      '<div class="eco-cover">' +
+      '<div class="eco-photo"></div><div class="eco-shade"></div>' +
+      '<div class="eco-side eco-sideA">' +
+      "<h3>С возвращением!</h3>" +
+      "<p>Войди в единый аккаунт — баллы за бег и покупки уже ждут.</p>" +
+      '<button class="eco-ghost" type="button" data-go-login>ВОЙТИ</button></div>' +
+      '<div class="eco-side eco-sideB">' +
+      "<h3>Впервые в МАТА?</h3>" +
+      "<p>Создай единый аккаунт — «Квартал», магазин и сайт в одном.</p>" +
+      '<button class="eco-ghost" type="button" data-go-signup>РЕГИСТРАЦИЯ</button></div>' +
+      "</div></div>";
     document.body.appendChild(modal);
+    card = modal.querySelector(".eco-card--slider");
     modal.addEventListener("click", function (e) {
       if (e.target === modal) closeModal();
     });
     modal.querySelector("[data-eco-x]").addEventListener("click", closeModal);
-    modal.querySelector("[data-eco-submit]").addEventListener("click", submitAuth);
-    modal.querySelectorAll("[data-eco-mode]").forEach(function (b) {
-      b.addEventListener("click", function () { setMode(b.getAttribute("data-eco-mode")); });
+    modal.querySelector("[data-go-login]").addEventListener("click", function () {
+      setMode("login"); focusActive();
     });
-    setupOtp();
+    modal.querySelector("[data-go-signup]").addEventListener("click", function () {
+      setMode("register"); focusActive();
+    });
+    otpLogin = createOtpField({
+      stage: modal.querySelector("[data-login-otp]"),
+      input: modal.querySelector("[data-login-code]"),
+      errEl: modal.querySelector("[data-login-err]"),
+      btn: modal.querySelector("[data-login-submit]"),
+      getPayload: function () {
+        var phone = modal.querySelector("[data-login-phone]").value.trim();
+        if (!phone) return { error: "Введите телефон" };
+        return { phone: phone, name: "" };
+      }
+    });
+    otpReg = createOtpField({
+      stage: modal.querySelector("[data-reg-otp]"),
+      input: modal.querySelector("[data-reg-code]"),
+      errEl: modal.querySelector("[data-reg-err]"),
+      btn: modal.querySelector("[data-reg-submit]"),
+      getPayload: function () {
+        var name = modal.querySelector("[data-reg-name]").value.trim();
+        var phone = modal.querySelector("[data-reg-phone]").value.trim();
+        if (!name) return { error: "Введите имя" };
+        if (!phone) return { error: "Введите телефон" };
+        return { phone: phone, name: name };
+      }
+    });
+    modal.querySelector("[data-login-submit]").addEventListener("click", function () {
+      otpLogin.trySubmit();
+    });
+    modal.querySelector("[data-reg-submit]").addEventListener("click", function () {
+      otpReg.trySubmit();
+    });
   }
 
   function openModal(mode) {
     if (!modal) buildModal();
+    // Класс режима ставим до показа: пока modal display:none, переходы не
+    // играют — карточка сразу в нужном положении, анимация только внутри.
     setMode(mode === "register" ? "register" : "login");
     modal.classList.add("is-open");
-    modal.querySelector(ecoMode === "register" ? "[data-eco-name]" : "[data-eco-phone]").focus();
+    focusActive();
   }
   function closeModal() {
     if (!modal) return;
     modal.classList.remove("is-open");
     // Закрыли на середине хореографии — остановить и вернуть строку.
-    if (otpBusy || otpRaf) otpReset();
+    if (otpLogin) otpLogin.hardReset();
+    if (otpReg) otpReg.hardReset();
   }
 
-  // ── Ввод кода: «OTP V5» — строка → круг → жёсткое вращение → схлопывание ──
+  // ── Ввод кода «OTP V5»: фабрика — по экземпляру на каждую форму ────────────
   // Стандарт анимаций верификации экосистемы МАТА (директива владельца).
   // Движение пишется прямо в style.transform из rAF — без перерисовок DOM.
   var OTP_LEN = 4, OTP_GAP = 66, OTP_R = 56, OTP_TURNS = 2;
-  var otpCells = [], otpInput = null, otpStage = null;
-  var otpPhase = "input"; // input|explode|spin|spinwait|collapse|reverse
-  var otpT0 = 0, otpExtra = 0, otpRaf = 0, otpBusy = false;
-  var otpResult = null; // null=ждём, {ok:true,data}|{ok:false,msg}
 
   function otpReduced() {
     return window.matchMedia &&
@@ -307,239 +410,253 @@
   }
   function easeInBack(t) { return 2.2 * t * t * t - 1.2 * t * t; }
 
-  function setupOtp() {
-    otpStage = modal.querySelector("[data-eco-otp]");
-    otpInput = modal.querySelector("[data-eco-code]");
-    otpCells = [];
+  // Успешный вход/регистрация: сохранить сессию и обновить шапку.
+  function authDone(data, name) {
+    var user = data.user || {};
+    if (name) user = Object.assign({}, user, { name: name });
+    setSession(data.token, user);
+    closeModal();
+    refresh();
+  }
+
+  // cfg: {stage, input, errEl, btn, getPayload}
+  // getPayload() → {phone, name} либо {error: "текст"} (валидация формы).
+  function createOtpField(cfg) {
+    var stage = cfg.stage, input = cfg.input;
+    var cells = [];
+    var phase = "input"; // input|explode|spin|spinwait|collapse|reverse
+    var t0 = 0, extra = 0, raf = 0, busy = false;
+    var result = null; // null=ждём, {ok:true,data,name}|{ok:false,msg}
+
     for (var i = 0; i < OTP_LEN; i++) {
       var c = document.createElement("div");
       c.className = "eco-otp-cell";
-      otpStage.appendChild(c);
-      otpCells.push(c);
+      stage.appendChild(c);
+      cells.push(c);
     }
-    otpStage.addEventListener("click", function () {
-      if (!otpBusy) otpInput.focus();
+    stage.addEventListener("click", function () {
+      if (!busy) input.focus();
     });
-    otpInput.addEventListener("input", function () {
-      otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, OTP_LEN);
-      renderOtp();
-      if (otpInput.value.length === OTP_LEN && !otpBusy) submitAuth();
+    input.addEventListener("input", function () {
+      input.value = input.value.replace(/\D/g, "").slice(0, OTP_LEN);
+      render();
+      if (input.value.length === OTP_LEN && !busy) trySubmit();
     });
-    otpInput.addEventListener("focus", function () { renderOtp(); });
-    otpInput.addEventListener("blur", function () { renderOtp(); });
-    otpLayoutRow();
-    renderOtp();
-  }
+    input.addEventListener("focus", function () { render(); });
+    input.addEventListener("blur", function () { render(); });
+    layoutRow();
+    render();
 
-  // Статичная строка (когда rAF не крутится).
-  function otpLayoutRow() {
-    for (var i = 0; i < OTP_LEN; i++) {
-      var x = (i - (OTP_LEN - 1) / 2) * OTP_GAP;
-      otpCells[i].style.transform = "translate(" + x + "px,0)";
-      otpCells[i].style.opacity = 1;
-    }
-  }
-
-  // Цифры/каретка/классы ячеек.
-  function renderOtp(errFlag) {
-    var v = otpInput ? otpInput.value : "";
-    var focused = otpInput && document.activeElement === otpInput;
-    for (var i = 0; i < OTP_LEN; i++) {
-      var cell = otpCells[i];
-      var ch = i < v.length ? v.charAt(i) : "";
-      var isCur = !otpBusy && focused && i === v.length;
-      cell.textContent = ch;
-      if (isCur && !ch) {
-        var caret = document.createElement("span");
-        caret.className = "eco-otp-caret";
-        cell.appendChild(caret);
+    // Статичная строка (когда rAF не крутится).
+    function layoutRow() {
+      for (var i = 0; i < OTP_LEN; i++) {
+        var x = (i - (OTP_LEN - 1) / 2) * OTP_GAP;
+        cells[i].style.transform = "translate(" + x + "px,0)";
+        cells[i].style.opacity = 1;
       }
-      cell.classList.toggle("has", !!ch);
-      cell.classList.toggle("active", isCur);
-      cell.classList.toggle("err", !!errFlag);
-      cell.classList.remove("ok");
     }
-  }
 
-  // Один кадр хореографии: позиции всех ячеек из текущей фазы.
-  function otpFrame(now) {
-    var el = now - otpT0;
-    var p = 1, spin = 0, shrink = 0;
-
-    if (otpPhase === "explode") {
-      p = easeOutCubic(Math.min(el / 380, 1));
-      if (el >= 380) { otpPhase = "spin"; otpT0 = now; }
-    } else if (otpPhase === "spin") {
-      spin = easeInOutCubic(Math.min(el / 1250, 1)) * 360 * OTP_TURNS;
-      if (el >= 1250) {
-        otpT0 = now;
-        otpPhase = otpResult === null
-          ? "spinwait"
-          : otpResult.ok ? "collapse" : "reverse";
-      }
-    } else if (otpPhase === "spinwait") {
-      // Сервер ещё думает: докручиваем по обороту (вращение = «загрузка»).
-      spin = 360 * OTP_TURNS + otpExtra +
-        easeInOutCubic(Math.min(el / 800, 1)) * 360;
-      if (el >= 800) {
-        otpExtra += 360;
-        otpT0 = now;
-        if (otpResult !== null) {
-          otpPhase = otpResult.ok ? "collapse" : "reverse";
+    // Цифры/каретка/классы ячеек.
+    function render(errFlag) {
+      var v = input.value;
+      var focused = document.activeElement === input;
+      for (var i = 0; i < OTP_LEN; i++) {
+        var cell = cells[i];
+        var ch = i < v.length ? v.charAt(i) : "";
+        var isCur = !busy && focused && i === v.length;
+        cell.textContent = ch;
+        if (isCur && !ch) {
+          var caret = document.createElement("span");
+          caret.className = "eco-otp-caret";
+          cell.appendChild(caret);
         }
+        cell.classList.toggle("has", !!ch);
+        cell.classList.toggle("active", isCur);
+        cell.classList.toggle("err", !!errFlag);
+        cell.classList.remove("ok");
       }
-    } else if (otpPhase === "collapse") {
-      var t = Math.min(el / 420, 1);
-      spin = 360 * OTP_TURNS + otpExtra + easeOutCubic(t) * 40;
-      shrink = easeInBack(t);
-      if (el >= 420) { otpFinishSuccess(); return; }
-    } else if (otpPhase === "reverse") {
-      // Ошибка: быстрая обратная раскрутка в строку.
-      var r = 1 - easeInOutCubic(Math.min(el / 420, 1));
-      p = r;
-      spin = (360 * OTP_TURNS + otpExtra) * r;
-      if (el >= 420) { otpFinishError(); return; }
     }
 
-    for (var i = 0; i < OTP_LEN; i++) {
-      var rowX = (i - (OTP_LEN - 1) / 2) * OTP_GAP;
-      var a = ((-90 + i * (360 / OTP_LEN) + spin) * Math.PI) / 180;
-      var x = (rowX + (Math.cos(a) * OTP_R - rowX) * p) * (1 - shrink);
-      var y = Math.sin(a) * OTP_R * p * (1 - shrink);
-      var rot = spin * p;
-      var sc = 1 - shrink * 0.12;
-      var op = shrink > 0.75 && i !== 0 ? 1 - (shrink - 0.75) / 0.25 : 1;
-      otpCells[i].style.transform =
-        "translate(" + x.toFixed(2) + "px," + y.toFixed(2) + "px)" +
-        " rotate(" + rot.toFixed(2) + "deg) scale(" + sc.toFixed(3) + ")";
-      otpCells[i].style.opacity = op;
+    // Один кадр хореографии: позиции всех ячеек из текущей фазы.
+    function frame(now) {
+      var el = now - t0;
+      var p = 1, spin = 0, shrink = 0;
+
+      if (phase === "explode") {
+        p = easeOutCubic(Math.min(el / 380, 1));
+        if (el >= 380) { phase = "spin"; t0 = now; }
+      } else if (phase === "spin") {
+        spin = easeInOutCubic(Math.min(el / 1250, 1)) * 360 * OTP_TURNS;
+        if (el >= 1250) {
+          t0 = now;
+          phase = result === null
+            ? "spinwait"
+            : result.ok ? "collapse" : "reverse";
+        }
+      } else if (phase === "spinwait") {
+        // Сервер ещё думает: докручиваем по обороту (вращение = «загрузка»).
+        spin = 360 * OTP_TURNS + extra +
+          easeInOutCubic(Math.min(el / 800, 1)) * 360;
+        if (el >= 800) {
+          extra += 360;
+          t0 = now;
+          if (result !== null) {
+            phase = result.ok ? "collapse" : "reverse";
+          }
+        }
+      } else if (phase === "collapse") {
+        var t = Math.min(el / 420, 1);
+        spin = 360 * OTP_TURNS + extra + easeOutCubic(t) * 40;
+        shrink = easeInBack(t);
+        if (el >= 420) { finishSuccess(); return; }
+      } else if (phase === "reverse") {
+        // Ошибка: быстрая обратная раскрутка в строку.
+        var r = 1 - easeInOutCubic(Math.min(el / 420, 1));
+        p = r;
+        spin = (360 * OTP_TURNS + extra) * r;
+        if (el >= 420) { finishError(); return; }
+      }
+
+      for (var i = 0; i < OTP_LEN; i++) {
+        var rowX = (i - (OTP_LEN - 1) / 2) * OTP_GAP;
+        var a = ((-90 + i * (360 / OTP_LEN) + spin) * Math.PI) / 180;
+        var x = (rowX + (Math.cos(a) * OTP_R - rowX) * p) * (1 - shrink);
+        var y = Math.sin(a) * OTP_R * p * (1 - shrink);
+        var rot = spin * p;
+        var sc = 1 - shrink * 0.12;
+        var op = shrink > 0.75 && i !== 0 ? 1 - (shrink - 0.75) / 0.25 : 1;
+        cells[i].style.transform =
+          "translate(" + x.toFixed(2) + "px," + y.toFixed(2) + "px)" +
+          " rotate(" + rot.toFixed(2) + "deg) scale(" + sc.toFixed(3) + ")";
+        cells[i].style.opacity = op;
+      }
+      raf = requestAnimationFrame(frame);
     }
-    otpRaf = requestAnimationFrame(otpFrame);
-  }
 
-  function otpFinishSuccess() {
-    otpRaf = 0;
-    // Схлопнуто: остаётся первая ячейка — зелёная, с прорисовкой галочки.
-    for (var i = 1; i < OTP_LEN; i++) otpCells[i].style.opacity = 0;
-    var c0 = otpCells[0];
-    c0.style.transform = "translate(0,0) scale(.92)";
-    c0.classList.remove("err", "active", "has");
-    c0.classList.add("ok");
-    c0.innerHTML =
-      '<svg viewBox="0 0 24 24" width="26" height="26">' +
-      '<path class="eco-otp-check" d="M5 12.5l4.5 4.5L19 7.5" fill="none" ' +
-      'stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    for (var r = 0; r < 2; r++) {
-      var ring = document.createElement("div");
-      ring.className = "eco-otp-ring" + (r ? " d2" : "");
-      otpStage.appendChild(ring);
+    function finishSuccess() {
+      raf = 0;
+      // Схлопнуто: остаётся первая ячейка — зелёная, с прорисовкой галочки.
+      for (var i = 1; i < OTP_LEN; i++) cells[i].style.opacity = 0;
+      var c0 = cells[0];
+      c0.style.transform = "translate(0,0) scale(.92)";
+      c0.classList.remove("err", "active", "has");
+      c0.classList.add("ok");
+      c0.innerHTML =
+        '<svg viewBox="0 0 24 24" width="26" height="26">' +
+        '<path class="eco-otp-check" d="M5 12.5l4.5 4.5L19 7.5" fill="none" ' +
+        'stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      for (var r = 0; r < 2; r++) {
+        var ring = document.createElement("div");
+        ring.className = "eco-otp-ring" + (r ? " d2" : "");
+        stage.appendChild(ring);
+      }
+      for (var s = 0; s < 6; s++) {
+        var sp = document.createElement("span");
+        sp.className = "eco-otp-spark";
+        sp.style.setProperty("--a", (s * 60 + 20) + "deg");
+        sp.style.setProperty("--d", (s * 60) + "ms");
+        stage.appendChild(sp);
+      }
+      setTimeout(function () {
+        if (!result || !result.ok) return; // сброшено (модалку закрыли раньше)
+        var done = result;
+        hardReset();
+        authDone(done.data, done.name);
+      }, 1100);
     }
-    for (var s = 0; s < 6; s++) {
-      var sp = document.createElement("span");
-      sp.className = "eco-otp-spark";
-      sp.style.setProperty("--a", (s * 60 + 20) + "deg");
-      sp.style.setProperty("--d", (s * 60) + "ms");
-      otpStage.appendChild(sp);
+
+    function finishError() {
+      raf = 0;
+      busy = false;
+      layoutRow();
+      input.value = "";
+      render(true);
+      stage.classList.add("shake");
+      setTimeout(function () { stage.classList.remove("shake"); }, 360);
+      cfg.errEl.textContent = (result && result.msg) || "Не удалось войти";
+      cfg.btn.disabled = false;
+      result = null;
+      extra = 0;
+      phase = "input";
+      input.focus();
     }
-    var title = modal.querySelector("[data-eco-title]");
-    if (title) title.textContent = "Готово! Вы вошли";
-    setTimeout(function () {
-      if (!otpResult) return; // сброшено (модалку закрыли раньше)
-      var data = otpResult.data;
-      var name = modal.querySelector("[data-eco-name]").value.trim();
-      var user = (data && data.user) || {};
-      if (ecoMode === "register" && name) user = Object.assign({}, user, { name: name });
-      if (data) setSession(data.token, user);
-      closeModal();
-      refresh();
-      otpReset();
-    }, 1200);
-  }
 
-  function otpFinishError() {
-    otpRaf = 0;
-    otpBusy = false;
-    otpLayoutRow();
-    otpInput.value = "";
-    renderOtp(true);
-    otpStage.classList.add("shake");
-    setTimeout(function () { otpStage.classList.remove("shake"); }, 360);
-    var errEl = modal.querySelector("[data-eco-err]");
-    errEl.textContent = (otpResult && otpResult.msg) || "Не удалось войти";
-    var btn = modal.querySelector("[data-eco-submit]");
-    btn.disabled = false;
-    otpResult = null;
-    otpExtra = 0;
-    otpInput.focus();
-  }
+    function hardReset() {
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      busy = false;
+      result = null;
+      extra = 0;
+      phase = "input";
+      input.value = "";
+      // убрать кольца/искры финала
+      var fx = stage.querySelectorAll(".eco-otp-ring,.eco-otp-spark");
+      for (var i = 0; i < fx.length; i++) fx[i].parentNode.removeChild(fx[i]);
+      layoutRow();
+      render();
+      cfg.btn.disabled = false;
+    }
+    // Сброс только в покое (не рвать идущую проверку при переключении форм).
+    function softReset() {
+      if (!busy && !raf) hardReset();
+    }
 
-  function otpReset() {
-    if (otpRaf) { cancelAnimationFrame(otpRaf); otpRaf = 0; }
-    otpBusy = false;
-    otpResult = null;
-    otpExtra = 0;
-    otpPhase = "input";
-    otpInput.value = "";
-    // убрать кольца/искры финала
-    var fx = otpStage.querySelectorAll(".eco-otp-ring,.eco-otp-spark");
-    for (var i = 0; i < fx.length; i++) fx[i].parentNode.removeChild(fx[i]);
-    otpLayoutRow();
-    renderOtp();
-    var btn = modal.querySelector("[data-eco-submit]");
-    if (btn) btn.disabled = false;
-  }
+    function trySubmit() {
+      if (busy) return;
+      var payload = cfg.getPayload();
+      cfg.errEl.textContent = "";
+      if (payload.error) { cfg.errEl.textContent = payload.error; return; }
+      if (input.value.length < OTP_LEN) {
+        cfg.errEl.textContent = "Введите код (dev: 1234)";
+        return;
+      }
+      busy = true;
+      result = null;
+      extra = 0;
+      cfg.btn.disabled = true;
+      input.blur();
+      render();
 
-  function submitAuth() {
-    if (otpBusy) return;
-    var name = modal.querySelector("[data-eco-name]").value.trim();
-    var phone = modal.querySelector("[data-eco-phone]").value.trim();
-    var code = otpInput.value.trim();
-    var errEl = modal.querySelector("[data-eco-err]");
-    var btn = modal.querySelector("[data-eco-submit]");
-    errEl.textContent = "";
-    if (ecoMode === "register" && !name) { errEl.textContent = "Введите имя"; return; }
-    if (!phone) { errEl.textContent = "Введите телефон"; return; }
-    if (code.length < OTP_LEN) { errEl.textContent = "Введите код (dev: 1234)"; return; }
-
-    otpBusy = true;
-    otpResult = null;
-    otpExtra = 0;
-    btn.disabled = true;
-    otpInput.blur();
-    renderOtp();
-
-    // SSO по телефону: verify создаёт аккаунт при первом входе; запрос идёт
-    // ПАРАЛЛЕЛЬНО хореографии — вращение и есть индикатор загрузки.
-    api("/auth/phone/verify", { method: "POST", body: { phone: phone, code: code } })
-      .then(function (data) { otpResult = { ok: true, data: data }; })
-      .catch(function (e) {
-        otpResult = { ok: false, msg: e.message || "Не удалось" };
+      // SSO по телефону: verify создаёт аккаунт при первом входе; запрос идёт
+      // ПАРАЛЛЕЛЬНО хореографии — вращение и есть индикатор загрузки.
+      api("/auth/phone/verify", {
+        method: "POST",
+        body: { phone: payload.phone, code: input.value }
       })
-      .then(function () {
-        // reduced motion / фаза ожидания сама заметит результат; но если
-        // ошибка пришла до конца spin — дадим reverse стартовать на границе фаз.
-        if (otpResult && !otpResult.ok &&
-            (otpPhase === "spinwait" || otpPhase === "spin")) {
-          // ничего: фазовая машина проверит otpResult на границе
-        }
-      });
+        .then(function (data) {
+          result = { ok: true, data: data, name: payload.name || "" };
+        })
+        .catch(function (e) {
+          var msg = e.message || "Не удалось";
+          if (/invalid verification/i.test(msg)) {
+            msg = "Неверный код. Попробуй ещё раз";
+          }
+          result = { ok: false, msg: msg };
+        });
 
-    if (otpReduced()) {
-      // Без движения: просто ждём результат и мгновенно показываем состояние.
-      var wait = setInterval(function () {
-        if (otpResult === null) return;
-        clearInterval(wait);
-        if (otpResult.ok) { otpFinishSuccess(); }
-        else { otpFinishError(); }
-      }, 60);
-      return;
+      if (otpReduced()) {
+        // Без движения: просто ждём результат и мгновенно показываем состояние.
+        var wait = setInterval(function () {
+          if (result === null) return;
+          clearInterval(wait);
+          if (result.ok) { finishSuccess(); } else { finishError(); }
+        }, 60);
+        return;
+      }
+
+      setTimeout(function () {
+        if (!busy) return; // сброшено закрытием модалки
+        phase = "explode";
+        t0 = performance.now();
+        raf = requestAnimationFrame(frame);
+      }, 260);
     }
 
-    setTimeout(function () {
-      otpPhase = "explode";
-      otpT0 = performance.now();
-      otpRaf = requestAnimationFrame(otpFrame);
-    }, 260);
+    return {
+      trySubmit: trySubmit,
+      softReset: softReset,
+      hardReset: hardReset,
+      isBusy: function () { return busy; }
+    };
   }
 
   // Показ/скрытие элементов по состоянию входа (CTA «Войти» прячем в аккаунте).
