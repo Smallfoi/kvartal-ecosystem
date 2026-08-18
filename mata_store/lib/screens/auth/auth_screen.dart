@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,29 @@ import '../../theme/app_theme.dart';
 import '../../widgets/otp_verify_boxes.dart';
 import '../../widgets/remote_text.dart';
 import '../profile/legal_documents_screen.dart';
+
+/// Формат номера: пользователь вводит ТОЛЬКО 10 цифр после несъёмного «+7».
+/// Ведущие «7»/«8» (набранные или вставленные: «89148278470», «+7914…»)
+/// отбрасываются автоматически — мобильные номера РФ начинаются с 9.
+class RuPhoneFormatter extends TextInputFormatter {
+  const RuPhoneFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('7') || digits.startsWith('8')) {
+      digits = digits.substring(1);
+    }
+    if (digits.length > 10) digits = digits.substring(0, 10);
+    return TextEditingValue(
+      text: digits,
+      selection: TextSelection.collapsed(offset: digits.length),
+    );
+  }
+}
 
 class AuthScreen extends StatefulWidget {
   final bool startWithRegister;
@@ -57,9 +81,14 @@ class _AuthScreenState extends State<AuthScreen> {
       _phoneError = 'Введите имя';
       return false;
     }
+    final digits = _phoneCtrl.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 10) {
+      _phoneError = 'Введите номер полностью';
+      return false;
+    }
     final auth = context.read<AuthProvider>();
     final err = await auth.loginByPhone(
-      _phoneCtrl.text,
+      '+7$digits',
       code,
       name: register ? _nameCtrl.text.trim() : null,
     );
@@ -336,8 +365,10 @@ class _LoginForm extends StatelessWidget {
         _InputField(
           controller: phoneCtrl,
           label: 'Телефон',
-          hint: '+7 999 000-00-00',
+          hint: '999 000-00-00',
+          prefixText: '+7 ',
           keyboardType: TextInputType.phone,
+          inputFormatters: const [RuPhoneFormatter()],
           icon: Icons.phone_outlined,
         ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.1),
         if (error != null) ...[
@@ -406,8 +437,10 @@ class _RegisterForm extends StatelessWidget {
         _InputField(
           controller: phoneCtrl,
           label: 'Телефон',
-          hint: '+7 999 000-00-00',
+          hint: '999 000-00-00',
+          prefixText: '+7 ',
           keyboardType: TextInputType.phone,
+          inputFormatters: const [RuPhoneFormatter()],
           icon: Icons.phone_outlined,
         ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.1),
         if (error != null) ...[
@@ -477,6 +510,8 @@ class _InputField extends StatefulWidget {
   final IconData icon;
   final TextInputType? keyboardType;
   final TextCapitalization textCapitalization;
+  final String? prefixText;
+  final List<TextInputFormatter>? inputFormatters;
 
   const _InputField({
     required this.controller,
@@ -485,6 +520,8 @@ class _InputField extends StatefulWidget {
     required this.icon,
     this.keyboardType,
     this.textCapitalization = TextCapitalization.none,
+    this.prefixText,
+    this.inputFormatters,
   });
 
   @override
@@ -523,6 +560,7 @@ class _InputFieldState extends State<_InputField> {
               controller: widget.controller,
               keyboardType: widget.keyboardType,
               textCapitalization: widget.textCapitalization,
+              inputFormatters: widget.inputFormatters,
               style: const TextStyle(
                 fontSize: 15,
                 color: AppColors.black,
@@ -530,6 +568,12 @@ class _InputFieldState extends State<_InputField> {
               ),
               decoration: InputDecoration(
                 hintText: widget.hint,
+                prefixText: widget.prefixText,
+                prefixStyle: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w600,
+                ),
                 hintStyle: const TextStyle(
                   color: AppColors.grey400,
                   fontSize: 14,
