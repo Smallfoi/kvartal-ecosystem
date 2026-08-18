@@ -3,6 +3,8 @@
 # Запускать НА СЕРВЕРЕ из каталога backend/:  ./deploy/backup.sh
 # Баллы = деньги → бэкап обязателен; повесить на cron (см. docs/DEPLOY.md).
 set -euo pipefail
+# Дампы содержат ВСЕ персональные данные и реестр баллов — файлы только для владельца.
+umask 077
 
 cd "$(dirname "$0")/.."  # → backend/
 [ -f .env ] || { echo "Нет .env (см. .env.prod.example)"; exit 1; }
@@ -24,6 +26,21 @@ SIZE=$(gzip -dc "$OUT" | head -c 200000 | wc -c)
 [ "$SIZE" -gt 1000 ] || { echo "ОШИБКА: дамп подозрительно мал — проверь БД"; exit 1; }
 
 echo "Готово: $(du -h "$OUT" | cut -f1)"
+
+# ── Шифрование перед выгрузкой ────────────────────────────────────────────────
+# В дампе телефоны, email, адреса и весь реестр баллов. Ключ доступа к бакету лежит
+# в .env на том же сервере: компрометация сервера = чтение всех бэкапов. Поэтому шифруем
+# ЛОКАЛЬНО, до отправки. Пароль хранить ОТДЕЛЬНО от сервера (менеджер паролей) — иначе
+# смысл теряется. Без BACKUP_ENCRYPT_PASSPHRASE поведение прежнее.
+if [ -n "${BACKUP_ENCRYPT_PASSPHRASE:-}" ]; then
+  ENC="${OUT}.enc"
+  BACKUP_ENCRYPT_PASSPHRASE="$BACKUP_ENCRYPT_PASSPHRASE"     openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt       -in "$OUT" -out "$ENC" -pass env:BACKUP_ENCRYPT_PASSPHRASE
+  rm -f "$OUT"
+  OUT="$ENC"
+  echo "Зашифровано: $(basename "$OUT")"
+else
+  echo "ВНИМАНИЕ: BACKUP_ENCRYPT_PASSPHRASE не задан — дамп с ПДн уедет в бакет открытым."
+fi
 
 # ── Выгрузка в объектное хранилище ────────────────────────────────────────────
 # Дамп рядом с БД на том же диске — это НЕ бэкап: диск умрёт вместе с обоими.
@@ -52,3 +69,4 @@ fi
 
 # Ротация ЛОКАЛЬНЫХ дампов старше KEEP_DAYS дней (в бакете — политика жизненного цикла).
 find "$DIR" -name 'mata_*.sql.gz' -mtime +"$KEEP_DAYS" -delete 2>/dev/null || true
+find "$DIR" -name 'mata_*.sql.gz.enc' -mtime +"$KEEP_DAYS" -delete 2>/dev/null || true

@@ -243,3 +243,57 @@ class ThrottleScopeTests(TestCase):
         t = WriteAnonIPRateThrottle()
         self.assertIsNone(t.get_cache_key(self._drf_request("get"), None))
         self.assertIsNotNone(t.get_cache_key(self._drf_request("post"), None))
+
+
+class AdminLoginThrottleTests(TestCase):
+    """Форма входа в админку прикрыта от перебора (D-39).
+
+    Лимиты DRF живут в DRF-вью и админку не покрывают: до этого `/admin/login/`
+    можно было перебирать без ограничений, а за админкой деньги и ПДн.
+    """
+
+    PASSWORD = "very-strong-pass-123"
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from django.core.cache import cache
+
+        cache.clear()  # счётчик попыток живёт в кэше
+        get_user_model().objects.create_superuser(
+            "root-test", "root@test.local", self.PASSWORD
+        )
+
+    def _login(self, password, ip="203.0.113.7"):
+        return self.client.post(
+            "/admin/login/",
+            {"username": "root-test", "password": password},
+            HTTP_X_REAL_IP=ip,
+        )
+
+    def test_blocks_after_limit_even_with_correct_password(self):
+        from common.adminsec import MAX_FAILS
+
+        for _ in range(MAX_FAILS):
+            self._login("wrong")
+        # Ключевое: подобравший пароль на этом IP уже не войдёт до конца окна.
+        self.assertEqual(self._login(self.PASSWORD).status_code, 429)
+
+    def test_limit_is_per_ip(self):
+        from common.adminsec import MAX_FAILS
+
+        for _ in range(MAX_FAILS):
+            self._login("wrong", ip="203.0.113.7")
+        # Чужой IP не должен страдать из-за перебора с соседнего.
+        self.assertNotEqual(self._login("wrong", ip="203.0.113.8").status_code, 429)
+
+    def test_successful_login_resets_counter(self):
+        from common.adminsec import MAX_FAILS
+
+        for _ in range(MAX_FAILS - 1):
+            self._login("wrong")
+        self._login(self.PASSWORD)  # удачный вход обнуляет счётчик
+        self.client.logout()
+        r = None
+        for _ in range(MAX_FAILS - 1):
+            r = self._login("wrong")
+        self.assertNotEqual(r.status_code, 429)
