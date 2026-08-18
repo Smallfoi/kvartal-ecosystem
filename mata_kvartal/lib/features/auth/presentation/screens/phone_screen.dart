@@ -7,6 +7,29 @@ import '../../../../shared/widgets/kvartal_logo.dart';
 import '../../../profile/presentation/screens/legal_documents_screen.dart';
 import '../../data/auth_provider.dart';
 
+/// Пользователь вводит ТОЛЬКО 10 цифр после несъёмного «+7»: ведущие «7»/«8»
+/// (набранные или вставленные: «89148278470», «+7914…») отбрасываются —
+/// мобильные номера РФ начинаются с 9.
+class RuPhoneFormatter extends TextInputFormatter {
+  const RuPhoneFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('7') || digits.startsWith('8')) {
+      digits = digits.substring(1);
+    }
+    if (digits.length > 10) digits = digits.substring(0, 10);
+    return TextEditingValue(
+      text: digits,
+      selection: TextSelection.collapsed(offset: digits.length),
+    );
+  }
+}
+
 class PhoneScreen extends ConsumerStatefulWidget {
   const PhoneScreen({super.key});
 
@@ -102,10 +125,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                         controller: _controller,
                         focusNode: _focus,
                         keyboardType: TextInputType.phone,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(10),
-                        ],
+                        inputFormatters: const [RuPhoneFormatter()],
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               color: AppColors.textPrimary,
