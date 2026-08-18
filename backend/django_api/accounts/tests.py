@@ -388,6 +388,8 @@ class PhoneIdentityTests(ApiTestCase):
         self.assertEqual(r.status_code, 409)
 
 
+# MEDIA_ROOT по умолчанию /srv/media (том в докере) — на раннере CI он недоступен.
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class UploadValidationTests(ApiTestCase):
     """Тип файла — по содержимому, а не по имени и Content-Type (D-37)."""
     phone = "+79990009004"
