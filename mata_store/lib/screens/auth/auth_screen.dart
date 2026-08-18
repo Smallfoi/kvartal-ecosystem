@@ -568,9 +568,13 @@ class _InputFieldState extends State<_InputField> {
               ),
               decoration: InputDecoration(
                 hintText: widget.hint,
-                hintStyle: const TextStyle(
-                  color: AppColors.grey400,
-                  fontSize: 14,
+                // Образец в подсказке — ТОТ ЖЕ шрифт/размер, что «+7» и
+                // вводимые цифры; «образцовость» передаёт только прозрачность
+                // (замечание владельца: высота/размер не должны отличаться).
+                hintStyle: TextStyle(
+                  color: AppColors.black.withValues(alpha: 0.32),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
                 ),
                 // Несъёмный префикс («+7 ») живёт в prefixIcon — в отличие от
                 // prefixText он виден ВСЕГДА, а не только при фокусе
