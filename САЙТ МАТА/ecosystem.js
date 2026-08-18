@@ -30,15 +30,6 @@
   var LS_TOKEN = "staw_jwt";
   var LS_USER = "staw_user";
 
-  // Режим «Конструктора»: страница открыта в iframe редактора с ?edit=1. Тогда экран
-  // входа/регистрации показываем целиком (обе половины) и даём править тексты/поля.
-  // На живом сайте (не в iframe) — обычное поведение, редактор не включается.
-  var EDIT_MODE = false;
-  try {
-    EDIT_MODE = new URLSearchParams(location.search).get("edit") === "1" &&
-      window.parent !== window;
-  } catch (e) {}
-
   // ── storage ────────────────────────────────────────────────────────────────
   function getToken() {
     try { return localStorage.getItem(LS_TOKEN); } catch (e) { return null; }
@@ -411,40 +402,6 @@
     });
   }
 
-  // Режим «Конструктора»: показать экран входа целиком (обе половины сразу),
-  // чтобы все тексты и поля были видны и редактируемы без переключения слайдера.
-  function ensureEditallCss() {
-    if (document.getElementById("eco-editall-css")) return;
-    var s = document.createElement("style");
-    s.id = "eco-editall-css";
-    s.textContent =
-      ".eco-modal.eco-editall-modal{position:static;display:block;background:none;backdrop-filter:none;padding:8px}" +
-      ".eco-card--slider.eco-editall{aspect-ratio:auto;height:auto;max-height:none;width:min(94vw,760px);overflow:visible;margin:0 auto}" +
-      ".eco-card--slider.eco-editall .eco-close{display:none}" +
-      ".eco-card--slider.eco-editall .eco-half{position:static;width:100%;opacity:1!important;transition:none;display:flex;padding:10px 0}" +
-      ".eco-card--slider.eco-editall .eco-cover{position:relative;width:100%;height:auto;min-height:150px;transform:none!important;margin:10px 0;border-radius:14px}" +
-      ".eco-card--slider.eco-editall .eco-side{position:static;transform:none!important;opacity:1!important;padding:18px 26px}" +
-      ".eco-card--slider.eco-editall .eco-side p{display:block}" +
-      ".eco-card--slider.eco-editall .eco-sideB{border-top:1px solid rgba(255,255,255,.28);margin-top:6px}" +
-      ".eco-editall-label{font:600 12px/1.4 system-ui,-apple-system,sans-serif;color:#0a58ca;" +
-      "background:#eef4ff;border:1px dashed #0a84ff;border-radius:8px;padding:7px 10px;margin:0 0 6px;text-align:center}";
-    document.documentElement.appendChild(s);
-  }
-  function openAuthEditor() {
-    ensureEditallCss();
-    if (!modal) buildModal();
-    setMode("login");
-    modal.classList.add("is-open", "eco-editall-modal");
-    if (card) card.classList.add("eco-editall");
-    if (card && !card.querySelector(".eco-editall-label")) {
-      var lab = document.createElement("div");
-      lab.className = "eco-editall-label";
-      lab.textContent = "Экран входа и регистрации — кликните текст или поле, чтобы изменить (Конструктор)";
-      card.insertBefore(lab, card.firstChild);
-    }
-    applyAuthOverrides();
-  }
-
   function openModal(mode) {
     if (!modal) buildModal();
     // Класс режима ставим до показа: пока modal display:none, переходы не
@@ -455,7 +412,6 @@
   }
   function closeModal() {
     if (!modal) return;
-    if (EDIT_MODE) return; // в «Конструкторе» экран входа всегда открыт для правки
     modal.classList.remove("is-open");
     // Закрыли на середине хореографии — остановить и вернуть строку.
     if (otpLogin) otpLogin.hardReset();
@@ -865,21 +821,14 @@
       if (getToken()) renderLoggedIn(u, (window.STAW && window.STAW.ecoPoints) || 0);
     };
 
-    // Хук «Конструктора»: открыть/переключить экран входа (используется редактором).
+    // Хук «Конструктора»: открыть/закрыть/переключить экран входа. Команды шлёт
+    // editor.js по сообщению из консоли (кнопка «Экран входа»). Модалка открывается
+    // НА МЕСТЕ — ровно как на живом сайте (по центру), без отдельного экрана.
     window.MATA_AUTH = {
       open: function (mode) { openModal(mode); },
-      setMode: setMode,
-      editor: openAuthEditor,
+      close: closeModal,
+      setMode: function (mode) { openModal(mode); },
     };
-    // В режиме редактора — сразу показать экран входа целиком для правки.
-    if (EDIT_MODE) {
-      openAuthEditor();
-      // Контент грузится асинхронно (content.js) — повторно применить переопределения,
-      // когда он приедет, чтобы уже сохранённые тексты появились в редакторе.
-      window.addEventListener("staw-content-applied", function () {
-        if (modal) applyAuthOverrides();
-      });
-    }
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
