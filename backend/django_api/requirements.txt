@@ -1,5 +1,8 @@
-Django>=5.0,<5.2
+# 5.2 — LTS. Верхняя граница <5.2 держала нас на 5.1.x, куда исправления уязвимостей
+# уже не приезжают: pip-audit нашёл 6 CVE, закрытых в 5.2.16 (D-38).
+Django>=5.2.16,<6.0
 djangorestframework>=3.15
+sqlparse>=0.6.0  # транзитивная (Django); 4 CVE закрыты в 0.6.0 — фиксируем явно
 psycopg[binary]>=3.1
 django-cors-headers>=4.3
 gunicorn>=22.0
