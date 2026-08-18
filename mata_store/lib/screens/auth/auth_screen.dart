@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../data/api/api_client.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/otp_verify_boxes.dart';
 import '../../widgets/remote_text.dart';
 import '../profile/legal_documents_screen.dart';
 import 'forgot_password_screen.dart';
@@ -21,12 +22,11 @@ class _AuthScreenState extends State<AuthScreen> {
   late bool _isLogin;
   String? _error;
 
-  final _nameCtrl    = TextEditingController();
-  final _emailCtrl   = TextEditingController();
-  final _passCtrl    = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  final _phoneCtrl   = TextEditingController();
-  final _codeCtrl    = TextEditingController(text: '1234');
+  final _phoneCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -41,7 +41,6 @@ class _AuthScreenState extends State<AuthScreen> {
     _passCtrl.dispose();
     _confirmCtrl.dispose();
     _phoneCtrl.dispose();
-    _codeCtrl.dispose();
     super.dispose();
   }
 
@@ -75,21 +74,37 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  Future<void> _submitPhone() async {
+  /// Проверка кода входа по телефону; вызывается виджетом OtpVerifyBoxes
+  /// (хореография «OTP V5» играет, пока идёт запрос).
+  Future<bool> _verifyPhoneCode(String code) async {
+    if (mounted) setState(() => _error = null);
     final auth = context.read<AuthProvider>();
-    final err = await auth.loginByPhone(_phoneCtrl.text, _codeCtrl.text);
-    if (!mounted) return;
+    final err = await auth.loginByPhone(_phoneCtrl.text, code);
     if (err != null) {
-      setState(() => _error = err);
-    } else {
-      await _afterLogin();
+      _phoneError = err;
+      return false;
     }
+    return true;
+  }
+
+  String? _phoneError;
+
+  void _onPhoneFailed() {
+    if (!mounted) return;
+    setState(() => _error = _phoneError ?? 'Не удалось войти');
+  }
+
+  Future<void> _onPhoneVerified() async {
+    if (!mounted) return;
+    await _afterLogin();
   }
 
   /// После успешного входа: если есть непринятые обязательные документы —
   /// показываем гейт согласия вместо закрытия экрана. Иначе — закрываем вход.
   Future<void> _afterLogin() async {
-    final hasPending = await hasPendingRequiredLegal(context.read<ApiClient?>());
+    final hasPending = await hasPendingRequiredLegal(
+      context.read<ApiClient?>(),
+    );
     if (!mounted) return;
     if (hasPending) {
       Navigator.of(context).pushReplacement(
@@ -150,10 +165,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         emailCtrl: _emailCtrl,
                         passCtrl: _passCtrl,
                         phoneCtrl: _phoneCtrl,
-                        codeCtrl: _codeCtrl,
                         error: _error,
                         onSubmit: _submit,
-                        onPhoneSubmit: _submitPhone,
+                        onPhoneVerify: _verifyPhoneCode,
+                        onPhoneVerified: _onPhoneVerified,
+                        onPhoneFailed: _onPhoneFailed,
                         onForgotPassword: _openForgotPassword,
                       )
                     : _RegisterForm(
@@ -204,7 +220,11 @@ class _BlackHeader extends StatelessWidget {
                   onTap: onClose,
                   child: Container(
                     padding: const EdgeInsets.all(6),
-                    child: const Icon(Icons.close, color: Colors.white, size: 22),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                 ),
               ),
@@ -253,9 +273,19 @@ class _TabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _Tab(labelKey: 'app.auth.tabLogin', label: 'ВХОД', isActive: isLogin, onTap: () => onToggle(true)),
+        _Tab(
+          labelKey: 'app.auth.tabLogin',
+          label: 'ВХОД',
+          isActive: isLogin,
+          onTap: () => onToggle(true),
+        ),
         const SizedBox(width: 28),
-        _Tab(labelKey: 'app.auth.tabRegister', label: 'РЕГИСТРАЦИЯ', isActive: !isLogin, onTap: () => onToggle(false)),
+        _Tab(
+          labelKey: 'app.auth.tabRegister',
+          label: 'РЕГИСТРАЦИЯ',
+          isActive: !isLogin,
+          onTap: () => onToggle(false),
+        ),
       ],
     );
   }
@@ -311,10 +341,11 @@ class _LoginForm extends StatefulWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passCtrl;
   final TextEditingController phoneCtrl;
-  final TextEditingController codeCtrl;
   final String? error;
   final VoidCallback onSubmit;
-  final VoidCallback onPhoneSubmit;
+  final Future<bool> Function(String code) onPhoneVerify;
+  final VoidCallback onPhoneVerified;
+  final VoidCallback onPhoneFailed;
   final VoidCallback onForgotPassword;
 
   const _LoginForm({
@@ -322,10 +353,11 @@ class _LoginForm extends StatefulWidget {
     required this.emailCtrl,
     required this.passCtrl,
     required this.phoneCtrl,
-    required this.codeCtrl,
     required this.error,
     required this.onSubmit,
-    required this.onPhoneSubmit,
+    required this.onPhoneVerify,
+    required this.onPhoneVerified,
+    required this.onPhoneFailed,
     required this.onForgotPassword,
   });
 
@@ -360,7 +392,9 @@ class _LoginFormState extends State<_LoginForm> {
           suffix: GestureDetector(
             onTap: () => setState(() => _obscure = !_obscure),
             child: Icon(
-              _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              _obscure
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
               size: 20,
               color: AppColors.grey400,
             ),
@@ -419,19 +453,25 @@ class _LoginFormState extends State<_LoginForm> {
           keyboardType: TextInputType.phone,
           icon: Icons.phone_outlined,
         ),
-        const SizedBox(height: 12),
-        _InputField(
-          controller: widget.codeCtrl,
-          label: '\u041a\u043e\u0434',
-          hint: '1234',
-          keyboardType: TextInputType.number,
-          icon: Icons.sms_outlined,
+        const SizedBox(height: 16),
+        // \u0412\u0432\u043e\u0434 \u043a\u043e\u0434\u0430 \u2014 \u0445\u043e\u0440\u0435\u043e\u0433\u0440\u0430\u0444\u0438\u044f \u00abOTP V5\u00bb: \u043f\u0440\u0438 \u0432\u0432\u043e\u0434\u0435 4-\u0439 \u0446\u0438\u0444\u0440\u044b \u043a\u043e\u0434 \u0443\u0445\u043e\u0434\u0438\u0442 \u043d\u0430
+        // \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0443 \u0441\u0430\u043c, \u043a\u043d\u043e\u043f\u043a\u0430 \u043d\u0435 \u043d\u0443\u0436\u043d\u0430 (\u0441\u0442\u0430\u043d\u0434\u0430\u0440\u0442 \u0430\u043d\u0438\u043c\u0430\u0446\u0438\u0439 \u044d\u043a\u043e\u0441\u0438\u0441\u0442\u0435\u043c\u044b \u041c\u0410\u0422\u0410).
+        OtpVerifyBoxes(
+          hasError: widget.error != null,
+          onSubmit: widget.onPhoneVerify,
+          onSuccess: widget.onPhoneVerified,
+          onFailed: widget.onPhoneFailed,
         ),
-        const SizedBox(height: 14),
-        _SubmitButton(
-          labelKey: 'app.auth.phoneBtn',
-          label: '\u0412\u041e\u0419\u0422\u0418 \u041f\u041e \u0422\u0415\u041b\u0415\u0424\u041e\u041d\u0423',
-          onTap: widget.onPhoneSubmit,
+        const SizedBox(height: 6),
+        Center(
+          child: Text(
+            '\u0422\u0435\u0441\u0442\u043e\u0432\u044b\u0439 \u043a\u043e\u0434: 1234',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.grey400,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ),
         const SizedBox(height: 8),
       ],
@@ -501,7 +541,9 @@ class _RegisterFormState extends State<_RegisterForm> {
           suffix: GestureDetector(
             onTap: () => setState(() => _obscure = !_obscure),
             child: Icon(
-              _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              _obscure
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
               size: 20,
               color: AppColors.grey400,
             ),
@@ -547,11 +589,7 @@ class _RegisterFormState extends State<_RegisterForm> {
           'app.auth.consent',
           'Нажимая кнопку, вы соглашаетесь с условиями использования и политикой конфиденциальности',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.grey400,
-            height: 1.5,
-          ),
+          style: TextStyle(fontSize: 11, color: AppColors.grey400, height: 1.5),
         ).animate().fadeIn(duration: 300.ms, delay: 320.ms),
         const SizedBox(height: 6),
         Center(
