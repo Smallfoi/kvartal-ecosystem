@@ -14,7 +14,7 @@ KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"
 mkdir -p "$DIR"
 
 TS=$(date +%Y%m%d_%H%M%S)
-OUT="$DIR/staw_${TS}.sql.gz"
+OUT="$DIR/mata_${TS}.sql.gz"
 
 echo "Бэкап БД '${POSTGRES_DB}' → $OUT"
 $COMPOSE exec -T db pg_dump -U "${POSTGRES_USER}" "${POSTGRES_DB}" | gzip > "$OUT"
@@ -51,4 +51,4 @@ else
 fi
 
 # Ротация ЛОКАЛЬНЫХ дампов старше KEEP_DAYS дней (в бакете — политика жизненного цикла).
-find "$DIR" -name 'staw_*.sql.gz' -mtime +"$KEEP_DAYS" -delete 2>/dev/null || true
+find "$DIR" -name 'mata_*.sql.gz' -mtime +"$KEEP_DAYS" -delete 2>/dev/null || true

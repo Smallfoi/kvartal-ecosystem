@@ -6,8 +6,8 @@
 код менять не нужно (кроме одного домена в сайте, см. ниже).
 
 Единственное, что нужно завести при деплое, — **домен(ы)**:
-- API, напр. `https://api.staw.ru` (база API = `https://api.staw.ru/v1`);
-- сайт, напр. `https://staw.ru`.
+- API, напр. `https://api.mata-store.ru` (база API = `https://api.mata-store.ru/v1`);
+- сайт, напр. `https://mata-store.ru`.
 
 ---
 
@@ -18,10 +18,10 @@
 
 **Готовый прод-стек** — `backend/docker-compose.prod.yml` (Django+gunicorn + PostGIS + Redis +
 Celery worker/beat + nginx+TLS).
-Шаблоны: `backend/.env.prod.example`, `backend/nginx/staw.conf.example`. Запуск:
+Шаблоны: `backend/.env.prod.example`, `backend/nginx/mata.conf.example`. Запуск:
 ```
 cd backend && cp .env.prod.example .env   # заполнить секреты!
-cp nginx/staw.conf.example nginx/staw.conf # подставить домен; certs/ — TLS
+cp nginx/mata.conf.example nginx/mata.conf # подставить домен; certs/ — TLS
 docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 web сам делает migrate → collectstatic → gunicorn (3 воркера); nginx форсит HTTPS, раздаёт /media, /static.
@@ -37,8 +37,8 @@ web сам делает migrate → collectstatic → gunicorn (3 воркера
 | `DJANGO_DEBUG` | `0` | выключить отладку |
 | `DJANGO_SECRET_KEY` | длинный случайный секрет | подпись Django |
 | `JWT_SECRET` | ДРУГОЙ длинный случайный секрет | подпись токенов (иначе любой подделает токен!) |
-| `DJANGO_ALLOWED_HOSTS` | `api.staw.ru` | какие хосты принимаем |
-| `DJANGO_CORS_ORIGINS` | `https://staw.ru,https://www.staw.ru` | каким источникам сайта можно ходить в API (со схемой) |
+| `DJANGO_ALLOWED_HOSTS` | `api.mata-store.ru` | какие хосты принимаем |
+| `DJANGO_CORS_ORIGINS` | `https://mata-store.ru,https://www.mata-store.ru` | каким источникам сайта можно ходить в API (со схемой) |
 | `POSTGRES_*` | прод-БД + сильный пароль | подключение к БД |
 
 - ⚠️ **Fail-fast:** при `DJANGO_DEBUG=0` приложение НЕ стартует, если `JWT_SECRET`/`DJANGO_SECRET_KEY`/пароль БД дефолтные или `ALLOWED_HOSTS=*` (`common/prodcheck.py`) — защита от запуска с публичным dev-секретом.
@@ -55,11 +55,11 @@ web сам делает migrate → collectstatic → gunicorn (3 воркера
 ```bash
 # SportStore
 flutter build apk --release --target-platform android-arm64 \
-  --dart-define=SPORT_STORE_API_BASE_URL=https://api.staw.ru/v1
+  --dart-define=SPORT_STORE_API_BASE_URL=https://api.mata-store.ru/v1
 
 # Квартал
 flutter build apk --release --target-platform android-arm64 \
-  --dart-define=KVARTAL_API_BASE_URL=https://api.staw.ru/v1
+  --dart-define=KVARTAL_API_BASE_URL=https://api.mata-store.ru/v1
 # (опц.) источник полигонов кварталов, если поднят отдельный zones-сервис:
 #   --dart-define=KVARTAL_ZONES_URL=https://.../api/zones
 ```
@@ -71,17 +71,17 @@ flutter build apk --release --target-platform android-arm64 \
 
 Раздавать по HTTPS. База API в `САЙТ МАТА/ecosystem.js`:
 - на `localhost`/`127.0.0.1` сам берёт dev (`127.0.0.1:8000/v1`);
-- на проде берёт `PROD_API` — **заменить `https://api.staw.ru/v1` на реальный домен**
+- на проде берёт `PROD_API` — **заменить `https://api.mata-store.ru/v1` на реальный домен**
   (или задать `window.STAW_API_BASE = "https://..."` в `<head>` до подключения `ecosystem.js`).
 
 ## 4. После
 
 - **ЮKassa:** в личном кабинете (Интеграция → HTTP-уведомления) указать вебхук
-  `https://api.staw.ru/v1/payments/webhook`, события `payment.succeeded` и
+  `https://api.mata-store.ru/v1/payments/webhook`, события `payment.succeeded` и
   `payment.canceled`. Без него оплаченные заказы останутся в «ожидает оплаты», а баллы
   за покупку не начислятся (они привязаны к подтверждению платежа, не к оформлению).
   Проверка: тестовый заказ на 1 ₽ → оплата → заказ «Оплачен» + баллы в истории.
-- Проверить `GET https://api.staw.ru/v1/health` → `{"status":"ok"}`.
+- Проверить `GET https://api.mata-store.ru/v1/health` → `{"status":"ok"}`.
 - Залогиниться на сайте/в приложениях, убедиться, что баллы общие.
 - Секреты (SECRET_KEY, пароль БД) — только в окружении прод-сервера, НЕ в репозитории (он публичный).
 
@@ -94,17 +94,17 @@ flutter build apk --release --target-platform android-arm64 \
 | Команда | Что делает |
 |---|---|
 | `make prod-deploy` | бэкап БД → сборка/миграции/collectstatic → smoke-тест (основной деплой/обновление) |
-| `make backup` | бэкап БД → `backups/staw_<дата>.sql.gz` + выгрузка в Object Storage (ротация 14 дней) |
+| `make backup` | бэкап БД → `backups/mata_<дата>.sql.gz` + выгрузка в Object Storage (ротация 14 дней) |
 | `make tls-issue` | выпустить TLS-сертификат Let's Encrypt (первый раз, nginx встанет на ~минуту) |
 | `make tls-renew` | обновить сертификат без простоя (в cron раз в неделю) |
-| `make restore FILE=backups/staw_….sql.gz` | восстановить БД из бэкапа (спросит подтверждение, сделает контрольный бэкап) |
+| `make restore FILE=backups/mata_….sql.gz` | восстановить БД из бэкапа (спросит подтверждение, сделает контрольный бэкап) |
 | `make smoke` | проверить health + каталог/баннеры изнутри web-контейнера |
 | `make prod-logs` | логи прод-web | 
 | `make prod-up` / `make prod-down` | поднять / остановить прод-стек |
 
 `make` без аргументов — список всех команд.
 
-**Первый деплой:** `cp .env.prod.example .env` → заполнить секреты → `cp nginx/staw.conf.example nginx/staw.conf` (домен+TLS) → `make prod-deploy`.
+**Первый деплой:** `cp .env.prod.example .env` → заполнить секреты → `cp nginx/mata.conf.example nginx/mata.conf` (домен+TLS) → `make prod-deploy`.
 
 **Обновление:** `git pull && make prod-deploy` (бэкап делается автоматически перед сборкой).
 

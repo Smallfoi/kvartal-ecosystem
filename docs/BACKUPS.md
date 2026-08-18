@@ -10,7 +10,7 @@
 ## Команды (из корня репо, Docker поднят)
 
 ```bash
-python scripts/backup_db.py backup          # создать дамп → backups/staw_<ts>.sql.gz
+python scripts/backup_db.py backup          # создать дамп → backups/mata_<ts>.sql.gz
 python scripts/backup_db.py verify          # дамп + пробное восстановление + сверка (§13)
 python scripts/backup_db.py restore <файл>              # восстановить в основную БД (ПЕРЕЗАПИСЬ)
 python scripts/backup_db.py restore <файл> --db scratch # восстановить в другую БД

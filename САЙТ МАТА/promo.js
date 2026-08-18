@@ -9,7 +9,7 @@
 
   var host = location.hostname;
   var isDev = host === "localhost" || host === "127.0.0.1" || host === "";
-  var PROD_API = "https://api.staw.ru/v1";
+  var PROD_API = "https://api.mata-store.ru/v1";
   var API =
     (typeof window !== "undefined" && window.STAW_API_BASE) ||
     (isDev ? "http://127.0.0.1:8000/v1" : PROD_API);
