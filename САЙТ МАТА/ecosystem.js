@@ -116,7 +116,38 @@
       + "border-radius:12px;background:#20252b;color:#fff;font:inherit;font-weight:700;cursor:pointer}"
       + ".eco-card .eco-primary[disabled]{opacity:.5;cursor:default}"
       + ".eco-err{color:#c0392b;font-size:13px;min-height:18px;margin:6px 0 0}"
-      + ".eco-card .eco-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;opacity:.5}";
+      + ".eco-card .eco-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;opacity:.5}"
+      // ── Ввод кода: хореография «OTP V5» (стандарт анимаций экосистемы) ──
+      + ".eco-otp{position:relative;height:196px;margin:10px 0 0;cursor:text}"
+      + ".eco-card input.eco-otp-input{position:absolute;left:50%;top:50%;width:1px;height:1px;"
+      + "opacity:0;border:0;padding:0;margin:0;background:transparent}"
+      + ".eco-otp-cell{position:absolute;left:50%;top:50%;width:52px;height:62px;"
+      + "margin:-31px 0 0 -26px;border-radius:14px;background:#fff;border:1px solid #d9d6cd;"
+      + "display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;"
+      + "color:#20252b;will-change:transform;transition:border-color .25s,box-shadow .25s,background .3s}"
+      + ".eco-otp-cell.has{border-color:#20252b;border-width:2px}"
+      + ".eco-otp-cell.active{border-color:#20252b;border-width:2px;box-shadow:0 0 14px rgba(32,37,43,.18)}"
+      + ".eco-otp-cell.err{border-color:#c0392b;color:#c0392b}"
+      + ".eco-otp-cell.ok{border-color:#16a34a;background:#eefaf1;box-shadow:0 0 22px rgba(22,163,74,.35)}"
+      + ".eco-otp-caret{width:2px;height:24px;background:#20252b;animation:ecoBlink 1s steps(1) infinite}"
+      + "@keyframes ecoBlink{50%{opacity:0}}"
+      + ".eco-otp-ring{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;"
+      + "border-radius:50%;border:1.5px solid #16a34a;pointer-events:none;"
+      + "animation:ecoRipple 1.2s cubic-bezier(.22,1,.36,1) forwards}"
+      + ".eco-otp-ring.d2{animation-delay:.22s;opacity:0}"
+      + "@keyframes ecoRipple{0%{transform:scale(.55);opacity:.9}100%{transform:scale(3.2);opacity:0}}"
+      + ".eco-otp-spark{position:absolute;left:50%;top:50%;width:4px;height:4px;border-radius:50%;"
+      + "background:#4ade80;opacity:0;animation:ecoFly .9s ease-out forwards;animation-delay:var(--d)}"
+      + "@keyframes ecoFly{0%{opacity:0;transform:rotate(var(--a)) translateX(18px) scale(.4)}"
+      + "35%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateX(84px) scale(.2)}}"
+      + ".eco-otp-check{stroke-dasharray:30;stroke-dashoffset:30;"
+      + "animation:ecoDraw .45s .1s cubic-bezier(.65,0,.35,1) forwards}"
+      + "@keyframes ecoDraw{to{stroke-dashoffset:0}}"
+      + ".eco-otp.shake{animation:ecoShake .32s ease}"
+      + "@keyframes ecoShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}"
+      + "30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}"
+      + "@media(prefers-reduced-motion:reduce){.eco-otp-ring,.eco-otp-spark{animation:none;opacity:0}"
+      + ".eco-otp.shake{animation:none}.eco-otp-check{animation:none;stroke-dashoffset:0}}";
     var s = document.createElement("style");
     s.setAttribute("data-eco-styles", "");
     s.textContent = css;
@@ -226,7 +257,9 @@
       '<p class="eco-sub">Единый аккаунт экосистемы: баллы из «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
       '<input data-eco-name type="text" placeholder="Имя и фамилия" autocomplete="name" hidden />' +
       '<input data-eco-phone type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
-      '<input data-eco-code type="text" inputmode="numeric" placeholder="Код из SMS (dev: 1234)" autocomplete="one-time-code" />' +
+      '<div class="eco-otp" data-eco-otp>' +
+      '<input data-eco-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" />' +
+      "</div>" +
       '<p class="eco-err" data-eco-err></p>' +
       '<button class="eco-primary" type="button" data-eco-submit>Войти</button>' +
       "</div>";
@@ -239,6 +272,7 @@
     modal.querySelectorAll("[data-eco-mode]").forEach(function (b) {
       b.addEventListener("click", function () { setMode(b.getAttribute("data-eco-mode")); });
     });
+    setupOtp();
   }
 
   function openModal(mode) {
@@ -247,32 +281,265 @@
     modal.classList.add("is-open");
     modal.querySelector(ecoMode === "register" ? "[data-eco-name]" : "[data-eco-phone]").focus();
   }
-  function closeModal() { if (modal) modal.classList.remove("is-open"); }
+  function closeModal() {
+    if (!modal) return;
+    modal.classList.remove("is-open");
+    // Закрыли на середине хореографии — остановить и вернуть строку.
+    if (otpBusy || otpRaf) otpReset();
+  }
+
+  // ── Ввод кода: «OTP V5» — строка → круг → жёсткое вращение → схлопывание ──
+  // Стандарт анимаций верификации экосистемы МАТА (директива владельца).
+  // Движение пишется прямо в style.transform из rAF — без перерисовок DOM.
+  var OTP_LEN = 4, OTP_GAP = 66, OTP_R = 56, OTP_TURNS = 2;
+  var otpCells = [], otpInput = null, otpStage = null;
+  var otpPhase = "input"; // input|explode|spin|spinwait|collapse|reverse
+  var otpT0 = 0, otpExtra = 0, otpRaf = 0, otpBusy = false;
+  var otpResult = null; // null=ждём, {ok:true,data}|{ok:false,msg}
+
+  function otpReduced() {
+    return window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+  function easeInBack(t) { return 2.2 * t * t * t - 1.2 * t * t; }
+
+  function setupOtp() {
+    otpStage = modal.querySelector("[data-eco-otp]");
+    otpInput = modal.querySelector("[data-eco-code]");
+    otpCells = [];
+    for (var i = 0; i < OTP_LEN; i++) {
+      var c = document.createElement("div");
+      c.className = "eco-otp-cell";
+      otpStage.appendChild(c);
+      otpCells.push(c);
+    }
+    otpStage.addEventListener("click", function () {
+      if (!otpBusy) otpInput.focus();
+    });
+    otpInput.addEventListener("input", function () {
+      otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, OTP_LEN);
+      renderOtp();
+      if (otpInput.value.length === OTP_LEN && !otpBusy) submitAuth();
+    });
+    otpInput.addEventListener("focus", function () { renderOtp(); });
+    otpInput.addEventListener("blur", function () { renderOtp(); });
+    otpLayoutRow();
+    renderOtp();
+  }
+
+  // Статичная строка (когда rAF не крутится).
+  function otpLayoutRow() {
+    for (var i = 0; i < OTP_LEN; i++) {
+      var x = (i - (OTP_LEN - 1) / 2) * OTP_GAP;
+      otpCells[i].style.transform = "translate(" + x + "px,0)";
+      otpCells[i].style.opacity = 1;
+    }
+  }
+
+  // Цифры/каретка/классы ячеек.
+  function renderOtp(errFlag) {
+    var v = otpInput ? otpInput.value : "";
+    var focused = otpInput && document.activeElement === otpInput;
+    for (var i = 0; i < OTP_LEN; i++) {
+      var cell = otpCells[i];
+      var ch = i < v.length ? v.charAt(i) : "";
+      var isCur = !otpBusy && focused && i === v.length;
+      cell.textContent = ch;
+      if (isCur && !ch) {
+        var caret = document.createElement("span");
+        caret.className = "eco-otp-caret";
+        cell.appendChild(caret);
+      }
+      cell.classList.toggle("has", !!ch);
+      cell.classList.toggle("active", isCur);
+      cell.classList.toggle("err", !!errFlag);
+      cell.classList.remove("ok");
+    }
+  }
+
+  // Один кадр хореографии: позиции всех ячеек из текущей фазы.
+  function otpFrame(now) {
+    var el = now - otpT0;
+    var p = 1, spin = 0, shrink = 0;
+
+    if (otpPhase === "explode") {
+      p = easeOutCubic(Math.min(el / 380, 1));
+      if (el >= 380) { otpPhase = "spin"; otpT0 = now; }
+    } else if (otpPhase === "spin") {
+      spin = easeInOutCubic(Math.min(el / 1250, 1)) * 360 * OTP_TURNS;
+      if (el >= 1250) {
+        otpT0 = now;
+        otpPhase = otpResult === null
+          ? "spinwait"
+          : otpResult.ok ? "collapse" : "reverse";
+      }
+    } else if (otpPhase === "spinwait") {
+      // Сервер ещё думает: докручиваем по обороту (вращение = «загрузка»).
+      spin = 360 * OTP_TURNS + otpExtra +
+        easeInOutCubic(Math.min(el / 800, 1)) * 360;
+      if (el >= 800) {
+        otpExtra += 360;
+        otpT0 = now;
+        if (otpResult !== null) {
+          otpPhase = otpResult.ok ? "collapse" : "reverse";
+        }
+      }
+    } else if (otpPhase === "collapse") {
+      var t = Math.min(el / 420, 1);
+      spin = 360 * OTP_TURNS + otpExtra + easeOutCubic(t) * 40;
+      shrink = easeInBack(t);
+      if (el >= 420) { otpFinishSuccess(); return; }
+    } else if (otpPhase === "reverse") {
+      // Ошибка: быстрая обратная раскрутка в строку.
+      var r = 1 - easeInOutCubic(Math.min(el / 420, 1));
+      p = r;
+      spin = (360 * OTP_TURNS + otpExtra) * r;
+      if (el >= 420) { otpFinishError(); return; }
+    }
+
+    for (var i = 0; i < OTP_LEN; i++) {
+      var rowX = (i - (OTP_LEN - 1) / 2) * OTP_GAP;
+      var a = ((-90 + i * (360 / OTP_LEN) + spin) * Math.PI) / 180;
+      var x = (rowX + (Math.cos(a) * OTP_R - rowX) * p) * (1 - shrink);
+      var y = Math.sin(a) * OTP_R * p * (1 - shrink);
+      var rot = spin * p;
+      var sc = 1 - shrink * 0.12;
+      var op = shrink > 0.75 && i !== 0 ? 1 - (shrink - 0.75) / 0.25 : 1;
+      otpCells[i].style.transform =
+        "translate(" + x.toFixed(2) + "px," + y.toFixed(2) + "px)" +
+        " rotate(" + rot.toFixed(2) + "deg) scale(" + sc.toFixed(3) + ")";
+      otpCells[i].style.opacity = op;
+    }
+    otpRaf = requestAnimationFrame(otpFrame);
+  }
+
+  function otpFinishSuccess() {
+    otpRaf = 0;
+    // Схлопнуто: остаётся первая ячейка — зелёная, с прорисовкой галочки.
+    for (var i = 1; i < OTP_LEN; i++) otpCells[i].style.opacity = 0;
+    var c0 = otpCells[0];
+    c0.style.transform = "translate(0,0) scale(.92)";
+    c0.classList.remove("err", "active", "has");
+    c0.classList.add("ok");
+    c0.innerHTML =
+      '<svg viewBox="0 0 24 24" width="26" height="26">' +
+      '<path class="eco-otp-check" d="M5 12.5l4.5 4.5L19 7.5" fill="none" ' +
+      'stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    for (var r = 0; r < 2; r++) {
+      var ring = document.createElement("div");
+      ring.className = "eco-otp-ring" + (r ? " d2" : "");
+      otpStage.appendChild(ring);
+    }
+    for (var s = 0; s < 6; s++) {
+      var sp = document.createElement("span");
+      sp.className = "eco-otp-spark";
+      sp.style.setProperty("--a", (s * 60 + 20) + "deg");
+      sp.style.setProperty("--d", (s * 60) + "ms");
+      otpStage.appendChild(sp);
+    }
+    var title = modal.querySelector("[data-eco-title]");
+    if (title) title.textContent = "Готово! Вы вошли";
+    setTimeout(function () {
+      if (!otpResult) return; // сброшено (модалку закрыли раньше)
+      var data = otpResult.data;
+      var name = modal.querySelector("[data-eco-name]").value.trim();
+      var user = (data && data.user) || {};
+      if (ecoMode === "register" && name) user = Object.assign({}, user, { name: name });
+      if (data) setSession(data.token, user);
+      closeModal();
+      refresh();
+      otpReset();
+    }, 1200);
+  }
+
+  function otpFinishError() {
+    otpRaf = 0;
+    otpBusy = false;
+    otpLayoutRow();
+    otpInput.value = "";
+    renderOtp(true);
+    otpStage.classList.add("shake");
+    setTimeout(function () { otpStage.classList.remove("shake"); }, 360);
+    var errEl = modal.querySelector("[data-eco-err]");
+    errEl.textContent = (otpResult && otpResult.msg) || "Не удалось войти";
+    var btn = modal.querySelector("[data-eco-submit]");
+    btn.disabled = false;
+    otpResult = null;
+    otpExtra = 0;
+    otpInput.focus();
+  }
+
+  function otpReset() {
+    if (otpRaf) { cancelAnimationFrame(otpRaf); otpRaf = 0; }
+    otpBusy = false;
+    otpResult = null;
+    otpExtra = 0;
+    otpPhase = "input";
+    otpInput.value = "";
+    // убрать кольца/искры финала
+    var fx = otpStage.querySelectorAll(".eco-otp-ring,.eco-otp-spark");
+    for (var i = 0; i < fx.length; i++) fx[i].parentNode.removeChild(fx[i]);
+    otpLayoutRow();
+    renderOtp();
+    var btn = modal.querySelector("[data-eco-submit]");
+    if (btn) btn.disabled = false;
+  }
 
   function submitAuth() {
+    if (otpBusy) return;
     var name = modal.querySelector("[data-eco-name]").value.trim();
     var phone = modal.querySelector("[data-eco-phone]").value.trim();
-    var code = modal.querySelector("[data-eco-code]").value.trim();
+    var code = otpInput.value.trim();
     var errEl = modal.querySelector("[data-eco-err]");
     var btn = modal.querySelector("[data-eco-submit]");
     errEl.textContent = "";
     if (ecoMode === "register" && !name) { errEl.textContent = "Введите имя"; return; }
     if (!phone) { errEl.textContent = "Введите телефон"; return; }
-    if (!code) { errEl.textContent = "Введите код (dev: 1234)"; return; }
+    if (code.length < OTP_LEN) { errEl.textContent = "Введите код (dev: 1234)"; return; }
+
+    otpBusy = true;
+    otpResult = null;
+    otpExtra = 0;
     btn.disabled = true;
-    btn.textContent = "…";
-    // SSO по телефону: verify создаёт аккаунт при первом входе. В режиме
-    // регистрации дополнительно сохраняем имя в профиль.
+    otpInput.blur();
+    renderOtp();
+
+    // SSO по телефону: verify создаёт аккаунт при первом входе; запрос идёт
+    // ПАРАЛЛЕЛЬНО хореографии — вращение и есть индикатор загрузки.
     api("/auth/phone/verify", { method: "POST", body: { phone: phone, code: code } })
-      .then(function (data) {
-        var user = data.user || {};
-        if (ecoMode === "register" && name) user = Object.assign({}, user, { name: name });
-        setSession(data.token, user);
-        closeModal();
-        refresh();
+      .then(function (data) { otpResult = { ok: true, data: data }; })
+      .catch(function (e) {
+        otpResult = { ok: false, msg: e.message || "Не удалось" };
       })
-      .catch(function (e) { errEl.textContent = e.message || "Не удалось"; })
-      .then(function () { btn.disabled = false; setMode(ecoMode); });
+      .then(function () {
+        // reduced motion / фаза ожидания сама заметит результат; но если
+        // ошибка пришла до конца spin — дадим reverse стартовать на границе фаз.
+        if (otpResult && !otpResult.ok &&
+            (otpPhase === "spinwait" || otpPhase === "spin")) {
+          // ничего: фазовая машина проверит otpResult на границе
+        }
+      });
+
+    if (otpReduced()) {
+      // Без движения: просто ждём результат и мгновенно показываем состояние.
+      var wait = setInterval(function () {
+        if (otpResult === null) return;
+        clearInterval(wait);
+        if (otpResult.ok) { otpFinishSuccess(); }
+        else { otpFinishError(); }
+      }, 60);
+      return;
+    }
+
+    setTimeout(function () {
+      otpPhase = "explode";
+      otpT0 = performance.now();
+      otpRaf = requestAnimationFrame(otpFrame);
+    }, 260);
   }
 
   // Показ/скрытие элементов по состоянию входа (CTA «Войти» прячем в аккаунте).
