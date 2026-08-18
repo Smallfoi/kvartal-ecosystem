@@ -18,6 +18,9 @@
   // На живом сайте (даже с ?edit=1 напрямую) редактор не включается — UI правки не виден посетителям.
   if (params.get("edit") !== "1" || window.parent === window) return;
   var PLATFORM = params.get("platform") === "app" ? "app" : "site";
+  // Origin «Конструктора» он передаёт сам в адресе фрейма. Разговариваем только с ним:
+  // поле source внутри сообщения подделывается тривиально, e.origin — нет.
+  var CONSOLE_ORIGIN = params.get("console") || location.origin;
 
   var css = document.createElement("style");
   css.textContent =
@@ -62,7 +65,7 @@
   document.documentElement.appendChild(css);
   document.documentElement.classList.add("staw-edit");
 
-  function send(msg) { msg.source = "staw-editor"; if (window.parent !== window) window.parent.postMessage(msg, "*"); }
+  function send(msg) { msg.source = "staw-editor"; if (window.parent !== window) window.parent.postMessage(msg, CONSOLE_ORIGIN); }
   function draft(key, value) { send({ type: "draftContent", key: key, value: value }); }
   function safeId(s) { return typeof s === "string" && /^[\w.-]+$/.test(s); }
   // rgb(a)(...) → #rrggbb (для стартового значения пикера цвета в конструкторе)
@@ -436,6 +439,7 @@
   }
 
   window.addEventListener("message", function (e) {
+    if (e.origin !== CONSOLE_ORIGIN) return;   // команды принимаем только от своего конструктора
     var d = e.data || {};
     if (d.source !== "staw-console") return;
     if (d.type === "reload") { location.reload(); return; }
