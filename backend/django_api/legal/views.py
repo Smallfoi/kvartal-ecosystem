@@ -3,7 +3,9 @@
 - POST /v1/legal/consent         — принять согласия {accept:[типы], source} или {type};
 - GET  /v1/legal/consents        — мои согласия (аудит), Bearer;
 - POST /v1/legal/consent/revoke  — отозвать согласие {type}, Bearer (для необязательных)."""
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
+
+from common.throttling import PUBLIC_READ
 from rest_framework.response import Response
 from django.utils import timezone
 
@@ -13,6 +15,7 @@ from .models import LegalDocument, UserConsent, record_consent
 
 
 @api_view(["GET"])
+@throttle_classes(PUBLIC_READ)
 def documents(request):
     """Текущие опубликованные документы. Доступно без токена (нужно на регистрации);
     при наличии Bearer добавляем поле accepted по каждому документу."""

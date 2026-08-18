@@ -188,3 +188,58 @@ class LegalGateTests(TestCase):
         gate = legal_gate()
         self.assertEqual(gate["missing"], [])
         self.assertTrue(gate["ok"])
+
+
+class ThrottleScopeTests(TestCase):
+    """Лимит зависит от назначения эндпоинта (D-36): витринное чтение щедрое,
+    вход и запись — без послаблений."""
+
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()  # счётчики лимитов живут в кэше — иначе тесты штрафуют друг друга
+
+    def _drf_request(self, method, path="/v1/products"):
+        from rest_framework.request import Request
+        from rest_framework.test import APIRequestFactory
+
+        return Request(getattr(APIRequestFactory(), method.lower())(path))
+
+    def test_catalog_read_survives_burst_that_old_limit_would_block(self):
+        """150 анонимных чтений каталога подряд — ни одного 429.
+
+        Прежний общий лимит для анонимных (120/мин) резал витрину: за одним IP
+        оператора сидят сотни абонентов, а просмотр каталога — 10–20 запросов.
+        """
+        codes = {self.client.get("/v1/products").status_code for _ in range(150)}
+        self.assertEqual(codes, {200})
+
+    def test_login_still_strictly_throttled(self):
+        """Вход остаётся под жёстким лимитом 20/мин — послабление витрины его не касается."""
+        import json
+
+        seen = set()
+        for i in range(25):
+            r = self.client.post(
+                "/v1/auth/phone/verify",
+                data=json.dumps({"phone": f"+7999000{i:04d}", "code": "1234"}),
+                content_type="application/json",
+            )
+            seen.add(r.status_code)
+        self.assertIn(429, seen)
+
+    def test_public_scope_counts_reads_only(self):
+        """Запись на витринном URL (например, отзыв к товару) в щедрый scope не попадает."""
+        from common.throttling import PublicReadThrottle
+
+        t = PublicReadThrottle()
+        self.assertIsNotNone(t.get_cache_key(self._drf_request("get"), None))
+        self.assertIsNone(t.get_cache_key(self._drf_request("post"), None))
+
+    def test_write_throttles_skip_reads(self):
+        """И наоборот: обычные лимиты на смешанной вьюхе не считают чтение дважды."""
+        from common.throttling import WriteAnonIPRateThrottle
+
+        t = WriteAnonIPRateThrottle()
+        self.assertIsNone(t.get_cache_key(self._drf_request("get"), None))
+        self.assertIsNotNone(t.get_cache_key(self._drf_request("post"), None))
