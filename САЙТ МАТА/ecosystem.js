@@ -122,10 +122,20 @@
       + "width:calc(50% - var(--pad));border-radius:14px;overflow:hidden;z-index:5;"
       + "transform:translateX(0);transition:transform var(--dur) var(--ease)}"
       + ".eco-card--slider.isLogin .eco-cover{transform:translateX(100%)}"
-      + ".eco-photo{position:absolute;inset:0;background:linear-gradient(160deg,#2b3240,#171a22 55%,#0c0e13)}"
-      + ".eco-photo::after{content:'МАТА';position:absolute;left:50%;top:13%;transform:translateX(-50%);"
-      + "font-size:64px;font-weight:800;letter-spacing:10px;color:#fff;opacity:.07}"
-      + ".eco-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,12,10,.18),rgba(10,12,10,.42))}"
+      // Слой панели: !important держит геометрию, даже когда видео-фон Конструктора
+      // (staw-bg-on) пытается сделать элемент position:relative.
+      + ".eco-photo{position:absolute!important;inset:0!important;background:linear-gradient(160deg,#2b3240,#171a22 55%,#0c0e13);background-size:cover;background-position:center;pointer-events:none}"
+      + ".eco-photo--reg{opacity:1;transition:opacity var(--dur) var(--ease)}"
+      + ".eco-photo--login{opacity:0;transition:opacity var(--dur) var(--ease)}"
+      + ".eco-card--slider.isLogin .eco-photo--reg{opacity:0}"
+      + ".eco-card--slider.isLogin .eco-photo--login{opacity:1}"
+      // Кликабелен (для «🖼 Фон») только видимый слой — чтобы правился нужный экран.
+      + ".eco-card--slider:not(.isLogin) .eco-photo--reg{pointer-events:auto}"
+      + ".eco-card--slider.isLogin .eco-photo--login{pointer-events:auto}"
+      + ".eco-photo-wm{position:absolute;left:50%;top:13%;transform:translateX(-50%);"
+      + "font-size:64px;font-weight:800;letter-spacing:10px;color:#fff;opacity:.09;pointer-events:none;white-space:nowrap}"
+      + "html.staw-edit .eco-photo-wm{pointer-events:auto;cursor:pointer}"
+      + ".eco-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,12,10,.18),rgba(10,12,10,.42))}"
       + ".eco-side{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;"
       + "justify-content:center;padding:0 26px;text-align:center;color:#fff;"
       + "transition:transform var(--dur) var(--ease)}"
@@ -156,7 +166,7 @@
       + ".eco-card--slider.isLogin .eco-sideB{opacity:1}"
       + ".eco-side p{display:none}.eco-side h3{font-size:17px;margin:0 0 8px}"
       + ".eco-ghost{height:36px;padding:0 26px;font-size:11.5px}"
-      + ".eco-photo::after{font-size:40px;top:16%}}"
+      + ".eco-photo-wm{font-size:40px;top:16%}}"
       + "@media(prefers-reduced-motion:reduce){"
       + ".eco-cover,.eco-side,.eco-half{transition-duration:.01ms!important;transition-delay:0ms!important}}"
       + ".eco-card h3{margin:0 0 4px;font-size:20px}"
@@ -326,7 +336,12 @@
       // панель: тёмный бренд-фон вместо фото (утверждённых фото пока нет),
       // стороны A/B — параллакс ±200%
       '<div class="eco-cover">' +
-      '<div class="eco-photo"></div><div class="eco-shade"></div>' +
+      // Медиа-панель: два слоя (Регистрация/Вход) с кроссфейдом при переключении +
+      // редактируемая фоновая надпись. Каждый слой — data-edit-bg (фото/видео через «🖼 Фон»).
+      '<div class="eco-photo eco-photo--reg" data-edit-bg="auth.panelReg"></div>' +
+      '<div class="eco-photo eco-photo--login" data-edit-bg="auth.panelLogin"></div>' +
+      '<div class="eco-photo-wm" data-edit="auth.panelText">МАТА</div>' +
+      '<div class="eco-shade"></div>' +
       '<div class="eco-side eco-sideA">' +
       '<h3 data-edit="auth.sideAtitle">С возвращением!</h3>' +
       '<p data-edit="auth.sideAtext">Войди в единый аккаунт — баллы за бег и покупки уже ждут.</p>' +
@@ -379,6 +394,11 @@
       otpReg.trySubmit();
     });
     applyAuthOverrides(); // тексты/плейсхолдеры, заданные в «Конструкторе»
+    // Медиа панели (фото/видео Вход/Регистрация) — тоже из общего контента.
+    if (window.STAW_applyBg) {
+      window.STAW_applyBg("auth.panelReg");
+      window.STAW_applyBg("auth.panelLogin");
+    }
   }
 
   // Переопределения экрана входа из «Конструктора» (общий контент /site/content).
