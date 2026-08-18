@@ -27,8 +27,8 @@
     "html.staw-edit [data-sid],html.staw-edit .product-card{cursor:grab;outline:2px dashed transparent;outline-offset:3px;transition:outline-color .12s}" +
     "html.staw-edit [data-sid]:hover,html.staw-edit .product-card:hover{outline-color:#0a84ff}" +
     "html.staw-edit .staw-dragging{opacity:.4}" +
-    "html.staw-edit [data-edit],html.staw-edit [data-edit-img]{outline:2px dashed transparent;outline-offset:3px;cursor:pointer;transition:outline-color .12s}" +
-    "html.staw-edit [data-edit]:hover,html.staw-edit [data-edit-img]:hover{outline-color:#0a84ff}" +
+    "html.staw-edit [data-edit],html.staw-edit [data-edit-img],html.staw-edit [data-edit-ph]{outline:2px dashed transparent;outline-offset:3px;cursor:pointer;transition:outline-color .12s}" +
+    "html.staw-edit [data-edit]:hover,html.staw-edit [data-edit-img]:hover,html.staw-edit [data-edit-ph]:hover{outline-color:#0a84ff}" +
     "html.staw-edit [data-hideable]{position:relative}" +
     "html.staw-edit [data-extra]{outline:2px solid #22c55e !important;outline-offset:2px}" +
     "html.staw-edit .staw-cms-hidden{opacity:.32;filter:grayscale(1)}" +
@@ -178,6 +178,14 @@
     if (card) { e.preventDefault(); e.stopPropagation(); send({ type: "editProduct", id: card.getAttribute("data-id") }); return; }
     var img = e.target.closest("[data-edit-img]");
     if (img) { e.preventDefault(); e.stopPropagation(); sendEditImage(img); return; }
+    var ph = e.target.closest("[data-edit-ph]");
+    if (ph) {
+      // Поле ввода: правим его подсказку (placeholder), а не содержимое.
+      e.preventDefault(); e.stopPropagation();
+      send({ type: "editContent", key: ph.getAttribute("data-edit-ph"),
+        value: (ph.getAttribute("placeholder") || "").trim() });
+      return;
+    }
     var ed = e.target.closest("[data-edit]");
     if (ed) {
       e.preventDefault(); e.stopPropagation();
@@ -421,7 +429,10 @@
     if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", value); return; }
     if (key.indexOf("color.") === 0) { var ck = key.slice(6); if (safeId(ck)) applyColorLocal(ck, value); return; }
     if (!safeId(key)) return;
-    if (typeof value === "string") document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
+    if (typeof value === "string") {
+      document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
+      document.querySelectorAll('[data-edit-ph="' + key + '"]').forEach(function (el) { el.setAttribute("placeholder", value); });
+    }
   }
 
   function cardById(id) {
