@@ -10,6 +10,7 @@ from common.throttling import PUBLIC_READ
 from rest_framework.response import Response
 
 from accounts.models import Account
+from common.uploads import image_extension
 from common.security import user_id_from_request
 from orders.models import Order
 
@@ -240,15 +241,12 @@ def review_photo(request):
     if not uid:
         return Response({"detail": "Нет токена"}, status=401)
     f = request.FILES.get("image")
-    if not f:
-        return Response({"detail": "Нет файла"}, status=400)
-    if f.size > 5 * 1024 * 1024:
-        return Response({"detail": "Файл слишком большой (макс 5 МБ)"}, status=400)
-    if not (f.content_type or "").startswith("image/"):
-        return Response({"detail": "Нужен файл-изображение"}, status=400)
+    # Тип определяем по СОДЕРЖИМОМУ: имя файла и Content-Type присылает клиент (D-37).
+    ext, upload_error = image_extension(f)
+    if upload_error:
+        return Response({"detail": upload_error}, status=400)
     from django.core.files.storage import default_storage
 
-    ext = (f.name.rsplit(".", 1)[-1] if "." in f.name else "jpg").lower()[:5]
     saved = default_storage.save(
         f"uploads/reviews/{uid}_{secrets.token_hex(6)}.{ext}", f
     )

@@ -350,3 +350,70 @@ class BroadcastAdminTests(TestCase):
             "apply": "1", "title": "   ", "body": "x",
         }, follow=True)
         self.assertEqual(Notification.objects.count(), 0)  # пустой заголовок → ничего
+
+
+class PhoneIdentityTests(ApiTestCase):
+    """Телефон — идентификатор входа, менять его без подтверждения нельзя (D-37)."""
+    phone = "+79990009001"
+
+    def test_cannot_claim_someone_elses_phone(self):
+        """Классический перехват: присвоить своему аккаунту чужой номер, чтобы вход
+        владельца по SMS привёл в аккаунт атакующего."""
+        from accounts.models import Account
+
+        victim_phone = "+79990009002"
+        self.new_user(victim_phone)
+
+        r = self.api_patch("/v1/profile", {"phone": victim_phone})
+        self.assertEqual(r.status_code, 200)  # запрос не падает, но номер не меняется
+        self.assertEqual(Account.objects.get(id=self.uid).phone, self.phone)
+        self.assertEqual(Account.objects.filter(phone=victim_phone).count(), 1)
+
+    def test_first_fill_of_empty_phone_allowed(self):
+        """Первичное заполнение пустого поля — законный сценарий (вход по email)."""
+        from accounts.models import Account
+        from common.security import make_token
+
+        acc = Account.objects.create(id="u_nophone", email="nophone@test.local", phone=None)
+        r = self.api_patch("/v1/profile", {"phone": "+79990009003"}, token=make_token(acc.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(Account.objects.get(id=acc.id).phone, "+79990009003")
+
+    def test_first_fill_rejects_number_already_taken(self):
+        from accounts.models import Account
+        from common.security import make_token
+
+        acc = Account.objects.create(id="u_nophone2", email="nophone2@test.local", phone=None)
+        r = self.api_patch("/v1/profile", {"phone": self.phone}, token=make_token(acc.id))
+        self.assertEqual(r.status_code, 409)
+
+
+class UploadValidationTests(ApiTestCase):
+    """Тип файла — по содержимому, а не по имени и Content-Type (D-37)."""
+    phone = "+79990009004"
+
+    # Сигнатура PNG без экранирования, чтобы исходник теста оставался чистым текстом.
+    PNG_HEAD = bytes.fromhex("89504e470d0a1a0a")
+
+    def _upload(self, name, data, content_type):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        return self.client.post(
+            "/v1/profile/avatar",
+            {"image": SimpleUploadedFile(name, data, content_type=content_type)},
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    def test_html_disguised_as_png_rejected(self):
+        """Иначе файл лёг бы в media как .html и отдавался бы как страница — хранимый XSS."""
+        evil = "<html><script>alert(1)</script></html>".encode()
+        self.assertEqual(self._upload("evil.png", evil, "image/png").status_code, 400)
+
+    def test_real_png_accepted_regardless_of_name_and_type(self):
+        r = self._upload("whatever.txt", self.PNG_HEAD + bytes(64), "text/plain")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()["avatarPath"].endswith(".png"))
+
+    def test_oversized_rejected(self):
+        big = self.PNG_HEAD + bytes(6 * 1024 * 1024)
+        self.assertEqual(self._upload("big.png", big, "image/png").status_code, 400)

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from common.throttling import AuthEndpointThrottle
 
+from common.uploads import image_extension
 from common.security import (
     hash_password,
     make_token,
@@ -127,7 +128,15 @@ def update_profile(request):
             return Response({"detail": "Name cannot be empty"}, status=400)
         acc.name = name
     if d.get("phone") is not None:
-        acc.phone = normalize_phone(d.get("phone") or "")
+        # Телефон — это ЛОГИН: вход по SMS ищет аккаунт именно по нему, а поле не
+        # уникально. Смена без подтверждения = присвоить себе чужой номер и перехватить
+        # вход владельца (D-37). Меняем только первичное заполнение пустого поля;
+        # смена номера — через поддержку или отдельный проверенный сценарий.
+        new_phone = normalize_phone(d.get("phone") or "")
+        if not acc.phone and new_phone:
+            if Account.objects.filter(phone=new_phone).exclude(id=acc.id).exists():
+                return Response({"detail": "Этот номер уже занят"}, status=409)
+            acc.phone = new_phone
     if d.get("email") is not None:
         em = (d.get("email") or "").strip().lower()
         if em and "@" not in em:
@@ -165,17 +174,14 @@ def profile_avatar(request):
         acc.save(update_fields=["avatar_path"])
         return Response(acc.to_json())
     f = request.FILES.get("image")
-    if not f:
-        return Response({"detail": "Нет файла"}, status=400)
-    if f.size > 5 * 1024 * 1024:
-        return Response({"detail": "Файл слишком большой (макс 5 МБ)"}, status=400)
-    if not (f.content_type or "").startswith("image/"):
-        return Response({"detail": "Нужен файл-изображение"}, status=400)
+    # Тип определяем по СОДЕРЖИМОМУ: имя файла и Content-Type присылает клиент (D-37).
+    ext, upload_error = image_extension(f)
+    if upload_error:
+        return Response({"detail": upload_error}, status=400)
     import secrets
 
     from django.core.files.storage import default_storage
 
-    ext = (f.name.rsplit(".", 1)[-1] if "." in f.name else "jpg").lower()[:5]
     saved = default_storage.save(
         f"uploads/avatars/{uid}_{secrets.token_hex(4)}.{ext}", f
     )

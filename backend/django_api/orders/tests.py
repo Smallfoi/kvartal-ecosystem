@@ -247,3 +247,64 @@ class OrderCheckoutTests(ApiTestCase):
     def test_orders_require_auth(self):
         self.assertEqual(self.client.get("/v1/orders").status_code, 401)
         self.assertEqual(self.client.post("/v1/orders").status_code, 401)
+
+
+class OrderTotalIntegrityTests(ApiTestCase):
+    """Сумму заказа присылает клиент — сервер обязан сверить её с каталогом (D-37)."""
+    phone = "+79990002008"
+
+    def setUp(self):
+        super().setUp()
+        from catalog.models import Product
+
+        Product.objects.create(id="p-jacket", name="Куртка", category_id="wear", price=5000)
+        Product.objects.create(id="p-socks", name="Носки", category_id="wear", price=500)
+
+    def _order(self, oid, total, items):
+        return self.api_post("/v1/orders", {"id": oid, "total": total, "items": items})
+
+    def test_understated_total_rejected(self):
+        """Корзина на 5000 ₽ с заявленной суммой 1 ₽ — отказ, а не рубль за куртку."""
+        r = self._order("SS-T1", 1, [{"productId": "p-jacket", "quantity": 1}])
+        self.assertEqual(r.status_code, 400)
+        self.assertFalse(Order.objects.filter(order_id="SS-T1").exists())
+
+    def test_correct_total_accepted(self):
+        r = self._order("SS-T2", 5500, [
+            {"productId": "p-jacket", "quantity": 1},
+            {"productId": "p-socks", "quantity": 1},
+        ])
+        self.assertEqual(r.status_code, 200)
+
+    def test_total_above_goods_accepted_delivery_adds_up(self):
+        """Сверху к товарам идёт доставка — превышение суммы законно."""
+        self.assertEqual(
+            self._order("SS-T3", 5400, [{"productId": "p-jacket", "quantity": 1}]).status_code,
+            200,
+        )
+
+    def test_quantity_counted(self):
+        r = self._order("SS-T4", 5000, [{"productId": "p-jacket", "quantity": 3}])
+        self.assertEqual(r.status_code, 400)  # три куртки — это 15 000, а не 5 000
+
+    def test_redeemed_points_lower_the_minimum(self):
+        """Списанные баллы уменьшают порог — но по реестру, а не по словам клиента."""
+        from loyalty.models import add_txn
+
+        add_txn(self.uid, 2000, "run", "Баллы за бег")
+        add_txn(self.uid, -1000, "redeem", "Оплата баллами", "SS-T5")
+        r = self._order("SS-T5", 4000, [{"productId": "p-jacket", "quantity": 1}])
+        self.assertEqual(r.status_code, 200)
+
+    def test_claimed_points_do_not_lower_the_minimum(self):
+        """Заявить «списал 5000 баллов» без реального списания нельзя."""
+        r = self.api_post("/v1/orders", {
+            "id": "SS-T6", "total": 1, "pointsRedeemed": 5000,
+            "items": [{"productId": "p-jacket", "quantity": 1}],
+        })
+        self.assertEqual(r.status_code, 400)
+
+    def test_unknown_items_do_not_block_order(self):
+        """Товара нет в каталоге — сверять не с чем, заказ не блокируем."""
+        r = self._order("SS-T7", 100, [{"productId": "нет-такого", "quantity": 1}])
+        self.assertEqual(r.status_code, 200)
