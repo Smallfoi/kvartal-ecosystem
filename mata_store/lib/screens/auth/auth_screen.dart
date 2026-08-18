@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../data/api/api_client.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/brand_sweep.dart';
 import '../../widgets/otp_verify_boxes.dart';
 import '../../widgets/remote_text.dart';
 import '../profile/legal_documents_screen.dart';
@@ -45,31 +44,13 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  bool _sweeping = false;
-
-  /// Переключение Вход↔Регистрация шторкой-проездом (эталон Auth Slider):
-  /// чёрная панель с параллакс-текстом проезжает через экран, формы
-  /// меняются под полным покрытием. К «Регистрации» — слева направо,
-  /// ко «Входу» — справа налево (по расположению табов).
+  // Переключение табов — мягкий фейд (шторку-проезд владелец отклонил
+  // для этого перехода 2026-08-19).
   void _toggle(bool isLogin) {
-    if (isLogin == _isLogin || _sweeping) return;
-    _sweeping = true;
-    playBrandSweep(
-      context,
-      title: isLogin ? 'С ВОЗВРАЩЕНИЕМ!' : 'ВПЕРВЫЕ В МАТА?',
-      subtitle: isLogin
-          ? 'Войди в единый аккаунт экосистемы'
-          : 'Создай единый аккаунт — баллы за бег и покупки в одном месте',
-      leftToRight: !isLogin,
-      onCovered: () async {
-        if (mounted) {
-          setState(() {
-            _isLogin = isLogin;
-            _error = null;
-          });
-        }
-      },
-    ).whenComplete(() => _sweeping = false);
+    setState(() {
+      _isLogin = isLogin;
+      _error = null;
+    });
   }
 
   Future<void> _submit() async {
@@ -166,30 +147,43 @@ class _AuthScreenState extends State<AuthScreen> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-              // Формы меняются мгновенно — смена происходит под шторкой
-              // playBrandSweep при полном покрытии экрана (эталон Auth Slider).
-              child: _isLogin
-                  ? _LoginForm(
-                      key: const ValueKey('login'),
-                      emailCtrl: _emailCtrl,
-                      passCtrl: _passCtrl,
-                      phoneCtrl: _phoneCtrl,
-                      error: _error,
-                      onSubmit: _submit,
-                      onPhoneVerify: _verifyPhoneCode,
-                      onPhoneVerified: _onPhoneVerified,
-                      onPhoneFailed: _onPhoneFailed,
-                      onForgotPassword: _openForgotPassword,
-                    )
-                  : _RegisterForm(
-                      key: const ValueKey('register'),
-                      nameCtrl: _nameCtrl,
-                      emailCtrl: _emailCtrl,
-                      passCtrl: _passCtrl,
-                      confirmCtrl: _confirmCtrl,
-                      error: _error,
-                      onSubmit: _submit,
-                    ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, anim) => FadeTransition(
+                  opacity: anim,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.05),
+                      end: Offset.zero,
+                    ).animate(anim),
+                    child: child,
+                  ),
+                ),
+                child: _isLogin
+                    ? _LoginForm(
+                        key: const ValueKey('login'),
+                        emailCtrl: _emailCtrl,
+                        passCtrl: _passCtrl,
+                        phoneCtrl: _phoneCtrl,
+                        error: _error,
+                        onSubmit: _submit,
+                        onPhoneVerify: _verifyPhoneCode,
+                        onPhoneVerified: _onPhoneVerified,
+                        onPhoneFailed: _onPhoneFailed,
+                        onForgotPassword: _openForgotPassword,
+                      )
+                    : _RegisterForm(
+                        key: const ValueKey('register'),
+                        nameCtrl: _nameCtrl,
+                        emailCtrl: _emailCtrl,
+                        passCtrl: _passCtrl,
+                        confirmCtrl: _confirmCtrl,
+                        error: _error,
+                        onSubmit: _submit,
+                      ),
+              ),
             ),
           ),
         ],

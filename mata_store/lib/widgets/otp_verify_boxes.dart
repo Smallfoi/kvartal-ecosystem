@@ -285,6 +285,13 @@ class OtpVerifyBoxesState extends State<OtpVerifyBoxes>
                   alignment: Alignment.center,
                   clipBehavior: Clip.none,
                   children: List.generate(n, (i) {
+                    // Финал: как на сайте — первая ячейка СТРОГО РОВНО по
+                    // центру (translate(0,0) scale(.92), без доворота +40°,
+                    // иначе галочка стоит криво), остальные скрыты.
+                    if (_verified) {
+                      if (i != 0) return const SizedBox.shrink();
+                      return Transform.scale(scale: 0.92, child: _cell(0));
+                    }
                     final rowX = (i - (n - 1) / 2) * _gap;
                     final a = (-90 + i * (360 / n) + spin) * math.pi / 180;
                     final orbX = math.cos(a) * _radius;
