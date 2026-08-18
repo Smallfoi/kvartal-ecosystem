@@ -214,6 +214,10 @@
   var cfg = document.getElementById("merch-cfg");
   var SITE_URL = cfg.getAttribute("data-site-url");   // .../?preview=1&platform=site
   var APP_URL = cfg.getAttribute("data-app-url");
+  // Origin фреймов, с которыми конструктору можно разговаривать. Поле `source` внутри
+  // сообщения задаёт кто угодно — доверять можно только e.origin, его проставляет браузер.
+  function originOf(u) { try { return new URL(u, location.href).origin; } catch (e) { return ""; } }
+  var FRAME_ORIGIN = { site: originOf(SITE_URL), app: originOf(APP_URL) };
   var csrf = (document.querySelector("[name=csrfmiddlewaretoken]") || {}).value || "";
 
   var frame = document.getElementById("merch-frame");
@@ -246,7 +250,11 @@
   function loadProducts() {
     return api("./products?platform=" + platform).then(function (d) { products = d.products || []; });
   }
-  function frameSrc() { return platform === "app" ? (APP_URL + "?edit=1") : (SITE_URL + "&edit=1"); }
+  function frameSrc() {
+    // Передаём фрейму свой origin, чтобы он тоже отвечал только нам, а не всем подряд.
+    var c = "&console=" + encodeURIComponent(location.origin);
+    return platform === "app" ? (APP_URL + "?edit=1" + c) : (SITE_URL + "&edit=1" + c);
+  }
   function setFrame() {
     frame.src = frameSrc();
     if (platform === "app") {
@@ -274,7 +282,9 @@
   function reloadFrame() { frame.src = frameSrc(); }
   function tellFrame(msg) {
     msg.source = "staw-console";
-    if (frame.contentWindow) frame.contentWindow.postMessage(msg, "*");
+    // Адресно: "*" разослал бы содержимое правок любому, кто окажется во фрейме.
+    var target = FRAME_ORIGIN[platform === "app" ? "app" : "site"];
+    if (frame.contentWindow && target) frame.contentWindow.postMessage(msg, target);
   }
 
   function pendingCount() {
@@ -374,6 +384,9 @@
 
   // ── Мост: сообщения от editor.js (сайт) и от приложения (Flutter web) ──
   window.addEventListener("message", function (e) {
+    // Принимаем только от собственных фреймов (сайт/приложение). Без этой проверки
+    // командовать черновиком конструктора мог бы любой сторонний документ.
+    if (e.origin !== FRAME_ORIGIN.site && e.origin !== FRAME_ORIGIN.app) return;
     var d = e.data || {};
     // Приложение (Flutter) шлёт JSON-строкой; сайт — объектом.
     if (typeof d === "string") { try { d = JSON.parse(d); } catch (err) { return; } }
