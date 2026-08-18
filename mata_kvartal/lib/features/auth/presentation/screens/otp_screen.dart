@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../profile/data/legal_provider.dart';
 import '../../data/auth_provider.dart';
+import '../widgets/otp_verify_boxes.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key});
@@ -15,11 +15,11 @@ class OtpScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpScreenState extends ConsumerState<OtpScreen> {
-  final _controller = TextEditingController();
-  final _focus = FocusNode();
   int _secondsLeft = 60;
   Timer? _timer;
   String? _localError;
+  bool _resending = false;
+  bool _toConsent = false;
 
   @override
   void initState() {
@@ -46,46 +46,48 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   @override
   void dispose() {
-    _controller.dispose();
-    _focus.dispose();
     _timer?.cancel();
     super.dispose();
   }
 
-  Future<void> _verify() async {
-    setState(() => _localError = null);
-    final success = await ref
-        .read(authProvider.notifier)
-        .verifyCode(_controller.text);
-    if (success && mounted) {
-      // Есть ли непринятые обязательные документы? Если да — гейт согласия.
-      // Fail-open: любая ошибка проверки не должна запирать вход.
-      var toConsent = false;
-      final token = ref.read(authProvider).token;
-      if (token != null) {
-        try {
-          final docs = await fetchLegalDocs(token: token);
-          toConsent = pendingRequired(docs).isNotEmpty;
-        } catch (_) {
-          toConsent = false;
-        }
+  /// Проверка кода на сервере; вызывается виджетом OtpVerifyBoxes.
+  /// Пока играет разлёт+вращение, здесь успевает пройти verify и (при успехе)
+  /// проверка непринятых обязательных документов — гейт согласия.
+  Future<bool> _submit(String code) async {
+    if (mounted) setState(() => _localError = null);
+    final success = await ref.read(authProvider.notifier).verifyCode(code);
+    if (!success) return false;
+
+    // Fail-open: любая ошибка проверки документов не должна запирать вход.
+    _toConsent = false;
+    final token = ref.read(authProvider).token;
+    if (token != null) {
+      try {
+        final docs = await fetchLegalDocs(token: token);
+        _toConsent = pendingRequired(docs).isNotEmpty;
+      } catch (_) {
+        _toConsent = false;
       }
-      if (!mounted) return;
-      context.go(toConsent ? '/auth/consent' : '/map');
-      return;
     }
-    if (!success && mounted) {
-      setState(() {
-        _localError = ref.read(authProvider).error;
-        _controller.clear();
-      });
-      _focus.requestFocus();
-    }
+    return true;
+  }
+
+  void _onSuccess() {
+    if (!mounted) return;
+    context.go(_toConsent ? '/auth/consent' : '/map');
+  }
+
+  void _onFailed() {
+    if (!mounted) return;
+    setState(() => _localError = ref.read(authProvider).error);
   }
 
   Future<void> _resend() async {
+    setState(() => _resending = true);
     final phone = ref.read(authProvider).phone;
     await ref.read(authProvider.notifier).sendCode(phone);
+    if (!mounted) return;
+    setState(() => _resending = false);
     _startTimer();
   }
 
@@ -123,15 +125,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 48),
-              _OtpBoxes(
-                controller: _controller,
-                focus: _focus,
+              const SizedBox(height: 12),
+              OtpVerifyBoxes(
                 hasError: _localError != null,
-                onComplete: _verify,
+                onSubmit: _submit,
+                onSuccess: _onSuccess,
+                onFailed: _onFailed,
               ),
               if (_localError != null) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Center(
                   child: Text(
                     _localError!,
@@ -142,8 +144,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 32),
-              if (auth.isLoading)
+              const SizedBox(height: 16),
+              if (_resending)
                 const Center(
                   child: CircularProgressIndicator(
                     color: AppColors.electricBlue,
@@ -191,105 +193,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _OtpBoxes extends StatefulWidget {
-  final TextEditingController controller;
-  final FocusNode focus;
-  final bool hasError;
-  final VoidCallback onComplete;
-
-  const _OtpBoxes({
-    required this.controller,
-    required this.focus,
-    required this.hasError,
-    required this.onComplete,
-  });
-
-  @override
-  State<_OtpBoxes> createState() => _OtpBoxesState();
-}
-
-class _OtpBoxesState extends State<_OtpBoxes> {
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => widget.focus.requestFocus(),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Скрытый input
-          SizedBox(
-            width: 0,
-            height: 0,
-            child: TextField(
-              controller: widget.controller,
-              focusNode: widget.focus,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(4),
-              ],
-              autofocus: true,
-              onChanged: (v) {
-                setState(() {});
-                if (v.length == 4) widget.onComplete();
-              },
-            ),
-          ),
-          // Визуальные ячейки
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(4, (i) {
-              final char = i < widget.controller.text.length
-                  ? widget.controller.text[i]
-                  : null;
-              final isCurrent = i == widget.controller.text.length;
-
-              return Container(
-                width: 60,
-                height: 72,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.bgCard,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: widget.hasError
-                        ? AppColors.error
-                        : isCurrent
-                        ? AppColors.electricBlue
-                        : char != null
-                        ? AppColors.electricBlue.withValues(alpha: 0.4)
-                        : AppColors.bgElevated,
-                    width: (isCurrent || char != null) ? 2 : 1,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: char != null
-                    ? Text(
-                        char,
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          color: widget.hasError
-                              ? AppColors.error
-                              : AppColors.textPrimary,
-                        ),
-                      )
-                    : isCurrent
-                    ? Container(
-                        width: 2,
-                        height: 28,
-                        color: AppColors.electricBlue,
-                      )
-                    : null,
-              );
-            }),
-          ),
-        ],
       ),
     );
   }

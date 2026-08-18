@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -93,7 +93,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     restoreSession();
   }
 
-  static const _mockCode = '1234';
   static const _tokenPrefsKey = 'kvartal.auth.token.v1';
   static const _phonePrefsKey = 'kvartal.auth.phone.v1';
   static const _userIdPrefsKey = 'kvartal.auth.user_id.v1';
@@ -143,7 +142,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _secure.delete(key: _tokenSecureKey);
     } catch (_) {}
-    await prefs.remove(_tokenPrefsKey); // на случай оставшегося старого значения
+    await prefs.remove(
+      _tokenPrefsKey,
+    ); // на случай оставшегося старого значения
   }
 
   Future<void> restoreSession() async {
@@ -157,7 +158,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       name: prefs.getString(_userNamePrefsKey) ?? 'Бегун КВАРТАЛ',
       email: prefs.getString(_userEmailPrefsKey) ?? '',
       phone: phone.isEmpty ? null : phone,
-      city: _cleanProfileText(prefs.getString(_userCityPrefsKey), fallback: null),
+      city: _cleanProfileText(
+        prefs.getString(_userCityPrefsKey),
+        fallback: null,
+      ),
       avatarPath: prefs.getString(_userAvatarPrefsKey),
     );
 
@@ -175,16 +179,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
       final freshUser = AuthUser.fromJson(response.data ?? {});
-      await _saveSession(token, freshUser, phone.isEmpty ? freshUser.phone ?? '' : phone);
+      await _saveSession(
+        token,
+        freshUser,
+        phone.isEmpty ? freshUser.phone ?? '' : phone,
+      );
       state = state.copyWith(user: freshUser, phone: freshUser.phone ?? phone);
     } catch (_) {
       // Если сервер временно недоступен, оставляем локальную сессию для dev-теста карты/GPS.
     }
   }
 
+  /// Запросить код входа. Реально зовёт POST /auth/phone/request (в dev-режиме
+  /// сервер печатает код 1234; при включённом SMS_PROVIDER — шлёт SMS).
+  /// Если сервер недоступен, всё равно переходим к вводу кода — ошибку сети
+  /// покажет verifyCode (dev-friendly: бэкенд мог ещё не подняться).
   Future<void> sendCode(String phone) async {
     state = state.copyWith(isLoading: true, error: null, clearError: true);
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/auth/phone/request',
+        data: {'phone': phone},
+      );
+    } catch (_) {}
     state = state.copyWith(
       status: AuthStatus.codeSent,
       phone: phone,
@@ -193,20 +210,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
+  /// Проверить код НА СЕРВЕРЕ (раньше сверялся локально с '1234' и на сервер
+  /// уходила константа — с реальными SMS это ломало вход).
   Future<bool> verifyCode(String code) async {
     state = state.copyWith(isLoading: true, error: null, clearError: true);
-    await Future.delayed(const Duration(milliseconds: 350));
-
-    if (code != _mockCode) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Неверный код. Попробуй ещё раз',
-      );
-      return false;
-    }
-
     try {
-      final session = await _loginOrRegisterByPhone(state.phone);
+      final session = await _loginOrRegisterByPhone(state.phone, code);
       await _saveSession(session.token, session.user, state.phone);
       state = state.copyWith(
         status: AuthStatus.authenticated,
@@ -217,23 +226,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: _authErrorText(e),
-      );
+      state = state.copyWith(isLoading: false, error: _authErrorText(e));
       return false;
     }
   }
 
-  Future<_BackendSession> _loginOrRegisterByPhone(String phone) async {
+  Future<_BackendSession> _loginOrRegisterByPhone(
+    String phone,
+    String code,
+  ) async {
     return _postAuth('/auth/phone/verify', {
       'phone': phone,
-      'code': _mockCode,
+      'code': code,
       'name': 'Бегун КВАРТАЛ',
     });
   }
 
-  Future<_BackendSession> _postAuth(String path, Map<String, dynamic> body) async {
+  Future<_BackendSession> _postAuth(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
     final response = await _dio.post<Map<String, dynamic>>(path, data: body);
     final data = response.data ?? {};
     final token = data['token']?.toString();
@@ -262,7 +274,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await prefs.setString(_userAvatarPrefsKey, user.avatarPath!);
     }
   }
-
 
   Future<bool> updateProfile({
     required String name,
@@ -354,6 +365,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
           error.type == DioExceptionType.receiveTimeout ||
           error.type == DioExceptionType.connectionError) {
         return 'Не удалось подключиться к серверу. Проверь backend и USB/Wi-Fi соединение.';
+      }
+      if (error.response?.statusCode == 401) {
+        return 'Неверный код. Попробуй ещё раз';
       }
       final message = error.response?.data;
       if (message is Map && message['detail'] != null) {
