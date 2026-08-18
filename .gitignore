@@ -31,7 +31,7 @@ backups/
 *.sql.gz
 
 # === Прод-nginx: реальный конфиг с доменом + состояние TLS (создаётся на сервере) ===
-backend/nginx/staw.conf
+backend/nginx/mata.conf
 backend/nginx/certs/
 backend/nginx/letsencrypt/
 backend/nginx/certbot-www/

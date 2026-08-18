@@ -46,7 +46,7 @@
   "email": "alex@mail.ru",
   "phone": "+79990000000",
   "provider": "email | google | apple",
-  "avatarPath": "https://cdn.staw.ru/u/123.jpg",
+  "avatarPath": "https://cdn.mata-store.ru/u/123.jpg",
   "addresses": [ /* SavedAddress[] */ ]
 }
 ```
@@ -58,7 +58,7 @@
 ### 2.2 Category / Product (Catalog)
 ```json
 // Category
-{ "id": "shoes", "name": "Кроссовки", "emoji": "👟", "imageUrl": "https://cdn.staw.ru/cat/shoes.jpg" }
+{ "id": "shoes", "name": "Кроссовки", "emoji": "👟", "imageUrl": "https://cdn.mata-store.ru/cat/shoes.jpg" }
 ```
 ```json
 // Product
@@ -69,7 +69,7 @@
   "categoryId": "shoes",
   "price": 12990,
   "oldPrice": 15990,
-  "imageUrls": ["https://cdn.staw.ru/p/3_0.jpg", "..."],
+  "imageUrls": ["https://cdn.mata-store.ru/p/3_0.jpg", "..."],
   "description": "…",
   "sizes": ["41","42","43"],
   "colors": ["Чёрный/Серый"],
@@ -170,7 +170,7 @@
 
 ## 3. Эндпоинты
 
-> Базовый URL: `ApiConfig.baseUrl` (пример: `https://api.staw.ru/v1`). Реализованы в Sport Store как `Api*Repository`.
+> Базовый URL: `ApiConfig.baseUrl` (пример: `https://api.mata-store.ru/v1`). Реализованы в Sport Store как `Api*Repository`.
 
 ### Auth
 ```

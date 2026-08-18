@@ -9,7 +9,7 @@ set -a; . ./.env; set +a
 COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env"
 
 # Стучимся внутрь контейнера по 127.0.0.1, но Host шлём первый из DJANGO_ALLOWED_HOSTS:
-# в проде там только домен (api.staw.ru), и запрос с Host=127.0.0.1 Django отвергнет
+# в проде там только домен (api.mata-store.ru), и запрос с Host=127.0.0.1 Django отвергнет
 # как DisallowedHost (400) — smoke падал бы на исправно работающем сервере.
 HOST_HDR=$(printf '%s' "${DJANGO_ALLOWED_HOSTS:-}" | cut -d, -f1 | tr -d ' ')
 case "$HOST_HDR" in ""|"*") HOST_HDR="127.0.0.1" ;; esac

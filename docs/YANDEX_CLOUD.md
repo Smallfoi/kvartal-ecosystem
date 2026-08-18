@@ -35,29 +35,29 @@
 - **ОКВЭД в ЕГРИП** — добавить коды под интернет-торговлю, ПО и спорт (заявление Р24001,
   0 ₽, ~5 рабочих дней). Без них возможен отказ на модерации ЮKassa и блокировка поступлений
   банком. Список кодов и порядок — `docs/STEP2_OPERATOR_AGE.md` §4a. ⏳ **В работе.**
-- **Домен** `staw.ru` у регистратора (Beget/RU-CENTER, по D-17 DNS может остаться там).
+- **Домен** `mata-store.ru` у регистратора (Beget/RU-CENTER, по D-17 DNS может остаться там).
   Проверить занятость до всего остального — от домена зависят все конфиги.
 
 ## Шаг 1. Yandex Cloud: аккаунт и платёжный аккаунт
 
 1. `console.yandex.cloud` → вход по Яндекс ID.
-2. Создать **облако** `staw` и внутри **каталог** `staw-prod` (второй каталог `staw-staging` — позже).
+2. Создать **облако** `mata` и внутри **каталог** `mata-prod` (второй каталог `mata-staging` — позже).
 3. Платёжный аккаунт: тип **ИП/юрлицо** (ИНН + расчётный счёт) — иначе не будет актов и НДС-документов.
 4. Активировать **грант/пробный период** (по D-28: до 4 000 ₽ физлицам, до 10 000 ₽ юрлицам).
 5. **Регион только `ru-central1`** — данные россиян должны храниться в РФ (242-ФЗ, §2 LAUNCH_READINESS).
    Зона доступности — `ru-central1-a` (VM и диски должны быть в одной зоне).
 
-**Проверка:** в консоли видны каталог `staw-prod` и баланс с грантом.
+**Проверка:** в консоли видны каталог `mata-prod` и баланс с грантом.
 
 ## Шаг 2. Домен и DNS
 
 | Запись | Тип | Значение | Когда |
 |---|---|---|---|
-| `api.staw.ru` | A | публичный IP машины | после шага 3 |
-| `staw.ru`, `www` | A / CNAME | хостинг сайта | при выкладке сайта |
-| `cdn.staw.ru` | CNAME | `staw-media.website.yandexcloud.net` | опционально, шаг 4 |
+| `api.mata-store.ru` | A | публичный IP машины | после шага 3 |
+| `mata-store.ru`, `www` | A / CNAME | хостинг сайта | при выкладке сайта |
+| `cdn.mata-store.ru` | CNAME | `mata-media.website.yandexcloud.net` | опционально, шаг 4 |
 
-**Проверка:** `nslookup api.staw.ru` возвращает IP машины. DNS расходится до часа — делать
+**Проверка:** `nslookup api.mata-store.ru` возвращает IP машины. DNS расходится до часа — делать
 до выпуска сертификата, иначе Let's Encrypt не подтвердит владение доменом.
 
 ## Шаг 3. Виртуальная машина
@@ -92,15 +92,15 @@ sudo usermod -aG docker $USER && exit   # перезайти, чтобы гру�
 
 | Бакет | Доступ | Зачем | Жизненный цикл |
 |---|---|---|---|
-| `staw-media` | публичный на чтение | фото товаров, аватары, баннеры (D-31) | — |
-| `staw-backups` | **приватный** | дампы БД (`pg_dump`) | удалять объекты старше 30 дней |
+| `mata-media` | публичный на чтение | фото товаров, аватары, баннеры (D-31) | — |
+| `mata-backups` | **приватный** | дампы БД (`pg_dump`) | удалять объекты старше 30 дней |
 
-Сервисный аккаунт: IAM → **Сервисные аккаунты** → `staw-app`, роль `storage.editor` на каталог →
+Сервисный аккаунт: IAM → **Сервисные аккаунты** → `mata-app`, роль `storage.editor` на каталог →
 **Создать статический ключ доступа**. Идентификатор (`YCAJE…`) → `MEDIA_S3_ACCESS_KEY`,
 секрет (`YCP…`) → `MEDIA_S3_SECRET_KEY`. **Секрет показывается один раз.**
 
 **Проверка:** после шага 5 загрузить аватар в приложении — файл появится в бакете, а URL
-картинки будет вести на `storage.yandexcloud.net` (или на `cdn.staw.ru`).
+картинки будет вести на `storage.yandexcloud.net` (или на `cdn.mata-store.ru`).
 
 ## Шаг 5. Деплой бэкенда
 
@@ -108,7 +108,7 @@ sudo usermod -aG docker $USER && exit   # перезайти, чтобы гру�
 git clone https://github.com/Smallfoi/mata-ecosystem.git && cd mata-ecosystem/backend
 cp .env.prod.example .env && nano .env
 python3 -c "import secrets; print(secrets.token_urlsafe(64))"   # ×2 — для двух разных секретов
-cp nginx/staw.conf.example nginx/staw.conf && nano nginx/staw.conf   # подставить домен
+cp nginx/mata.conf.example nginx/mata.conf && nano nginx/mata.conf   # подставить домен
 make prod-deploy
 ```
 
@@ -117,12 +117,12 @@ make prod-deploy
 | Переменная | Значение |
 |---|---|
 | `DJANGO_SECRET_KEY`, `JWT_SECRET` | два **разных** случайных секрета |
-| `DJANGO_ALLOWED_HOSTS` | `api.staw.ru` |
-| `DJANGO_CORS_ORIGINS` | `https://staw.ru,https://www.staw.ru` |
+| `DJANGO_ALLOWED_HOSTS` | `api.mata-store.ru` |
+| `DJANGO_CORS_ORIGINS` | `https://mata-store.ru,https://www.mata-store.ru` |
 | `POSTGRES_PASSWORD` | сильный пароль |
 | `REDIS_URL` | `redis://redis:6379/0` |
 | `MEDIA_S3_BUCKET/ACCESS_KEY/SECRET_KEY` | из шага 4 |
-| `BACKUP_S3_BUCKET` | `staw-backups` |
+| `BACKUP_S3_BUCKET` | `mata-backups` |
 | `TLS_DOMAIN`, `TLS_EMAIL` | для шага 6 |
 
 Стек поднимает: Django+gunicorn, PostGIS, Redis, **Celery worker + beat**, nginx.
@@ -145,7 +145,7 @@ make tls-issue     # первый выпуск, nginx встанет на ~ми�
 0 3 * * 1  cd /home/yc-user/mata-ecosystem/backend && ./deploy/tls.sh renew >> logs/tls.log 2>&1
 ```
 
-**Проверка:** `curl -I https://api.staw.ru/v1/health` → `200`, `http://` редиректит на `https://`.
+**Проверка:** `curl -I https://api.mata-store.ru/v1/health` → `200`, `http://` редиректит на `https://`.
 
 ## Шаг 7. Бэкапы и мониторинг
 
@@ -153,14 +153,14 @@ make tls-issue     # первый выпуск, nginx встанет на ~ми�
 0 4 * * *  cd /home/yc-user/mata-ecosystem/backend && ./deploy/backup.sh >> backups/cron.log 2>&1
 ```
 
-`backup.sh` делает дамп, проверяет что он непустой, **выгружает в `staw-backups`** и чистит
+`backup.sh` делает дамп, проверяет что он непустой, **выгружает в `mata-backups`** и чистит
 локальные копии старше 14 дней. Плюс снапшоты диска по расписанию в консоли облака.
 
-Внешний мониторинг: UptimeRobot на `https://api.staw.ru/v1/health` каждые 5 минут → алерт
+Внешний мониторинг: UptimeRobot на `https://api.mata-store.ru/v1/health` каждые 5 минут → алерт
 в Telegram/почту. Пинговать нужно **снаружи**: сервер не сообщит, что он упал.
 
 **Проверка (обязательно, до запуска):** восстановить свежий дамп на staging —
-`make restore FILE=backups/staw_<дата>.sql.gz`. Бэкап без проверенного восстановления не считается бэкапом.
+`make restore FILE=backups/mata_<дата>.sql.gz`. Бэкап без проверенного восстановления не считается бэкапом.
 
 ## Шаг 8. SMS-вход (smsc.ru)
 
@@ -192,9 +192,9 @@ make tls-issue     # первый выпуск, nginx встанет на ~ми�
 
 ```bash
 flutter build apk --release --target-platform android-arm64 \
-  --dart-define=SPORT_STORE_API_BASE_URL=https://api.staw.ru/v1
+  --dart-define=SPORT_STORE_API_BASE_URL=https://api.mata-store.ru/v1
 flutter build apk --release --target-platform android-arm64 \
-  --dart-define=KVARTAL_API_BASE_URL=https://api.staw.ru/v1
+  --dart-define=KVARTAL_API_BASE_URL=https://api.mata-store.ru/v1
 ```
 
 Сайт: в `САЙТ МАТА/ecosystem.js` заменить `PROD_API` на реальный домен.
@@ -225,10 +225,10 @@ Certificate Manager. Всё это включается по триггеру р
 
 ## Чек-лист «прод готов»
 
-- [ ] `curl https://api.staw.ru/v1/health` → `{"status":"ok"}` снаружи, по HTTPS
+- [ ] `curl https://api.mata-store.ru/v1/health` → `{"status":"ok"}` снаружи, по HTTPS
 - [ ] `make smoke` зелёный, включая сервисы `worker` и `beat`
 - [ ] `check_launch_readiness` без критических пунктов
-- [ ] Дамп БД лежит в `staw-backups`, восстановление проверено
+- [ ] Дамп БД лежит в `mata-backups`, восстановление проверено
 - [ ] Пароль админки сменён, `/admin/` ограничен по IP
 - [ ] Реальная SMS приходит, тестовый платёж проходит
 - [ ] Внешний мониторинг шлёт алерт при падении

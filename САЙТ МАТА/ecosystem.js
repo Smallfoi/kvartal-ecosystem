@@ -21,7 +21,7 @@
   //  - dev (сайт открыт на localhost/127.0.0.1) → локальный backend :8000;
   //  - прод → PROD_API ниже (заменить на реальный домен при деплое) либо
   //    переопределить, задав window.STAW_API_BASE ДО подключения ecosystem.js.
-  var PROD_API = "https://api.staw.ru/v1"; // TODO: реальный домен API при деплое
+  var PROD_API = "https://api.mata-store.ru/v1"; // TODO: реальный домен API при деплое
   var host = location.hostname;
   var isDev = host === "localhost" || host === "127.0.0.1" || host === "";
   var API =

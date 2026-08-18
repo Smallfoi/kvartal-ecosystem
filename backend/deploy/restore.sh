@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Восстановление прод-БД STAW из бэкапа backup.sh.
-# ВНИМАНИЕ: перезаписывает текущую БД! Запуск:  ./deploy/restore.sh backups/staw_YYYYMMDD_HHMMSS.sql.gz
+# ВНИМАНИЕ: перезаписывает текущую БД! Запуск:  ./deploy/restore.sh backups/mata_YYYYMMDD_HHMMSS.sql.gz
 set -euo pipefail
 
 cd "$(dirname "$0")/.."  # → backend/
