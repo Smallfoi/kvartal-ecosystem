@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 enum ClubTheme { minimal, aurora, sparks, stars, confetti }
 
 /// Пресет оформления клуба «в один тап»: акцент-цвет + градиент шапки +
-/// анимированный фон + цвет рамки логотипа. Подобраны под наш тёмный бренд.
+/// анимированный фон + цвет рамки логотипа. Подобраны под светлую базу сайта
+/// (D-42): обложка — это пользовательский контент, поэтому цвет здесь ярче,
+/// чем в интерфейсе, но остаётся в тех же холодных тонах.
 class ClubStyle {
   final String key;
   final String label;
@@ -26,42 +28,42 @@ class ClubStyle {
   static const minimal = ClubStyle(
     key: 'minimal',
     label: 'Минимал',
-    accent: Color(0xFF0A84FF),
-    headerGradient: [Color(0xFF0D1F3C), Color(0xFF0A1628), Color(0xFF0D0D0D)],
+    accent: Color(0xFF167A95),
+    headerGradient: [Color(0xFFE7EEF0), Color(0xFFEFEDE6), Color(0xFFF4F1EA)],
     theme: ClubTheme.minimal,
-    frame: Color(0xFF0A84FF),
+    frame: Color(0xFF57BCD8),
   );
   static const north = ClubStyle(
     key: 'north',
     label: 'Север',
-    accent: Color(0xFF49C5FF),
-    headerGradient: [Color(0xFF0A2C3E), Color(0xFF0B1E33), Color(0xFF0D0D0D)],
+    accent: Color(0xFF167A95),
+    headerGradient: [Color(0xFFCFE7F0), Color(0xFFE3EEF1), Color(0xFFF4F1EA)],
     theme: ClubTheme.aurora,
-    frame: Color(0xFF8FE6FF),
+    frame: Color(0xFF57BCD8),
   );
   static const fire = ClubStyle(
     key: 'fire',
     label: 'Огонь',
-    accent: Color(0xFFFF6A2C),
-    headerGradient: [Color(0xFF3A160C), Color(0xFF24110A), Color(0xFF0D0D0D)],
+    accent: Color(0xFFB4540F),
+    headerGradient: [Color(0xFFF6E3D2), Color(0xFFF2EADF), Color(0xFFF4F1EA)],
     theme: ClubTheme.sparks,
-    frame: Color(0xFFFFB05A),
+    frame: Color(0xFFE08A47),
   );
   static const neon = ClubStyle(
     key: 'neon',
     label: 'Неон',
-    accent: Color(0xFFB14CFF),
-    headerGradient: [Color(0xFF1E0E33), Color(0xFF150A23), Color(0xFF0D0D0D)],
+    accent: Color(0xFF6B3FA0),
+    headerGradient: [Color(0xFFE8DFF5), Color(0xFFEFE9F3), Color(0xFFF4F1EA)],
     theme: ClubTheme.stars,
-    frame: Color(0xFFE08CFF),
+    frame: Color(0xFFB08CE0),
   );
   static const festive = ClubStyle(
     key: 'festive',
     label: 'Праздник',
-    accent: Color(0xFFFFC83C),
-    headerGradient: [Color(0xFF26213C), Color(0xFF171229), Color(0xFF0D0D0D)],
+    accent: Color(0xFF6E7A18),
+    headerGradient: [Color(0xFFEFF6C9), Color(0xFFF1F2DE), Color(0xFFF4F1EA)],
     theme: ClubTheme.confetti,
-    frame: Color(0xFFFFD86B),
+    frame: Color(0xFFDFF45F),
   );
 
   static const all = [minimal, north, fire, neon, festive];

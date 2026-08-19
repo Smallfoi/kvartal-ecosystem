@@ -25,7 +25,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A1628), AppColors.bgDark],
+            colors: [AppColors.soft, AppColors.bgDark],
             stops: [0.0, 0.32],
           ),
         ),
@@ -126,7 +126,7 @@ class _PeriodToggle extends ConsumerWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: active ? Colors.white : AppColors.textSecondary,
+              color: active ? AppColors.ink : AppColors.muted,
             ),
           ),
         ),
@@ -188,7 +188,7 @@ class _SegmentedControl extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? AppColors.ink : AppColors.muted,
                   ),
                 ),
               ),
@@ -491,7 +491,7 @@ class _MyPositionBanner extends StatelessWidget {
             child: Text(
               '#$rank',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.ink,
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
               ),

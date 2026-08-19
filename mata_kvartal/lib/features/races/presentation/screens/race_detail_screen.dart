@@ -76,7 +76,7 @@ class RaceDetailScreen extends ConsumerWidget {
             pinned: true,
             expandedHeight: 210,
             backgroundColor: AppColors.bgDark,
-            iconTheme: const IconThemeData(color: Colors.white),
+            iconTheme: const IconThemeData(color: AppColors.ink),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -108,7 +108,7 @@ class RaceDetailScreen extends ConsumerWidget {
                 children: [
                   Text(race.title,
                       style: const TextStyle(
-                          color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, height: 1.1)),
+                          color: AppColors.ink, fontSize: 24, fontWeight: FontWeight.w800, height: 1.1)),
                   const SizedBox(height: 12),
                   _infoRow(CupertinoIcons.calendar, dateText),
                   const SizedBox(height: 8),
@@ -137,7 +137,7 @@ class RaceDetailScreen extends ConsumerWidget {
                             ),
                             child: Text(dist,
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                                    color: AppColors.ink, fontSize: 14, fontWeight: FontWeight.w700)),
                           ),
                       ],
                     ),
@@ -163,7 +163,7 @@ class RaceDetailScreen extends ConsumerWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text('+${race.points} баллов за финиш — в общий баланс экосистемы',
-                                style: const TextStyle(color: Colors.white, fontSize: 13.5)),
+                                style: const TextStyle(color: AppColors.ink, fontSize: 13.5)),
                           ),
                         ],
                       ),
@@ -237,14 +237,14 @@ class RaceDetailScreen extends ConsumerWidget {
           icon: Icon(
             planned ? CupertinoIcons.checkmark_alt : CupertinoIcons.paperplane,
             size: 18,
-            color: planned ? AppColors.success : Colors.white,
+            color: planned ? AppColors.success : AppColors.ink,
           ),
           label: Text(
             planned ? 'В «Моих стартах»' : 'Планирую поехать',
             style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: planned ? AppColors.success : Colors.white),
+                color: planned ? AppColors.success : AppColors.ink),
           ),
           style: FilledButton.styleFrom(
             backgroundColor:
@@ -268,7 +268,7 @@ class RaceDetailScreen extends ConsumerWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
           child: Text(text,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.ink)),
         ),
       );
 }

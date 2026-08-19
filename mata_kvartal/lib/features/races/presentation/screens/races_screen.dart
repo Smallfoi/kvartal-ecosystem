@@ -85,7 +85,7 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF0A1628), AppColors.bgDark],
+          colors: [AppColors.soft, AppColors.bgDark],
           stops: [0.0, 0.32],
         ),
       ),
@@ -99,7 +99,7 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
               child: Text(
                 'Старты',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.ink,
                   fontSize: 30,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.2,
@@ -211,7 +211,7 @@ class _RegionChip extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Color(0xFFDBE8FF),
+                  color: AppColors.accentInk,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -256,7 +256,7 @@ class _RegionPicker extends ConsumerWidget {
         maxHeight: MediaQuery.of(context).size.height * 0.72,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFF0C1220),
+        color: AppColors.soft,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(top: BorderSide(color: AppColors.separator)),
       ),
@@ -270,7 +270,7 @@ class _RegionPicker extends ConsumerWidget {
               height: 4,
               margin: const EdgeInsets.only(top: 10, bottom: 6),
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: AppColors.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -281,7 +281,7 @@ class _RegionPicker extends ConsumerWidget {
                 child: Text(
                   'Показать старты',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.ink,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
@@ -409,7 +409,7 @@ class _RegionOption extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontSize: 14.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -447,7 +447,7 @@ class _Segmented extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1526),
+        color: AppColors.paper,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.separator),
       ),
@@ -468,7 +468,7 @@ class _Segmented extends StatelessWidget {
                   child: Text(
                     labels[i],
                     style: TextStyle(
-                      color: i == index ? Colors.white : AppColors.textTertiary,
+                      color: i == index ? AppColors.ink : AppColors.textTertiary,
                       fontSize: 13.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -567,7 +567,7 @@ class _RaceCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       height: 1.1,
@@ -599,14 +599,14 @@ class _RaceCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0E1A2E),
+                              color: AppColors.soft,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: AppColors.separator),
                             ),
                             child: Text(
                               dist,
                               style: const TextStyle(
-                                color: Color(0xFFC7D4EA),
+                                color: AppColors.ink,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -649,9 +649,9 @@ class _RaceCard extends StatelessWidget {
   static Widget _statusPill(_StatusStyle ss) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0x99080E1A),
+          color: AppColors.glassPaper,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white24),
+          border: Border.all(color: AppColors.line),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -671,9 +671,9 @@ class _RaceCard extends StatelessWidget {
   static Widget _dateChip(DateTime d) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0x80060A14),
+          color: AppColors.glassPaper,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white24),
+          border: Border.all(color: AppColors.line),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,12 +682,12 @@ class _RaceCard extends StatelessWidget {
             Text(
               d.day.toString().padLeft(2, '0'),
               style: const TextStyle(
-                  color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, height: 0.95),
+                  color: AppColors.ink, fontSize: 24, fontWeight: FontWeight.w800, height: 0.95),
             ),
             Text(
               _months[d.month].toUpperCase(),
               style: const TextStyle(
-                  color: Color(0xFFCDD9EE), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
+                  color: AppColors.muted, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
             ),
           ],
         ),

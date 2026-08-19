@@ -172,7 +172,7 @@ class _WeatherBody extends StatelessWidget {
                                 Text(
                                   formatTemp(w.tempC),
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.ink,
                                     fontSize: 36,
                                     fontWeight: FontWeight.w800,
                                     shadows: [
@@ -184,7 +184,7 @@ class _WeatherBody extends StatelessWidget {
                                 Text(
                                   weatherLabel(w.weatherCode),
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.ink,
                                     fontWeight: FontWeight.w600,
                                     shadows: [
                                       Shadow(color: Colors.black, blurRadius: 3),
@@ -202,7 +202,7 @@ class _WeatherBody extends StatelessWidget {
                       Text(
                         'Ощущается как ${formatTemp(w.feelsLikeC)}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.95),
+                          color: AppColors.ink.withValues(alpha: 0.95),
                           fontSize: 13,
                           shadows: const [
                             Shadow(color: Colors.black, blurRadius: 3),

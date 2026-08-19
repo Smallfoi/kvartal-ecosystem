@@ -95,8 +95,8 @@ class _KvartalNavBar extends StatelessWidget {
             color: AppColors.glass,
             border: Border(
               top: BorderSide(
-                color: Colors.white.withValues(alpha: 0.10),
-                width: 0.5,
+                color: AppColors.line,
+                width: 1,
               ),
             ),
           ),
@@ -186,9 +186,7 @@ class _RunNavItem extends StatelessWidget {
               width: 56,
               height: 32,
               decoration: BoxDecoration(
-                color: isActive
-                    ? AppColors.electricBlue
-                    : Colors.white.withValues(alpha: 0.08),
+                color: isActive ? AppColors.lime : AppColors.soft,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Center(
@@ -207,9 +205,7 @@ class _RunNavItem extends StatelessWidget {
                 height: 1.0,
                 letterSpacing: -0.2,
                 fontWeight: FontWeight.w700, // центр — акцент
-                color: isActive
-                    ? AppColors.electricBlue
-                    : Colors.white.withValues(alpha: 0.55),
+                color: isActive ? AppColors.ink : AppColors.muted,
               ),
             ),
           ],
@@ -238,9 +234,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive
-        ? AppColors.electricBlue
-        : Colors.white.withValues(alpha: 0.45);
+    final color = isActive ? AppColors.ink : AppColors.muted;
 
     return Expanded(
       child: GestureDetector(

@@ -294,7 +294,7 @@ class _ClubSliverHeader extends ConsumerWidget {
                                       child: const Icon(
                                         CupertinoIcons.camera_fill,
                                         size: 11,
-                                        color: Colors.white,
+                                        color: AppColors.ink,
                                       ),
                                     ),
                                   ),
@@ -389,7 +389,7 @@ class _ClubSliverHeader extends ConsumerWidget {
                           child: Icon(
                             CupertinoIcons.photo_on_rectangle,
                             size: 18,
-                            color: Colors.white,
+                            color: AppColors.ink,
                           ),
                         ),
                       ),
@@ -1243,14 +1243,14 @@ class _ClubInviteSheet extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.ink,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: QrImageView(
                   data: _link,
                   version: QrVersions.auto,
                   size: 196,
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppColors.panel,
                   eyeStyle: const QrEyeStyle(
                     eyeShape: QrEyeShape.square,
                     color: Color(0xFF111827),
@@ -1870,7 +1870,7 @@ class _StylePicker extends StatelessWidget {
                           color: st.accent,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: AppColors.muted,
                           ),
                         ),
                       ),
@@ -1878,7 +1878,7 @@ class _StylePicker extends StatelessWidget {
                       Text(
                         st.label,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.ink,
                           fontWeight:
                               selected ? FontWeight.w800 : FontWeight.w600,
                           fontSize: 13,

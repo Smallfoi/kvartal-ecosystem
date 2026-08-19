@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 
 const kvartalLogoAsset = 'assets/brand/kvartal-logo-transparent.png';
 
@@ -98,8 +99,10 @@ class KvartalLogoBadge extends StatelessWidget {
           Text(
             'КВАРТАЛ',
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
+              // Слово живёт на светлой панели — дисплейным шрифтом, как заголовки сайта.
+              fontFamily: AppTheme.fontDisplay,
+              color: AppColors.ink,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0,
             ),
           ),
