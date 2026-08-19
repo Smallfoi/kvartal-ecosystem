@@ -29,18 +29,31 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
-BRAND_REL = Path("logo") / "svg" / "Знак черный4.svg"  # знак в SVG (цвет задаём сами)
+# Формы, которыми брендируем приложения. Обе берём из ВЕКТОРА — цвет задаём сами.
+#   mark — знак-«вертушка» (Квартал);
+#   slab — скошенный квадрат, «Элемент 1» (Store).
+SHAPES = {
+    "mark": {
+        "svg": Path("logo") / "svg" / "Знак черный4.svg",
+        "fit": "circle",  # размер меряем описанной окружностью
+        "icon": 0.76, "adaptive": 0.51, "splash": 0.60,
+    },
+    "slab": {
+        "svg": Path("elements") / "фирменные элементы.svg",
+        "fit": "width",   # плашка широкая и низкая: окружность дала бы её крошечной
+        "icon": 0.62, "adaptive": 0.41, "splash": 0.50,
+    },
+}
 
 # Знак несимметричный: один длинный луч вправо, два диагональных влево. Центрировать его
 # по габаритной рамке НЕЛЬЗЯ — рамку растягивает правый луч, и знак уезжает влево от
 # оптического центра (замерено: 41.6 из 280 единиц, ~15% ширины; владелец увидел глазом).
 # Поэтому сажаем знак по ЦЕНТРУ МАСС, а размер меряем описанной вокруг него окружностью:
 # так знак занимает предсказуемую долю плитки независимо от того, куда торчат лучи.
-FILL_ICON = 0.76      # диаметр описанного круга к стороне иконки
-FILL_ADAPTIVE = 0.51  # adaptive-иконка Android: холст 108dp, видно центральные 72dp —
-                      # 0.51 холста даёт те же ~0.76 внутри видимой зоны, иначе маска
-                      # срежет лучи знака
-FILL_SPLASH = 0.60    # сплэш: на Android 12+ иконку дополнительно обрезает круг
+# Доли в SHAPES: «icon» — обычная иконка; «adaptive» — Android-adaptive, где холст 108dp,
+# а видно только центральные 72dp (0.51/0.41 холста дают ту же долю внутри видимой зоны —
+# иначе маска срежет края); «splash» — на Android 12+ картинку дополнительно обрезает круг.
+SLAB_RATIO = 1.71  # ширина/высота «Элемента 1», сверено с PNG-экспортом 476×278
 ANDROID_DENSITIES = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
 
 
@@ -61,6 +74,55 @@ def load_polys(svg_path: Path) -> list[list[tuple[float, float]]]:
     return polys
 
 
+def load_slab(svg_path: Path) -> list[list[tuple[float, float]]]:
+    """Скошенный квадрат («Элемент 1») из общего SVG фирменных элементов.
+
+    Ищем не по порядковому номеру, а по признаку: полигон, у которого после отбрасывания
+    промежуточных точек на сторонах остаётся ровно 4 угла и противоположные стороны равны
+    и параллельны. Так выбор не сломается, если студия пересохранит файл в другом порядке.
+    """
+    text = svg_path.read_text(encoding="utf-8")
+    found = []
+    for raw in re.findall(r'<polygon[^>]*points="([^"]+)"', text):
+        nums = [float(x) for x in re.findall(r"-?\d+(?:\.\d+)?", raw)]
+        pts = list(zip(nums[0::2], nums[1::2]))
+        if pts and pts[0] == pts[-1]:
+            pts = pts[:-1]
+        corners = _drop_collinear(pts)
+        if len(corners) == 4 and _is_parallelogram(corners):
+            xs = [x for x, _ in corners]
+            ys = [y for _, y in corners]
+            found.append(((max(xs) - min(xs)) / (max(ys) - min(ys)), corners))
+    if not found:
+        raise SystemExit(f"В {svg_path} не нашлось ни одного параллелограмма")
+    # Параллелограммов в файле несколько: сам элемент и длинные полосы паттерна
+    # (отношение ~4.6). Берём тот, чьи пропорции совпадают с «Элементом 1» — 1.71,
+    # сверено с PNG-экспортом 476×278.
+    ratio, corners = min(found, key=lambda t: abs(t[0] - SLAB_RATIO))
+    if abs(ratio - SLAB_RATIO) > 0.15:
+        raise SystemExit(f"Похожего на «Элемент 1» не нашлось: ближайшее отношение {ratio:.2f}")
+    return [corners]
+
+
+def _drop_collinear(pts, eps: float = 0.5):
+    """Убирает точки, лежащие на прямой между соседями (студия ставит их на сторонах)."""
+    out = []
+    n = len(pts)
+    for i, p in enumerate(pts):
+        a, b = pts[i - 1], pts[(i + 1) % n]
+        area2 = abs((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]))
+        side = math.hypot(b[0] - a[0], b[1] - a[1]) or 1.0
+        if area2 / side > eps:
+            out.append(p)
+    return out
+
+
+def _is_parallelogram(c, eps: float = 0.5) -> bool:
+    # Стороны 0→1 и 2→3 в параллелограмме противонаправлены: их сумма ≈ 0.
+    return (abs((c[1][0] - c[0][0]) + (c[3][0] - c[2][0])) < eps
+            and abs((c[1][1] - c[0][1]) + (c[3][1] - c[2][1])) < eps)
+
+
 class Mark:
     """Знак: центр масс, радиус описанной окружности и отрисовка в нужном размере."""
 
@@ -70,6 +132,8 @@ class Mark:
         self.polys = polys
         self.cx, self.cy = self._centroid()
         self.r = max(math.hypot(x - self.cx, y - self.cy) for p in polys for x, y in p)
+        xs = [x for p in polys for x, _ in p]
+        self.w = max(xs) - min(xs)
 
     def _centroid(self, grid: int = 512) -> tuple[float, float]:
         """Центр масс залитой площади — оптический центр знака."""
@@ -91,21 +155,23 @@ class Mark:
                     n += 1
         return x0 + sx / n / k, y0 + sy / n / k
 
-    def mask(self, size: int, fill: float) -> Image.Image:
-        """Квадратная маска size×size: центр масс знака ровно в центре плитки."""
+    def mask(self, size: int, fill: float, fit: str = "circle") -> Image.Image:
+        """Квадратная маска size×size: центр масс фигуры ровно в центре плитки."""
         ss = self.SS
         m = Image.new("L", (size * ss, size * ss), 0)
         d = ImageDraw.Draw(m)
-        k = fill * size * ss / (2 * self.r)
+        base = 2 * self.r if fit == "circle" else self.w
+        k = fill * size * ss / base
         half = size * ss / 2
         for p in self.polys:
             d.polygon([((x - self.cx) * k + half, (y - self.cy) * k + half) for x, y in p], fill=255)
         return m.resize((size, size), Image.LANCZOS)
 
-    def draw(self, size: int, bg, fg, fill: float, transparent: bool = False) -> Image.Image:
+    def draw(self, size: int, bg, fg, fill: float, fit: str = "circle",
+             transparent: bool = False) -> Image.Image:
         im = Image.new("RGBA" if transparent else "RGB", (size, size),
                        (0, 0, 0, 0) if transparent else bg)
-        im.paste(Image.new("RGB", (size, size), fg), (0, 0), self.mask(size, fill))
+        im.paste(Image.new("RGB", (size, size), fg), (0, 0), self.mask(size, fill, fit))
         return im
 
 
@@ -127,7 +193,7 @@ def sub(path: Path, old: str, new: str, *, count: int = 1) -> None:
     print(f"  {path.relative_to(ROOT)}  обновлён")
 
 
-def build_ios(app: Path, mark: Mark, bg, fg) -> None:
+def build_ios(app: Path, mark: Mark, bg, fg, sh: dict) -> None:
     iconset = app / "ios/Runner/Assets.xcassets/AppIcon.appiconset"
     meta = json.loads((iconset / "Contents.json").read_text(encoding="utf-8-sig"))
     print("iOS · иконки")
@@ -136,13 +202,14 @@ def build_ios(app: Path, mark: Mark, bg, fg) -> None:
         if not name:
             continue
         px = int(round(float(entry["size"].split("x")[0]) * float(entry["scale"].rstrip("x"))))
-        write(mark.draw(px, bg, fg, FILL_ICON), iconset / name)  # RGB — без альфы
+        write(mark.draw(px, bg, fg, sh["icon"], sh["fit"]), iconset / name)  # RGB — без альфы
 
     print("iOS · сплэш")
     launch = app / "ios/Runner/Assets.xcassets/LaunchImage.imageset"
     base = 200  # сторона квадрата в поинтах; storyboard рисует картинку 1:1
     for scale, name in ((1, "LaunchImage.png"), (2, "LaunchImage@2x.png"), (3, "LaunchImage@3x.png")):
-        write(mark.draw(base * scale, bg, fg, FILL_SPLASH, transparent=True), launch / name)
+        write(mark.draw(base * scale, bg, fg, sh["splash"], sh["fit"], transparent=True),
+              launch / name)
 
     story = app / "ios/Runner/Base.lproj/LaunchScreen.storyboard"
     text = story.read_text(encoding="utf-8")
@@ -161,20 +228,89 @@ def build_ios(app: Path, mark: Mark, bg, fg) -> None:
         sub(story, cur.group(0), want_img)
 
 
-def build_android(app: Path, mark: Mark, bg, fg) -> None:
+ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
+"""
+ICON_BG_XML = """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/launch_background" />
+</shape>
+"""
+LAUNCH_BG_XML = """<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/launch_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/launch_logo" />
+    </item>
+</layer-list>
+"""
+COLORS_XML = """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launch_background">%s</color>
+</resources>
+"""
+# Android 12+ рисует свой экран запуска и старый layer-list игнорирует.
+STYLES_V31_XML = """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="LaunchTheme" parent="%s">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/launch_logo</item>
+    </style>
+</resources>
+"""
+
+
+def put(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    print(f"  {path.relative_to(ROOT)}  записан")
+
+
+def scaffold_android(res: Path, bg) -> None:
+    """Дособирает файлы, которых нет в стоковом шаблоне Flutter (Store был на нём).
+
+    Существующее не переписываем — кроме launch_background.xml, если он ещё шаблонный
+    (белый фон без логотипа): иначе экран запуска остался бы пустым.
+    """
+    if not (res / "values/colors.xml").exists():
+        put(res / "values/colors.xml", COLORS_XML % ("#%02X%02X%02X" % bg))
+    for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
+        if not (res / "mipmap-anydpi-v26" / name).exists():
+            put(res / "mipmap-anydpi-v26" / name, ADAPTIVE_XML)
+    if not (res / "drawable/ic_launcher_background.xml").exists():
+        put(res / "drawable/ic_launcher_background.xml", ICON_BG_XML)
+    for sub_dir in ("drawable", "drawable-v21"):
+        f = res / sub_dir / "launch_background.xml"
+        if f.exists() and "launch_logo" not in f.read_text(encoding="utf-8"):
+            put(f, LAUNCH_BG_XML)
+    v31 = res / "values-v31/styles.xml"
+    if not v31.exists():
+        base = re.search(r'<style name="LaunchTheme" parent="([^"]+)"',
+                         (res / "values/styles.xml").read_text(encoding="utf-8-sig"))
+        put(v31, STYLES_V31_XML % (base.group(1) if base else "@android:style/Theme.Light.NoTitleBar"))
+
+
+def build_android(app: Path, mark: Mark, bg, fg, sh: dict) -> None:
     res = app / "android/app/src/main/res"
+    scaffold_android(res, bg)
     print("Android · иконки")
     for dens, px in ANDROID_DENSITIES.items():
-        write(mark.draw(px, bg, fg, FILL_ICON), res / f"mipmap-{dens}/ic_launcher.png")
+        write(mark.draw(px, bg, fg, sh["icon"], sh["fit"]), res / f"mipmap-{dens}/ic_launcher.png")
 
     fg_png = res / "drawable/ic_launcher_foreground.png"
     size = Image.open(fg_png).size[0] if fg_png.exists() else 432
-    write(mark.draw(size, bg, fg, FILL_ADAPTIVE, transparent=True), fg_png)
+    write(mark.draw(size, bg, fg, sh["adaptive"], sh["fit"], transparent=True), fg_png)
 
     print("Android · сплэш")
     logo = res / "drawable/launch_logo.png"
     size = Image.open(logo).size[0] if logo.exists() else 432
-    write(mark.draw(size, bg, fg, FILL_SPLASH, transparent=True), logo)
+    write(mark.draw(size, bg, fg, sh["splash"], sh["fit"], transparent=True), logo)
 
     colors = res / "values/colors.xml"
     cur = re.search(r'<color name="launch_background">(#[0-9A-Fa-f]{6,8})</color>',
@@ -191,12 +327,15 @@ def main() -> None:
     ap.add_argument("--app", required=True, choices=["kvartal", "store"])
     ap.add_argument("--bg", required=True, help="цвет фона, HEX (например 2A302C)")
     ap.add_argument("--fg", required=True, help="цвет знака, HEX (например EEEA83)")
+    ap.add_argument("--shape", default="mark", choices=sorted(SHAPES),
+                    help="mark — знак-вертушка (Квартал); slab — скошенный квадрат (Store)")
     ap.add_argument("--brand", default=str(ROOT / "brand"),
                     help="папка бренд-кита; нужна при запуске из git worktree, "
                          "куда локальная brand/ не попадает")
     a = ap.parse_args()
 
-    svg = Path(a.brand) / BRAND_REL
+    sh = SHAPES[a.shape]
+    svg = Path(a.brand) / sh["svg"]
     if not svg.exists():
         raise SystemExit(
             f"Нет бренд-кита: {svg}. Папка brand/ лежит локально и не "
@@ -205,10 +344,10 @@ def main() -> None:
     app = ROOT / ("mata_kvartal" if a.app == "kvartal" else "mata_store")
     bg, fg = hex_rgb(a.bg), hex_rgb(a.fg)
 
-    print(f"{a.app}: знак #{a.fg.upper()} на фоне #{a.bg.upper()}")
-    mark = Mark(load_polys(svg))
-    build_ios(app, mark, bg, fg)
-    build_android(app, mark, bg, fg)
+    print(f"{a.app}: {a.shape} #{a.fg.upper()} на фоне #{a.bg.upper()}")
+    mark = Mark(load_polys(svg) if a.shape == "mark" else load_slab(svg))
+    build_ios(app, mark, bg, fg, sh)
+    build_android(app, mark, bg, fg, sh)
     print("Готово. Проверить: flutter clean && flutter run")
 
 
