@@ -209,6 +209,17 @@
     });
   }
 
+  // Позиция надписи (перемещение в «Конструкторе»): val = "dx,dy" (px). CSS translate
+  // композится с трансформами элемента (напр. центрирование watermark).
+  function applyPos(key, val) {
+    if (!safeId(key)) return;
+    var parts = String(val == null ? "0,0" : val).split(",");
+    var x = parseFloat(parts[0]) || 0, y = parseFloat(parts[1]) || 0;
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.translate = x + "px " + y + "px";
+    });
+  }
+
   function apply(content) {
     if (!content) return;
     // Публикуем контент глобально: модалки/элементы, которые строятся из JS позже
@@ -228,6 +239,7 @@
         if (key.indexOf("align.") === 0) { applyAlign(key.slice(6), c.value); return; }
         if (key.indexOf("anim.") === 0) { applyAnim(key.slice(5), c.value); return; }
         if (key.indexOf("size.") === 0) { applySize(key.slice(5), c.value); return; }
+        if (key.indexOf("pos.") === 0) { applyPos(key.slice(4), c.value); return; }
         if (key.indexOf("focal.") === 0) { applyFocal(key.slice(6), c.value); return; }
         if (key.indexOf("fit.") === 0) { applyFit(key.slice(4), c.value); return; }
         if (key.indexOf("color.") === 0) { applyColor(key.slice(6), c.value); return; }

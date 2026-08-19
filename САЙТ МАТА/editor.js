@@ -172,6 +172,8 @@
     });
   }
   document.addEventListener("click", function (e) {
+    // После перетаскивания надписи «съедаем» следующий click, чтобы не открылась правка.
+    if (justDragged) { justDragged = false; e.preventDefault(); e.stopPropagation(); return; }
     if (e.target.closest && e.target.closest(".staw-ui, .staw-tools")) return;
     var addb = e.target.closest && e.target.closest(".promo-add-banner");
     if (addb) { e.preventDefault(); e.stopPropagation(); send({ type: "addBanner" }); return; }
@@ -384,6 +386,120 @@
   }
   function initHide() { [].forEach.call(document.querySelectorAll("[data-hideable]"), initHideOn); }
 
+  // ── Перемещение надписей (как в Photoshop/Figma): drag + умные направляющие ──
+  // Тащишь надпись → она смещается (CSS translate, композится с её трансформами).
+  // При приближении к краю/центру контейнера или к другой надписи — «прилипание»
+  // (snap) + розовая направляющая. Alt+клик — сброс позиции. Позиция → pos.<key>.
+  var justDragged = false;
+  var POS = {};
+  function applyPosByKey(key, value) {
+    var parts = String(value == null ? "0,0" : value).split(",");
+    var x = parseFloat(parts[0]) || 0, y = parseFloat(parts[1]) || 0;
+    POS[key] = { x: x, y: y };
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.translate = x + "px " + y + "px";
+    });
+  }
+  var _guides = null;
+  function guideLayer() {
+    if (!_guides) { _guides = document.createElement("div"); _guides.className = "staw-ui staw-guides"; document.body.appendChild(_guides); }
+    return _guides;
+  }
+  function clearGuides() { if (_guides) _guides.textContent = ""; }
+  function drawGuide(vertical, at, from, to) {
+    var g = document.createElement("div"); g.className = "staw-ui staw-guide";
+    if (vertical) { g.style.left = at + "px"; g.style.top = from + "px"; g.style.width = "1px"; g.style.height = (to - from) + "px"; }
+    else { g.style.top = at + "px"; g.style.left = from + "px"; g.style.height = "1px"; g.style.width = (to - from) + "px"; }
+    guideLayer().appendChild(g);
+  }
+  var SNAP = 6, DRAG_THRESH = 3, mv = null;
+  function moveContainer(el) {
+    return el.closest("section,[data-sid],[data-hideable],[data-edit-bg],.eco-cover,.eco-card,main,footer,header") || el.parentElement || el;
+  }
+  function collectTargets(movingEl, container) {
+    var xs = [], ys = [];
+    function addRect(r) {
+      xs.push({ p: r.left, a: r.top, b: r.bottom }, { p: (r.left + r.right) / 2, a: r.top, b: r.bottom }, { p: r.right, a: r.top, b: r.bottom });
+      ys.push({ p: r.top, a: r.left, b: r.right }, { p: (r.top + r.bottom) / 2, a: r.left, b: r.right }, { p: r.bottom, a: r.left, b: r.right });
+    }
+    addRect(container.getBoundingClientRect());
+    container.querySelectorAll("[data-edit]").forEach(function (el) {
+      if (el === movingEl || el.contains(movingEl) || movingEl.contains(el)) return;
+      addRect(el.getBoundingClientRect());
+    });
+    return { xs: xs, ys: ys };
+  }
+  function bestSnap(lines, targets) {
+    var best = null;
+    targets.forEach(function (t) {
+      lines.forEach(function (ml) {
+        var d = Math.abs(ml - t.p);
+        if (d <= SNAP && (!best || d < best.d)) best = { d: d, delta: t.p - ml, t: t };
+      });
+    });
+    return best;
+  }
+  document.addEventListener("pointerdown", function (e) {
+    if (e.button != null && e.button !== 0) return;
+    if (!document.documentElement.classList.contains("staw-edit")) return;
+    if (e.target.closest(".staw-ui, .staw-tools, input, textarea, select")) return;
+    var el = e.target.closest("[data-edit]");
+    if (!el || el.hasAttribute("data-edit-ph")) return;
+    var key = el.getAttribute("data-edit");
+    if (!key || !safeId(key)) return;
+    if (e.altKey) { // Alt+клик — сброс позиции
+      if (POS[key] && (POS[key].x || POS[key].y)) { applyPosByKey(key, "0,0"); draft("pos." + key, "0,0"); }
+      justDragged = true; e.preventDefault(); return;
+    }
+    var cur = POS[key] || { x: 0, y: 0 };
+    mv = { el: el, key: key, sx: e.clientX, sy: e.clientY, bx: cur.x, by: cur.y,
+           container: moveContainer(el), moved: false, targets: null, cx: cur.x, cy: cur.y };
+    e.preventDefault(); // не даём стартовать нативный drag предков/картинок
+  }, true);
+  document.addEventListener("pointermove", function (e) {
+    if (!mv) return;
+    var ddx = e.clientX - mv.sx, ddy = e.clientY - mv.sy;
+    if (!mv.moved) {
+      if (Math.abs(ddx) < DRAG_THRESH && Math.abs(ddy) < DRAG_THRESH) return;
+      mv.moved = true;
+      document.documentElement.classList.add("staw-moving");
+      mv.targets = collectTargets(mv.el, mv.container);
+    }
+    var nx = mv.bx + ddx, ny = mv.by + ddy;
+    mv.el.style.translate = nx + "px " + ny + "px";
+    var r = mv.el.getBoundingClientRect();
+    var bx = bestSnap([r.left, (r.left + r.right) / 2, r.right], mv.targets.xs);
+    var by = bestSnap([r.top, (r.top + r.bottom) / 2, r.bottom], mv.targets.ys);
+    if (bx) nx += bx.delta;
+    if (by) ny += by.delta;
+    mv.el.style.translate = nx + "px " + ny + "px";
+    mv.cx = nx; mv.cy = ny;
+    clearGuides();
+    var rr = mv.el.getBoundingClientRect();
+    if (bx) drawGuide(true, bx.t.p, Math.min(bx.t.a, rr.top), Math.max(bx.t.b, rr.bottom));
+    if (by) drawGuide(false, by.t.p, Math.min(by.t.a, rr.left), Math.max(by.t.b, rr.right));
+  }, true);
+  document.addEventListener("pointerup", function () {
+    if (!mv) return;
+    var m = mv; mv = null;
+    clearGuides();
+    document.documentElement.classList.remove("staw-moving");
+    if (m.moved) {
+      POS[m.key] = { x: Math.round(m.cx), y: Math.round(m.cy) };
+      draft("pos." + m.key, POS[m.key].x + "," + POS[m.key].y);
+      justDragged = true; // подавить последующий click-правку
+    }
+  }, true);
+  (function () {
+    var s = document.createElement("style");
+    s.textContent =
+      "html.staw-edit [data-edit]:not([data-edit-ph]){cursor:grab}" +
+      "html.staw-moving,html.staw-moving *{cursor:grabbing!important;user-select:none!important}" +
+      ".staw-guides{position:fixed;inset:0;z-index:2147483000;pointer-events:none}" +
+      ".staw-guide{position:absolute;background:#ff2d78;box-shadow:0 0 0 .5px rgba(255,45,120,.4)}";
+    document.documentElement.appendChild(s);
+  })();
+
   // ── Применить черновик от родителя ──
   function reorderChildren(container, order) {
     if (!container || !Array.isArray(order)) return;
@@ -421,6 +537,7 @@
       document.querySelectorAll('[data-hideable="' + hk + '"]').forEach(function (el) { el.classList.toggle("staw-cms-hidden", hide); });
       updateHideBtn(hk); return;
     }
+    if (key.indexOf("pos.") === 0) { var pk = key.slice(4); if (safeId(pk)) applyPosByKey(pk, value); return; }
     if (key.indexOf("align.") === 0) { var ak = key.slice(6); if (safeId(ak)) applyAlignLocal(document.querySelector('[data-align="' + ak + '"]'), value); return; }
     if (key.indexOf("anim.") === 0) { var nk = key.slice(5); if (safeId(nk)) applyAnimLocal(nk, value); return; }
     if (key.indexOf("size.") === 0) { var zk = key.slice(5); if (safeId(zk)) document.querySelectorAll('[data-hideable="' + zk + '"]').forEach(function (el) { el.classList.toggle("staw-w-wide", value === "wide"); }); return; }
