@@ -154,6 +154,14 @@
     </div>
     <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Видео на фон (короткое, без звука) — загрузите файл или вставьте ссылку:
       <input id="merch-bg-video" type="text" placeholder="https://…/clip.mp4" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
+    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Качество при загрузке:
+      <select id="merch-bg-video-quality" style="margin-left:6px;padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">
+        <option value="web">Оптимизировать (веб, лёгкое) — рекомендуется</option>
+        <option value="high">Высокое (1080p)</option>
+        <option value="original">Оригинал (без сжатия, 4K)</option>
+      </select>
+      <span style="display:block;color:#6b7280;font-weight:400;margin-top:3px">Оптимизация → быстрый старт; Оригинал → максимум качества, но грузится дольше.</span>
+    </label>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <button type="button" id="merch-bg-video-upload" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:13px">⬆ Загрузить видео файлом</button>
       <span id="merch-bg-video-status" style="font-size:12px;color:#6b7280"></span>
@@ -694,8 +702,9 @@
     var f = bgVideoFileInput.files && bgVideoFileInput.files[0];
     if (!f || !bgKey) return;
     var key = bgKey, status = document.getElementById("merch-bg-video-status");
-    status.textContent = "Загрузка…";
-    var fd = new FormData(); fd.append("video", f);
+    var q = document.getElementById("merch-bg-video-quality").value;
+    status.textContent = (q === "original") ? "Загрузка…" : "Загрузка и сжатие…";
+    var fd = new FormData(); fd.append("video", f); fd.append("quality", q);
     apiForm("./site-video", fd).then(function (d) {
       bgVid = d.url;
       document.getElementById("merch-bg-video").value = d.url;

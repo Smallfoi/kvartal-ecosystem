@@ -178,7 +178,62 @@ def merch_site_video(request):
         return JsonResponse({"detail": "Нужен видео-файл (.mp4/.webm)"}, status=400)
     safe = get_valid_filename(f.name or "clip.mp4") or "clip.mp4"
     saved = default_storage.save("uploads/site-video/" + safe, f)
+    # Качество (управляет владелец при загрузке): web — лёгкое для сайта; high — 1080p;
+    # original — без сжатия (4K, полное качество, но грузится дольше).
+    quality = (request.POST.get("quality") or "web").lower()
+    if quality != "original":
+        saved = _webify_video(saved, quality) or saved
     return JsonResponse({"ok": True, "url": default_storage.url(saved)})
+
+
+# Пресеты сжатия: макс. сторона (px) и CRF (меньше = лучше качество/больше вес).
+_VIDEO_PRESETS = {"web": ("1280", "30"), "high": ("1920", "24")}
+
+
+def _webify_video(saved, quality="web"):
+    """Транскод фонового видео в web-формат по пресету качества (web/high). Камерные
+    ролики огромны (80-100 МБ, 4K) и долго декодируются в браузере. Делаем H.264,
+    ≤maxdim, без звука, faststart. Только локальное хранилище (dev/диск); на S3 или без
+    ffmpeg — тихо None (отдаётся оригинал). Возвращает имя web-версии либо None."""
+    import os
+    import subprocess
+    from django.core.files.storage import default_storage
+    maxdim, crf = _VIDEO_PRESETS.get(quality, _VIDEO_PRESETS["web"])
+    try:
+        src = default_storage.path(saved)  # NotImplementedError на нелокальном хранилище
+    except Exception:
+        return None
+    try:
+        import imageio_ffmpeg
+        ff = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
+    web_name = os.path.splitext(saved)[0] + "_web.mp4"
+    web_path = default_storage.path(web_name)
+    scale = ("scale=w=%s:h=%s:force_original_aspect_ratio=decrease:force_divisible_by=2"
+             % (maxdim, maxdim))
+    try:
+        os.makedirs(os.path.dirname(web_path), exist_ok=True)
+        subprocess.run(
+            [ff, "-y", "-i", src, "-vf", scale,
+             "-c:v", "libx264", "-crf", crf, "-preset", "veryfast", "-pix_fmt", "yuv420p",
+             "-an", "-movflags", "+faststart", web_path],
+            check=True, timeout=600, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        try:
+            if os.path.exists(web_path):
+                os.remove(web_path)
+        except Exception:
+            pass
+        return None
+    if not os.path.exists(web_path) or os.path.getsize(web_path) == 0:
+        return None
+    try:
+        default_storage.delete(saved)  # оригинал-тяжеловес больше не нужен
+    except Exception:
+        pass
+    return web_name
 
 
 # ── Баннеры (промо) в конструкторе: полный CRUD перенесён из Django-админки ───
