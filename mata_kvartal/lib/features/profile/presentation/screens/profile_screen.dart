@@ -150,7 +150,7 @@ class _NotificationsBell extends StatelessWidget {
               child: Text(
                 unread > 9 ? '9+' : '$unread',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.ink,
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
                   height: 1,
@@ -192,7 +192,7 @@ class _ProfileAppBar extends ConsumerWidget {
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF0A1628), AppColors.bgDark],
+              colors: [AppColors.soft, AppColors.bgDark],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -219,7 +219,7 @@ class _ProfileAppBar extends ConsumerWidget {
                           child: const Icon(
                             CupertinoIcons.pencil,
                             size: 11,
-                            color: Colors.white,
+                            color: AppColors.ink,
                           ),
                         ),
                       ),
@@ -250,7 +250,7 @@ class _ProfileAppBar extends ConsumerWidget {
                   child: Text(
                     city,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
@@ -595,7 +595,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           child: const Icon(
                             CupertinoIcons.camera_fill,
                             size: 13,
-                            color: Colors.white,
+                            color: AppColors.ink,
                           ),
                         ),
                       ),
@@ -822,7 +822,7 @@ class _PointsCard extends ConsumerWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF0A1628), AppColors.bgCard],
+            colors: [AppColors.soft, AppColors.bgCard],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -963,7 +963,7 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF0A1628), AppColors.bgCard],
+                  colors: [AppColors.soft, AppColors.bgCard],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
@@ -1536,7 +1536,7 @@ class _ActivityHeatmap extends ConsumerWidget {
                   '$day',
                   style: TextStyle(
                     fontSize: 10,
-                    color: active ? Colors.white : AppColors.textDisabled,
+                    color: active ? AppColors.ink : AppColors.textDisabled,
                   ),
                 ),
               );

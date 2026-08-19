@@ -1,41 +1,103 @@
 import 'package:flutter/material.dart';
 
+/// Палитра КВАРТАЛА — язык сайта МАТА (D-42).
+///
+/// Значения взяты 1:1 из `САЙТ МАТА/styles.css`, чтобы приложение читалось как
+/// продолжение сайта, а не как его пересказ. Приложение было тёмным; теперь база
+/// светлая — молочный фон, бумажные карточки, графит для контрастных блоков.
 class AppColors {
   AppColors._();
 
-  // Primary
-  static const electricBlue = Color(0xFF0A84FF);
-  static const accentBlue = Color(0xFF2997FF);
-  static const iceWhite = Color(0xFFE8F4FD);
+  // ── Поверхности ───────────────────────────────────────────────────────────
+  /// Общий фон экрана (молочный).
+  static const bg = Color(0xFFF4F1EA);
 
-  // Backgrounds
-  static const bgDark = Color(0xFF000000);
-  static const bgSurface = Color(0xFF1C1C1E);
-  static const bgCard = Color(0xFF1F1F21);
-  static const bgElevated = Color(0xFF2C2C2E);
-  static const separator = Color(0xFF38383A);
-  static const glass = Color(0xCC1C1C1E);
+  /// Тёплая «бумага» — карточки и панели поверх фона.
+  static const paper = Color(0xFFFFFDF8);
 
-  // Text
-  static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFFB3B3BA);
-  static const textTertiary = Color(0xFF8E8E93);
-  static const textDisabled = Color(0xFF636366);
+  /// Чистая белая панель — там, где нужен максимальный контраст с фоном.
+  static const panel = Color(0xFFFFFFFF);
 
-  // Territory colors
-  static const hexNeutral = Color(0xFF2A2A2A);
-  static const hexOwned = Color(0xFF0A84FF);
-  static const hexEnemy = Color(0xFFFF453A);
-  static const hexContested = Color(0xFFFFD60A);
-  static const hexFading = Color(0xFF5E5E5E);
+  /// Холодная подложка: чипы, аватары, неактивные состояния.
+  static const soft = Color(0xFFE7EEF0);
 
-  // Status
-  static const success = Color(0xFF30D158);
-  static const warning = Color(0xFFFFD60A);
-  static const error = Color(0xFFFF453A);
-  static const info = Color(0xFF64D2FF);
+  /// Тёмный графит: контраст-блоки, главные кнопки, «своя» строка в рейтинге.
+  static const graphite = Color(0xFF20252B);
 
-  // Arctic gradient
-  static const gradientStart = Color(0xFF2997FF);
-  static const gradientEnd = Color(0xFF0A84FF);
+  /// Полупрозрачная бумага для плавающих панелей над картой.
+  static const glassPaper = Color(0xF2FFFDF8);
+
+  // ── Текст ─────────────────────────────────────────────────────────────────
+  static const ink = Color(0xFF111317);
+  static const muted = Color(0xFF6F7278);
+  static const faint = Color(0xFF8A8D93);
+  static const disabled = Color(0xFFA9ACB1);
+  static const onDark = Color(0xFFFFFFFF);
+
+  /// Тонкие границы — rgba(17, 19, 23, .12) с сайта.
+  static const line = Color(0x1F111317);
+
+  // ── Акценты ───────────────────────────────────────────────────────────────
+  /// Технический голубой — главный сигнал (фокус, запись, ссылки).
+  static const accent = Color(0xFF57BCD8);
+
+  /// Затемнённый голубой: тем же цветом можно писать текст по светлому.
+  static const accentInk = Color(0xFF167A95);
+
+  /// Лайм — спортивный сигнал, дозированно (главное действие, свои зоны).
+  static const lime = Color(0xFFDFF45F);
+
+  // ── Ночная поверхность ────────────────────────────────────────────────────
+  // Сайт светлый принципиально, но Квартал держат в руке на улице и часто в
+  // темноте: молочный экран во весь размер слепит. Вёрстка и типографика те же,
+  // меняются только поверхности.
+  static const nightBg = Color(0xFF14181C);
+  static const nightPaper = Color(0xFF1B2026);
+  static const nightInk = Color(0xFFF2EFE8);
+  static const nightMuted = Color(0xFF9AA0A6);
+  static const nightLine = Color(0x24FFFDF8);
+
+  // ── Статусы ───────────────────────────────────────────────────────────────
+  // Цвет здесь несёт смысл, а не оформление: только состояния, никогда — декор.
+  static const success = Color(0xFF2E9E5B);
+  static const warning = Color(0xFFE0A325);
+  static const error = Color(0xFFD5453B);
+  static const info = accent;
+
+  // ── Зоны на карте ─────────────────────────────────────────────────────────
+  /// Свои зоны — единственное яркое пятно на карте.
+  static const zoneMine = lime;
+
+  /// Спорные — голубой акцент.
+  static const zoneContested = accent;
+
+  /// Чужие — графит; на карте даётся с прозрачностью.
+  static const zoneEnemy = graphite;
+
+  static const zoneNeutral = Color(0xFFCBD3D6);
+  static const zoneFading = Color(0xFFB9C1C4);
+
+  // ── Переходные псевдонимы ─────────────────────────────────────────────────
+  // Имена из тёмной темы. На них завязано ~720 мест в экранах; удалять их будем
+  // по мере перевода экранов на новые имена, иначе пришлось бы менять всё разом.
+  static const electricBlue = accent;
+  static const accentBlue = accent;
+  static const iceWhite = soft;
+  static const bgDark = bg;
+  static const bgSurface = paper;
+  static const bgCard = paper;
+  static const bgElevated = panel;
+  static const separator = line;
+  static const glass = glassPaper;
+  static const textPrimary = ink;
+  static const textSecondary = muted;
+  static const textTertiary = faint;
+  static const textDisabled = disabled;
+  static const hexNeutral = zoneNeutral;
+  static const hexOwned = zoneMine;
+  static const hexEnemy = zoneEnemy;
+  static const hexContested = zoneContested;
+  static const hexFading = zoneFading;
+  static const gradientStart = accent;
+  static const gradientEnd = accentInk;
 }

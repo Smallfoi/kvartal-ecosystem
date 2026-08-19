@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Отдельная вкладка «Инструменты» — офлайн-помощники для бега (перенесены с
 /// экрана «Бег» в свой экран). Сетка карточек с «живыми» иконками → роуты /tools/*.
@@ -69,7 +70,7 @@ class ToolsScreen extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF0A1628), AppColors.bgDark],
+          colors: [AppColors.soft, AppColors.bgDark],
           stops: [0.0, 0.32],
         ),
       ),
@@ -83,7 +84,7 @@ class ToolsScreen extends StatelessWidget {
               child: Text(
                 'Инструменты',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.ink,
                   fontSize: 30,
                   fontWeight: FontWeight.w800,
                 ),
@@ -102,7 +103,7 @@ class ToolsScreen extends StatelessWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.15,
+                childAspectRatio: 1.02,
                 children: [for (final t in _tools) _ToolCard(entry: t)],
               ),
             ),
@@ -180,11 +181,7 @@ class _ToolCard extends StatelessWidget {
               children: [
                 Text(
                   entry.title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTheme.display(15, weight: FontWeight.w600),
                 ),
                 const SizedBox(height: 3),
                 Text(

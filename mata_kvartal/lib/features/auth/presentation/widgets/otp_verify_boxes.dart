@@ -368,7 +368,9 @@ class OtpVerifyBoxesState extends State<OtpVerifyBoxes>
       width: _cellW,
       height: _cellH,
       decoration: BoxDecoration(
-        color: showCheck ? const Color(0xFF12211A) : AppColors.bgCard,
+        color: showCheck
+            ? AppColors.success.withValues(alpha: 0.12)
+            : AppColors.paper,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: border, width: width),
         boxShadow: showCheck

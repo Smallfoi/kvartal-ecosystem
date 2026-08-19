@@ -2,8 +2,66 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_colors.dart';
 
+/// Тема КВАРТАЛА в языке сайта МАТА (D-42).
+///
+/// Со сайта переносится не только палитра, но и ритм: скругления 14/22/30,
+/// мягкие широкие тени без чёрных краёв, кнопка-«таблетка» и одна фирменная
+/// кривая движения. Типографика — Unbounded для крупного, Manrope для текста.
 class AppTheme {
   AppTheme._();
+
+  /// Шрифт текста.
+  static const fontText = 'Manrope';
+
+  /// Шрифт крупных заголовков и чисел.
+  static const fontDisplay = 'Unbounded';
+
+  // Скругления сайта.
+  static const rSm = 14.0;
+  static const rMd = 22.0;
+  static const rLg = 30.0;
+  static const rPill = 999.0;
+
+  /// Фирменное замедление сайта — одна подпись движения на все переходы.
+  static const ease = Cubic(0.33, 1, 0.34, 1);
+  static const durFast = Duration(milliseconds: 260);
+  static const durSlow = Duration(milliseconds: 600);
+
+  /// Мягкая премиальная тень (карточки).
+  static List<BoxShadow> get shadowSm => const [
+    BoxShadow(color: Color(0x14202529), blurRadius: 34, offset: Offset(0, 12)),
+  ];
+
+  /// Тень для плавающих панелей над картой.
+  static List<BoxShadow> get shadowMd => const [
+    BoxShadow(color: Color(0x1F202529), blurRadius: 60, offset: Offset(0, 22)),
+  ];
+
+  /// Крупный дисплейный стиль: заголовки экранов и числа пробежки.
+  static TextStyle display(
+    double size, {
+    FontWeight weight = FontWeight.w700,
+    Color color = AppColors.ink,
+    double? height,
+  }) => TextStyle(
+    fontFamily: fontDisplay,
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+    letterSpacing: -0.02 * size,
+    // Цифры не должны «прыгать» на бегу.
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+
+  /// Мелкая подпись капсом с разрядкой — «eyebrow» с сайта.
+  static TextStyle eyebrow({Color color = AppColors.accentInk}) => TextStyle(
+    fontFamily: fontText,
+    fontSize: 11,
+    fontWeight: FontWeight.w800,
+    color: color,
+    letterSpacing: 0.18 * 11,
+  );
 
   static TextStyle _t(
     double size,
@@ -12,6 +70,7 @@ class AppTheme {
     double? letterSpacing,
     double? height,
   }) => TextStyle(
+    fontFamily: fontText,
     fontSize: size,
     fontWeight: weight,
     color: color,
@@ -19,138 +78,168 @@ class AppTheme {
     height: height,
   );
 
-  static ThemeData get dark {
+  static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.electricBlue,
-        onPrimary: Colors.white,
-        secondary: AppColors.info,
-        onSecondary: AppColors.bgDark,
-        surface: AppColors.bgSurface,
-        onSurface: AppColors.textPrimary,
+      brightness: Brightness.light,
+      fontFamily: fontText,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.graphite,
+        onPrimary: AppColors.onDark,
+        secondary: AppColors.accent,
+        onSecondary: AppColors.ink,
+        tertiary: AppColors.lime,
+        onTertiary: AppColors.ink,
+        surface: AppColors.paper,
+        onSurface: AppColors.ink,
+        surfaceContainerHighest: AppColors.soft,
+        outline: AppColors.line,
         error: AppColors.error,
-        onError: Colors.white,
+        onError: AppColors.onDark,
       ),
-      scaffoldBackgroundColor: AppColors.bgDark,
+      scaffoldBackgroundColor: AppColors.bg,
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppColors.bg,
+        foregroundColor: AppColors.ink,
         elevation: 0,
         scrolledUnderElevation: 0,
         systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
+          // База светлая — иконки статус-бара тёмные.
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
         ),
-        titleTextStyle: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0,
-        ),
+        titleTextStyle: display(19, weight: FontWeight.w600),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.bgCard,
+        color: AppColors.paper,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(rMd),
+          side: const BorderSide(color: AppColors.line),
+        ),
         margin: EdgeInsets.zero,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.electricBlue,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.graphite,
+          foregroundColor: AppColors.onDark,
           minimumSize: const Size.fromHeight(54),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          shape: const StadiumBorder(),
+          textStyle: _t(15, FontWeight.w800, AppColors.onDark, letterSpacing: 0.15),
           elevation: 0,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.electricBlue,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.graphite,
+          foregroundColor: AppColors.onDark,
           minimumSize: const Size.fromHeight(54),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          shape: const StadiumBorder(),
+          textStyle: _t(15, FontWeight.w800, AppColors.onDark, letterSpacing: 0.15),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.ink,
+          minimumSize: const Size.fromHeight(54),
+          side: const BorderSide(color: AppColors.line),
+          shape: const StadiumBorder(),
+          textStyle: _t(15, FontWeight.w800, AppColors.ink, letterSpacing: 0.15),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.electricBlue,
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          foregroundColor: AppColors.accentInk,
+          textStyle: _t(15, FontWeight.w700, AppColors.accentInk),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.bgCard,
+        fillColor: AppColors.paper,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(rMd),
+          borderSide: const BorderSide(color: AppColors.line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(rMd),
+          borderSide: const BorderSide(color: AppColors.line),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.electricBlue, width: 2),
+          borderRadius: BorderRadius.circular(rMd),
+          borderSide: const BorderSide(color: AppColors.accent, width: 2),
         ),
-        hintStyle: const TextStyle(
-          color: AppColors.textDisabled,
-          fontWeight: FontWeight.w400,
-        ),
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
+        hintStyle: _t(15, FontWeight.w400, AppColors.disabled),
+        labelStyle: _t(15, FontWeight.w500, AppColors.muted),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       dividerTheme: const DividerThemeData(
-        color: AppColors.separator,
-        thickness: 0.5,
-        space: 0.5,
+        color: AppColors.line,
+        thickness: 1,
+        space: 1,
       ),
-      iconTheme: const IconThemeData(color: AppColors.textSecondary, size: 24),
+      iconTheme: const IconThemeData(color: AppColors.muted, size: 24),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.electricBlue,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.lime,
+        foregroundColor: AppColors.ink,
         elevation: 0,
         shape: CircleBorder(),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.bgCard,
-        labelStyle: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
+        backgroundColor: AppColors.soft,
+        labelStyle: _t(12, FontWeight.w800, AppColors.ink),
         side: BorderSide.none,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       ),
-      textTheme: TextTheme(
-        displayLarge: _t(56, FontWeight.w700, AppColors.textPrimary),
-        displayMedium: _t(44, FontWeight.w700, AppColors.textPrimary),
-        displaySmall: _t(34, FontWeight.w700, AppColors.textPrimary),
-        headlineLarge: _t(32, FontWeight.w700, AppColors.textPrimary),
-        headlineMedium: _t(26, FontWeight.w700, AppColors.textPrimary),
-        headlineSmall: _t(22, FontWeight.w600, AppColors.textPrimary),
-        titleLarge: _t(20, FontWeight.w600, AppColors.textPrimary),
-        titleMedium: _t(17, FontWeight.w600, AppColors.textPrimary),
-        titleSmall: _t(15, FontWeight.w500, AppColors.textSecondary),
-        bodyLarge: _t(17, FontWeight.w400, AppColors.textPrimary, height: 1.5),
-        bodyMedium: _t(15, FontWeight.w400, AppColors.textPrimary, height: 1.4),
-        bodySmall: _t(
-          13,
-          FontWeight.w400,
-          AppColors.textSecondary,
-          height: 1.3,
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.paper,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(rLg)),
         ),
-        labelLarge: _t(15, FontWeight.w600, AppColors.textPrimary),
-        labelMedium: _t(13, FontWeight.w500, AppColors.textSecondary),
-        labelSmall: _t(12, FontWeight.w500, AppColors.textTertiary),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.paper,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rLg)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.graphite,
+        contentTextStyle: _t(14, FontWeight.w600, AppColors.onDark),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rSm)),
+      ),
+      splashFactory: InkSparkle.splashFactory,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
+      textTheme: TextTheme(
+        // Крупное — дисплейным шрифтом, как заголовки сайта.
+        displayLarge: display(56),
+        displayMedium: display(44),
+        displaySmall: display(34),
+        headlineLarge: display(30),
+        headlineMedium: display(25, weight: FontWeight.w600),
+        headlineSmall: display(21, weight: FontWeight.w600),
+        titleLarge: display(19, weight: FontWeight.w600),
+        titleMedium: _t(16, FontWeight.w800, AppColors.ink),
+        titleSmall: _t(14, FontWeight.w700, AppColors.muted),
+        bodyLarge: _t(16, FontWeight.w400, AppColors.ink, height: 1.55),
+        bodyMedium: _t(14.5, FontWeight.w400, AppColors.ink, height: 1.5),
+        bodySmall: _t(13, FontWeight.w400, AppColors.muted, height: 1.45),
+        labelLarge: _t(15, FontWeight.w800, AppColors.ink),
+        labelMedium: _t(13, FontWeight.w700, AppColors.muted),
+        labelSmall: _t(11, FontWeight.w700, AppColors.faint),
       ),
     );
   }
+
+  /// Прежнее имя темы. Экраны и `main.dart` ссылались на `AppTheme.dark`;
+  /// оставлено, чтобы переход не ломал сборку. Ночную поверхность соберём
+  /// отдельно — см. D-42.
+  static ThemeData get dark => light;
 }

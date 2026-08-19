@@ -67,7 +67,7 @@ class KvartalApp extends ConsumerWidget {
     return MaterialApp.router(
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.light,
       routerConfig: ref.watch(routerProvider),
     );
   }

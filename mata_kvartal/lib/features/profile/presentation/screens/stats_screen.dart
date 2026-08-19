@@ -29,7 +29,7 @@ class StatsScreen extends ConsumerWidget {
             child: Text(
               'Не удалось загрузить статистику.\nПроверьте подключение и попробуйте позже.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: AppColors.muted),
             ),
           ),
         ),
@@ -58,7 +58,7 @@ class StatsScreen extends ConsumerWidget {
             const Text(
               'Статистика едина во всех приложениях экосистемы: покупки и заказы '
               'учитываются из МАТА Store.',
-              style: TextStyle(fontSize: 13, height: 1.4, color: Colors.white54),
+              style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.muted),
             ),
           ],
         ),
@@ -79,7 +79,7 @@ class _SectionTitle extends StatelessWidget {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: AppColors.ink,
           ),
         ),
       );
@@ -137,13 +137,13 @@ class _StatCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: AppColors.ink,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               stat.label,
-              style: const TextStyle(fontSize: 12, color: Colors.white54),
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ],
         ),

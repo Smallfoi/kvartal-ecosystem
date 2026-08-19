@@ -330,7 +330,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     SizedBox(width: 12),
                     Text(
                       'Загружаем кварталы улиц Якутска...',
-                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      style: TextStyle(color: AppColors.ink, fontSize: 13),
                     ),
                   ],
                 ),
@@ -359,7 +359,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       const Text(
                         'Зоны не загружены',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.ink,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -368,7 +368,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       const SizedBox(height: 4),
                       const Text(
                         'GPS работает.\nЗапусти бэкенд и нажми «Повторить».',
-                        style: TextStyle(color: Colors.white60, fontSize: 11),
+                        style: TextStyle(color: AppColors.muted, fontSize: 11),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
@@ -380,7 +380,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.electricBlue,
+                            color: AppColors.graphite,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Row(
@@ -479,7 +479,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ZoneOwner.mine => AppColors.hexOwned.withValues(alpha: 0.70),
       ZoneOwner.enemy => AppColors.hexEnemy.withValues(alpha: 0.58),
       ZoneOwner.club => AppColors.success.withValues(alpha: 0.58),
-      ZoneOwner.free => Colors.white.withValues(alpha: 0.08),
+      ZoneOwner.free => AppColors.zoneNeutral.withValues(alpha: 0.55),
     };
   }
 
@@ -517,7 +517,7 @@ class _MapErrorNotice extends StatelessWidget {
           const Text(
             '\u041a\u0430\u0440\u0442\u0430 \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u0430',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.ink,
               fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
@@ -526,14 +526,14 @@ class _MapErrorNotice extends StatelessWidget {
           const SizedBox(height: 6),
           const Text(
             '\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0438\u043d\u0442\u0435\u0440\u043d\u0435\u0442 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c\u00bb.',
-            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.25),
+            style: TextStyle(color: AppColors.muted, fontSize: 13, height: 1.25),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 14),
           _NoticeButton(
             label: '\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c',
             icon: CupertinoIcons.arrow_clockwise,
-            color: AppColors.electricBlue,
+            color: AppColors.graphite,
             onTap: onRetry,
           ),
         ],
@@ -565,7 +565,7 @@ class _NoticeButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: AppColors.line),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -812,7 +812,7 @@ class _Glass extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.glass,
             borderRadius: borderRadius,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+            border: Border.all(color: AppColors.line),
           ),
           child: child,
         ),
@@ -841,7 +841,7 @@ class _KvartalTopLogo extends StatelessWidget {
               Text(
                 '\u0433\u043e\u0440\u043e\u0434 ',
                 style: TextStyle(
-                  color: Colors.white38,
+                  color: AppColors.faint,
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   height: 1,
@@ -850,7 +850,7 @@ class _KvartalTopLogo extends StatelessWidget {
               Text(
                 '\u042f\u043a\u0443\u0442\u0441\u043a',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.ink,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   height: 1,
@@ -899,7 +899,7 @@ class _WeatherChip extends ConsumerWidget {
               tempText,
               style: Theme.of(
                 context,
-              ).textTheme.labelMedium?.copyWith(color: Colors.white),
+              ).textTheme.labelMedium?.copyWith(color: AppColors.ink),
             ),
             const SizedBox(width: 4),
             const Icon(
@@ -952,7 +952,7 @@ class _LegendDot extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+        Text(label, style: const TextStyle(color: AppColors.ink, fontSize: 10)),
       ],
     );
   }
@@ -1067,7 +1067,7 @@ class _Stat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? Colors.white;
+    final c = color ?? AppColors.ink;
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,

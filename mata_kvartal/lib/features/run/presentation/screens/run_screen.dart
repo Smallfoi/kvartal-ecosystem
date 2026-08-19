@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../map/data/zone_provider.dart';
 import '../../../territory/data/territory_provider.dart';
 import '../../../permissions/data/location_access_provider.dart';
@@ -80,7 +81,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A1628), AppColors.bgDark],
+            colors: [AppColors.soft, AppColors.bgDark],
             stops: [0.0, 0.32],
           ),
         ),
@@ -344,14 +345,12 @@ class _StartCard extends ConsumerWidget {
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF2A2722), Color(0xFF121210)],
+                colors: [AppColors.graphite, Color(0xFF15181C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: AppColors.warning.withValues(alpha: 0.28),
-              ),
+              border: Border.all(color: AppColors.lime.withValues(alpha: 0.35)),
             ),
             child: Row(
               children: [
@@ -363,8 +362,8 @@ class _StartCard extends ConsumerWidget {
                         'Готов бежать?',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
+                              color: AppColors.onDark,
+                              fontWeight: FontWeight.w700,
                             ),
                       ),
                       const SizedBox(height: 4),
@@ -372,7 +371,7 @@ class _StartCard extends ConsumerWidget {
                         'Замкни маршрут. Забери квартал.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.55),
+                          color: AppColors.onDark.withValues(alpha: 0.72),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -382,22 +381,22 @@ class _StartCard extends ConsumerWidget {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.warning,
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.lime,
+                          borderRadius: BorderRadius.circular(AppTheme.rPill),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               CupertinoIcons.play_fill,
-                              color: Colors.white,
+                              color: AppColors.ink,
                               size: 13,
                             ),
                             SizedBox(width: 8),
                             Text(
                               'НАЧАТЬ',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.ink,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
                                 letterSpacing: 1.2,
@@ -415,7 +414,7 @@ class _StartCard extends ConsumerWidget {
                   height: 82,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: AppColors.line,
                     border: Border.all(
                       color: AppColors.warning.withValues(alpha: 0.28),
                       width: 1.2,

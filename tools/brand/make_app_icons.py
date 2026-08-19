@@ -193,7 +193,7 @@ def sub(path: Path, old: str, new: str, *, count: int = 1) -> None:
     print(f"  {path.relative_to(ROOT)}  обновлён")
 
 
-def build_ios(app: Path, mark: Mark, bg, fg, sh: dict) -> None:
+def build_ios(app: Path, mark: Mark, bg, fg, sh: dict, sbg, sfg) -> None:
     iconset = app / "ios/Runner/Assets.xcassets/AppIcon.appiconset"
     meta = json.loads((iconset / "Contents.json").read_text(encoding="utf-8-sig"))
     print("iOS · иконки")
@@ -208,12 +208,12 @@ def build_ios(app: Path, mark: Mark, bg, fg, sh: dict) -> None:
     launch = app / "ios/Runner/Assets.xcassets/LaunchImage.imageset"
     base = 200  # сторона квадрата в поинтах; storyboard рисует картинку 1:1
     for scale, name in ((1, "LaunchImage.png"), (2, "LaunchImage@2x.png"), (3, "LaunchImage@3x.png")):
-        write(mark.draw(base * scale, bg, fg, sh["splash"], sh["fit"], transparent=True),
+        write(mark.draw(base * scale, sbg, sfg, sh["splash"], sh["fit"], transparent=True),
               launch / name)
 
     story = app / "ios/Runner/Base.lproj/LaunchScreen.storyboard"
     text = story.read_text(encoding="utf-8")
-    r, g, b = (c / 255 for c in bg)
+    r, g, b = (c / 255 for c in sbg)
     want = f'red="{r:.5f}" green="{g:.5f}" blue="{b:.5f}" alpha="1"'
     if want not in text:  # шаг идемпотентный: повторный запуск с тем же цветом ничего не трогает
         cur = re.search(r'<color key="backgroundColor" red="[\d.]+" green="[\d.]+" blue="[\d.]+" alpha="1"', text)
@@ -241,7 +241,7 @@ ICON_BG_XML = """<?xml version="1.0" encoding="utf-8"?>
 """
 LAUNCH_BG_XML = """<?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/launch_background" />
+    <item android:drawable="@color/splash_background" />
     <item>
         <bitmap
             android:gravity="center"
@@ -251,7 +251,10 @@ LAUNCH_BG_XML = """<?xml version="1.0" encoding="utf-8"?>
 """
 COLORS_XML = """<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Фон adaptive-иконки. -->
     <color name="launch_background">%s</color>
+    <!-- Фон экрана запуска: у приложения может быть другая база, чем у иконки. -->
+    <color name="splash_background">%s</color>
 </resources>
 """
 # Android 12+ рисует свой экран запуска и старый layer-list игнорирует.
@@ -259,7 +262,7 @@ STYLES_V31_XML = """<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="LaunchTheme" parent="%s">
         <item name="android:windowBackground">@drawable/launch_background</item>
-        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/launch_logo</item>
     </style>
 </resources>
@@ -272,14 +275,15 @@ def put(path: Path, text: str) -> None:
     print(f"  {path.relative_to(ROOT)}  записан")
 
 
-def scaffold_android(res: Path, bg) -> None:
+def scaffold_android(res: Path, bg, splash_bg) -> None:
     """Дособирает файлы, которых нет в стоковом шаблоне Flutter (Store был на нём).
 
     Существующее не переписываем — кроме launch_background.xml, если он ещё шаблонный
     (белый фон без логотипа): иначе экран запуска остался бы пустым.
     """
     if not (res / "values/colors.xml").exists():
-        put(res / "values/colors.xml", COLORS_XML % ("#%02X%02X%02X" % bg))
+        put(res / "values/colors.xml",
+            COLORS_XML % ("#%02X%02X%02X" % bg, "#%02X%02X%02X" % splash_bg))
     for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
         if not (res / "mipmap-anydpi-v26" / name).exists():
             put(res / "mipmap-anydpi-v26" / name, ADAPTIVE_XML)
@@ -296,9 +300,9 @@ def scaffold_android(res: Path, bg) -> None:
         put(v31, STYLES_V31_XML % (base.group(1) if base else "@android:style/Theme.Light.NoTitleBar"))
 
 
-def build_android(app: Path, mark: Mark, bg, fg, sh: dict) -> None:
+def build_android(app: Path, mark: Mark, bg, fg, sh: dict, sbg, sfg) -> None:
     res = app / "android/app/src/main/res"
-    scaffold_android(res, bg)
+    scaffold_android(res, bg, sbg)
     print("Android · иконки")
     for dens, px in ANDROID_DENSITIES.items():
         write(mark.draw(px, bg, fg, sh["icon"], sh["fit"]), res / f"mipmap-{dens}/ic_launcher.png")
@@ -310,16 +314,35 @@ def build_android(app: Path, mark: Mark, bg, fg, sh: dict) -> None:
     print("Android · сплэш")
     logo = res / "drawable/launch_logo.png"
     size = Image.open(logo).size[0] if logo.exists() else 432
-    write(mark.draw(size, bg, fg, sh["splash"], sh["fit"], transparent=True), logo)
+    write(mark.draw(size, sbg, sfg, sh["splash"], sh["fit"], transparent=True), logo)
 
     colors = res / "values/colors.xml"
-    cur = re.search(r'<color name="launch_background">(#[0-9A-Fa-f]{6,8})</color>',
-                    colors.read_text(encoding="utf-8-sig"))
-    if not cur:
-        raise SystemExit("colors.xml: не нашёл launch_background")
-    new = "#%02X%02X%02X" % bg
-    if cur.group(1).upper() != new:
-        sub(colors, cur.group(0), f'<color name="launch_background">{new}</color>')
+    text = colors.read_text(encoding="utf-8-sig")
+    for name, value in (("launch_background", bg), ("splash_background", sbg)):
+        want = "#%02X%02X%02X" % value
+        cur = re.search(r'<color name="%s">(#[0-9A-Fa-f]{6,8})</color>' % name, text)
+        if cur is None:
+            # Ресурса ещё нет (приложение делали до разделения цветов) — добавляем.
+            text = text.replace("</resources>",
+                                '    <color name="%s">%s</color>\n</resources>' % (name, want))
+            colors.write_text(text, encoding="utf-8")
+            print(f"  {colors.relative_to(ROOT)}  добавлен {name}")
+        elif cur.group(1).upper() != want:
+            sub(colors, cur.group(0), f'<color name="{name}">{want}</color>')
+            text = colors.read_text(encoding="utf-8-sig")
+
+    # Экраны запуска старых приложений ссылались на цвет иконки — переводим на свой.
+    for rel in ("drawable/launch_background.xml", "drawable-v21/launch_background.xml",
+                "values-v31/styles.xml"):
+        f = res / rel
+        if not f.exists():
+            continue
+        t = f.read_text(encoding="utf-8-sig")
+        if "windowSplashScreenBackground" in t or "layer-list" in t:
+            t2 = t.replace("@color/launch_background", "@color/splash_background")
+            if t2 != t:
+                f.write_text(t2, encoding="utf-8")
+                print(f"  {f.relative_to(ROOT)}  сплэш переведён на splash_background")
 
 
 def main() -> None:
@@ -327,6 +350,8 @@ def main() -> None:
     ap.add_argument("--app", required=True, choices=["kvartal", "store"])
     ap.add_argument("--bg", required=True, help="цвет фона, HEX (например 2A302C)")
     ap.add_argument("--fg", required=True, help="цвет знака, HEX (например EEEA83)")
+    ap.add_argument("--splash-bg", help="фон экрана запуска, HEX (по умолчанию — как у иконки)")
+    ap.add_argument("--splash-fg", help="цвет знака на экране запуска (по умолчанию — как у иконки)")
     ap.add_argument("--shape", default="mark", choices=sorted(SHAPES),
                     help="mark — знак-вертушка (Квартал); slab — скошенный квадрат (Store)")
     ap.add_argument("--brand", default=str(ROOT / "brand"),
@@ -343,11 +368,13 @@ def main() -> None:
         )
     app = ROOT / ("mata_kvartal" if a.app == "kvartal" else "mata_store")
     bg, fg = hex_rgb(a.bg), hex_rgb(a.fg)
+    sbg = hex_rgb(a.splash_bg) if a.splash_bg else bg
+    sfg = hex_rgb(a.splash_fg) if a.splash_fg else fg
 
     print(f"{a.app}: {a.shape} #{a.fg.upper()} на фоне #{a.bg.upper()}")
     mark = Mark(load_polys(svg) if a.shape == "mark" else load_slab(svg))
-    build_ios(app, mark, bg, fg, sh)
-    build_android(app, mark, bg, fg, sh)
+    build_ios(app, mark, bg, fg, sh, sbg, sfg)
+    build_android(app, mark, bg, fg, sh, sbg, sfg)
     print("Готово. Проверить: flutter clean && flutter run")
 
 
