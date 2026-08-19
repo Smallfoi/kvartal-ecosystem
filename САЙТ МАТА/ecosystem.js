@@ -187,6 +187,14 @@
       + ".eco-phone-prefix{padding:12px 0 12px 14px;color:#20252b;font:inherit}"
       + ".eco-card .eco-phone input{border:0;margin:0;flex:1;min-width:0;background:transparent;"
       + "padding:12px 14px 12px 6px;border-radius:12px;outline:none}"
+      // Постоянная маска телефона: образец «___ ___-__-__» виден СРАЗУ и остаётся до
+      // последней цифры — введённые цифры (в input, поверх) закрывают свои позиции,
+      // незаполненные позиции остаются прозрачно-серыми. Слои выровнены по шрифту/паддингу.
+      + ".eco-phone-field{position:relative;flex:1;min-width:0;display:flex}"
+      + ".eco-phone-mask{position:absolute;inset:0;display:flex;align-items:center;"
+      + "padding:12px 14px 12px 6px;font:inherit;white-space:pre;pointer-events:none;overflow:hidden}"
+      + ".eco-phone-mask .t{color:transparent}"
+      + ".eco-phone-mask .r{color:#bdbab1}"
       + ".eco-otp{position:relative;height:196px;margin:10px 0 0;cursor:text}"
       + ".eco-card input.eco-otp-input{position:absolute;left:50%;top:50%;width:1px;height:1px;"
       + "opacity:0;border:0;padding:0;margin:0;background:transparent}"
@@ -309,12 +317,46 @@
   // Телефон: пользователь вводит ТОЛЬКО 10 цифр после несъёмного «+7».
   // Ведущие «7»/«8» (набор или вставка «89148278470», «+7914…») отбрасываются —
   // мобильные номера РФ начинаются с 9.
+  // Маска телефона: шаблон «### ###-##-##» (# — слот цифры), образец — реальный пример
+  // номера PHONE_EX. Введённые цифры идут в «typed» (видны в input поверх), незаполненные
+  // позиции показывают цифры образца в «rest» (прозрачно-серые) — образец не исчезает и
+  // остаётся до последней цифры. Разделитель — в typed, пока есть введённые цифры, иначе в rest.
+  var PHONE_TPL = "### ###-##-##";
+  var PHONE_EX = "9123456789"; // пример-образец → «912 345-67-89»
+  function phoneMaskParts(digits) {
+    var typed = "", rest = "", di = 0;
+    for (var i = 0; i < PHONE_TPL.length; i++) {
+      var ch = PHONE_TPL.charAt(i);
+      if (ch === "#") {
+        if (di < digits.length) { typed += digits.charAt(di); }
+        else { rest += PHONE_EX.charAt(di); }
+        di++;
+      } else {
+        if (di < digits.length) { typed += ch; } else { rest += ch; }
+      }
+    }
+    return { typed: typed, rest: rest };
+  }
   function setupPhoneInput(input) {
-    input.addEventListener("input", function () {
+    var field = input.parentNode;
+    var mask = field ? field.querySelector(".eco-phone-mask") : null;
+    function render() {
       var d = input.value.replace(/\D/g, "");
-      if (d.charAt(0) === "7" || d.charAt(0) === "8") d = d.slice(1);
-      input.value = d.slice(0, 10);
-    });
+      if (d.charAt(0) === "7" || d.charAt(0) === "8") d = d.slice(1); // РФ-мобильные с 9
+      d = d.slice(0, 10);
+      var p = phoneMaskParts(d);
+      if (input.value !== p.typed) input.value = p.typed;
+      if (mask) {
+        mask.firstChild
+          ? (mask.childNodes[0].textContent = p.typed,
+             mask.childNodes[1].textContent = p.rest)
+          : (mask.innerHTML = '<span class="t"></span><span class="r"></span>',
+             mask.childNodes[0].textContent = p.typed,
+             mask.childNodes[1].textContent = p.rest);
+      }
+    }
+    input.addEventListener("input", render);
+    render(); // старт: показать полный прозрачный образец «___ ___-__-__»
   }
   function phoneDigits(input) {
     return input.value.replace(/\D/g, "");
@@ -339,7 +381,8 @@
       '<h3 data-edit="auth.loginTitle">Вход в МАТА</h3>' +
       '<p class="eco-sub" data-edit="auth.loginSub">Баллы «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
       '<div class="eco-phone"><span class="eco-phone-prefix">+7</span>' +
-      '<input data-login-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" placeholder="999 000-00-00" autocomplete="tel" /></div>' +
+      '<span class="eco-phone-field"><input data-login-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" autocomplete="tel" />' +
+      '<span class="eco-phone-mask" aria-hidden="true"></span></span></div>' +
       '<div class="eco-otp" data-login-otp>' +
       '<input data-login-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
       '<p class="eco-err" data-login-err></p>' +
@@ -351,7 +394,8 @@
       '<p class="eco-sub" data-edit="auth.regSub">Единый аккаунт экосистемы. Dev-код: 1234.</p>' +
       '<input data-reg-name data-edit-ph="auth.namePh" type="text" placeholder="Имя и фамилия" autocomplete="name" />' +
       '<div class="eco-phone"><span class="eco-phone-prefix">+7</span>' +
-      '<input data-reg-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" placeholder="999 000-00-00" autocomplete="tel" /></div>' +
+      '<span class="eco-phone-field"><input data-reg-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" autocomplete="tel" />' +
+      '<span class="eco-phone-mask" aria-hidden="true"></span></span></div>' +
       '<div class="eco-otp" data-reg-otp>' +
       '<input data-reg-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
       '<p class="eco-err" data-reg-err></p>' +
