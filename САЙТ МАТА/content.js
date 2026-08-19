@@ -54,13 +54,55 @@
       // position:relative только когда включён видео-фон (staw-bg-on) — не трогаем верстку остальных секций.
       "[data-edit-bg].staw-bg-on{position:relative}" +
       ".staw-bg-layer{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}" +
-      ".staw-bg-layer video{width:100%;height:100%;object-fit:cover;display:block}" +
+      ".staw-bg-layer video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s ease}" +
       ".staw-bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5))}" +
       "[data-edit-bg].staw-bg-on>:not(.staw-bg-layer){position:relative;z-index:1}";
     (document.head || document.documentElement).appendChild(st);
   }
 
   // ── Фон блока: фото (с затемнением) / видео (URL) / убрать (вернуть градиент из CSS) ──
+  // Фоновое видео: два элемента с кроссфейдом → бесшовная петля (без скачка при повторе);
+  // preload=auto → грузится заранее; плавное появление (opacity 0→1) = «свечение» при старте.
+  function setupBgVideo(layer, src, fit, focal) {
+    var vs = layer.querySelectorAll("video");
+    var fresh = vs.length < 2;
+    if (fresh) {
+      layer.textContent = "";
+      for (var i = 0; i < 2; i++) {
+        var v = document.createElement("video");
+        v.muted = true; v.defaultMuted = true;
+        v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("preload", "auto");
+        layer.appendChild(v);
+      }
+      vs = layer.querySelectorAll("video");
+    }
+    var a = vs[0], b = vs[1];
+    var newSrc = a.getAttribute("src") !== src;
+    if (newSrc) { a.setAttribute("src", src); b.setAttribute("src", src); }
+    a.style.objectFit = b.style.objectFit = fit;
+    a.style.objectPosition = b.style.objectPosition = focal;
+    if (fresh || newSrc) {
+      layer._active = a; a.style.opacity = "0"; b.style.opacity = "0";
+      try { b.pause(); } catch (e) {}
+      if (!a._faded) { a._faded = 1; a.addEventListener("playing", function f() { a.removeEventListener("playing", f); a.style.opacity = "1"; }); }
+      var XF = 0.55; // сек кроссфейда у петли
+      [a, b].forEach(function (v) {
+        if (v._wrap) return; v._wrap = 1;
+        v.addEventListener("timeupdate", function () {
+          if (v !== layer._active || !v.duration || v.duration === Infinity) return;
+          if (v.currentTime >= v.duration - XF) {
+            var other = (v === a) ? b : a;
+            layer._active = other;
+            try { other.currentTime = 0; } catch (e) {}
+            var p = other.play(); if (p && p.catch) p.catch(function () {});
+            other.style.opacity = "1"; v.style.opacity = "0";
+            setTimeout(function () { try { v.pause(); } catch (e) {} }, (XF + 0.12) * 1000);
+          }
+        });
+      });
+    }
+    var pp = layer._active.play(); if (pp && pp.catch) pp.catch(function () {});
+  }
   function bgEl(key) { return safeId(key) ? document.querySelector('[data-edit-bg="' + key + '"]') : null; }
   function refreshBg(el) {
     if (!el) return;
@@ -72,16 +114,8 @@
     var layer = el.querySelector(":scope > .staw-bg-layer");
     if (!off && vid) {
       el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
-      if (!layer) {
-        layer = document.createElement("div"); layer.className = "staw-bg-layer";
-        var v = document.createElement("video");
-        v.autoplay = true; v.loop = true; v.muted = true; v.defaultMuted = true;
-        v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("autoplay", ""); v.setAttribute("loop", "");
-        layer.appendChild(v); el.insertBefore(layer, el.firstChild);
-      }
-      var vv = layer.querySelector("video");
-      if (vv.getAttribute("src") !== vid) vv.setAttribute("src", vid);
-      vv.style.objectFit = fit; vv.style.objectPosition = focal;
+      if (!layer) { layer = document.createElement("div"); layer.className = "staw-bg-layer"; el.insertBefore(layer, el.firstChild); }
+      setupBgVideo(layer, vid, fit, focal);
       el.classList.add("staw-bg-on");
     } else if (!off && img) {
       if (layer) layer.remove(); el.classList.remove("staw-bg-on");
