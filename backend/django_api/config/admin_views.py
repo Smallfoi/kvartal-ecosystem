@@ -170,8 +170,8 @@ def merch_site_video(request):
     f = request.FILES.get("video")
     if not f:
         return JsonResponse({"detail": "Нет файла"}, status=400)
-    if f.size > 25 * 1024 * 1024:
-        return JsonResponse({"detail": "Файл слишком большой (макс 25 МБ)"}, status=400)
+    if f.size > 200 * 1024 * 1024:
+        return JsonResponse({"detail": "Файл слишком большой (макс 200 МБ)"}, status=400)
     ct = (f.content_type or "").lower()
     name = (f.name or "").lower()
     if not (ct.startswith("video/") or name.endswith((".mp4", ".webm", ".ogg", ".mov"))):
