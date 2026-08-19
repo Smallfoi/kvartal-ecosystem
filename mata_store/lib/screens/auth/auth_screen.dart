@@ -7,31 +7,9 @@ import '../../data/api/api_client.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/otp_verify_boxes.dart';
+import '../../widgets/phone_mask.dart';
 import '../../widgets/remote_text.dart';
 import '../profile/legal_documents_screen.dart';
-
-/// Формат номера: пользователь вводит ТОЛЬКО 10 цифр после несъёмного «+7».
-/// Ведущие «7»/«8» (набранные или вставленные: «89148278470», «+7914…»)
-/// отбрасываются автоматически — мобильные номера РФ начинаются с 9.
-class RuPhoneFormatter extends TextInputFormatter {
-  const RuPhoneFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    var digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    if (digits.startsWith('7') || digits.startsWith('8')) {
-      digits = digits.substring(1);
-    }
-    if (digits.length > 10) digits = digits.substring(0, 10);
-    return TextEditingValue(
-      text: digits,
-      selection: TextSelection.collapsed(offset: digits.length),
-    );
-  }
-}
 
 class AuthScreen extends StatefulWidget {
   final bool startWithRegister;
@@ -48,7 +26,10 @@ class _AuthScreenState extends State<AuthScreen> {
   // Вход и регистрация — ТОЛЬКО по единому номеру телефона (директива
   // владельца 2026-08-19): email/пароль из форм убраны.
   final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  // Маска телефона: образец «912 345-67-89» виден сразу и не исчезает при вводе.
+  final _phoneCtrl = PhoneMaskController(
+    hintColor: AppColors.black.withValues(alpha: 0.32),
+  );
 
   @override
   void initState() {
@@ -365,10 +346,10 @@ class _LoginForm extends StatelessWidget {
         _InputField(
           controller: phoneCtrl,
           label: 'Телефон',
-          hint: '999 000-00-00',
+          hint: '',
           prefixText: '+7 ',
           keyboardType: TextInputType.phone,
-          inputFormatters: const [RuPhoneFormatter()],
+          inputFormatters: const [PhoneMaskFormatter()],
           icon: Icons.phone_outlined,
         ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.1),
         if (error != null) ...[
@@ -437,10 +418,10 @@ class _RegisterForm extends StatelessWidget {
         _InputField(
           controller: phoneCtrl,
           label: 'Телефон',
-          hint: '999 000-00-00',
+          hint: '',
           prefixText: '+7 ',
           keyboardType: TextInputType.phone,
-          inputFormatters: const [RuPhoneFormatter()],
+          inputFormatters: const [PhoneMaskFormatter()],
           icon: Icons.phone_outlined,
         ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.1),
         if (error != null) ...[
