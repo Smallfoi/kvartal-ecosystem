@@ -49,6 +49,9 @@
       "color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;background:rgba(16,122,87,.95);" +
       "box-shadow:0 1px 5px rgba(0,0,0,.4);opacity:0;transition:opacity .12s}" +
     "html.staw-edit [data-edit-bg]:hover>.staw-bg-btn,html.staw-edit .staw-bg-btn:hover{opacity:1}" +
+    // Экран входа/регистрации: кнопка «Фон» панели видна СРАЗУ (не только по наведению) —
+    // панель перекрыта текстом-оверлеем, навести на неё сложно. Виден только активный слой.
+    "html.staw-edit .eco-photo>.staw-bg-btn{opacity:1}" +
     "html.staw-edit .staw-size-btn{background:rgba(37,99,235,.95)}" +
     // «Добавить блок» — плитка ВНУТРИ сетки (не ломает раскладку секции).
     "html.staw-edit .staw-add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:64px;padding:14px;" +
