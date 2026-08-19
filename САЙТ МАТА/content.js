@@ -220,6 +220,24 @@
     });
   }
 
+  // Добавленные в «Конструкторе» надписи: воссоздаём пустые элементы в их секциях,
+  // текст (xl.<sid>) и позицию (pos.xl.<sid>) заполнит основной проход apply().
+  function labelSection(key) { return key === "main" ? (document.querySelector("main") || document.body) : document.getElementById(key); }
+  function materializeLabels(list) {
+    (list || []).forEach(function (it) {
+      if (!it || !it.id || document.querySelector('[data-edit="xl.' + it.id + '"]')) return;
+      var section = labelSection(it.c || "main");
+      if (!section) return;
+      if (getComputedStyle(section).position === "static") section.style.position = "relative";
+      var el = document.createElement("div");
+      el.className = "staw-newlabel";
+      el.setAttribute("data-edit", "xl." + it.id);
+      el.setAttribute("data-hideable", "xl." + it.id);
+      el.style.cssText = "position:absolute;left:24px;top:24px;z-index:40;font-weight:600;font-size:18px;line-height:1.3;max-width:82%";
+      section.appendChild(el);
+    });
+  }
+
   function apply(content) {
     if (!content) return;
     // Публикуем контент глобально: модалки/элементы, которые строятся из JS позже
@@ -230,6 +248,7 @@
     Object.keys(content).forEach(function (k) {
       if (k.indexOf("extra.") === 0) { try { materialize(k.slice(6), (content[k] || {}).value); } catch (e) {} }
     });
+    try { if (content["xlabels"]) materializeLabels(JSON.parse((content["xlabels"] || {}).value || "[]")); } catch (e) {}
     // 2) основной проход
     Object.keys(content).forEach(function (key) {
       try {
@@ -249,6 +268,7 @@
         if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", c.value); return; }
         if (key.indexOf("bg.") === 0) { setBgImg(key.slice(3), c.imageUrl); return; }
         if (key.indexOf("extra.") === 0) { return; } // уже применили выше
+        if (key === "xlabels") { return; } // список надписей — материализован выше
         if (c.value && safeId(key)) {
           document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = c.value; });
         }
