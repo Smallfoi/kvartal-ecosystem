@@ -139,102 +139,108 @@ class _GuestBody extends StatelessWidget {
             fallbackColor: Colors.black,
             expand: false,
             child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 40, 24, 36),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white24, width: 1.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person_outline,
-                    color: Colors.white54,
-                    size: 32,
-                  ),
-                ).animate().scale(duration: 400.ms, curve: Curves.easeOut),
-
-                const SizedBox(height: 20),
-
-                RemoteText(
-                  'app.profile.guest.title',
-                  'ВОЙДИТЕ В\nАККАУНТ',
-                  style: GoogleFonts.oswald(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 2,
-                    height: 1.05,
-                  ),
-                ).animate().fadeIn(duration: 400.ms, delay: 100.ms)
-                  .slideX(begin: -0.1),
-
-                const SizedBox(height: 10),
-
-                const RemoteText(
-                  'app.profile.guest.subtitle',
-                  'Отслеживайте заказы, сохраняйте\nизбранное и получайте персональные предложения',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF888888),
-                    height: 1.5,
-                  ),
-                ).animate().fadeIn(duration: 400.ms, delay: 180.ms),
-
-                const SizedBox(height: 28),
-
-                // Login button
-                GestureDetector(
-                  onTap: () => onLogin(),
-                  child: Container(
-                    height: 50,
-                    color: Colors.white,
-                    alignment: Alignment.center,
-                    child: RemoteText(
-                      'app.profile.guest.login',
-                      'ВОЙТИ',
-                      style: GoogleFonts.oswald(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ),
-                ).animate().fadeIn(duration: 350.ms, delay: 260.ms)
-                  .slideY(begin: 0.1),
-
-                const SizedBox(height: 12),
-
-                // Register button
-                GestureDetector(
-                  onTap: () => onLogin(register: true),
-                  child: Container(
-                    height: 50,
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 36),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white38),
+                      border: Border.all(color: Colors.white24, width: 1.5),
+                      shape: BoxShape.circle,
                     ),
-                    alignment: Alignment.center,
-                    child: RemoteText(
-                      'app.profile.guest.register',
-                      'СОЗДАТЬ АККАУНТ',
-                      style: GoogleFonts.oswald(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 2,
-                      ),
+                    child: const Icon(
+                      Icons.person_outline,
+                      color: Colors.white54,
+                      size: 32,
                     ),
-                  ),
-                ).animate().fadeIn(duration: 350.ms, delay: 320.ms)
-                  .slideY(begin: 0.1),
-              ],
+                  ).animate().scale(duration: 400.ms, curve: Curves.easeOut),
+
+                  const SizedBox(height: 20),
+
+                  RemoteText(
+                        'app.profile.guest.title',
+                        'ВОЙДИТЕ В\nАККАУНТ',
+                        style: GoogleFonts.oswald(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 2,
+                          height: 1.05,
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 400.ms, delay: 100.ms)
+                      .slideX(begin: -0.1),
+
+                  const SizedBox(height: 10),
+
+                  const RemoteText(
+                    'app.profile.guest.subtitle',
+                    'Отслеживайте заказы, сохраняйте\nизбранное и получайте персональные предложения',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF888888),
+                      height: 1.5,
+                    ),
+                  ).animate().fadeIn(duration: 400.ms, delay: 180.ms),
+
+                  const SizedBox(height: 28),
+
+                  // Login button
+                  GestureDetector(
+                        onTap: () => onLogin(),
+                        child: Container(
+                          height: 50,
+                          color: Colors.white,
+                          alignment: Alignment.center,
+                          child: RemoteText(
+                            'app.profile.guest.login',
+                            'ВОЙТИ',
+                            style: GoogleFonts.oswald(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 350.ms, delay: 260.ms)
+                      .slideY(begin: 0.1),
+
+                  const SizedBox(height: 12),
+
+                  // Register button
+                  GestureDetector(
+                        onTap: () => onLogin(register: true),
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white38),
+                          ),
+                          alignment: Alignment.center,
+                          child: RemoteText(
+                            'app.profile.guest.register',
+                            'СОЗДАТЬ АККАУНТ',
+                            style: GoogleFonts.oswald(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 350.ms, delay: 320.ms)
+                      .slideY(begin: 0.1),
+                ],
+              ),
             ),
-          ),
           ),
 
           // Benefits
@@ -300,43 +306,48 @@ class _Benefit extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          color: AppColors.grey100,
-          child: Icon(icon, size: 20, color: AppColors.black),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RemoteText(
-                '$keyBase.title',
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.black,
-                ),
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              color: AppColors.grey100,
+              child: Icon(icon, size: 20, color: AppColors.black),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RemoteText(
+                    '$keyBase.title',
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  RemoteText(
+                    '$keyBase.subtitle',
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.grey600,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              RemoteText(
-                '$keyBase.subtitle',
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.grey600,
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ).animate().fadeIn(duration: 350.ms, delay: Duration(milliseconds: delay))
-      .slideX(begin: 0.1, curve: Curves.easeOut);
+            ),
+          ],
+        )
+        .animate()
+        .fadeIn(
+          duration: 350.ms,
+          delay: Duration(milliseconds: delay),
+        )
+        .slideX(begin: 0.1, curve: Curves.easeOut);
   }
 }
 
@@ -362,9 +373,7 @@ class _LoggedInBody extends StatelessWidget {
         const Divider(height: 1),
         _TabBar(selected: tab, onChanged: onTabChanged),
         const Divider(height: 1),
-        Expanded(
-          child: tab == 0 ? const _OrdersTab() : const _WishlistTab(),
-        ),
+        Expanded(child: tab == 0 ? const _OrdersTab() : const _WishlistTab()),
       ],
     );
   }
@@ -384,11 +393,13 @@ class _LoyaltyCard extends StatelessWidget {
             PageRouteBuilder(
               pageBuilder: (_, a, b) => const LoyaltyScreen(),
               transitionsBuilder: (_, a, b, child) => SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(1, 0),
-                  end: Offset.zero,
-                ).animate(
-                    CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(1, 0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(parent: a, curve: Curves.easeOutCubic),
+                    ),
                 child: child,
               ),
               transitionDuration: const Duration(milliseconds: 320),
@@ -404,28 +415,40 @@ class _LoyaltyCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.stars_rounded,
-                      color: Colors.white, size: 26),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${loyalty.balance} баллов',
-                        style: GoogleFonts.oswald(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        'Уровень: ${loyalty.level.label} · = ${loyalty.balance} ₽ скидки',
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF888888)),
-                      ),
-                    ],
+                  const Icon(
+                    Icons.stars_rounded,
+                    color: Colors.white,
+                    size: 26,
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 12),
+                  // Expanded + ellipsis: длинная строка уровня («Платина ·
+                  // = 3852 ₽ скидки») переполняла Row (жёлто-чёрные полосы).
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${loyalty.balance} баллов',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.oswald(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Уровень: ${loyalty.level.label} · = ${loyalty.balance} ₽ скидки',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF888888),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const Icon(Icons.chevron_right, color: Colors.white54),
                 ],
               ),
@@ -473,46 +496,54 @@ class _UserHeader extends StatelessWidget {
                         : FileImage(File(user.avatarPath!)) as ImageProvider,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Center(
-                      child: Text(_initials,
-                          style: GoogleFonts.oswald(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white)),
+                      child: Text(
+                        _initials,
+                        style: GoogleFonts.oswald(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   )
                 : Center(
-                    child: Text(_initials,
-                        style: GoogleFonts.oswald(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white)),
+                    child: Text(
+                      _initials,
+                      style: GoogleFonts.oswald(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
           ).animate().scale(duration: 400.ms, curve: Curves.easeOut),
 
           const SizedBox(width: 16),
 
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                user.name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                user.email,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF888888),
-                ),
-              ),
-            ],
-          ).animate().fadeIn(duration: 400.ms, delay: 100.ms)
-            .slideX(begin: 0.1),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    user.email,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF888888),
+                    ),
+                  ),
+                ],
+              )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 100.ms)
+              .slideX(begin: 0.1),
         ],
       ),
     );
@@ -529,8 +560,16 @@ class _TabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _Tab(label: 'Заказы', isSelected: selected == 0, onTap: () => onChanged(0)),
-        _Tab(label: 'Избранное', isSelected: selected == 1, onTap: () => onChanged(1)),
+        _Tab(
+          label: 'Заказы',
+          isSelected: selected == 0,
+          onTap: () => onChanged(0),
+        ),
+        _Tab(
+          label: 'Избранное',
+          isSelected: selected == 1,
+          onTap: () => onChanged(1),
+        ),
       ],
     );
   }
@@ -541,7 +580,11 @@ class _Tab extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _Tab({required this.label, required this.isSelected, required this.onTap});
+  const _Tab({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -585,16 +628,21 @@ class _OrdersTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
-                Icon(Icons.receipt_long_outlined,
-                    size: 56, color: AppColors.grey200),
+                Icon(
+                  Icons.receipt_long_outlined,
+                  size: 56,
+                  color: AppColors.grey200,
+                ),
                 SizedBox(height: 12),
-                Text('Заказов пока нет',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700)),
+                Text(
+                  'Заказов пока нет',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
                 SizedBox(height: 4),
-                Text('Ваши заказы появятся здесь',
-                    style:
-                        TextStyle(fontSize: 13, color: AppColors.grey600)),
+                Text(
+                  'Ваши заказы появятся здесь',
+                  style: TextStyle(fontSize: 13, color: AppColors.grey600),
+                ),
               ],
             ),
           );
@@ -609,14 +657,18 @@ class _OrdersTab extends StatelessWidget {
             return GestureDetector(
               onTap: () => Navigator.of(context).push(
                 PageRouteBuilder(
-                  pageBuilder: (_, a, b) =>
-                      OrderDetailScreen(order: order),
+                  pageBuilder: (_, a, b) => OrderDetailScreen(order: order),
                   transitionsBuilder: (_, a, b, child) => SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(1, 0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                        parent: a, curve: Curves.easeOutCubic)),
+                    position:
+                        Tween<Offset>(
+                          begin: const Offset(1, 0),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: a,
+                            curve: Curves.easeOutCubic,
+                          ),
+                        ),
                     child: child,
                   ),
                   transitionDuration: const Duration(milliseconds: 320),
@@ -643,9 +695,7 @@ class _OrderCard extends StatelessWidget {
     final data = order.checkoutData;
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.grey200),
-      ),
+      decoration: BoxDecoration(border: Border.all(color: AppColors.grey200)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -654,19 +704,21 @@ class _OrderCard extends StatelessWidget {
               Text(
                 'Заказ №${order.id}',
                 style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w700),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 color: AppColors.grey100,
                 child: Text(
                   OrderProvider.statusLabel(order.status),
                   style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.grey600),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.grey600,
+                  ),
                 ),
               ),
             ],
@@ -676,14 +728,12 @@ class _OrderCard extends StatelessWidget {
             '${order.items.length} '
             '${_plural(order.items.length)} · '
             '${order.total.toInt()} ₽',
-            style: const TextStyle(
-                fontSize: 13, color: AppColors.grey600),
+            style: const TextStyle(fontSize: 13, color: AppColors.grey600),
           ),
           const SizedBox(height: 4),
           Text(
             OrderProvider.deliveryLabel(data.deliveryType),
-            style: const TextStyle(
-                fontSize: 12, color: AppColors.grey400),
+            style: const TextStyle(fontSize: 12, color: AppColors.grey400),
           ),
         ],
       ),
@@ -692,9 +742,9 @@ class _OrderCard extends StatelessWidget {
 
   String _plural(int n) {
     if (n % 10 == 1 && n % 100 != 11) return 'товар';
-    if (n % 10 >= 2 &&
-        n % 10 <= 4 &&
-        (n % 100 < 10 || n % 100 >= 20)) { return 'товара'; }
+    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) {
+      return 'товара';
+    }
     return 'товаров';
   }
 }

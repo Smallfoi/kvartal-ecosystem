@@ -27,8 +27,8 @@
     "html.staw-edit [data-sid],html.staw-edit .product-card{cursor:grab;outline:2px dashed transparent;outline-offset:3px;transition:outline-color .12s}" +
     "html.staw-edit [data-sid]:hover,html.staw-edit .product-card:hover{outline-color:#0a84ff}" +
     "html.staw-edit .staw-dragging{opacity:.4}" +
-    "html.staw-edit [data-edit],html.staw-edit [data-edit-img]{outline:2px dashed transparent;outline-offset:3px;cursor:pointer;transition:outline-color .12s}" +
-    "html.staw-edit [data-edit]:hover,html.staw-edit [data-edit-img]:hover{outline-color:#0a84ff}" +
+    "html.staw-edit [data-edit],html.staw-edit [data-edit-img],html.staw-edit [data-edit-ph]{outline:2px dashed transparent;outline-offset:3px;cursor:pointer;transition:outline-color .12s}" +
+    "html.staw-edit [data-edit]:hover,html.staw-edit [data-edit-img]:hover,html.staw-edit [data-edit-ph]:hover{outline-color:#0a84ff}" +
     "html.staw-edit [data-hideable]{position:relative}" +
     "html.staw-edit [data-extra]{outline:2px solid #22c55e !important;outline-offset:2px}" +
     "html.staw-edit .staw-cms-hidden{opacity:.32;filter:grayscale(1)}" +
@@ -49,6 +49,9 @@
       "color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;background:rgba(16,122,87,.95);" +
       "box-shadow:0 1px 5px rgba(0,0,0,.4);opacity:0;transition:opacity .12s}" +
     "html.staw-edit [data-edit-bg]:hover>.staw-bg-btn,html.staw-edit .staw-bg-btn:hover{opacity:1}" +
+    // Экран входа/регистрации: кнопка «Фон» панели видна СРАЗУ (не только по наведению) —
+    // панель перекрыта текстом-оверлеем, навести на неё сложно. Виден только активный слой.
+    "html.staw-edit .eco-photo>.staw-bg-btn{opacity:1}" +
     "html.staw-edit .staw-size-btn{background:rgba(37,99,235,.95)}" +
     // «Добавить блок» — плитка ВНУТРИ сетки (не ломает раскладку секции).
     "html.staw-edit .staw-add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:64px;padding:14px;" +
@@ -178,6 +181,14 @@
     if (card) { e.preventDefault(); e.stopPropagation(); send({ type: "editProduct", id: card.getAttribute("data-id") }); return; }
     var img = e.target.closest("[data-edit-img]");
     if (img) { e.preventDefault(); e.stopPropagation(); sendEditImage(img); return; }
+    var ph = e.target.closest("[data-edit-ph]");
+    if (ph) {
+      // Поле ввода: правим его подсказку (placeholder), а не содержимое.
+      e.preventDefault(); e.stopPropagation();
+      send({ type: "editContent", key: ph.getAttribute("data-edit-ph"),
+        value: (ph.getAttribute("placeholder") || "").trim() });
+      return;
+    }
     var ed = e.target.closest("[data-edit]");
     if (ed) {
       e.preventDefault(); e.stopPropagation();
@@ -421,7 +432,10 @@
     if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", value); return; }
     if (key.indexOf("color.") === 0) { var ck = key.slice(6); if (safeId(ck)) applyColorLocal(ck, value); return; }
     if (!safeId(key)) return;
-    if (typeof value === "string") document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
+    if (typeof value === "string") {
+      document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
+      document.querySelectorAll('[data-edit-ph="' + key + '"]').forEach(function (el) { el.setAttribute("placeholder", value); });
+    }
   }
 
   function cardById(id) {
@@ -443,6 +457,19 @@
     var d = e.data || {};
     if (d.source !== "staw-console") return;
     if (d.type === "reload") { location.reload(); return; }
+    // Экран входа/регистрации (строится из JS): консоль просит открыть/закрыть/
+    // переключить его — показываем НА МЕСТЕ, как на живом сайте.
+    if (d.type === "authScreen") {
+      try {
+        if (!window.MATA_AUTH) return;
+        if (d.op === "close") { window.MATA_AUTH.close(); return; }
+        window.MATA_AUTH.open(d.mode === "register" ? "register" : "login");
+        // Модалка строится из JS уже после инициализации редактора — до-навешиваем
+        // на её элементы кнопки «🖼 Фон» (панель Вход/Регистрация) и drag/фото.
+        setTimeout(function () { try { initBg(); markDraggable(); } catch (e) {} }, 60);
+      } catch (e) {}
+      return;
+    }
     if (d.type === "setContent" && d.key) { applyContent(d.key, d.value); return; }
     if (d.type === "setOrder" && d.order && d.order.length) {
       var g = document.querySelector("[data-product-grid]");

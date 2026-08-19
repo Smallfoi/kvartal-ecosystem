@@ -122,10 +122,20 @@
       + "width:calc(50% - var(--pad));border-radius:14px;overflow:hidden;z-index:5;"
       + "transform:translateX(0);transition:transform var(--dur) var(--ease)}"
       + ".eco-card--slider.isLogin .eco-cover{transform:translateX(100%)}"
-      + ".eco-photo{position:absolute;inset:0;background:linear-gradient(160deg,#2b3240,#171a22 55%,#0c0e13)}"
-      + ".eco-photo::after{content:'МАТА';position:absolute;left:50%;top:13%;transform:translateX(-50%);"
-      + "font-size:64px;font-weight:800;letter-spacing:10px;color:#fff;opacity:.07}"
-      + ".eco-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,12,10,.18),rgba(10,12,10,.42))}"
+      // Слой панели: !important держит геометрию, даже когда видео-фон Конструктора
+      // (staw-bg-on) пытается сделать элемент position:relative.
+      + ".eco-photo{position:absolute!important;inset:0!important;background:linear-gradient(160deg,#2b3240,#171a22 55%,#0c0e13);background-size:cover;background-position:center;pointer-events:none}"
+      + ".eco-photo--reg{opacity:1;transition:opacity var(--dur) var(--ease)}"
+      + ".eco-photo--login{opacity:0;transition:opacity var(--dur) var(--ease)}"
+      + ".eco-card--slider.isLogin .eco-photo--reg{opacity:0}"
+      + ".eco-card--slider.isLogin .eco-photo--login{opacity:1}"
+      // Кликабелен (для «🖼 Фон») только видимый слой — чтобы правился нужный экран.
+      + ".eco-card--slider:not(.isLogin) .eco-photo--reg{pointer-events:auto}"
+      + ".eco-card--slider.isLogin .eco-photo--login{pointer-events:auto}"
+      + ".eco-photo-wm{position:absolute;left:50%;top:13%;transform:translateX(-50%);"
+      + "font-size:64px;font-weight:800;letter-spacing:10px;color:#fff;opacity:.09;pointer-events:none;white-space:nowrap}"
+      + "html.staw-edit .eco-photo-wm{pointer-events:auto;cursor:pointer}"
+      + ".eco-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,12,10,.18),rgba(10,12,10,.42))}"
       + ".eco-side{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;"
       + "justify-content:center;padding:0 26px;text-align:center;color:#fff;"
       + "transition:transform var(--dur) var(--ease)}"
@@ -156,7 +166,7 @@
       + ".eco-card--slider.isLogin .eco-sideB{opacity:1}"
       + ".eco-side p{display:none}.eco-side h3{font-size:17px;margin:0 0 8px}"
       + ".eco-ghost{height:36px;padding:0 26px;font-size:11.5px}"
-      + ".eco-photo::after{font-size:40px;top:16%}}"
+      + ".eco-photo-wm{font-size:40px;top:16%}}"
       + "@media(prefers-reduced-motion:reduce){"
       + ".eco-cover,.eco-side,.eco-half{transition-duration:.01ms!important;transition-delay:0ms!important}}"
       + ".eco-card h3{margin:0 0 4px;font-size:20px}"
@@ -169,6 +179,14 @@
       + ".eco-err{color:#c0392b;font-size:13px;min-height:18px;margin:6px 0 0}"
       + ".eco-card .eco-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;opacity:.5}"
       // ── Ввод кода: хореография «OTP V5» (стандарт анимаций экосистемы) ──
+      // Поле телефона: несъёмный «+7» виден ВСЕГДА (тем же начертанием, что
+      // и вводимые цифры), пользователь набирает только 10 цифр.
+      + ".eco-phone{display:flex;align-items:center;margin:6px 0;border:1px solid #d9d6cd;"
+      + "border-radius:12px;background:#fff}"
+      + ".eco-phone:focus-within{border-color:#20252b}"
+      + ".eco-phone-prefix{padding:12px 0 12px 14px;color:#20252b;font:inherit}"
+      + ".eco-card .eco-phone input{border:0;margin:0;flex:1;min-width:0;background:transparent;"
+      + "padding:12px 14px 12px 6px;border-radius:12px;outline:none}"
       + ".eco-otp{position:relative;height:196px;margin:10px 0 0;cursor:text}"
       + ".eco-card input.eco-otp-input{position:absolute;left:50%;top:50%;width:1px;height:1px;"
       + "opacity:0;border:0;padding:0;margin:0;background:transparent}"
@@ -288,6 +306,20 @@
     if (otpReg) otpReg.softReset();
   }
 
+  // Телефон: пользователь вводит ТОЛЬКО 10 цифр после несъёмного «+7».
+  // Ведущие «7»/«8» (набор или вставка «89148278470», «+7914…») отбрасываются —
+  // мобильные номера РФ начинаются с 9.
+  function setupPhoneInput(input) {
+    input.addEventListener("input", function () {
+      var d = input.value.replace(/\D/g, "");
+      if (d.charAt(0) === "7" || d.charAt(0) === "8") d = d.slice(1);
+      input.value = d.slice(0, 10);
+    });
+  }
+  function phoneDigits(input) {
+    return input.value.replace(/\D/g, "");
+  }
+
   function focusActive() {
     var el = modal.querySelector(
       ecoMode === "register" ? "[data-reg-name]" : "[data-login-phone]"
@@ -301,39 +333,47 @@
     modal.innerHTML =
       '<div class="eco-card eco-card--slider" role="dialog" aria-label="Вход и регистрация МАТА">' +
       '<button class="eco-close" type="button" data-eco-x aria-label="Закрыть">×</button>' +
-      // левая половина — Вход (видна, когда панель уехала вправо)
+      // левая половина — Вход (видна, когда панель уехала вправо).
+      // data-edit / data-edit-ph — ключи «Конструктора» (правка текста / плейсхолдера).
       '<div class="eco-half eco-half--login"><div class="eco-form">' +
-      '<h3>Вход в МАТА</h3>' +
-      '<p class="eco-sub">Баллы «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
-      '<input data-login-phone type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
+      '<h3 data-edit="auth.loginTitle">Вход в МАТА</h3>' +
+      '<p class="eco-sub" data-edit="auth.loginSub">Баллы «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
+      '<div class="eco-phone"><span class="eco-phone-prefix">+7</span>' +
+      '<input data-login-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" placeholder="999 000-00-00" autocomplete="tel" /></div>' +
       '<div class="eco-otp" data-login-otp>' +
       '<input data-login-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
       '<p class="eco-err" data-login-err></p>' +
-      '<button class="eco-primary" type="button" data-login-submit>Войти</button>' +
+      '<button class="eco-primary" type="button" data-login-submit data-edit="auth.loginBtn">Войти</button>' +
       "</div></div>" +
       // правая половина — Регистрация (видна в исходном положении панели)
       '<div class="eco-half eco-half--reg"><div class="eco-form">' +
-      '<h3>Регистрация в МАТА</h3>' +
-      '<p class="eco-sub">Единый аккаунт экосистемы. Dev-код: 1234.</p>' +
-      '<input data-reg-name type="text" placeholder="Имя и фамилия" autocomplete="name" />' +
-      '<input data-reg-phone type="tel" inputmode="tel" placeholder="Телефон, напр. +79148278470" autocomplete="tel" />' +
+      '<h3 data-edit="auth.regTitle">Регистрация в МАТА</h3>' +
+      '<p class="eco-sub" data-edit="auth.regSub">Единый аккаунт экосистемы. Dev-код: 1234.</p>' +
+      '<input data-reg-name data-edit-ph="auth.namePh" type="text" placeholder="Имя и фамилия" autocomplete="name" />' +
+      '<div class="eco-phone"><span class="eco-phone-prefix">+7</span>' +
+      '<input data-reg-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" placeholder="999 000-00-00" autocomplete="tel" /></div>' +
       '<div class="eco-otp" data-reg-otp>' +
       '<input data-reg-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
       '<p class="eco-err" data-reg-err></p>' +
-      '<button class="eco-primary" type="button" data-reg-submit>Зарегистрироваться</button>' +
+      '<button class="eco-primary" type="button" data-reg-submit data-edit="auth.regBtn">Зарегистрироваться</button>' +
       "</div></div>" +
       // панель: тёмный бренд-фон вместо фото (утверждённых фото пока нет),
       // стороны A/B — параллакс ±200%
       '<div class="eco-cover">' +
-      '<div class="eco-photo"></div><div class="eco-shade"></div>' +
+      // Медиа-панель: два слоя (Регистрация/Вход) с кроссфейдом при переключении +
+      // редактируемая фоновая надпись. Каждый слой — data-edit-bg (фото/видео через «🖼 Фон»).
+      '<div class="eco-photo eco-photo--reg" data-edit-bg="auth.panelReg"></div>' +
+      '<div class="eco-photo eco-photo--login" data-edit-bg="auth.panelLogin"></div>' +
+      '<div class="eco-photo-wm" data-edit="auth.panelText">МАТА</div>' +
+      '<div class="eco-shade"></div>' +
       '<div class="eco-side eco-sideA">' +
-      "<h3>С возвращением!</h3>" +
-      "<p>Войди в единый аккаунт — баллы за бег и покупки уже ждут.</p>" +
-      '<button class="eco-ghost" type="button" data-go-login>ВОЙТИ</button></div>' +
+      '<h3 data-edit="auth.sideAtitle">С возвращением!</h3>' +
+      '<p data-edit="auth.sideAtext">Войди в единый аккаунт — баллы за бег и покупки уже ждут.</p>' +
+      '<button class="eco-ghost" type="button" data-go-login data-edit="auth.sideAbtn">ВОЙТИ</button></div>' +
       '<div class="eco-side eco-sideB">' +
-      "<h3>Впервые в МАТА?</h3>" +
-      "<p>Создай единый аккаунт — «Квартал», магазин и сайт в одном.</p>" +
-      '<button class="eco-ghost" type="button" data-go-signup>РЕГИСТРАЦИЯ</button></div>' +
+      '<h3 data-edit="auth.sideBtitle">Впервые в МАТА?</h3>' +
+      '<p data-edit="auth.sideBtext">Создай единый аккаунт — «Квартал», магазин и сайт в одном.</p>' +
+      '<button class="eco-ghost" type="button" data-go-signup data-edit="auth.sideBbtn">РЕГИСТРАЦИЯ</button></div>' +
       "</div></div>";
     document.body.appendChild(modal);
     card = modal.querySelector(".eco-card--slider");
@@ -353,9 +393,9 @@
       errEl: modal.querySelector("[data-login-err]"),
       btn: modal.querySelector("[data-login-submit]"),
       getPayload: function () {
-        var phone = modal.querySelector("[data-login-phone]").value.trim();
-        if (!phone) return { error: "Введите телефон" };
-        return { phone: phone, name: "" };
+        var digits = phoneDigits(modal.querySelector("[data-login-phone]"));
+        if (digits.length < 10) return { error: "Введите номер полностью" };
+        return { phone: "+7" + digits, name: "" };
       }
     });
     otpReg = createOtpField({
@@ -365,17 +405,46 @@
       btn: modal.querySelector("[data-reg-submit]"),
       getPayload: function () {
         var name = modal.querySelector("[data-reg-name]").value.trim();
-        var phone = modal.querySelector("[data-reg-phone]").value.trim();
+        var digits = phoneDigits(modal.querySelector("[data-reg-phone]"));
         if (!name) return { error: "Введите имя" };
-        if (!phone) return { error: "Введите телефон" };
-        return { phone: phone, name: name };
+        if (digits.length < 10) return { error: "Введите номер полностью" };
+        return { phone: "+7" + digits, name: name };
       }
     });
+    setupPhoneInput(modal.querySelector("[data-login-phone]"));
+    setupPhoneInput(modal.querySelector("[data-reg-phone]"));
     modal.querySelector("[data-login-submit]").addEventListener("click", function () {
       otpLogin.trySubmit();
     });
     modal.querySelector("[data-reg-submit]").addEventListener("click", function () {
       otpReg.trySubmit();
+    });
+    applyAuthOverrides(); // тексты/плейсхолдеры, заданные в «Конструкторе»
+    // Медиа панели (фото/видео Вход/Регистрация) — тоже из общего контента.
+    if (window.STAW_applyBg) {
+      window.STAW_applyBg("auth.panelReg");
+      window.STAW_applyBg("auth.panelLogin");
+    }
+  }
+
+  // Переопределения экрана входа из «Конструктора» (общий контент /site/content).
+  // Модалка строится из JS уже после загрузки контента, поэтому применяем вручную
+  // (content.js применяет только к элементам, присутствующим на странице при загрузке).
+  function applyAuthOverride(key, el, isPh) {
+    try {
+      var c = window.STAW_CONTENT && window.STAW_CONTENT[key];
+      var v = c && typeof c.value === "string" ? c.value : "";
+      if (!v) return;
+      if (isPh) el.setAttribute("placeholder", v); else el.textContent = v;
+    } catch (e) {}
+  }
+  function applyAuthOverrides() {
+    if (!modal) return;
+    modal.querySelectorAll("[data-edit]").forEach(function (el) {
+      applyAuthOverride(el.getAttribute("data-edit"), el, false);
+    });
+    modal.querySelectorAll("[data-edit-ph]").forEach(function (el) {
+      applyAuthOverride(el.getAttribute("data-edit-ph"), el, true);
     });
   }
 
@@ -796,6 +865,15 @@
         localStorage.setItem(LS_USER, JSON.stringify(u || {}));
       } catch (e) {}
       if (getToken()) renderLoggedIn(u, (window.STAW && window.STAW.ecoPoints) || 0);
+    };
+
+    // Хук «Конструктора»: открыть/закрыть/переключить экран входа. Команды шлёт
+    // editor.js по сообщению из консоли (кнопка «Экран входа»). Модалка открывается
+    // НА МЕСТЕ — ровно как на живом сайте (по центру), без отдельного экрана.
+    window.MATA_AUTH = {
+      open: function (mode) { openModal(mode); },
+      close: closeModal,
+      setMode: function (mode) { openModal(mode); },
     };
   }
   if (document.readyState === "loading") {
