@@ -61,47 +61,53 @@
   }
 
   // ── Фон блока: фото (с затемнением) / видео (URL) / убрать (вернуть градиент из CSS) ──
-  // Фоновое видео: два элемента с кроссфейдом → бесшовная петля (без скачка при повторе);
-  // preload=auto → грузится заранее; плавное появление (opacity 0→1) = «свечение» при старте.
-  function setupBgVideo(layer, src, fit, focal) {
+  // Фоновое видео. Флаги (тумблеры в «Конструкторе», по умолчанию ВКЛ):
+  //  fade     — плавное появление (opacity 0→1, «свечение»); иначе мгновенно;
+  //  seamless — бесшовная петля (два видео с кроссфейдом, без скачка); иначе обычный loop.
+  function setupBgVideo(layer, src, fit, focal, fade, seamless) {
+    var need = seamless ? 2 : 1;
     var vs = layer.querySelectorAll("video");
-    var fresh = vs.length < 2;
+    var fresh = vs.length !== need;
     if (fresh) {
       layer.textContent = "";
-      for (var i = 0; i < 2; i++) {
+      for (var i = 0; i < need; i++) {
         var v = document.createElement("video");
         v.muted = true; v.defaultMuted = true;
         v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("preload", "auto");
+        if (!seamless) { v.loop = true; v.setAttribute("loop", ""); }
         layer.appendChild(v);
       }
       vs = layer.querySelectorAll("video");
     }
-    var a = vs[0], b = vs[1];
+    var a = vs[0], b = vs[1] || null;
     var newSrc = a.getAttribute("src") !== src;
-    if (newSrc) { a.setAttribute("src", src); b.setAttribute("src", src); }
-    a.style.objectFit = b.style.objectFit = fit;
-    a.style.objectPosition = b.style.objectPosition = focal;
+    if (newSrc) { a.setAttribute("src", src); if (b) b.setAttribute("src", src); }
+    [a, b].forEach(function (v) { if (v) { v.style.objectFit = fit; v.style.objectPosition = focal; } });
     if (fresh || newSrc) {
-      layer._active = a; a.style.opacity = "0"; b.style.opacity = "0";
-      try { b.pause(); } catch (e) {}
-      if (!a._faded) { a._faded = 1; a.addEventListener("playing", function f() { a.removeEventListener("playing", f); a.style.opacity = "1"; }); }
-      var XF = 0.55; // сек кроссфейда у петли
-      [a, b].forEach(function (v) {
-        if (v._wrap) return; v._wrap = 1;
-        v.addEventListener("timeupdate", function () {
-          if (v !== layer._active || !v.duration || v.duration === Infinity) return;
-          if (v.currentTime >= v.duration - XF) {
-            var other = (v === a) ? b : a;
-            layer._active = other;
-            try { other.currentTime = 0; } catch (e) {}
-            var p = other.play(); if (p && p.catch) p.catch(function () {});
-            other.style.opacity = "1"; v.style.opacity = "0";
-            setTimeout(function () { try { v.pause(); } catch (e) {} }, (XF + 0.12) * 1000);
-          }
+      layer._active = a;
+      a.style.transition = fade ? "opacity .6s ease" : "none";
+      a.style.opacity = fade ? "0" : "1";
+      if (b) { b.style.transition = fade ? "opacity .6s ease" : "none"; b.style.opacity = "0"; try { b.pause(); } catch (e) {} }
+      if (fade && !a._faded) { a._faded = 1; a.addEventListener("playing", function f() { a.removeEventListener("playing", f); a.style.opacity = "1"; }); }
+      if (seamless && b) {
+        var XF = 0.55; // сек кроссфейда у петли
+        [a, b].forEach(function (v) {
+          if (v._wrap) return; v._wrap = 1;
+          v.addEventListener("timeupdate", function () {
+            if (v !== layer._active || !v.duration || v.duration === Infinity) return;
+            if (v.currentTime >= v.duration - XF) {
+              var other = (v === a) ? b : a;
+              layer._active = other;
+              try { other.currentTime = 0; } catch (e) {}
+              var p = other.play(); if (p && p.catch) p.catch(function () {});
+              other.style.opacity = "1"; v.style.opacity = "0";
+              setTimeout(function () { try { v.pause(); } catch (e) {} }, (XF + 0.12) * 1000);
+            }
+          });
         });
-      });
+      }
     }
-    var pp = layer._active.play(); if (pp && pp.catch) pp.catch(function () {});
+    var pp = (layer._active || a).play(); if (pp && pp.catch) pp.catch(function () {});
   }
   function bgEl(key) { return safeId(key) ? document.querySelector('[data-edit-bg="' + key + '"]') : null; }
   function refreshBg(el) {
@@ -115,7 +121,7 @@
     if (!off && vid) {
       el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
       if (!layer) { layer = document.createElement("div"); layer.className = "staw-bg-layer"; el.insertBefore(layer, el.firstChild); }
-      setupBgVideo(layer, vid, fit, focal);
+      setupBgVideo(layer, vid, fit, focal, el._bgFade !== "0", el._bgLoop !== "0");
       el.classList.add("staw-bg-on");
     } else if (!off && img) {
       if (layer) layer.remove(); el.classList.remove("staw-bg-on");
@@ -140,8 +146,29 @@
     if (C["bgoff." + key] !== undefined) setBgField(key, "_bgOff", g("bgoff." + key));
     if (C["bgfocal." + key] !== undefined) setBgField(key, "_bgFocal", g("bgfocal." + key));
     if (C["bgfit." + key] !== undefined) setBgField(key, "_bgFit", g("bgfit." + key));
+    if (C["bgfade." + key] !== undefined) setBgField(key, "_bgFade", g("bgfade." + key));
+    if (C["bgloop." + key] !== undefined) setBgField(key, "_bgLoop", g("bgloop." + key));
     if (C["bgvid." + key] !== undefined) setBgField(key, "_bgVid", g("bgvid." + key));
     if (C["bg." + key] !== undefined) setBgImg(key, (C["bg." + key] || {}).imageUrl);
+  };
+
+  // Прогрев: заранее (на загрузке) грузим видео экрана входа, чтобы при клике «Войти»
+  // оно было готово и играло сразу. Работает при кэшируемом медиа (превью/прод).
+  var _warm = {};
+  function preloadVideo(url) {
+    if (!url || _warm[url]) return; _warm[url] = 1;
+    var pv = document.createElement("video");
+    pv.muted = true; pv.setAttribute("muted", ""); pv.setAttribute("playsinline", ""); pv.setAttribute("preload", "auto");
+    pv.style.cssText = "position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none";
+    pv.src = url;
+    (document.body || document.documentElement).appendChild(pv);
+    try { pv.load(); } catch (e) {}
+  }
+  window.STAW_preloadAuthVideos = function () {
+    var C = window.STAW_CONTENT; if (!C) return;
+    ["bgvid.auth.panelReg", "bgvid.auth.panelLogin"].forEach(function (k) {
+      var u = (C[k] || {}).value; if (u) preloadVideo(u.indexOf("http") === 0 ? u : ORIGIN + u);
+    });
   };
 
   // ── Репитеры: клонировать добавленные блоки из <template> ──
@@ -277,6 +304,7 @@
     // Публикуем контент глобально: модалки/элементы, которые строятся из JS позже
     // (напр. экран входа в ecosystem.js), читают переопределения отсюда.
     try { window.STAW_CONTENT = content; } catch (e) {}
+    try { window.STAW_preloadAuthVideos(); } catch (e) {} // прогрев видео экрана входа
     injectAnimCss();
     // 1) сначала материализуем добавленные блоки — чтобы их ключи было куда применять
     Object.keys(content).forEach(function (k) {
@@ -300,6 +328,8 @@
         if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", c.value); return; }
         if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", c.value); return; }
         if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", c.value); return; }
+        if (key.indexOf("bgfade.") === 0) { setBgField(key.slice(7), "_bgFade", c.value); return; }
+        if (key.indexOf("bgloop.") === 0) { setBgField(key.slice(7), "_bgLoop", c.value); return; }
         if (key.indexOf("bg.") === 0) { setBgImg(key.slice(3), c.imageUrl); return; }
         if (key.indexOf("extra.") === 0) { return; } // уже применили выше
         if (key === "xlabels") { return; } // список надписей — материализован выше

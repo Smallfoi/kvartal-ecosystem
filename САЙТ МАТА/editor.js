@@ -309,47 +309,52 @@
   }
 
   // ── Фон блока (фото/видео/градиент) — применение черновика в превью + кнопка «Фон» ──
-  // Фоновое видео: два элемента с кроссфейдом → бесшовная петля; preload=auto + плавное
-  // появление (opacity 0→1) = «свечение» при старте (без задержки-скачка).
-  function setupBgVideo(layer, src, fit, focal) {
+  // Фоновое видео. Флаги (тумблеры «Конструктора», по умолчанию ВКЛ):
+  //  fade — плавное появление (opacity 0→1); seamless — бесшовная петля (кроссфейд 2 видео).
+  function setupBgVideo(layer, src, fit, focal, fade, seamless) {
+    var need = seamless ? 2 : 1;
     var vs = layer.querySelectorAll("video");
-    var fresh = vs.length < 2;
+    var fresh = vs.length !== need;
     if (fresh) {
       layer.textContent = "";
-      for (var i = 0; i < 2; i++) {
+      for (var i = 0; i < need; i++) {
         var v = document.createElement("video");
         v.muted = true; v.defaultMuted = true;
         v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("preload", "auto");
+        if (!seamless) { v.loop = true; v.setAttribute("loop", ""); }
         layer.appendChild(v);
       }
       vs = layer.querySelectorAll("video");
     }
-    var a = vs[0], b = vs[1];
+    var a = vs[0], b = vs[1] || null;
     var newSrc = a.getAttribute("src") !== src;
-    if (newSrc) { a.setAttribute("src", src); b.setAttribute("src", src); }
-    a.style.objectFit = b.style.objectFit = fit;
-    a.style.objectPosition = b.style.objectPosition = focal;
+    if (newSrc) { a.setAttribute("src", src); if (b) b.setAttribute("src", src); }
+    [a, b].forEach(function (v) { if (v) { v.style.objectFit = fit; v.style.objectPosition = focal; } });
     if (fresh || newSrc) {
-      layer._active = a; a.style.opacity = "0"; b.style.opacity = "0";
-      try { b.pause(); } catch (e) {}
-      if (!a._faded) { a._faded = 1; a.addEventListener("playing", function f() { a.removeEventListener("playing", f); a.style.opacity = "1"; }); }
-      var XF = 0.55;
-      [a, b].forEach(function (vv) {
-        if (vv._wrap) return; vv._wrap = 1;
-        vv.addEventListener("timeupdate", function () {
-          if (vv !== layer._active || !vv.duration || vv.duration === Infinity) return;
-          if (vv.currentTime >= vv.duration - XF) {
-            var other = (vv === a) ? b : a;
-            layer._active = other;
-            try { other.currentTime = 0; } catch (e) {}
-            var p = other.play(); if (p && p.catch) p.catch(function () {});
-            other.style.opacity = "1"; vv.style.opacity = "0";
-            setTimeout(function () { try { vv.pause(); } catch (e) {} }, (XF + 0.12) * 1000);
-          }
+      layer._active = a;
+      a.style.transition = fade ? "opacity .6s ease" : "none";
+      a.style.opacity = fade ? "0" : "1";
+      if (b) { b.style.transition = fade ? "opacity .6s ease" : "none"; b.style.opacity = "0"; try { b.pause(); } catch (e) {} }
+      if (fade && !a._faded) { a._faded = 1; a.addEventListener("playing", function f() { a.removeEventListener("playing", f); a.style.opacity = "1"; }); }
+      if (seamless && b) {
+        var XF = 0.55;
+        [a, b].forEach(function (vv) {
+          if (vv._wrap) return; vv._wrap = 1;
+          vv.addEventListener("timeupdate", function () {
+            if (vv !== layer._active || !vv.duration || vv.duration === Infinity) return;
+            if (vv.currentTime >= vv.duration - XF) {
+              var other = (vv === a) ? b : a;
+              layer._active = other;
+              try { other.currentTime = 0; } catch (e) {}
+              var p = other.play(); if (p && p.catch) p.catch(function () {});
+              other.style.opacity = "1"; vv.style.opacity = "0";
+              setTimeout(function () { try { vv.pause(); } catch (e) {} }, (XF + 0.12) * 1000);
+            }
+          });
         });
-      });
+      }
     }
-    var pp = layer._active.play(); if (pp && pp.catch) pp.catch(function () {});
+    var pp = (layer._active || a).play(); if (pp && pp.catch) pp.catch(function () {});
   }
   function bgEl(key) { return safeId(key) ? document.querySelector('[data-edit-bg="' + key + '"]') : null; }
   function refreshBg(el) {
@@ -361,7 +366,7 @@
     if (!off && vid) {
       el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
       if (!layer) { layer = document.createElement("div"); layer.className = "staw-bg-layer"; el.insertBefore(layer, el.firstChild); }
-      setupBgVideo(layer, vid, fit, focal);
+      setupBgVideo(layer, vid, fit, focal, el._bgFade !== "0", el._bgLoop !== "0");
       el.classList.add("staw-bg-on");
     } else if (!off && img) {
       if (layer) layer.remove(); el.classList.remove("staw-bg-on");
@@ -387,6 +392,7 @@
           type: "editBg", key: key,
           img: el._bgImg || "", vid: el._bgVid || "", off: el._bgOff || "",
           focal: el._bgFocal || "", fit: el._bgFit || "cover",
+          fade: el._bgFade || "", loop: el._bgLoop || "",
         });
       });
       el.insertBefore(b, el.firstChild);
@@ -722,6 +728,8 @@
     if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", value); return; }
     if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", value); return; }
     if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", value); return; }
+    if (key.indexOf("bgfade.") === 0) { setBgField(key.slice(7), "_bgFade", value); return; }
+    if (key.indexOf("bgloop.") === 0) { setBgField(key.slice(7), "_bgLoop", value); return; }
     if (key.indexOf("color.") === 0) { var ck = key.slice(6); if (safeId(ck)) applyColorLocal(ck, value); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") {
