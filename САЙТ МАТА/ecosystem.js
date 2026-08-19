@@ -134,7 +134,9 @@
       + ".eco-card--slider.isLogin .eco-photo--login{pointer-events:auto}"
       + ".eco-photo-wm{position:absolute;left:50%;top:13%;transform:translateX(-50%);"
       + "font-size:64px;font-weight:800;letter-spacing:10px;color:#fff;opacity:.09;pointer-events:none;white-space:nowrap}"
-      + "html.staw-edit .eco-photo-wm{pointer-events:auto;cursor:pointer}"
+      // В «Конструкторе» надпись-watermark кликабельна: поднимаем НАД .eco-side
+      // (иначе тот перекрывает её и перехватывает клик) и делаем заметнее для правки.
+      + "html.staw-edit .eco-photo-wm{pointer-events:auto;cursor:pointer;z-index:2;opacity:.3}"
       + ".eco-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,12,10,.18),rgba(10,12,10,.42))}"
       + ".eco-side{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;"
       + "justify-content:center;padding:0 26px;text-align:center;color:#fff;"
@@ -477,9 +479,11 @@
   function applyAuthOverride(key, el, isPh) {
     try {
       var c = window.STAW_CONTENT && window.STAW_CONTENT[key];
-      var v = c && typeof c.value === "string" ? c.value : "";
-      if (!v) return;
-      if (isPh) el.setAttribute("placeholder", v); else el.textContent = v;
+      // Различаем «переопределение задано» (пусть даже пустое — надпись удалили) и
+      // «переопределения нет» (оставляем дефолт). Иначе пустой текст игнорировался и
+      // хардкод (напр. фоновая «МАТА») возвращался при каждой пересборке модалки.
+      if (!c || typeof c.value !== "string") return;
+      if (isPh) el.setAttribute("placeholder", c.value); else el.textContent = c.value;
     } catch (e) {}
   }
   function applyAuthOverrides() {

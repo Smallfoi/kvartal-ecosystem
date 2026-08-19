@@ -171,7 +171,18 @@
       aspect: (img.clientWidth && img.clientHeight) ? (img.clientWidth / img.clientHeight) : 0,
     });
   }
+  // Текст элемента БЕЗ служебных вставок (.staw-ui: панель инструментов, крестик и т.п.).
+  function cleanText(el) {
+    var t = "";
+    [].forEach.call(el.childNodes, function (n) {
+      if (n.nodeType === 3) t += n.nodeValue;
+      else if (n.nodeType === 1 && !(n.classList && n.classList.contains("staw-ui"))) t += cleanText(n);
+    });
+    return t;
+  }
   document.addEventListener("click", function (e) {
+    // После перетаскивания надписи «съедаем» следующий click, чтобы не открылась правка.
+    if (justDragged) { justDragged = false; e.preventDefault(); e.stopPropagation(); return; }
     if (e.target.closest && e.target.closest(".staw-ui, .staw-tools")) return;
     var addb = e.target.closest && e.target.closest(".promo-add-banner");
     if (addb) { e.preventDefault(); e.stopPropagation(); send({ type: "addBanner" }); return; }
@@ -192,7 +203,7 @@
     var ed = e.target.closest("[data-edit]");
     if (ed) {
       e.preventDefault(); e.stopPropagation();
-      send({ type: "editContent", key: ed.getAttribute("data-edit"), value: ed.textContent.trim(),
+      send({ type: "editContent", key: ed.getAttribute("data-edit"), value: cleanText(ed).trim(),
         color: rgbToHex(getComputedStyle(ed).color), hasColor: !!ed.style.color });
       return;
     }
@@ -232,6 +243,8 @@
     draft("order." + group, JSON.stringify(sidsOf(container)));
   }
   function removeExtra(el) {
+    // Добавленная надпись — просто убрать и пересобрать список xlabels.
+    if (el.classList.contains("staw-newlabel")) { el.remove(); draft("xlabels", JSON.stringify(allLabels())); return; }
     var container = el.closest("[data-sortable]");
     var group = container && container.getAttribute("data-sortable");
     el.remove();
@@ -296,6 +309,59 @@
   }
 
   // ── Фон блока (фото/видео/градиент) — применение черновика в превью + кнопка «Фон» ──
+  // Фоновое видео. Флаги (тумблеры «Конструктора», по умолчанию ВКЛ):
+  //  fade — плавное появление (opacity 0→1); seamless — бесшовная петля (кроссфейд 2 видео).
+  function setupBgVideo(layer, src, fit, focal, fade, seamless) {
+    var need = seamless ? 2 : 1;
+    var vs = layer.querySelectorAll("video");
+    var fresh = vs.length !== need;
+    if (fresh) {
+      layer.textContent = "";
+      for (var i = 0; i < need; i++) {
+        var v = document.createElement("video");
+        v.muted = true; v.defaultMuted = true;
+        v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("preload", "auto");
+        if (!seamless) { v.loop = true; v.setAttribute("loop", ""); }
+        layer.appendChild(v);
+      }
+      vs = layer.querySelectorAll("video");
+    }
+    var a = vs[0], b = vs[1] || null;
+    var newSrc = a.getAttribute("src") !== src;
+    if (newSrc) { a.setAttribute("src", src); if (b) b.setAttribute("src", src); }
+    [a, b].forEach(function (v) { if (v) { v.style.objectFit = fit; v.style.objectPosition = focal; } });
+    if (fresh || newSrc) {
+      layer._active = a;
+      a.style.transition = fade ? "opacity .6s ease" : "none";
+      a.style.opacity = fade ? "0" : "1";
+      if (b) { b.style.transition = fade ? "opacity .6s ease" : "none"; b.style.opacity = "0"; try { b.pause(); } catch (e) {} }
+      if (fade && !a._faded) {
+        a._faded = 1;
+        var showA = function () { a.style.opacity = "1"; };
+        // Показываем по ПЕРВОМУ КАДРУ (loadeddata) — раньше всего и не зависит от autoplay.
+        if (a.readyState >= 2) showA();
+        else { a.addEventListener("loadeddata", showA, { once: true }); a.addEventListener("canplay", showA, { once: true }); }
+      }
+      if (seamless && b) {
+        var XF = 0.55;
+        [a, b].forEach(function (vv) {
+          if (vv._wrap) return; vv._wrap = 1;
+          vv.addEventListener("timeupdate", function () {
+            if (vv !== layer._active || !vv.duration || vv.duration === Infinity) return;
+            if (vv.currentTime >= vv.duration - XF) {
+              var other = (vv === a) ? b : a;
+              layer._active = other;
+              try { other.currentTime = 0; } catch (e) {}
+              var p = other.play(); if (p && p.catch) p.catch(function () {});
+              other.style.opacity = "1"; vv.style.opacity = "0";
+              setTimeout(function () { try { vv.pause(); } catch (e) {} }, (XF + 0.12) * 1000);
+            }
+          });
+        });
+      }
+    }
+    var pp = (layer._active || a).play(); if (pp && pp.catch) pp.catch(function () {});
+  }
   function bgEl(key) { return safeId(key) ? document.querySelector('[data-edit-bg="' + key + '"]') : null; }
   function refreshBg(el) {
     if (!el) return;
@@ -305,16 +371,9 @@
     var layer = el.querySelector(":scope > .staw-bg-layer");
     if (!off && vid) {
       el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
-      if (!layer) {
-        layer = document.createElement("div"); layer.className = "staw-bg-layer";
-        var v = document.createElement("video");
-        v.autoplay = true; v.loop = true; v.muted = true; v.defaultMuted = true;
-        v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("autoplay", ""); v.setAttribute("loop", "");
-        layer.appendChild(v); el.insertBefore(layer, el.firstChild);
-      }
-      var vv = layer.querySelector("video");
-      if (vv.getAttribute("src") !== vid) vv.setAttribute("src", vid);
-      vv.style.objectFit = fit; vv.style.objectPosition = focal; el.classList.add("staw-bg-on");
+      if (!layer) { layer = document.createElement("div"); layer.className = "staw-bg-layer"; el.insertBefore(layer, el.firstChild); }
+      setupBgVideo(layer, vid, fit, focal, el._bgFade !== "0", el._bgLoop !== "0");
+      el.classList.add("staw-bg-on");
     } else if (!off && img) {
       if (layer) layer.remove(); el.classList.remove("staw-bg-on");
       el.style.backgroundImage = "linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5)), url('" + img + "')";
@@ -339,6 +398,7 @@
           type: "editBg", key: key,
           img: el._bgImg || "", vid: el._bgVid || "", off: el._bgOff || "",
           focal: el._bgFocal || "", fit: el._bgFit || "cover",
+          fade: el._bgFade || "", loop: el._bgLoop || "",
         });
       });
       el.insertBefore(b, el.firstChild);
@@ -384,6 +444,193 @@
   }
   function initHide() { [].forEach.call(document.querySelectorAll("[data-hideable]"), initHideOn); }
 
+  // ── Перемещение надписей (как в Photoshop/Figma): drag + умные направляющие ──
+  // Тащишь надпись → она смещается (CSS translate, композится с её трансформами).
+  // При приближении к краю/центру контейнера или к другой надписи — «прилипание»
+  // (snap) + розовая направляющая. Alt+клик — сброс позиции. Позиция → pos.<key>.
+  var justDragged = false;
+  var POS = {};
+  function applyPosByKey(key, value) {
+    var parts = String(value == null ? "0,0" : value).split(",");
+    var x = parseFloat(parts[0]) || 0, y = parseFloat(parts[1]) || 0;
+    POS[key] = { x: x, y: y };
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.translate = x + "px " + y + "px";
+    });
+  }
+  var _guides = null;
+  function guideLayer() {
+    if (!_guides) { _guides = document.createElement("div"); _guides.className = "staw-ui staw-guides"; document.body.appendChild(_guides); }
+    return _guides;
+  }
+  function clearGuides() { if (_guides) _guides.textContent = ""; }
+  function drawGuide(vertical, at, from, to) {
+    var g = document.createElement("div"); g.className = "staw-ui staw-guide";
+    if (vertical) { g.style.left = at + "px"; g.style.top = from + "px"; g.style.width = "1px"; g.style.height = (to - from) + "px"; }
+    else { g.style.top = at + "px"; g.style.left = from + "px"; g.style.height = "1px"; g.style.width = (to - from) + "px"; }
+    guideLayer().appendChild(g);
+  }
+  var SNAP = 6, DRAG_THRESH = 3, mv = null;
+  function moveContainer(el) {
+    return el.closest("section,[data-sid],[data-hideable],[data-edit-bg],.eco-cover,.eco-card,main,footer,header") || el.parentElement || el;
+  }
+  function collectTargets(movingEl, container) {
+    var xs = [], ys = [];
+    function addRect(r) {
+      xs.push({ p: r.left, a: r.top, b: r.bottom }, { p: (r.left + r.right) / 2, a: r.top, b: r.bottom }, { p: r.right, a: r.top, b: r.bottom });
+      ys.push({ p: r.top, a: r.left, b: r.right }, { p: (r.top + r.bottom) / 2, a: r.left, b: r.right }, { p: r.bottom, a: r.left, b: r.right });
+    }
+    addRect(container.getBoundingClientRect());
+    container.querySelectorAll("[data-edit]").forEach(function (el) {
+      if (el === movingEl || el.contains(movingEl) || movingEl.contains(el)) return;
+      addRect(el.getBoundingClientRect());
+    });
+    return { xs: xs, ys: ys };
+  }
+  function bestSnap(lines, targets) {
+    var best = null;
+    targets.forEach(function (t) {
+      lines.forEach(function (ml) {
+        var d = Math.abs(ml - t.p);
+        if (d <= SNAP && (!best || d < best.d)) best = { d: d, delta: t.p - ml, t: t };
+      });
+    });
+    return best;
+  }
+  document.addEventListener("pointerdown", function (e) {
+    if (e.button != null && e.button !== 0) return;
+    if (!document.documentElement.classList.contains("staw-edit")) return;
+    if (e.target.closest(".staw-ui, .staw-tools, input, textarea, select")) return;
+    var el = e.target.closest("[data-edit]");
+    if (!el || el.hasAttribute("data-edit-ph")) return;
+    var key = el.getAttribute("data-edit");
+    if (!key || !safeId(key)) return;
+    if (e.altKey) { // Alt+клик — сброс позиции
+      if (POS[key] && (POS[key].x || POS[key].y)) { applyPosByKey(key, "0,0"); draft("pos." + key, "0,0"); }
+      justDragged = true; e.preventDefault(); return;
+    }
+    var cur = POS[key] || { x: 0, y: 0 };
+    mv = { el: el, key: key, sx: e.clientX, sy: e.clientY, bx: cur.x, by: cur.y,
+           container: moveContainer(el), moved: false, targets: null, cx: cur.x, cy: cur.y };
+    e.preventDefault(); // не даём стартовать нативный drag предков/картинок
+  }, true);
+  document.addEventListener("pointermove", function (e) {
+    if (!mv) return;
+    var ddx = e.clientX - mv.sx, ddy = e.clientY - mv.sy;
+    if (!mv.moved) {
+      if (Math.abs(ddx) < DRAG_THRESH && Math.abs(ddy) < DRAG_THRESH) return;
+      mv.moved = true;
+      document.documentElement.classList.add("staw-moving");
+      mv.targets = collectTargets(mv.el, mv.container);
+    }
+    var nx = mv.bx + ddx, ny = mv.by + ddy;
+    mv.el.style.translate = nx + "px " + ny + "px";
+    var r = mv.el.getBoundingClientRect();
+    var bx = bestSnap([r.left, (r.left + r.right) / 2, r.right], mv.targets.xs);
+    var by = bestSnap([r.top, (r.top + r.bottom) / 2, r.bottom], mv.targets.ys);
+    if (bx) nx += bx.delta;
+    if (by) ny += by.delta;
+    mv.el.style.translate = nx + "px " + ny + "px";
+    mv.cx = nx; mv.cy = ny;
+    clearGuides();
+    var rr = mv.el.getBoundingClientRect();
+    if (bx) drawGuide(true, bx.t.p, Math.min(bx.t.a, rr.top), Math.max(bx.t.b, rr.bottom));
+    if (by) drawGuide(false, by.t.p, Math.min(by.t.a, rr.left), Math.max(by.t.b, rr.right));
+  }, true);
+  document.addEventListener("pointerup", function () {
+    if (!mv) return;
+    var m = mv; mv = null;
+    clearGuides();
+    document.documentElement.classList.remove("staw-moving");
+    if (m.moved) {
+      POS[m.key] = { x: Math.round(m.cx), y: Math.round(m.cy) };
+      draft("pos." + m.key, POS[m.key].x + "," + POS[m.key].y);
+      justDragged = true; // подавить последующий click-правку
+    }
+  }, true);
+  (function () {
+    var s = document.createElement("style");
+    s.textContent =
+      "html.staw-edit [data-edit]:not([data-edit-ph]){cursor:grab}" +
+      "html.staw-moving,html.staw-moving *{cursor:grabbing!important;user-select:none!important}" +
+      ".staw-guides{position:fixed;inset:0;z-index:2147483000;pointer-events:none}" +
+      ".staw-guide{position:absolute;background:#ff2d78;box-shadow:0 0 0 .5px rgba(255,45,120,.4)}" +
+      // Пустая надпись (текст удалён) не пропадает: в Конструкторе показываем
+      // кликабельный плейсхолдер «+ надпись» — клик открывает правку, вписываешь заново.
+      "html.staw-edit [data-edit]:not([data-edit-ph]):empty{display:inline-block;min-width:118px;" +
+      "min-height:1.25em;padding:2px 10px;outline:1px dashed rgba(10,132,255,.8);outline-offset:2px;" +
+      "border-radius:6px;vertical-align:middle}" +
+      "html.staw-edit [data-edit]:not([data-edit-ph]):empty::before{content:'+ надпись';" +
+      "color:#0a84ff;font:600 12px/1.25 system-ui,-apple-system,sans-serif;white-space:nowrap;opacity:.85}" +
+      // Добавленная надпись: наследует цвет секции (видна и на тёмном, и на светлом фоне).
+      ".staw-newlabel{font-weight:600;font-size:18px;line-height:1.3;color:inherit;max-width:82%}" +
+      // Плавающая кнопка «➕ Надпись» в превью (только в Конструкторе).
+      ".staw-addlabel{position:fixed;left:14px;bottom:14px;z-index:2147483001;background:#0a84ff;" +
+      "color:#fff;border:0;border-radius:999px;padding:10px 16px;font:600 13px system-ui,-apple-system,sans-serif;" +
+      "cursor:pointer;box-shadow:0 6px 18px rgba(10,132,255,.4)}" +
+      ".staw-addlabel:hover{background:#0060df}" +
+      // Крестик удаления текста в углу рамки надписи (по наведению).
+      ".staw-delx{position:fixed;z-index:2147483002;display:none;width:20px;height:20px;padding:0;" +
+      "align-items:center;justify-content:center;border-radius:50%;background:#ef4444;color:#fff;" +
+      "border:2px solid #fff;font:700 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;" +
+      "box-shadow:0 2px 8px rgba(0,0,0,.35)}" +
+      ".staw-delx:hover{background:#dc2626}";
+    document.documentElement.appendChild(s);
+  })();
+  (function () {
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "staw-ui staw-addlabel"; btn.draggable = false;
+    btn.textContent = "➕ Надпись";
+    btn.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); addLabelToView(); });
+    function mount() { if (document.body) document.body.appendChild(btn); }
+    if (document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
+  })();
+  // ── Крестик ✕ удаления текста в углу каждой надписи (по наведению) ──
+  var _delx = null, _delxTarget = null, _delxTimer = null;
+  function hideDelx() { if (_delx) _delx.style.display = "none"; _delxTarget = null; }
+  function delxBtn() {
+    if (_delx) return _delx;
+    _delx = document.createElement("button");
+    _delx.type = "button"; _delx.className = "staw-ui staw-delx"; _delx.textContent = "✕";
+    _delx.title = "Удалить текст";
+    _delx.addEventListener("mouseenter", function () { if (_delxTimer) clearTimeout(_delxTimer); });
+    _delx.addEventListener("mouseleave", function () { _delxTimer = setTimeout(hideDelx, 220); });
+    _delx.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var el = _delxTarget; hideDelx();
+      if (!el) return;
+      if (el.classList.contains("staw-newlabel")) { removeExtra(el); return; } // добавленную — совсем
+      var key = el.getAttribute("data-edit");
+      if (!key) return;
+      el.textContent = "";       // обычную — очищаем (покажется «+ надпись», можно вернуть)
+      draft(key, "");
+      justDragged = true;        // не открывать правку от возможного click
+    });
+    if (document.body) document.body.appendChild(_delx);
+    return _delx;
+  }
+  function showDelxFor(el) {
+    var r = el.getBoundingClientRect();
+    var b = delxBtn();
+    b.style.display = "flex";
+    b.style.left = Math.round(r.right - 9) + "px";
+    b.style.top = Math.round(r.top - 9) + "px";
+    _delxTarget = el;
+  }
+  document.addEventListener("mouseover", function (e) {
+    if (!document.documentElement.classList.contains("staw-edit")) return;
+    if (e.target.closest(".staw-ui, .staw-tools, input, textarea, select")) return;
+    var el = e.target.closest("[data-edit]:not([data-edit-ph])");
+    if (el) { if (_delxTimer) clearTimeout(_delxTimer); showDelxFor(el); }
+  }, true);
+  document.addEventListener("mouseout", function (e) {
+    if (!_delxTarget) return;
+    var to = e.relatedTarget;
+    if (to && to.closest && (to === _delx || to.closest(".staw-delx") || to.closest("[data-edit]") === _delxTarget)) return;
+    if (_delxTimer) clearTimeout(_delxTimer);
+    _delxTimer = setTimeout(hideDelx, 220);
+  }, true);
+
   // ── Применить черновик от родителя ──
   function reorderChildren(container, order) {
     if (!container || !Array.isArray(order)) return;
@@ -408,7 +655,63 @@
       markDraggable(); initHideOn(node);
     });
   }
+  // ── Добавление новых надписей: «➕ Надпись» создаёт надпись в видимой секции,
+  // дальше — правка (клик), перемещение (drag), удаление («Удалить ✕»). Список всех
+  // добавленных надписей хранится в одном ключе xlabels = [{id, c}] (c — id секции). ──
+  function labelContainerKey(el) { var s = el.closest("section[id]"); return s ? s.id : "main"; }
+  function sectionForKey(key) { return key === "main" ? (document.querySelector("main") || document.body) : document.getElementById(key); }
+  function allLabels() {
+    return [].map.call(document.querySelectorAll(".staw-newlabel"), function (el) {
+      return { id: el.getAttribute("data-edit").slice(3), c: labelContainerKey(el) };
+    });
+  }
+  function makeLabelEl(sid) {
+    var el = document.createElement("div");
+    el.className = "staw-newlabel";
+    el.setAttribute("data-edit", "xl." + sid);
+    el.setAttribute("data-hideable", "xl." + sid);
+    el.setAttribute("data-extra", "1");
+    el.textContent = "Новая надпись";
+    el.style.position = "absolute"; el.style.left = "24px"; el.style.zIndex = "40";
+    return el;
+  }
+  function materializeLabels(list) {
+    (list || []).forEach(function (it) {
+      if (!it || !it.id || document.querySelector('[data-edit="xl.' + it.id + '"]')) return;
+      var section = sectionForKey(it.c || "main");
+      if (!section) return;
+      if (getComputedStyle(section).position === "static") section.style.position = "relative";
+      var el = makeLabelEl(it.id); el.style.top = "24px";
+      section.appendChild(el);
+      if (typeof initHideOn === "function") initHideOn(el);
+    });
+  }
+  function addLabelToView() {
+    var vh = window.innerHeight, best = null, bd = 1e9;
+    [].forEach.call(document.querySelectorAll("section[id]"), function (s) {
+      var r = s.getBoundingClientRect();
+      if (r.bottom < 40 || r.top > vh - 40) return;
+      var d = Math.abs((r.top + r.bottom) / 2 - vh / 2);
+      if (d < bd) { bd = d; best = s; }
+    });
+    var key = (best && best.id) ? best.id : "main";
+    var section = sectionForKey(key);
+    if (getComputedStyle(section).position === "static") section.style.position = "relative";
+    var sid = makeSid();
+    var el = makeLabelEl(sid);
+    var sr = section.getBoundingClientRect();
+    el.style.top = Math.max(12, Math.round(vh / 2 - sr.top)) + "px"; // на уровне центра экрана
+    section.appendChild(el);
+    initHideOn(el);
+    draft("xlabels", JSON.stringify(allLabels()));
+    draft("xl." + sid, "Новая надпись"); // дефолтный текст → в черновик/публикацию
+  }
+
   function applyContent(key, value) {
+    // Отражаем черновик и в STAW_CONTENT — чтобы компоненты, которые строятся из JS
+    // позже (экран входа/регистрации), показывали правку/удаление при пересборке.
+    try { if (window.STAW_CONTENT && typeof value === "string") window.STAW_CONTENT[key] = { value: value }; } catch (e) {}
+    if (key === "xlabels") { try { materializeLabels(JSON.parse(value || "[]")); } catch (e) {} return; }
     if (key.indexOf("extra.") === 0) { materialize(key.slice(6), value); return; }
     if (key.indexOf("order.") === 0) {
       var g = key.slice(6); if (!safeId(g) || !value) return;
@@ -421,6 +724,7 @@
       document.querySelectorAll('[data-hideable="' + hk + '"]').forEach(function (el) { el.classList.toggle("staw-cms-hidden", hide); });
       updateHideBtn(hk); return;
     }
+    if (key.indexOf("pos.") === 0) { var pk = key.slice(4); if (safeId(pk)) applyPosByKey(pk, value); return; }
     if (key.indexOf("align.") === 0) { var ak = key.slice(6); if (safeId(ak)) applyAlignLocal(document.querySelector('[data-align="' + ak + '"]'), value); return; }
     if (key.indexOf("anim.") === 0) { var nk = key.slice(5); if (safeId(nk)) applyAnimLocal(nk, value); return; }
     if (key.indexOf("size.") === 0) { var zk = key.slice(5); if (safeId(zk)) document.querySelectorAll('[data-hideable="' + zk + '"]').forEach(function (el) { el.classList.toggle("staw-w-wide", value === "wide"); }); return; }
@@ -430,6 +734,8 @@
     if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", value); return; }
     if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", value); return; }
     if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", value); return; }
+    if (key.indexOf("bgfade.") === 0) { setBgField(key.slice(7), "_bgFade", value); return; }
+    if (key.indexOf("bgloop.") === 0) { setBgField(key.slice(7), "_bgLoop", value); return; }
     if (key.indexOf("color.") === 0) { var ck = key.slice(6); if (safeId(ck)) applyColorLocal(ck, value); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") {
@@ -457,6 +763,7 @@
     var d = e.data || {};
     if (d.source !== "staw-console") return;
     if (d.type === "reload") { location.reload(); return; }
+    if (d.type === "addLabel") { try { addLabelToView(); } catch (e) {} return; }
     // Экран входа/регистрации (строится из JS): консоль просит открыть/закрыть/
     // переключить его — показываем НА МЕСТЕ, как на живом сайте.
     if (d.type === "authScreen") {

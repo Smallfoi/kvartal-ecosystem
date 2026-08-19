@@ -154,9 +154,21 @@
     </div>
     <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Видео на фон (короткое, без звука) — загрузите файл или вставьте ссылку:
       <input id="merch-bg-video" type="text" placeholder="https://…/clip.mp4" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
+    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Качество при загрузке:
+      <select id="merch-bg-video-quality" style="margin-left:6px;padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">
+        <option value="web">Оптимизировать (веб, лёгкое) — рекомендуется</option>
+        <option value="high">Высокое (1080p)</option>
+        <option value="original">Оригинал (без сжатия, 4K)</option>
+      </select>
+      <span style="display:block;color:#6b7280;font-weight:400;margin-top:3px">Оптимизация → быстрый старт; Оригинал → максимум качества, но грузится дольше.</span>
+    </label>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <button type="button" id="merch-bg-video-upload" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:13px">⬆ Загрузить видео файлом</button>
       <span id="merch-bg-video-status" style="font-size:12px;color:#6b7280"></span>
+    </div>
+    <div style="display:flex;gap:18px;margin-bottom:12px;flex-wrap:wrap">
+      <label style="font-size:12px;font-weight:600;color:#374151;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="merch-bg-fade" checked> Плавное появление</label>
+      <label style="font-size:12px;font-weight:600;color:#374151;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="merch-bg-loop" checked> Бесшовная петля</label>
     </div>
     <div style="display:flex;justify-content:space-between;gap:10px">
       <button type="button" id="merch-bg-remove" style="padding:9px 16px;border:1px solid #fca5a5;border-radius:8px;background:#fff;color:#dc2626;cursor:pointer;font-weight:600">Удалить фотографию</button>
@@ -414,7 +426,7 @@
     } else if (d.type === "editImage") {
       openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect);
     } else if (d.type === "editBg") {
-      openBgEdit(d.key, d.img || "", d.vid || "", d.off || "", d.focal || "", d.fit || "cover");
+      openBgEdit(d.key, d.img || "", d.vid || "", d.off || "", d.focal || "", d.fit || "cover", d.fade || "", d.loop || "");
     } else if (d.type === "editAnim") {
       openAnimPick(d.key, d.value || "none");
     } else if (d.type === "editBanner") {
@@ -627,7 +639,7 @@
     document.getElementById("merch-bg-cover").style.cssText = base + (bgFit === "contain" ? off : on);
     document.getElementById("merch-bg-contain").style.cssText = base + (bgFit === "contain" ? on : off);
   }
-  function openBgEdit(key, img, vid, off, focal, fit) {
+  function openBgEdit(key, img, vid, off, focal, fit, fade, loop) {
     bgKey = key; bgVid = vid || "";
     bgFocal = /^\d{1,3}% \d{1,3}%$/.test(focal) ? focal : "50% 50%";
     bgFit = (fit === "contain") ? "contain" : "cover";
@@ -635,6 +647,11 @@
     bgCurImg = (pend && pend.url) || img || "";
     document.getElementById("merch-bg-video").value = bgVid;
     document.getElementById("merch-bg-video-status").textContent = "";
+    // Тумблеры видео-эффектов (по умолчанию ВКЛ; "0" = выкл). Приоритет — черновик.
+    var fadeV = ("bgfade." + key) in pendingContent ? pendingContent["bgfade." + key] : (fade || "");
+    var loopV = ("bgloop." + key) in pendingContent ? pendingContent["bgloop." + key] : (loop || "");
+    document.getElementById("merch-bg-fade").checked = fadeV !== "0";
+    document.getElementById("merch-bg-loop").checked = loopV !== "0";
     bgModalEl.style.display = "flex";
     bgFitBtns();
     bgPicker.set(bgCurImg, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + bgKey, pos); });
@@ -685,8 +702,9 @@
     var f = bgVideoFileInput.files && bgVideoFileInput.files[0];
     if (!f || !bgKey) return;
     var key = bgKey, status = document.getElementById("merch-bg-video-status");
-    status.textContent = "Загрузка…";
-    var fd = new FormData(); fd.append("video", f);
+    var q = document.getElementById("merch-bg-video-quality").value;
+    status.textContent = (q === "original") ? "Загрузка…" : "Загрузка и сжатие…";
+    var fd = new FormData(); fd.append("video", f); fd.append("quality", q);
     apiForm("./site-video", fd).then(function (d) {
       bgVid = d.url;
       document.getElementById("merch-bg-video").value = d.url;
@@ -923,6 +941,8 @@
   document.getElementById("merch-bg-cover").addEventListener("click", function () { bgSetFit("cover"); });
   document.getElementById("merch-bg-contain").addEventListener("click", function () { bgSetFit("contain"); });
   document.getElementById("merch-bg-remove").addEventListener("click", bgRemove);
+  document.getElementById("merch-bg-fade").addEventListener("change", function () { if (bgKey) bgDraft("bgfade." + bgKey, this.checked ? "" : "0"); });
+  document.getElementById("merch-bg-loop").addEventListener("change", function () { if (bgKey) bgDraft("bgloop." + bgKey, this.checked ? "" : "0"); });
   document.getElementById("merch-bg-video").addEventListener("change", bgSetVideo);
   bgModalEl.addEventListener("click", function (e) { if (e.target === bgModalEl) bgClose(); });
   document.getElementById("merch-be-close").addEventListener("click", closeBannerEdit);
