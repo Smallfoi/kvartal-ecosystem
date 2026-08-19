@@ -171,6 +171,15 @@
       aspect: (img.clientWidth && img.clientHeight) ? (img.clientWidth / img.clientHeight) : 0,
     });
   }
+  // Текст элемента БЕЗ служебных вставок (.staw-ui: панель инструментов, крестик и т.п.).
+  function cleanText(el) {
+    var t = "";
+    [].forEach.call(el.childNodes, function (n) {
+      if (n.nodeType === 3) t += n.nodeValue;
+      else if (n.nodeType === 1 && !(n.classList && n.classList.contains("staw-ui"))) t += cleanText(n);
+    });
+    return t;
+  }
   document.addEventListener("click", function (e) {
     // После перетаскивания надписи «съедаем» следующий click, чтобы не открылась правка.
     if (justDragged) { justDragged = false; e.preventDefault(); e.stopPropagation(); return; }
@@ -194,7 +203,7 @@
     var ed = e.target.closest("[data-edit]");
     if (ed) {
       e.preventDefault(); e.stopPropagation();
-      send({ type: "editContent", key: ed.getAttribute("data-edit"), value: ed.textContent.trim(),
+      send({ type: "editContent", key: ed.getAttribute("data-edit"), value: cleanText(ed).trim(),
         color: rgbToHex(getComputedStyle(ed).color), hasColor: !!ed.style.color });
       return;
     }
@@ -512,7 +521,13 @@
       ".staw-addlabel{position:fixed;left:14px;bottom:14px;z-index:2147483001;background:#0a84ff;" +
       "color:#fff;border:0;border-radius:999px;padding:10px 16px;font:600 13px system-ui,-apple-system,sans-serif;" +
       "cursor:pointer;box-shadow:0 6px 18px rgba(10,132,255,.4)}" +
-      ".staw-addlabel:hover{background:#0060df}";
+      ".staw-addlabel:hover{background:#0060df}" +
+      // Крестик удаления текста в углу рамки надписи (по наведению).
+      ".staw-delx{position:fixed;z-index:2147483002;display:none;width:20px;height:20px;padding:0;" +
+      "align-items:center;justify-content:center;border-radius:50%;background:#ef4444;color:#fff;" +
+      "border:2px solid #fff;font:700 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;" +
+      "box-shadow:0 2px 8px rgba(0,0,0,.35)}" +
+      ".staw-delx:hover{background:#dc2626}";
     document.documentElement.appendChild(s);
   })();
   (function () {
@@ -523,6 +538,51 @@
     function mount() { if (document.body) document.body.appendChild(btn); }
     if (document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
   })();
+  // ── Крестик ✕ удаления текста в углу каждой надписи (по наведению) ──
+  var _delx = null, _delxTarget = null, _delxTimer = null;
+  function hideDelx() { if (_delx) _delx.style.display = "none"; _delxTarget = null; }
+  function delxBtn() {
+    if (_delx) return _delx;
+    _delx = document.createElement("button");
+    _delx.type = "button"; _delx.className = "staw-ui staw-delx"; _delx.textContent = "✕";
+    _delx.title = "Удалить текст";
+    _delx.addEventListener("mouseenter", function () { if (_delxTimer) clearTimeout(_delxTimer); });
+    _delx.addEventListener("mouseleave", function () { _delxTimer = setTimeout(hideDelx, 220); });
+    _delx.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var el = _delxTarget; hideDelx();
+      if (!el) return;
+      if (el.classList.contains("staw-newlabel")) { removeExtra(el); return; } // добавленную — совсем
+      var key = el.getAttribute("data-edit");
+      if (!key) return;
+      el.textContent = "";       // обычную — очищаем (покажется «+ надпись», можно вернуть)
+      draft(key, "");
+      justDragged = true;        // не открывать правку от возможного click
+    });
+    if (document.body) document.body.appendChild(_delx);
+    return _delx;
+  }
+  function showDelxFor(el) {
+    var r = el.getBoundingClientRect();
+    var b = delxBtn();
+    b.style.display = "flex";
+    b.style.left = Math.round(r.right - 9) + "px";
+    b.style.top = Math.round(r.top - 9) + "px";
+    _delxTarget = el;
+  }
+  document.addEventListener("mouseover", function (e) {
+    if (!document.documentElement.classList.contains("staw-edit")) return;
+    if (e.target.closest(".staw-ui, .staw-tools, input, textarea, select")) return;
+    var el = e.target.closest("[data-edit]:not([data-edit-ph])");
+    if (el) { if (_delxTimer) clearTimeout(_delxTimer); showDelxFor(el); }
+  }, true);
+  document.addEventListener("mouseout", function (e) {
+    if (!_delxTarget) return;
+    var to = e.relatedTarget;
+    if (to && to.closest && (to === _delx || to.closest(".staw-delx") || to.closest("[data-edit]") === _delxTarget)) return;
+    if (_delxTimer) clearTimeout(_delxTimer);
+    _delxTimer = setTimeout(hideDelx, 220);
+  }, true);
 
   // ── Применить черновик от родителя ──
   function reorderChildren(container, order) {
@@ -601,6 +661,9 @@
   }
 
   function applyContent(key, value) {
+    // Отражаем черновик и в STAW_CONTENT — чтобы компоненты, которые строятся из JS
+    // позже (экран входа/регистрации), показывали правку/удаление при пересборке.
+    try { if (window.STAW_CONTENT && typeof value === "string") window.STAW_CONTENT[key] = { value: value }; } catch (e) {}
     if (key === "xlabels") { try { materializeLabels(JSON.parse(value || "[]")); } catch (e) {} return; }
     if (key.indexOf("extra.") === 0) { materialize(key.slice(6), value); return; }
     if (key.indexOf("order.") === 0) {

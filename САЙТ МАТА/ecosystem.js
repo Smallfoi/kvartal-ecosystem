@@ -479,9 +479,11 @@
   function applyAuthOverride(key, el, isPh) {
     try {
       var c = window.STAW_CONTENT && window.STAW_CONTENT[key];
-      var v = c && typeof c.value === "string" ? c.value : "";
-      if (!v) return;
-      if (isPh) el.setAttribute("placeholder", v); else el.textContent = v;
+      // Различаем «переопределение задано» (пусть даже пустое — надпись удалили) и
+      // «переопределения нет» (оставляем дефолт). Иначе пустой текст игнорировался и
+      // хардкод (напр. фоновая «МАТА») возвращался при каждой пересборке модалки.
+      if (!c || typeof c.value !== "string") return;
+      if (isPh) el.setAttribute("placeholder", c.value); else el.textContent = c.value;
     } catch (e) {}
   }
   function applyAuthOverrides() {
