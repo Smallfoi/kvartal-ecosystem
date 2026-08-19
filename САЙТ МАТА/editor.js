@@ -234,6 +234,8 @@
     draft("order." + group, JSON.stringify(sidsOf(container)));
   }
   function removeExtra(el) {
+    // Добавленная надпись — просто убрать и пересобрать список xlabels.
+    if (el.classList.contains("staw-newlabel")) { el.remove(); draft("xlabels", JSON.stringify(allLabels())); return; }
     var container = el.closest("[data-sortable]");
     var group = container && container.getAttribute("data-sortable");
     el.remove();
@@ -496,8 +498,30 @@
       "html.staw-edit [data-edit]:not([data-edit-ph]){cursor:grab}" +
       "html.staw-moving,html.staw-moving *{cursor:grabbing!important;user-select:none!important}" +
       ".staw-guides{position:fixed;inset:0;z-index:2147483000;pointer-events:none}" +
-      ".staw-guide{position:absolute;background:#ff2d78;box-shadow:0 0 0 .5px rgba(255,45,120,.4)}";
+      ".staw-guide{position:absolute;background:#ff2d78;box-shadow:0 0 0 .5px rgba(255,45,120,.4)}" +
+      // Пустая надпись (текст удалён) не пропадает: в Конструкторе показываем
+      // кликабельный плейсхолдер «+ надпись» — клик открывает правку, вписываешь заново.
+      "html.staw-edit [data-edit]:not([data-edit-ph]):empty{display:inline-block;min-width:118px;" +
+      "min-height:1.25em;padding:2px 10px;outline:1px dashed rgba(10,132,255,.8);outline-offset:2px;" +
+      "border-radius:6px;vertical-align:middle}" +
+      "html.staw-edit [data-edit]:not([data-edit-ph]):empty::before{content:'+ надпись';" +
+      "color:#0a84ff;font:600 12px/1.25 system-ui,-apple-system,sans-serif;white-space:nowrap;opacity:.85}" +
+      // Добавленная надпись: наследует цвет секции (видна и на тёмном, и на светлом фоне).
+      ".staw-newlabel{font-weight:600;font-size:18px;line-height:1.3;color:inherit;max-width:82%}" +
+      // Плавающая кнопка «➕ Надпись» в превью (только в Конструкторе).
+      ".staw-addlabel{position:fixed;left:14px;bottom:14px;z-index:2147483001;background:#0a84ff;" +
+      "color:#fff;border:0;border-radius:999px;padding:10px 16px;font:600 13px system-ui,-apple-system,sans-serif;" +
+      "cursor:pointer;box-shadow:0 6px 18px rgba(10,132,255,.4)}" +
+      ".staw-addlabel:hover{background:#0060df}";
     document.documentElement.appendChild(s);
+  })();
+  (function () {
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "staw-ui staw-addlabel"; btn.draggable = false;
+    btn.textContent = "➕ Надпись";
+    btn.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); addLabelToView(); });
+    function mount() { if (document.body) document.body.appendChild(btn); }
+    if (document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
   })();
 
   // ── Применить черновик от родителя ──
@@ -524,7 +548,60 @@
       markDraggable(); initHideOn(node);
     });
   }
+  // ── Добавление новых надписей: «➕ Надпись» создаёт надпись в видимой секции,
+  // дальше — правка (клик), перемещение (drag), удаление («Удалить ✕»). Список всех
+  // добавленных надписей хранится в одном ключе xlabels = [{id, c}] (c — id секции). ──
+  function labelContainerKey(el) { var s = el.closest("section[id]"); return s ? s.id : "main"; }
+  function sectionForKey(key) { return key === "main" ? (document.querySelector("main") || document.body) : document.getElementById(key); }
+  function allLabels() {
+    return [].map.call(document.querySelectorAll(".staw-newlabel"), function (el) {
+      return { id: el.getAttribute("data-edit").slice(3), c: labelContainerKey(el) };
+    });
+  }
+  function makeLabelEl(sid) {
+    var el = document.createElement("div");
+    el.className = "staw-newlabel";
+    el.setAttribute("data-edit", "xl." + sid);
+    el.setAttribute("data-hideable", "xl." + sid);
+    el.setAttribute("data-extra", "1");
+    el.textContent = "Новая надпись";
+    el.style.position = "absolute"; el.style.left = "24px"; el.style.zIndex = "40";
+    return el;
+  }
+  function materializeLabels(list) {
+    (list || []).forEach(function (it) {
+      if (!it || !it.id || document.querySelector('[data-edit="xl.' + it.id + '"]')) return;
+      var section = sectionForKey(it.c || "main");
+      if (!section) return;
+      if (getComputedStyle(section).position === "static") section.style.position = "relative";
+      var el = makeLabelEl(it.id); el.style.top = "24px";
+      section.appendChild(el);
+      if (typeof initHideOn === "function") initHideOn(el);
+    });
+  }
+  function addLabelToView() {
+    var vh = window.innerHeight, best = null, bd = 1e9;
+    [].forEach.call(document.querySelectorAll("section[id]"), function (s) {
+      var r = s.getBoundingClientRect();
+      if (r.bottom < 40 || r.top > vh - 40) return;
+      var d = Math.abs((r.top + r.bottom) / 2 - vh / 2);
+      if (d < bd) { bd = d; best = s; }
+    });
+    var key = (best && best.id) ? best.id : "main";
+    var section = sectionForKey(key);
+    if (getComputedStyle(section).position === "static") section.style.position = "relative";
+    var sid = makeSid();
+    var el = makeLabelEl(sid);
+    var sr = section.getBoundingClientRect();
+    el.style.top = Math.max(12, Math.round(vh / 2 - sr.top)) + "px"; // на уровне центра экрана
+    section.appendChild(el);
+    initHideOn(el);
+    draft("xlabels", JSON.stringify(allLabels()));
+    draft("xl." + sid, "Новая надпись"); // дефолтный текст → в черновик/публикацию
+  }
+
   function applyContent(key, value) {
+    if (key === "xlabels") { try { materializeLabels(JSON.parse(value || "[]")); } catch (e) {} return; }
     if (key.indexOf("extra.") === 0) { materialize(key.slice(6), value); return; }
     if (key.indexOf("order.") === 0) {
       var g = key.slice(6); if (!safeId(g) || !value) return;
@@ -574,6 +651,7 @@
     var d = e.data || {};
     if (d.source !== "staw-console") return;
     if (d.type === "reload") { location.reload(); return; }
+    if (d.type === "addLabel") { try { addLabelToView(); } catch (e) {} return; }
     // Экран входа/регистрации (строится из JS): консоль просит открыть/закрыть/
     // переключить его — показываем НА МЕСТЕ, как на живом сайте.
     if (d.type === "authScreen") {
