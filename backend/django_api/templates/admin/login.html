@@ -5,90 +5,179 @@
 {% block extrastyle %}
     {{ block.super }}
     {{ form.media }}
-    {% comment %}Премиальная анимация входа (только админка). Всё на CSS/GPU (transform/opacity), фирменные цвета приложений не трогаем. Уважаем prefers-reduced-motion.{% endcomment %}
+    {% comment %}«Console Login» (эталон владельца, 2026-08-19): день/ночь-сцена с
+    горизонтом и подвижным источником света — солнце/луна едут по дуге, вместе с
+    ними меняются небо, световое пятно у горизонта, палитра карточки и акцент.
+    Всё на transform/opacity + переходам цвета; prefers-reduced-motion уважаем.
+    Механика Django-формы (CSRF, ошибки+шейк, глазик пароля) сохранена.{% endcomment %}
+    <script>
+      // Тема сцены до первой отрисовки (без вспышки): сохранённый выбор,
+      // иначе — тёмная тема ОС.
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem("mata-admin-scene"); } catch (e) {}
+        var night = saved ? saved === "night"
+          : (document.documentElement.classList.contains("dark") ||
+             (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches));
+        document.documentElement.classList.toggle("cx-night", night);
+        document.documentElement.classList.toggle("dark", night);
+      })();
+    </script>
     <style>
-      /* ── Тихий ambient-фон (деликатно, почти неподвижно) ──────────── */
-      .staw-aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-      .staw-aurora b {
-        position: absolute; border-radius: 50%; filter: blur(72px);
-        opacity: .26; will-change: transform;
-      }
-      html.dark .staw-aurora b { opacity: .3; mix-blend-mode: screen; }
-      .staw-aurora b:nth-child(1) {
-        width: 42vmax; height: 42vmax; left: -12vmax; top: -14vmax;
-        background: radial-gradient(circle at 40% 40%, #0A84FF, transparent 62%);
-        animation: staw-drift1 36s ease-in-out infinite;
-      }
-      .staw-aurora b:nth-child(2) {
-        width: 36vmax; height: 36vmax; right: -10vmax; top: 4vmax;
-        background: radial-gradient(circle at 50% 50%, #22d3ee, transparent 64%);
-        animation: staw-drift2 44s ease-in-out infinite;
-      }
-      .staw-aurora b:nth-child(3) {
-        width: 34vmax; height: 34vmax; left: 18vmax; bottom: -18vmax;
-        background: radial-gradient(circle at 50% 50%, #a78bfa, transparent 62%);
-        animation: staw-drift1 52s ease-in-out infinite reverse;
-      }
-      .staw-aurora b:nth-child(4) { display: none; }
-      @keyframes staw-drift1 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(2.5vmax,-1.5vmax,0) scale(1.06)} }
-      @keyframes staw-drift2 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(-2.5vmax,1.5vmax,0) scale(1.05)} }
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
-      /* ── Стеклянная карточка + мягкое появление ───────────────────── */
+      :root {
+        --cx-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+        --cx-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+        /* ── дневная палитра (эталон) ── */
+        --cx-ink: #101820; --cx-soft: #5C6874; --cx-line: rgba(16,24,32,.12);
+        --cx-card: rgba(255,255,255,.94); --cx-fieldBg: #F2F4F3;
+        --cx-accent: #1F6F63; --cx-accentInk: #FFFFFF; --cx-accentSoft: rgba(31,111,99,.18);
+        --cx-shadow: 0 26px 46px -22px rgba(18,38,44,.5), 0 3px 10px rgba(18,38,44,.07);
+        --cx-poolColor: rgba(31,111,99,.16); --cx-poolX: 0px; --cx-poolW: 300px;
+      }
+      html.cx-night {
+        /* ── ночная палитра (эталон) ── */
+        --cx-ink: #EDF1F7; --cx-soft: #8E9AAC; --cx-line: rgba(237,241,247,.14);
+        --cx-card: rgba(20,26,40,.86); --cx-fieldBg: rgba(255,255,255,.05);
+        --cx-accent: #F0A85C; --cx-accentInk: #1A1206; --cx-accentSoft: rgba(240,168,92,.2);
+        --cx-shadow: 26px 30px 60px -26px rgba(0,0,0,.85), 0 2px 8px rgba(0,0,0,.4);
+        --cx-poolColor: rgba(240,168,92,.2); --cx-poolX: -70px; --cx-poolW: 420px;
+      }
+
+      /* ── небо ─────────────────────────────────────────────────────── */
+      .cx-sky { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        transition: background 1s ease;
+        background: linear-gradient(180deg,#A9C6DE 0%,#CFDCE4 46%,#EDEFEA 72%,#E2E4DC 100%); }
+      html.cx-night .cx-sky {
+        background: linear-gradient(180deg,#070B18 0%,#0D1428 44%,#16203A 74%,#1B2438 100%); }
+
+      .cx-stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+      .cx-stars i { position: absolute; width: 2px; height: 2px; border-radius: 50%;
+        background: #DCE6FF; opacity: 0; transform: scale(var(--s));
+        transition: opacity .9s ease var(--d); }
+      html.cx-night .cx-stars i { opacity: .85; animation: cx-twinkle 4s ease-in-out infinite;
+        animation-delay: var(--d); }
+      @keyframes cx-twinkle { 0%,100%{opacity:.85} 50%{opacity:.3} }
+
+      /* ── дуга со светилом: солнце ↔ луна ──────────────────────────── */
+      .cx-arc { position: fixed; left: 50%; top: 80%; width: 1px; height: 1px;
+        z-index: 0; pointer-events: none; }
+      .cx-orbit { position: absolute; left: 0; top: 0;
+        transition: transform 1s cubic-bezier(.45,.05,.35,1); transform: rotate(-46deg); }
+      html.cx-night .cx-orbit { transform: rotate(44deg); }
+      .cx-body { position: absolute; left: -26px; top: -390px; width: 52px; height: 52px; }
+      .cx-sun, .cx-moon { position: absolute; inset: 0; border-radius: 50%;
+        transition: opacity .8s ease, box-shadow 1s ease; }
+      .cx-sun { background: radial-gradient(circle at 38% 34%,#FFF7E2,#FFD79A 58%,#F3B663);
+        box-shadow: 0 0 60px 18px rgba(255,214,150,.5); }
+      .cx-moon { background: radial-gradient(circle at 36% 32%,#F6F8FF,#C9D3EA 62%,#9AA7C4);
+        box-shadow: 0 0 46px 14px rgba(190,206,255,.28); opacity: 0; }
+      html.cx-night .cx-sun { opacity: 0; }
+      html.cx-night .cx-moon { opacity: 1; }
+
+      /* ── горизонт и световое пятно ────────────────────────────────── */
+      .cx-horizon { position: fixed; left: 0; right: 0; top: 78%; height: 1px; z-index: 0;
+        pointer-events: none; transition: background 1s ease;
+        background: linear-gradient(90deg,transparent,rgba(16,24,32,.22) 22%,rgba(16,24,32,.22) 78%,transparent); }
+      html.cx-night .cx-horizon {
+        background: linear-gradient(90deg,transparent,rgba(237,241,247,.16) 22%,rgba(237,241,247,.16) 78%,transparent); }
+      .cx-pool { position: fixed; left: 50%; top: 78%; height: 110px; z-index: 0;
+        border-radius: 50%; filter: blur(26px); pointer-events: none;
+        width: var(--cx-poolW); background: var(--cx-poolColor);
+        transform: translate(calc(-50% + var(--cx-poolX)), -46%);
+        transition: width 1s ease, background 1s ease, transform 1s cubic-bezier(.45,.05,.35,1); }
+
+      /* ── карточка ─────────────────────────────────────────────────── */
       .staw-card {
         position: relative; z-index: 1;
-        padding: 34px 30px 30px;
-        border-radius: 22px;
-        background: rgba(255, 255, 255, .82);
-        border: 1px solid rgba(255, 255, 255, .55);
-        box-shadow: 0 22px 60px -22px rgba(6, 12, 26, .3), 0 2px 8px rgba(6,12,26,.07);
-        -webkit-backdrop-filter: blur(16px) saturate(1.2);
-        backdrop-filter: blur(16px) saturate(1.2);
-        animation: staw-card-in .7s cubic-bezier(.16,.84,.44,1) both;
-      }
-      html.dark .staw-card {
-        background: rgba(18, 24, 38, .6);
-        border-color: rgba(255, 255, 255, .08);
-        box-shadow: 0 26px 70px -26px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
+        padding: 30px 30px 26px;
+        border-radius: 20px;
+        background: var(--cx-card);
+        border: 1px solid var(--cx-line);
+        box-shadow: var(--cx-shadow);
+        color: var(--cx-ink);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        transition: background 1s ease, box-shadow 1s cubic-bezier(.45,.05,.35,1),
+                    border-color 1s ease, color .9s ease;
+        animation: staw-card-in .7s cubic-bezier(.22,1,.36,1) both;
       }
       @keyframes staw-card-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 
+      /* заголовки Unfold — дисплейный шрифт эталона + чернила темы
+         (вместо фирменного синего Unfold, который не живёт в двух палитрах) */
+      .staw-card h1, .staw-card h2 { font-family: var(--cx-display); letter-spacing: -.6px; }
+      .staw-card h1, .staw-card h1 *, .staw-card h2, .staw-card h2 * {
+        color: var(--cx-ink) !important; transition: color .9s ease; }
+
       /* стаггер-появление внутренних блоков */
       .staw-card > * { animation: staw-rise .5s cubic-bezier(.16,.84,.44,1) both; }
-      .staw-card > *:nth-child(1) { animation-delay: .10s; }
-      .staw-card > *:nth-child(2) { animation-delay: .18s; }
-      .staw-card > *:nth-child(3) { animation-delay: .26s; }
-      .staw-card > *:nth-child(4) { animation-delay: .34s; }
+      .staw-card > *:nth-child(1) { animation-delay: .08s; }
+      .staw-card > *:nth-child(2) { animation-delay: .16s; }
+      .staw-card > *:nth-child(3) { animation-delay: .24s; }
+      .staw-card > *:nth-child(4) { animation-delay: .32s; }
+      .staw-card > *:nth-child(5) { animation-delay: .40s; }
       @keyframes staw-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
-      /* возврат после ошибки: без повторной хореографии — быстрый фейд + шейк ошибки */
-      .staw-card.staw-returning { animation: staw-fade .18s cubic-bezier(0.23, 1, 0.32, 1) both; }
+      /* возврат после ошибки: без повторной хореографии — фейд + шейк карточки (эталон) */
+      .staw-card.staw-returning { animation: staw-fade .18s cubic-bezier(0.23,1,0.32,1) both,
+        cx-shake .55s .05s cubic-bezier(.36,.07,.19,.97); }
       .staw-card.staw-returning > * { animation: none; opacity: 1; transform: none; }
       @keyframes staw-fade { from { opacity: 0; } to { opacity: 1; } }
-      .staw-returning .staw-errors { animation: staw-shake .32s cubic-bezier(.36,.07,.19,.97) both; }
-      @keyframes staw-shake {
-        10%, 90% { transform: translateX(-2px); }
-        20%, 80% { transform: translateX(3px); }
-        30%, 50%, 70% { transform: translateX(-4px); }
-        40%, 60% { transform: translateX(4px); }
+      @keyframes cx-shake {
+        10%, 90% { transform: translateX(-3px); }
+        20%, 80% { transform: translateX(5px); }
+        30%, 50%, 70% { transform: translateX(-8px); }
+        40%, 60% { transform: translateX(8px); }
       }
 
-      /* ── Поля: плавная accent-подсветка при фокусе ────────────────── */
+      /* ── шапка карточки: eyebrow + тумблер DAY/NIGHT ──────────────── */
+      .cx-top { display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 14px; }
+      .cx-eyebrow { font-family: var(--cx-mono); font-size: 10px; letter-spacing: .2em;
+        color: var(--cx-soft); transition: color .9s ease; }
+      .cx-toggle { position: relative; width: 104px; height: 28px; border-radius: 99px;
+        cursor: pointer; padding: 0; border: 1px solid var(--cx-line);
+        background: var(--cx-fieldBg); overflow: hidden;
+        transition: background .9s ease, border-color .9s ease; }
+      .cx-knob { position: absolute; top: 2px; left: 2px; width: 50px; height: 22px;
+        border-radius: 99px; background: var(--cx-accent);
+        transition: transform .55s cubic-bezier(.5,.05,.3,1), background .9s ease; }
+      html.cx-night .cx-knob { transform: translateX(50px); }
+      .cx-tlabel { position: absolute; top: 0; height: 100%; width: 50px;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--cx-mono); font-size: 9px; letter-spacing: .14em;
+        transition: color .4s ease; pointer-events: none; }
+      .cx-tlabel.day  { left: 2px;  color: var(--cx-accentInk); }
+      .cx-tlabel.nite { right: 2px; color: var(--cx-soft); }
+      html.cx-night .cx-tlabel.day  { color: var(--cx-soft); }
+      html.cx-night .cx-tlabel.nite { color: var(--cx-accentInk); }
+
+      /* ── поля: акцентная подсветка темы ────────────────────────────── */
       #login-form input {
-        transition: box-shadow .25s ease, border-color .25s ease, background-color .25s ease;
+        transition: box-shadow .25s ease, border-color .25s ease, background-color .9s ease;
       }
       #login-form input:focus {
-        box-shadow: 0 0 0 3px rgba(10, 132, 255, .28);
-        border-color: rgba(10, 132, 255, .8) !important;
+        box-shadow: 0 0 0 3px var(--cx-accentSoft);
+        border-color: var(--cx-accent) !important;
       }
+      /* CAPS LOCK индикатор у пароля */
+      #cx-caps { position: absolute; right: 44px; font-family: var(--cx-mono);
+        font-size: 9px; letter-spacing: .14em; color: var(--cx-accent);
+        display: none; pointer-events: none; }
 
-      /* ── Кнопка «Войти»: аккуратный подъём + блик на ховере ───────── */
+      /* ── кнопка «Войти»: акцент темы + спиннер при отправке ────────── */
       #login-form .submit-row {
         position: relative; overflow: hidden;
-        transition: transform .16s cubic-bezier(0.23, 1, 0.32, 1), box-shadow .25s ease;
+        background: var(--cx-accent) !important; color: var(--cx-accentInk) !important;
+        border-color: transparent !important;
+        transition: transform .16s cubic-bezier(0.23,1,0.32,1), box-shadow .25s ease,
+                    background 0.9s ease, color .9s ease;
       }
       #login-form .submit-row:hover {
         transform: translateY(-1px);
-        box-shadow: 0 10px 26px -8px rgba(10, 132, 255, .4);
+        box-shadow: 0 14px 26px -12px var(--cx-accent);
       }
       #login-form .submit-row:active { transform: translateY(0) scale(.98); }
       #login-form .submit-row::after {
@@ -98,15 +187,32 @@
       }
       #login-form .submit-row:hover::after { animation: staw-sheen .7s ease; }
       @keyframes staw-sheen { to { transform: translateX(130%); } }
+      /* отправка: текст ныряет вверх, крутится спиннер */
+      #login-form .submit-row.cx-busy > * { opacity: 0; transform: translateY(-6px);
+        transition: opacity .28s ease, transform .28s ease; }
+      #login-form .submit-row.cx-busy::before {
+        content: ""; position: absolute; left: 50%; top: 50%;
+        width: 19px; height: 19px; margin: -9.5px 0 0 -9.5px; border-radius: 50%;
+        border: 2px solid rgba(255,255,255,.35); border-top-color: currentColor;
+        animation: cx-spin .7s linear infinite;
+      }
+      @keyframes cx-spin { to { transform: rotate(360deg); } }
 
       /* глазик «показать пароль» */
       #staw-eye { transition: color .2s ease, transform .15s ease; }
-      #staw-eye:hover { color: #0A84FF; transform: scale(1.08); }
+      #staw-eye:hover { color: var(--cx-accent); transform: scale(1.08); }
 
-      /* ── Доступность: убираем движение по системной настройке ─────── */
+      /* подпись под карточкой */
+      .cx-foot { position: relative; z-index: 1; display: block; text-align: center;
+        margin-top: 16px; font-family: var(--cx-mono); font-size: 9.5px;
+        letter-spacing: .14em; color: var(--cx-soft); opacity: .75;
+        transition: color .9s ease; animation: staw-rise .7s .45s cubic-bezier(.22,1,.36,1) both; }
+
+      /* ── доступность ──────────────────────────────────────────────── */
       @media (prefers-reduced-motion: reduce) {
-        .staw-aurora b, .staw-card, .staw-card > *, .staw-returning .staw-errors,
+        .cx-stars i, .staw-card, .staw-card > *, .cx-foot,
         #login-form .submit-row:hover::after { animation: none !important; }
+        .cx-orbit, .cx-pool, .cx-sky, .cx-sun, .cx-moon { transition-duration: .15s !important; }
         .staw-card { opacity: 1; transform: none; }
       }
     </style>
@@ -117,9 +223,28 @@
 {% endblock %}
 
 {% block content %}
-    <div class="staw-aurora" aria-hidden="true"><b></b><b></b><b></b><b></b></div>
+    {% comment %}Сцена: небо, звёзды, дуга со светилом, горизонт, световое пятно.{% endcomment %}
+    <div class="cx-sky" aria-hidden="true"></div>
+    <div class="cx-stars" aria-hidden="true"></div>
+    <div class="cx-arc" aria-hidden="true">
+      <div class="cx-orbit"><div class="cx-body">
+        <span class="cx-sun"></span><span class="cx-moon"></span>
+      </div></div>
+    </div>
+    <div class="cx-horizon" aria-hidden="true"></div>
+    <div class="cx-pool" aria-hidden="true"></div>
 
     <div class="staw-card{% if form.errors or form.non_field_errors %} staw-returning{% endif %}">
+        <div class="cx-top">
+          <span class="cx-eyebrow">МАТА · КОНСОЛЬ</span>
+          <button type="button" class="cx-toggle" id="cx-toggle" aria-pressed="false"
+                  aria-label="Переключить тему день/ночь">
+            <span class="cx-knob"></span>
+            <span class="cx-tlabel day">DAY</span>
+            <span class="cx-tlabel nite">NIGHT</span>
+          </button>
+        </div>
+
         {% comment %}Русский заголовок вместо непереведённой строки Unfold.{% endcomment %}
         {% include "unfold/helpers/unauthenticated_title.html" with title=site_title|default:"МАТА Админка" subtitle="С возвращением," %}
 
@@ -169,10 +294,70 @@
 
         {% block login_after %}{% endblock %}
     </div>
+    <span class="cx-foot">ДОСТУП ТОЛЬКО ДЛЯ СОТРУДНИКОВ · МАТА</span>
 
-    {% comment %}Кнопка «показать пароль» (глазик): позиционируем по геометрии поля, устойчиво к стилям Unfold.{% endcomment %}
     <script>
       (function () {
+        // ── звёзды (координаты эталона) ──
+        var STARS = [
+          [8,12,0,1],[17,26,240,.6],[26,8,90,.8],[35,20,420,.5],[44,6,150,.9],
+          [58,16,300,.6],[67,9,60,1],[74,24,480,.5],[83,13,200,.8],[91,28,360,.6],
+          [12,38,520,.5],[88,40,120,.7],[50,30,600,.5],[3,22,330,.7],[96,6,180,.6]
+        ];
+        var wrap = document.querySelector(".cx-stars");
+        STARS.forEach(function (s) {
+          var i = document.createElement("i");
+          i.style.left = s[0] + "%";
+          i.style.top = s[1] + "%";
+          i.style.setProperty("--d", s[2] + "ms");
+          i.style.setProperty("--s", s[3]);
+          wrap.appendChild(i);
+        });
+
+        // ── тумблер день/ночь (синхронизируется с тёмной темой Unfold) ──
+        var toggle = document.getElementById("cx-toggle");
+        function syncPressed() {
+          toggle.setAttribute("aria-pressed",
+            document.documentElement.classList.contains("cx-night") ? "true" : "false");
+        }
+        syncPressed();
+        toggle.addEventListener("click", function () {
+          var night = !document.documentElement.classList.contains("cx-night");
+          document.documentElement.classList.toggle("cx-night", night);
+          document.documentElement.classList.toggle("dark", night);
+          try { localStorage.setItem("mata-admin-scene", night ? "night" : "day"); } catch (e) {}
+          syncPressed();
+        });
+
+        // ── спиннер на отправке формы ──
+        var form = document.getElementById("login-form");
+        form.addEventListener("submit", function () {
+          var btn = form.querySelector(".submit-row");
+          if (btn) btn.classList.add("cx-busy");
+        });
+
+        // ── CAPS LOCK индикатор у пароля ──
+        var pass = document.getElementById("id_password");
+        if (pass && pass.parentNode) {
+          var caps = document.createElement("em");
+          caps.id = "cx-caps";
+          caps.textContent = "CAPS LOCK";
+          pass.parentNode.style.position = "relative";
+          pass.parentNode.appendChild(caps);
+          function placeCaps() {
+            caps.style.top = (pass.offsetTop + (pass.offsetHeight - 12) / 2) + "px";
+          }
+          function onKey(e) {
+            var on = e.getModifierState && e.getModifierState("CapsLock");
+            placeCaps();
+            caps.style.display = on ? "block" : "none";
+          }
+          pass.addEventListener("keydown", onKey);
+          pass.addEventListener("keyup", onKey);
+          pass.addEventListener("blur", function () { caps.style.display = "none"; });
+        }
+
+        // ── глазик «показать пароль» (как раньше) ──
         var input = document.getElementById("id_password");
         if (!input) return;
         var holder = input.parentNode;
