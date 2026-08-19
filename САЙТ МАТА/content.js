@@ -88,7 +88,13 @@
       a.style.transition = fade ? "opacity .6s ease" : "none";
       a.style.opacity = fade ? "0" : "1";
       if (b) { b.style.transition = fade ? "opacity .6s ease" : "none"; b.style.opacity = "0"; try { b.pause(); } catch (e) {} }
-      if (fade && !a._faded) { a._faded = 1; a.addEventListener("playing", function f() { a.removeEventListener("playing", f); a.style.opacity = "1"; }); }
+      if (fade && !a._faded) {
+        a._faded = 1;
+        var showA = function () { a.style.opacity = "1"; };
+        // Показываем по ПЕРВОМУ КАДРУ (loadeddata) — раньше всего и не зависит от autoplay.
+        if (a.readyState >= 2) showA();
+        else { a.addEventListener("loadeddata", showA, { once: true }); a.addEventListener("canplay", showA, { once: true }); }
+      }
       if (seamless && b) {
         var XF = 0.55; // сек кроссфейда у петли
         [a, b].forEach(function (v) {
