@@ -145,6 +145,7 @@
     <p id="merch-bg-hint" style="font-size:12px;color:#6b7280;margin:0 0 6px">Фото: перетащите рамку — какая область фото на фоне:</p>
     <div id="merch-bg-fp" style="position:relative;width:100%;height:180px;background:#111;border-radius:8px;overflow:hidden;margin-bottom:8px;touch-action:none;user-select:none;cursor:move">
       <img id="merch-bg-fpimg" alt="" style="position:absolute;left:0;top:0;pointer-events:none;-webkit-user-drag:none">
+      <video id="merch-bg-fpvid" muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;pointer-events:none"></video>
       <div id="merch-bg-fpframe" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);box-sizing:border-box;pointer-events:none"></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
@@ -655,8 +656,29 @@
     bgModalEl.style.display = "flex";
     bgFitBtns();
     bgPicker.set(bgCurImg, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + bgKey, pos); });
+    bgPreviewVideo(bgVid);   // если есть видео — показать/проиграть его в окне «Фон»
   }
-  function bgClose() { bgModalEl.style.display = "none"; bgKey = null; }
+  // Превью в окне «Фон»: показываем В ТОМ ЖЕ месте либо фото (рамка фокуса), либо видео.
+  var bgFpVid = document.getElementById("merch-bg-fpvid");
+  var bgFpImg = document.getElementById("merch-bg-fpimg");
+  var bgFpFrame = document.getElementById("merch-bg-fpframe");
+  function bgPreviewVideo(url) {
+    if (url) {
+      // видео перекрывает фото: прячем фото/рамку, играем видео
+      bgFpImg.style.display = "none";
+      bgFpFrame.style.display = "none";
+      if (bgFpVid.getAttribute("src") !== url) { bgFpVid.src = url; }
+      bgFpVid.style.display = "";
+      var p = bgFpVid.play(); if (p && p.catch) { p.catch(function () {}); }
+    } else {
+      bgFpVid.pause();
+      bgFpVid.removeAttribute("src"); bgFpVid.load();
+      bgFpVid.style.display = "none";
+      bgFpImg.style.display = "";
+      bgFpFrame.style.display = "";
+    }
+  }
+  function bgClose() { bgPreviewVideo(""); bgModalEl.style.display = "none"; bgKey = null; }
   function bgSetFit(fit) {
     if (!bgKey) return;
     bgFit = fit; bgFitBtns(); bgPicker.setEnabled(fit !== "contain");
@@ -668,6 +690,7 @@
     if (url === bgVid) return;
     bgVid = url; bgDraft("bgvid." + bgKey, url);
     if (url) bgDraft("bgoff." + bgKey, "");
+    bgPreviewVideo(url);   // показать/убрать видео в превью окна «Фон»
   }
   // «Удалить фотографию»: убираем поставленное фото И видео → возвращаем ГРАДИЕНТ.
   // Градиент — базовый фон, он не удаляется никогда (bgoff="1" = показать градиент).
@@ -678,6 +701,7 @@
     bgCurImg = "";
     bgDraft("bgoff." + bgKey, "1");                       // показать градиент
     bgDraft("bgvid." + bgKey, "");                        // убрать видео
+    bgPreviewVideo("");                                   // убрать видео-превью
     // очистить рамку-превью, чтобы было видно, что фото удалено
     bgPicker.set("", bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + bgKey, pos); });
     updatePending();
@@ -692,6 +716,7 @@
       bgVid = ""; document.getElementById("merch-bg-video").value = "";
       bgDraft("bgoff." + key, ""); bgDraft("bgvid." + key, "");
       bgCurImg = rd.result;
+      bgPreviewVideo("");   // выбрали ФОТО → убрать видео-превью, показать фото
       bgPicker.set(rd.result, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + key, pos); });
     };
     rd.readAsDataURL(f);
@@ -712,6 +737,7 @@
       bgDraft("bgoff." + key, "");
       delete pendingImages["bg." + key];   // видео перекрывает фото
       bgPicker.set("", bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + key, pos); });
+      bgPreviewVideo(d.url);   // показать загруженное видео прямо в окне «Фон»
       status.textContent = "Загружено ✓";
       updatePending();
     }).catch(function (e) { status.textContent = "Ошибка: " + e.message; });
