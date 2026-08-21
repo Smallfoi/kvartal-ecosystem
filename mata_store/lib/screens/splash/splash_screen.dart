@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/mata_logo.dart';
 import '../../widgets/remote_text.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,7 +22,7 @@ class _SplashScreenState extends State<SplashScreen>
   // Линия: вырастает из центра
   late final Animation<double> _lineScale;
 
-  // Слова: МАТА слева, STORE справа → летят к центру
+  // Знак МАТА слева, серифный слоган справа → летят к центру
   late final Animation<double> _wordSlide;   // 1.0 → 0.0
   late final Animation<double> _wordFade;    // 0.0 → 1.0
 
@@ -122,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen>
     final sw = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.black,
       body: RepaintBoundary(
         child: AnimatedBuilder(
           animation: _ctrl,
@@ -140,22 +142,17 @@ class _SplashScreenState extends State<SplashScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
 
-                        // SPORT → влетает слева
+                        // Знак МАТА → влетает слева (пути из brand/logo/svg, D-34)
                         ClipRect(
                           child: Transform.translate(
                             offset: Offset(-sw * _wordSlide.value, 0),
                             child: Opacity(
                               opacity: _wordFade.value,
-                              child: RemoteText(
-                                'app.splash.brand1',
-                                'МАТА',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.oswald(
-                                  fontSize: 88,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  letterSpacing: 12,
-                                  height: 1.0,
+                              child: Center(
+                                child: MataLogo(
+                                  width: sw * 0.74,
+                                  color: const Color(0xFFE9EAE5),
+                                  accent: AppColors.lime,
                                 ),
                               ),
                             ),
@@ -172,7 +169,7 @@ class _SplashScreenState extends State<SplashScreen>
                               scaleX: _lineScale.value,
                               child: Container(
                                 height: 1.5,
-                                color: Colors.white,
+                                color: const Color(0x66B6B7BF),
                               ),
                             ),
                             if (_flash.value > 0)
@@ -181,10 +178,10 @@ class _SplashScreenState extends State<SplashScreen>
                                 child: Container(
                                   height: 3,
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: AppColors.lime,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.white
+                                        color: AppColors.lime
                                             .withValues(alpha: _flash.value * 0.8),
                                         blurRadius: 18,
                                         spreadRadius: 4,
@@ -198,7 +195,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                         const SizedBox(height: 8),
 
-                        // STORE → влетает справа
+                        // Слоган брендбука → влетает справа
                         ClipRect(
                           child: Transform.translate(
                             offset: Offset(sw * _wordSlide.value, 0),
@@ -206,14 +203,14 @@ class _SplashScreenState extends State<SplashScreen>
                               opacity: _wordFade.value,
                               child: RemoteText(
                                 'app.splash.brand2',
-                                'STORE',
+                                'Комфорт, который двигает вперёд',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.oswald(
-                                  fontSize: 88,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  letterSpacing: 12,
-                                  height: 1.0,
+                                style: GoogleFonts.robotoSerif(
+                                  fontSize: 17,
+                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.w200,
+                                  color: AppColors.lavender,
+                                  height: 1.3,
                                 ),
                               ),
                             ),
@@ -231,7 +228,7 @@ class _SplashScreenState extends State<SplashScreen>
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 10.5,
-                              color: Color(0xFF777777),
+                              color: Color(0xFF9BA39C),
                               letterSpacing: 3.0,
                               fontWeight: FontWeight.w400,
                             ),
@@ -282,14 +279,14 @@ class _ProgressLine extends StatelessWidget {
           children: [
             Container(
               height: 1,
-              color: const Color(0xFF222222),
+              color: const Color(0xFF3E463F),
             ),
             Container(
               height: 1,
               width: constraints.maxWidth * p,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF555555), Colors.white],
+                  colors: [Color(0xFF5A605A), AppColors.lime],
                 ),
               ),
             ),

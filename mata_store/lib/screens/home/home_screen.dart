@@ -10,6 +10,7 @@ import '../../providers/notifications_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/remote_image.dart';
+import '../../widgets/mata_logo.dart';
 import '../../widgets/remote_text.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -37,16 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: RemoteText(
-          'app.home.title',
-          'МАТА STORE',
-          style: GoogleFonts.oswald(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 5,
-            color: AppColors.black,
-          ),
-        ),
+        // Фирменный знак вместо текстового заголовка (brand/logo, D-34).
+        title: const MataLogo(width: 96, color: AppColors.black),
+        titleSpacing: 16,
         actions: [
           IconButton(
             onPressed: () => context.push('/search'),

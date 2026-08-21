@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/mata_logo.dart';
 import '../../widgets/remote_text.dart';
 import 'reset_password_screen.dart';
 
@@ -107,7 +108,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: AppColors.black,
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -126,14 +127,11 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              RemoteText(
-                'app.forgot.brand',
-                'МАТА STORE',
-                style: GoogleFonts.oswald(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 4,
+              Center(
+                child: MataLogo(
+                  width: 168,
+                  color: const Color(0xFFE9EAE5),
+                  accent: AppColors.lime,
                 ),
               ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
               const SizedBox(height: 4),

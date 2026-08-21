@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Палитра брендбука mudreza (D-34): «black» — тёплый графит, не чистый чёрный.
+/// Источник правды по цветам/знаку — D:\MyProjectsCLAUDE\brand\.
 class AppColors {
-  static const black = Color(0xFF000000);
+  static const black = Color(0xFF2A302C); // графит 2A302C (60-50-50-50)
   static const white = Color(0xFFFFFFFF);
-  static const grey100 = Color(0xFFF5F5F5);
-  static const grey200 = Color(0xFFE8E8E8);
-  static const grey400 = Color(0xFFAAAAAA);
-  static const grey600 = Color(0xFF666666);
-  static const grey800 = Color(0xFF222222);
-  static const red = Color(0xFFE53935);
+  static const lime = Color(0xFFEEEA83); // акцент EEEA83 (10-0-60-0)
+  static const lavender = Color(0xFFB6B7BF); // вторичный B6B7BF (30-20-20-0)
+  static const grey100 = Color(0xFFF4F4F0); // тёплые серые под графит
+  static const grey200 = Color(0xFFE4E5E0);
+  static const grey400 = Color(0xFFA7AEA7);
+  static const grey600 = Color(0xFF5A625B);
+  static const grey800 = Color(0xFF333A35);
+  static const red = Color(0xFFE53935); // только ошибки форм; скидки — lime
   static const success = Color(0xFF2E7D32);
 }
 
@@ -110,10 +114,10 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.black,
-          foregroundColor: AppColors.white,
+          foregroundColor: AppColors.lime,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: GoogleFonts.inter(
             fontSize: 14,
@@ -129,7 +133,7 @@ class AppTheme {
           minimumSize: const Size(double.infinity, 52),
           side: const BorderSide(color: AppColors.black, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: GoogleFonts.inter(
             fontSize: 14,
@@ -168,8 +172,13 @@ class AppTheme {
         backgroundColor: AppColors.grey100,
         selectedColor: AppColors.black,
         labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500),
+        secondaryLabelStyle: GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: AppColors.lime,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         side: BorderSide.none,
       ),
     );

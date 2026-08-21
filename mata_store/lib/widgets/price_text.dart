@@ -41,20 +41,23 @@ class PriceText extends StatelessWidget {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
-              color: AppColors.grey400,
+              color: AppColors.lavender,
               decoration: TextDecoration.lineThrough,
             ),
           ),
           if (showDiscount)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              color: AppColors.red,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.lime,
+                borderRadius: BorderRadius.circular(6),
+              ),
               child: Text(
-                '-$discountPercent%',
+                '−$discountPercent%',
                 style: const TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.white,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.black,
                 ),
               ),
             ),
