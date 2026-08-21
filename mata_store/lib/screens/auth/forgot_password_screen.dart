@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -294,7 +293,7 @@ class _FormBodyState extends State<_FormBody> {
                       : RemoteText(
                           'app.forgot.submit',
                           'ОТПРАВИТЬ ССЫЛКУ',
-                          style: GoogleFonts.oswald(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: AppColors.white,
@@ -364,7 +363,7 @@ class _SuccessBody extends StatelessWidget {
           RemoteText(
             'app.forgot.success_title',
             'ПИСЬМО ОТПРАВЛЕНО',
-            style: GoogleFonts.oswald(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               letterSpacing: 2,
@@ -407,7 +406,7 @@ class _SuccessBody extends StatelessWidget {
               child: RemoteText(
                 'app.forgot.reset_button',
                 'ЗАДАТЬ НОВЫЙ ПАРОЛЬ',
-                style: GoogleFonts.oswald(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: AppColors.white,

@@ -3,7 +3,6 @@ import '../../widgets/product_image.dart';
 import '../../widgets/remote_text.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/cart_item.dart';
 import '../../providers/cart_provider.dart';
@@ -21,7 +20,7 @@ class CartScreen extends StatelessWidget {
         title: RemoteText(
           'app.cart.title',
           'КОРЗИНА',
-          style: GoogleFonts.oswald(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
             letterSpacing: 3,
@@ -147,7 +146,7 @@ class _CartHeader extends StatelessWidget {
                 RemoteText(
                   'app.cart.totalDue',
                   'Итого к оплате',
-                  style: GoogleFonts.oswald(
+                  style: TextStyle(
                     fontSize: 14,
                     color: Colors.white54,
                     letterSpacing: 1,
@@ -158,7 +157,7 @@ class _CartHeader extends StatelessWidget {
           ),
           Text(
             '${cart.total.toInt()} ₽',
-            style: GoogleFonts.oswald(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -412,7 +411,7 @@ class _OrderSummary extends StatelessWidget {
               ),
               Text(
                 '${cart.total.toInt()} ₽',
-                style: GoogleFonts.oswald(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.black,
@@ -454,7 +453,7 @@ class _CheckoutButtonState extends State<_CheckoutButton> {
         child: RemoteText(
           'app.cart.checkout',
           'ОФОРМИТЬ ЗАКАЗ',
-          style: GoogleFonts.oswald(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: AppColors.white,
@@ -534,7 +533,7 @@ class _EmptyCart extends StatelessWidget {
                 child: RemoteText(
                   'app.cart.empty.toCatalog',
                   'ПЕРЕЙТИ В КАТАЛОГ',
-                  style: GoogleFonts.oswald(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.white,
@@ -560,7 +559,7 @@ class _EmptyCart extends StatelessWidget {
                 child: RemoteText(
                   'app.cart.empty.toHome',
                   'НА ГЛАВНУЮ',
-                  style: GoogleFonts.oswald(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: AppColors.black,

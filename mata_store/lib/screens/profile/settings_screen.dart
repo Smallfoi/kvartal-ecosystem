@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -52,7 +51,7 @@ class SettingsScreen extends StatelessWidget {
         title: RemoteText(
           'app.settings.title',
           'НАСТРОЙКИ',
-          style: GoogleFonts.oswald(
+          style: TextStyle(
             fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 3,
           ),
         ),

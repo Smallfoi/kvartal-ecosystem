@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../data/api/api_config.dart';
@@ -397,7 +396,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           RemoteText(
                             'app.editprofile.changePassword',
                             'СМЕНИТЬ ПАРОЛЬ',
-                            style: GoogleFonts.oswald(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.5,
@@ -453,7 +452,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       RemoteText(
                         'app.editprofile.addresses',
                         'АДРЕСА ДОСТАВКИ',
-                        style: GoogleFonts.oswald(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.5,
@@ -680,7 +679,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: RemoteText(
                               'app.editprofile.add',
                               'ДОБАВИТЬ',
-                              style: GoogleFonts.oswald(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -743,7 +742,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 : RemoteText(
                                     'app.editprofile.save',
                                     'СОХРАНИТЬ',
-                                    style: GoogleFonts.oswald(
+                                    style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
@@ -775,7 +774,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Center(
       child: Text(
         initials,
-        style: GoogleFonts.oswald(
+        style: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.w700,
           color: Colors.white,
@@ -804,7 +803,7 @@ class _Header extends StatelessWidget {
               RemoteText(
                 'app.editprofile.title',
                 'РЕДАКТИРОВАТЬ ПРОФИЛЬ',
-                style: GoogleFonts.oswald(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,

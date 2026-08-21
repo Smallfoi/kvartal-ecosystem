@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../models/product.dart';
@@ -350,7 +349,7 @@ class _EmptyResult extends StatelessWidget {
               child: RemoteText(
                 'app.catalog.empty.reset',
                 'СБРОСИТЬ ФИЛЬТРЫ',
-                style: GoogleFonts.oswald(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColors.white,
@@ -505,7 +504,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                   RemoteText(
                     'app.catalog.filters',
                     'ФИЛЬТРЫ',
-                    style: GoogleFonts.oswald(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 2,
@@ -661,7 +660,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                   child: RemoteText(
                     'app.catalog.showProducts',
                     'ПОКАЗАТЬ ТОВАРЫ',
-                    style: GoogleFonts.oswald(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppColors.white,

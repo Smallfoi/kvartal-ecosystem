@@ -298,7 +298,7 @@ class _Tab extends StatelessWidget {
           RemoteText(
             labelKey,
             label,
-            style: GoogleFonts.oswald(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.5,
@@ -345,7 +345,7 @@ class _LoginForm extends StatelessWidget {
         RemoteText(
           'app.auth.phoneHint',
           'Вход по единому номеру',
-          style: GoogleFonts.oswald(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.2,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../data/api/api_client.dart';
 import '../../providers/auth_provider.dart';
@@ -63,7 +62,7 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
       appBar: AppBar(
         title: Text(
           'ДОКУМЕНТЫ',
-          style: GoogleFonts.oswald(
+          style: TextStyle(
             fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 3,
           ),
         ),
@@ -178,7 +177,7 @@ class _LegalDocView extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           doc.title.toUpperCase(),
-          style: GoogleFonts.oswald(
+          style: TextStyle(
             fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1.5,
           ),
         ),
@@ -255,7 +254,7 @@ class _LegalDocView extends StatelessWidget {
   Widget _h(String text, double size) => Padding(
         padding: const EdgeInsets.only(top: 14, bottom: 4),
         child: SelectableText(_stripInline(text),
-            style: GoogleFonts.oswald(
+            style: TextStyle(
                 fontSize: size,
                 fontWeight: FontWeight.w700,
                 color: AppColors.black)),
@@ -401,7 +400,7 @@ class _ConsentGateScreenState extends State<ConsentGateScreen> {
           automaticallyImplyLeading: false,
           title: Text(
             'ПОДТВЕРЖДЕНИЕ',
-            style: GoogleFonts.oswald(
+            style: TextStyle(
               fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 2,
             ),
           ),

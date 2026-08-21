@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -265,7 +264,7 @@ class _FormBodyState extends State<_FormBody> {
                       : RemoteText(
                           'app.reset.submit',
                           'СОХРАНИТЬ ПАРОЛЬ',
-                          style: GoogleFonts.oswald(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: AppColors.white,
@@ -323,7 +322,7 @@ class _SuccessBody extends StatelessWidget {
           RemoteText(
             'app.reset.success_title',
             'ПАРОЛЬ ОБНОВЛЁН',
-            style: GoogleFonts.oswald(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               letterSpacing: 2,
@@ -355,7 +354,7 @@ class _SuccessBody extends StatelessWidget {
               child: RemoteText(
                 'app.reset.login_button',
                 'ВОЙТИ',
-                style: GoogleFonts.oswald(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: AppColors.white,

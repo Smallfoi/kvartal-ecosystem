@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../widgets/remote_background.dart';
@@ -143,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       _isLast ? 'app.onb.start' : 'app.onb.next',
                       _isLast ? 'НАЧАТЬ' : 'ДАЛЕЕ',
                       key: ValueKey(_isLast),
-                      style: GoogleFonts.oswald(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
@@ -205,7 +204,7 @@ class _Slide extends StatelessWidget {
           RemoteText(
             '${data.keyBase}.title',
             data.title,
-            style: GoogleFonts.oswald(
+            style: TextStyle(
               fontSize: 40,
               fontWeight: FontWeight.w700,
               color: Colors.white,

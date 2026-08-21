@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../models/order.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_theme.dart';
@@ -171,7 +170,7 @@ class OrderDetailScreen extends StatelessWidget {
                                 )),
                             Text(
                               '${order.total.toInt()} ₽',
-                              style: GoogleFonts.oswald(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.black,
@@ -253,7 +252,7 @@ class _Header extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'ЗАКАЗ №${order.id}',
-                      style: GoogleFonts.oswald(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
