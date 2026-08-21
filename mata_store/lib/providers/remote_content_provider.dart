@@ -52,6 +52,10 @@ class RemoteContentProvider extends ChangeNotifier {
   /// Как `data-hideable` на сайте: в проде скрытый элемент не показывается.
   bool hidden(String key) => _content['hidden.$key'] == '1';
 
+  /// Пресет анимации появления элемента — ключ `anim.<key>` (id пресета или '').
+  /// Как `editAnim` на сайте: проигрывается при появлении и в проде, и в правке.
+  String anim(String key) => _content['anim.$key'] ?? '';
+
   /// Сырое значение по полному ключу или '' (для служебных bg-полей:
   /// `bgvid.<k>`/`bgoff.<k>`/`bgfocal.<k>`/`bgfit.<k>`). Фото фона — `imageUrl('bg.<k>')`.
   String value(String key) => _content[key] ?? '';
