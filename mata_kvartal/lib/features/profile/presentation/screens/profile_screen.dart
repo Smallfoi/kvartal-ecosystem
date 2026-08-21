@@ -8,6 +8,7 @@ import '../../../../core/api/api_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../loyalty/data/loyalty_provider.dart';
+import '../../../loyalty/presentation/widgets/loyalty_card.dart';
 import '../../../notifications/data/notifications_provider.dart';
 import '../../../run/data/completed_runs_provider.dart';
 import '../../../shoes/data/shoes_provider.dart';
@@ -952,55 +953,38 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.paper,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: AppColors.line),
+            // Единая карта лояльности МАТА (дизайн-проект v5): материал уровня,
+            // «живые» анимации, переворот на QR, тап по QR — во весь экран.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+              child: Center(
+                child: Builder(
+                  builder: (context) {
+                    final user = ref.watch(authProvider).user;
+                    return LoyaltyCard3D(
+                      balance: loyalty.balance,
+                      levelLabel: loyalty.levelTitle,
+                      holderName: user?.name ?? 'Бегун КВАРТАЛ',
+                      qrData:
+                          'MATA:LOYALTY:${user?.id ?? ''}:${loyalty.balance}',
+                      tier: switch (loyalty.level) {
+                        'platinum' => LoyaltyCardTier.platinum,
+                        'gold' => LoyaltyCardTier.gold,
+                        'silver' => LoyaltyCardTier.silver,
+                        _ => LoyaltyCardTier.basic,
+                      },
+                    );
+                  },
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(
-                    CupertinoIcons.star_fill,
-                    color: AppColors.warning,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${loyalty.balance}',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'баллов',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      loyalty.levelTitle,
-                      style: const TextStyle(
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                'нажми карту — QR для кассы МАТА Store',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.textTertiary,
+                ),
               ),
             ),
             if (txns.isEmpty)

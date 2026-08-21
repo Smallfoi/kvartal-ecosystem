@@ -1,10 +1,13 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../theme/app_theme.dart';
 import 'mata_logo.dart';
+
+// Фирменный лайм бренда МАТА (D-34) — карта не зависит от темы приложения:
+// материалы уровней одинаковы во всей экосистеме.
+const _lime = Color(0xFFEEEA83);
 
 /// Виртуальная карта лояльности МАТА с 3D-переворотом (эталон владельца
 /// «Payment Card Flip») и материалами уровней из дизайн-проекта
@@ -288,12 +291,12 @@ class _TierStyle {
           innerShade: Color(0x00000000),
           border: Color(0x17FFFFFF),
           ink: Color(0xFFF2F4F6),
-          pillText: AppColors.lime,
+          pillText: _lime,
           pillBorder: Color(0xB3EEEA83),
           sheen: Color(0x1AFFFFFF),
-          glow: AppColors.lime,
+          glow: _lime,
           stripe: [Color(0xFF101317), Color(0xFF101317)],
-          backCap: AppColors.lime,
+          backCap: _lime,
         );
       case LoyaltyCardTier.silver:
         return const _TierStyle(
@@ -406,7 +409,7 @@ class _CardFace extends StatelessWidget {
                   color: st.ink,
                   accent: tier == LoyaltyCardTier.basic
                       ? Color.lerp(
-                          AppColors.lime,
+                          _lime,
                           const Color(0xFFFBF7AE),
                           live.ember,
                         )
