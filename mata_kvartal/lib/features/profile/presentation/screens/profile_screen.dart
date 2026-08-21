@@ -73,6 +73,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         color: AppColors.electricBlue,
         backgroundColor: AppColors.bgCard,
         child: CustomScrollView(
+          // Свой ключ хранения прокрутки: иначе позиция делится с экраном Клуба.
+          key: const PageStorageKey<String>('profile-scroll'),
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             _ProfileAppBar(user: user),
