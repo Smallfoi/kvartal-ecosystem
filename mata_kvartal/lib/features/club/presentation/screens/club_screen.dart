@@ -20,6 +20,7 @@ class ClubScreen extends ConsumerStatefulWidget {
 class _ClubScreenState extends ConsumerState<ClubScreen> {
   final _searchCtrl = TextEditingController();
   final _inviteCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -33,12 +34,19 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
   void dispose() {
     _searchCtrl.dispose();
     _inviteCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     ref.listen<ClubState>(clubProvider, (previous, next) {
+      // Клуб удалили или вышли из него: страница резко становится короче, а
+      // прокрутка осталась внизу — без этого экран выглядел бы пустым.
+      if (previous?.myClub != null && next.myClub == null &&
+          _scrollCtrl.hasClients && _scrollCtrl.offset > 0) {
+        _scrollCtrl.jumpTo(0);
+      }
       final message = next.message;
       if (message != null && message != previous?.message && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -55,6 +63,8 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
         child: CustomScrollView(
           // Свой ключ хранения прокрутки: иначе экран делит позицию с Профилем.
           key: const PageStorageKey<String>('club-scroll'),
+          controller: _scrollCtrl,
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             _ClubSliverHeader(club: state.myClub),
             SliverPadding(
@@ -566,12 +576,50 @@ class _MyClubBody extends ConsumerWidget {
             ),
             onPressed: state.isMutating
                 ? null
-                : () => ref.read(clubProvider.notifier).leaveClub(),
+                : () => _confirmLeaveClub(context, ref, club),
           ),
         ),
       ],
     );
   }
+}
+
+/// Подтверждение выхода из клуба. Для владельца, оставшегося одним участником,
+/// это удаление клуба целиком — предупреждаем об этом прямо, а не спрашиваем
+/// абстрактное «вы уверены?».
+Future<void> _confirmLeaveClub(
+  BuildContext context,
+  WidgetRef ref,
+  Club club,
+) async {
+  final isDelete = club.isOwner && club.memberCount <= 1;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(isDelete ? 'Удалить клуб?' : 'Выйти из клуба?'),
+      content: Text(
+        isDelete
+            ? 'Клуб «${club.name}» будет удалён вместе с обложкой, участниками '
+                  'и вызовами. Отменить это нельзя.'
+            : 'Ты перестанешь быть участником клуба «${club.name}». '
+                  'Вступить снова можно будет по приглашению или заявке.',
+        style: const TextStyle(color: AppColors.muted),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: const Text('Отмена'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+          child: Text(isDelete ? 'Удалить' : 'Выйти'),
+        ),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  await ref.read(clubProvider.notifier).leaveClub();
 }
 
 // ── Клубные челленджи ───────────────────────────────────────────────────────
