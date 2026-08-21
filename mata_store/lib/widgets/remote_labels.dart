@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/remote_content_provider.dart';
@@ -111,7 +112,15 @@ class _AddedLabelState extends State<_AddedLabel> {
           animName,
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => postEditContent(_key, text, color: colorHex, hasColor: colorHex.isNotEmpty),
+            onTap: () {
+              // Alt+клик = вернуть подпись на место (как на сайте); обычный тап = правка.
+              if (HardwareKeyboard.instance.isAltPressed) {
+                _commitPos(prov, Offset.zero);
+                setState(() => _drag = Offset.zero);
+                return;
+              }
+              postEditContent(_key, text, color: colorHex, hasColor: colorHex.isNotEmpty);
+            },
             onPanStart: (_) => setState(() => _dragging = true),
             onPanUpdate: (d) => setState(() => _drag += d.delta),
             onPanEnd: (_) {
