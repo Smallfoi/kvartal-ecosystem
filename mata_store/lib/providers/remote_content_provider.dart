@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui' show Offset;
 
 import 'package:flutter/foundation.dart';
@@ -63,6 +64,28 @@ class RemoteContentProvider extends ChangeNotifier {
     if (dx == null || dy == null) return Offset.zero;
     return Offset(dx, dy);
   }
+
+  /// Все добавленные в конструкторе подписи (ключ `applabels` = JSON [{id, s}]).
+  /// s — ключ экрана ('home'/'catalog'/'cart'/'profile'). Как `xlabels` сайта.
+  List<Map<String, String>> allLabels() {
+    final raw = _content['applabels'];
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw);
+      if (list is List) {
+        return list
+            .whereType<Map>()
+            .map((m) => {'id': (m['id'] ?? '').toString(), 's': (m['s'] ?? '').toString()})
+            .where((m) => (m['id'] ?? '').isNotEmpty)
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// id добавленных подписей для конкретного экрана.
+  List<String> labels(String screenKey) =>
+      allLabels().where((m) => m['s'] == screenKey).map((m) => m['id']!).toList();
 
   Future<void> _init() async {
     await _load(); // сначала опубликованное как база
