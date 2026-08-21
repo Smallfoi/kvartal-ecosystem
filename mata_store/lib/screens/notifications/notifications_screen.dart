@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/app_notification.dart';
 import '../../providers/notifications_provider.dart';
@@ -39,7 +38,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: RemoteText(
           'app.notif.title',
           'УВЕДОМЛЕНИЯ',
-          style: GoogleFonts.oswald(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
             letterSpacing: 3,

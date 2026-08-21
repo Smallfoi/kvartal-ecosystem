@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/loyalty.dart';
 import '../../models/order.dart';
@@ -381,7 +380,7 @@ class _EmptyCheckout extends StatelessWidget {
                 child: RemoteText(
                   'app.checkout.toCatalog',
                   'ПЕРЕЙТИ В КАТАЛОГ',
-                  style: GoogleFonts.oswald(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: AppColors.white,
@@ -421,7 +420,7 @@ class _Header extends StatelessWidget {
                   RemoteText(
                     'app.checkout.title',
                     'ОФОРМЛЕНИЕ ЗАКАЗА',
-                    style: GoogleFonts.oswald(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -1133,7 +1132,7 @@ class _ReviewStep extends StatelessWidget {
               ),
               Text(
                 '${total.toInt()} ₽',
-                style: GoogleFonts.oswald(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                   color: AppColors.black,
@@ -1334,7 +1333,7 @@ class _NavBar extends StatelessWidget {
                     : RemoteText(
                         step < 3 ? 'app.checkout.next' : 'app.checkout.confirm',
                         step < 3 ? 'ДАЛЕЕ' : 'ПОДТВЕРДИТЬ ЗАКАЗ',
-                        style: GoogleFonts.oswald(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -1362,7 +1361,7 @@ class _StepTitle extends StatelessWidget {
     return RemoteText(
       contentKey,
       text,
-      style: GoogleFonts.oswald(
+      style: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w700,
         letterSpacing: 1,

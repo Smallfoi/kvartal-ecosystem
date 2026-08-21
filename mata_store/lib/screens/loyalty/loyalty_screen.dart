@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/loyalty.dart';
 import '../../providers/loyalty_provider.dart';
@@ -27,7 +26,7 @@ class LoyaltyScreen extends StatelessWidget {
                   child: RemoteText(
                     'app.loyalty.history',
                     'ИСТОРИЯ',
-                    style: GoogleFonts.oswald(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
@@ -92,7 +91,7 @@ class _Header extends StatelessWidget {
                   RemoteText(
                     'app.loyalty.title',
                     'МОИ БАЛЛЫ',
-                    style: GoogleFonts.oswald(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -107,7 +106,7 @@ class _Header extends StatelessWidget {
                 children: [
                   Text(
                     '${loyalty.balance}',
-                    style: GoogleFonts.oswald(
+                    style: TextStyle(
                       fontSize: 56,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -119,7 +118,7 @@ class _Header extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       'баллов',
-                      style: GoogleFonts.oswald(
+                      style: TextStyle(
                         fontSize: 18,
                         color: Colors.white54,
                       ),
@@ -227,7 +226,7 @@ class _EarnHint extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RemoteText('app.loyalty.earnTitle', 'КАК ЗАРАБОТАТЬ БАЛЛЫ',
-              style: GoogleFonts.oswald(
+              style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,

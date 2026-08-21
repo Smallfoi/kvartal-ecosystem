@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/order.dart';
 import '../../providers/order_provider.dart';
@@ -51,7 +50,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       RemoteText(
                         'app.ordersuccess.title',
                         'ЗАКАЗ ОФОРМЛЕН!',
-                        style: GoogleFonts.oswald(
+                        style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 2,
@@ -64,7 +63,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       if (order != null) ...[
                         Text(
                           'Заказ №${order.id}',
-                          style: GoogleFonts.oswald(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                             color: AppColors.grey600,
@@ -121,7 +120,7 @@ class OrderSuccessScreen extends StatelessWidget {
                                 child: RemoteText(
                                   'app.ordersuccess.detailsTitle',
                                   'ДЕТАЛИ ЗАКАЗА',
-                                  style: GoogleFonts.oswald(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,
@@ -158,7 +157,7 @@ class OrderSuccessScreen extends StatelessWidget {
                               child: RemoteText(
                                 'app.ordersuccess.myOrders',
                                 'МОИ ЗАКАЗЫ',
-                                style: GoogleFonts.oswald(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                   color: order == null
@@ -189,7 +188,7 @@ class OrderSuccessScreen extends StatelessWidget {
                               child: RemoteText(
                                 'app.ordersuccess.toHome',
                                 'НА ГЛАВНУЮ',
-                                style: GoogleFonts.oswald(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.black,

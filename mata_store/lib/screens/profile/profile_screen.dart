@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../data/api/api_config.dart';
 import '../../models/loyalty.dart';
@@ -81,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           appBar: AppBar(
             title: Text(
               'ПРОФИЛЬ',
-              style: GoogleFonts.oswald(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 3,
@@ -136,7 +135,7 @@ class _GuestBody extends StatelessWidget {
           // Hero section (фон редактируется в «Конструкторе» — app.profile.bg)
           RemoteBackground(
             'app.profile.bg',
-            fallbackColor: Colors.black,
+            fallbackColor: AppColors.black,
             expand: false,
             child: Container(
               width: double.infinity,
@@ -162,12 +161,12 @@ class _GuestBody extends StatelessWidget {
 
                   RemoteText(
                         'app.profile.guest.title',
-                        'ВОЙДИТЕ В\nАККАУНТ',
-                        style: GoogleFonts.oswald(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w700,
+                        'Войдите в\nаккаунт',
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w500,
                           color: Colors.white,
-                          letterSpacing: 2,
+                          letterSpacing: -1.2,
                           height: 1.05,
                         ),
                       )
@@ -194,16 +193,19 @@ class _GuestBody extends StatelessWidget {
                         onTap: () => onLogin(),
                         child: Container(
                           height: 50,
-                          color: Colors.white,
+                          decoration: BoxDecoration(
+                            color: AppColors.lime,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           alignment: Alignment.center,
-                          child: RemoteText(
+                          child: const RemoteText(
                             'app.profile.guest.login',
-                            'ВОЙТИ',
-                            style: GoogleFonts.oswald(
+                            'Войти',
+                            style: TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black,
-                              letterSpacing: 2,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.black,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ),
@@ -221,16 +223,17 @@ class _GuestBody extends StatelessWidget {
                           height: 50,
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.white38),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.center,
-                          child: RemoteText(
+                          child: const RemoteText(
                             'app.profile.guest.register',
-                            'СОЗДАТЬ АККАУНТ',
-                            style: GoogleFonts.oswald(
+                            'Создать аккаунт',
+                            style: TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               color: Colors.white,
-                              letterSpacing: 2,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ),
@@ -431,7 +434,7 @@ class _LoyaltyCard extends StatelessWidget {
                           '${loyalty.balance} баллов',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.oswald(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -498,7 +501,7 @@ class _UserHeader extends StatelessWidget {
                     errorBuilder: (_, __, ___) => Center(
                       child: Text(
                         _initials,
-                        style: GoogleFonts.oswald(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -509,7 +512,7 @@ class _UserHeader extends StatelessWidget {
                 : Center(
                     child: Text(
                       _initials,
-                      style: GoogleFonts.oswald(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
