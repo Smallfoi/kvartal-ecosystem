@@ -399,28 +399,26 @@ class _BestRunBlock extends StatelessWidget {
               color: AppColors.graphite,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: Row(
+            // Wrap вместо Row: на узких экранах/крупном шрифте условия переносятся
+            // на вторую строку целиком — никакого «…» (замечание владельца).
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 3,
               children: [
-                Flexible(
-                  child: Text(
-                    '${hh(window.start)}:00–${hh(window.end)}:00',
-                    style: const TextStyle(
-                      color: AppColors.lime,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
+                Text(
+                  '${hh(window.start)}:00–${hh(window.end)}:00',
+                  style: const TextStyle(
+                    color: AppColors.lime,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    window.summary,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFC9CDC2),
-                      fontSize: 12.5,
-                    ),
+                Text(
+                  window.summary,
+                  style: const TextStyle(
+                    color: Color(0xFFC9CDC2),
+                    fontSize: 12.5,
                   ),
                 ),
               ],
