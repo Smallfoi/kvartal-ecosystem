@@ -116,6 +116,12 @@ class _Header extends StatelessWidget {
                     holderName: auth.user?.name ?? 'Гость МАТА',
                     qrData:
                         'MATA:LOYALTY:${auth.user?.id ?? ''}:${loyalty.balance}',
+                    tier: switch (loyalty.level) {
+                      LoyaltyLevel.basic => LoyaltyCardTier.basic,
+                      LoyaltyLevel.silver => LoyaltyCardTier.silver,
+                      LoyaltyLevel.gold => LoyaltyCardTier.gold,
+                      LoyaltyLevel.platinum => LoyaltyCardTier.platinum,
+                    },
                   ),
                 ),
               ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.06),
