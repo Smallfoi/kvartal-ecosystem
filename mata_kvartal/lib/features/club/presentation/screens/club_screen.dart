@@ -43,8 +43,10 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
       if (!context.mounted) return;
       // Клуб удалили или вышли из него: страница резко становится короче, а
       // прокрутка осталась внизу — без этого экран выглядел бы пустым.
-      if (previous?.myClub != null && next.myClub == null &&
-          _scrollCtrl.hasClients && _scrollCtrl.offset > 0) {
+      if (previous?.myClub != null &&
+          next.myClub == null &&
+          _scrollCtrl.hasClients &&
+          _scrollCtrl.offset > 0) {
         _scrollCtrl.jumpTo(0);
       }
       final message = next.message;
@@ -281,118 +283,128 @@ class _ClubSliverHeader extends ConsumerWidget {
               if (hasClub && !hasCover)
                 Positioned.fill(child: ClubHeaderBackground(style: s)),
               SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Row(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // Владелец: тап по аватарке — выбрать и загрузить фото-логотип.
-                      (hasClub && club!.isOwner)
-                          ? GestureDetector(
-                              onTap: () => _pickAndUploadClubLogo(ref),
-                              behavior: HitTestBehavior.opaque,
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  ringed(_ClubLogo(logo: club!.logo, size: 58)),
-                                  Positioned(
-                                    right: -2,
-                                    bottom: -2,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: s.accent,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                            color: AppColors.bgDark, width: 2),
+                      Row(
+                        children: [
+                          // Владелец: тап по аватарке — выбрать и загрузить фото-логотип.
+                          (hasClub && club!.isOwner)
+                              ? GestureDetector(
+                                  onTap: () => _pickAndUploadClubLogo(ref),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      ringed(
+                                        _ClubLogo(logo: club!.logo, size: 58),
                                       ),
-                                      child: const Icon(
-                                        CupertinoIcons.camera_fill,
-                                        size: 11,
-                                        color: AppColors.ink,
+                                      Positioned(
+                                        right: -2,
+                                        bottom: -2,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: s.accent,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: AppColors.bgDark,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            CupertinoIcons.camera_fill,
+                                            size: 11,
+                                            color: AppColors.ink,
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            )
-                          : ringed(_ClubLogo(logo: club?.logo ?? 'K', size: 58)),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _FitText(
-                              hasClub ? club!.name : '\u041a\u043b\u0443\u0431',
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: onHeader,
-                                  ),
+                                )
+                              : ringed(
+                                  _ClubLogo(logo: club?.logo ?? 'K', size: 58),
+                                ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _FitText(
+                                  hasClub
+                                      ? club!.name
+                                      : '\u041a\u043b\u0443\u0431',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: onHeader,
+                                      ),
+                                ),
+                                const SizedBox(height: 2),
+                                _FitText(
+                                  hasClub
+                                      ? '${club!.memberCount} \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432'
+                                      : '\u0421\u043e\u0437\u0434\u0430\u0439 \u043a\u043b\u0443\u0431 \u0438\u043b\u0438 \u043a\u043e\u043c\u0430\u043d\u0434\u0443',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: onHeaderSoft),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            _FitText(
-                              hasClub
-                                  ? '${club!.memberCount} \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432'
-                                  : '\u0421\u043e\u0437\u0434\u0430\u0439 \u043a\u043b\u0443\u0431 \u0438\u043b\u0438 \u043a\u043e\u043c\u0430\u043d\u0434\u0443',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: onHeaderSoft),
+                          ),
+                          if (hasClub)
+                            _ClubBadge(
+                              label: club!.isOwner ? 'Владелец' : 'Участник',
+                              color: club!.isOwner
+                                  ? AppColors.warning
+                                  : AppColors.success,
                             ),
-                          ],
-                        ),
+                        ],
                       ),
-                      if (hasClub)
-                        _ClubBadge(
-                          label: club!.isOwner ? 'Владелец' : 'Участник',
-                          color: club!.isOwner
-                              ? AppColors.warning
-                              : AppColors.success,
-                        ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          _ClubMetricCard(
+                            icon: CupertinoIcons.location_north_fill,
+                            label:
+                                '\u0410\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c',
+                            value: hasClub
+                                ? _kmLabel(club!.totalKm)
+                                : '0 \u043a\u043c',
+                            color: s.accent,
+                          ),
+                          const SizedBox(width: 8),
+                          _ClubMetricCard(
+                            icon: CupertinoIcons.person_2_fill,
+                            label: '\u0421\u043e\u0441\u0442\u0430\u0432',
+                            value: hasClub ? '${club!.memberCount}' : '0',
+                            color: AppColors.electricBlue,
+                          ),
+                          const SizedBox(width: 8),
+                          _ClubMetricCard(
+                            icon: hasClub && club!.isRequestOnly
+                                ? CupertinoIcons.lock_fill
+                                : CupertinoIcons.check_mark_circled_solid,
+                            label: '\u0412\u0445\u043e\u0434',
+                            value: hasClub
+                                ? (club!.isRequestOnly
+                                      ? '\u0417\u0430\u044f\u0432\u043a\u0430'
+                                      : '\u041e\u0442\u043a\u0440\u044b\u0442')
+                                : '-',
+                            color: hasClub && club!.isRequestOnly
+                                ? AppColors.warning
+                                : AppColors.success,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _ClubMetricCard(
-                        icon: CupertinoIcons.location_north_fill,
-                        label:
-                            '\u0410\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c',
-                        value: hasClub
-                            ? _kmLabel(club!.totalKm)
-                            : '0 \u043a\u043c',
-                        color: s.accent,
-                      ),
-                      const SizedBox(width: 8),
-                      _ClubMetricCard(
-                        icon: CupertinoIcons.person_2_fill,
-                        label: '\u0421\u043e\u0441\u0442\u0430\u0432',
-                        value: hasClub ? '${club!.memberCount}' : '0',
-                        color: AppColors.electricBlue,
-                      ),
-                      const SizedBox(width: 8),
-                      _ClubMetricCard(
-                        icon: hasClub && club!.isRequestOnly
-                            ? CupertinoIcons.lock_fill
-                            : CupertinoIcons.check_mark_circled_solid,
-                        label: '\u0412\u0445\u043e\u0434',
-                        value: hasClub
-                            ? (club!.isRequestOnly
-                                  ? '\u0417\u0430\u044f\u0432\u043a\u0430'
-                                  : '\u041e\u0442\u043a\u0440\u044b\u0442')
-                            : '-',
-                        color: hasClub && club!.isRequestOnly
-                            ? AppColors.warning
-                            : AppColors.success,
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
               // Иконка «фон клуба» — владелец меняет обложку прямо на экране.
               if (hasClub && club!.isOwner)
                 Positioned(
@@ -654,7 +666,10 @@ void _showCreateChallengeSheet(BuildContext context) {
   );
 }
 
-Future<void> _confirmCancelChallenge(BuildContext context, WidgetRef ref) async {
+Future<void> _confirmCancelChallenge(
+  BuildContext context,
+  WidgetRef ref,
+) async {
   final ok = await showCupertinoDialog<bool>(
     context: context,
     builder: (ctx) => CupertinoAlertDialog(
@@ -724,9 +739,9 @@ class _ClubChallengeSection extends ConsumerWidget {
             const SizedBox(height: 6),
             Text(
               'Общая цель по км на неделю/месяц. Прогресс собирается из пробежек всех участников.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -772,9 +787,9 @@ class _ClubChallengeSection extends ConsumerWidget {
                   ch.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
               if (club.isOwner)
@@ -814,9 +829,9 @@ class _ClubChallengeSection extends ConsumerWidget {
               ),
               Text(
                 ch.isDone ? 'Цель достигнута 🎉' : left,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -824,41 +839,45 @@ class _ClubChallengeSection extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               'Вклад участников',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
-            ...ch.contributions.take(5).map(
-              (c) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      CupertinoIcons.person_fill,
-                      size: 14,
-                      color: AppColors.textSecondary,
+            ...ch.contributions
+                .take(5)
+                .map(
+                  (c) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.person_fill,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            c.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          _kmLabel(c.km),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        c.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                      ),
-                    ),
-                    Text(
-                      _kmLabel(c.km),
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
           ],
         ],
       ),
@@ -947,7 +966,9 @@ class _ChallengeFormSheetState extends ConsumerState<_ChallengeFormSheet> {
               controller: _kmCtrl,
               label: 'Цель, км',
               icon: CupertinoIcons.location_north_fill,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -977,10 +998,7 @@ class _ChallengeFormSheetState extends ConsumerState<_ChallengeFormSheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: const TextStyle(color: AppColors.error),
-              ),
+              Text(_error!, style: const TextStyle(color: AppColors.error)),
             ],
             const SizedBox(height: 18),
             FilledButton(
@@ -1053,9 +1071,9 @@ class _ClubTerritoryCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Территории клуба',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
             ],
@@ -1075,7 +1093,12 @@ class _ClubTerritoryCard extends StatelessWidget {
                 Container(width: 1, height: 36, color: AppColors.separator),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _stat(context, '${club.territoryPieces}', 'зон', s.accent),
+                  child: _stat(
+                    context,
+                    '${club.territoryPieces}',
+                    'зон',
+                    s.accent,
+                  ),
                 ),
               ],
             ),
@@ -1134,10 +1157,7 @@ class _RacesEntryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Старты',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Старты', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 2),
                 Text(
                   'Календарь забегов',
@@ -1291,9 +1311,13 @@ class _InviteCodeCard extends ConsumerWidget {
                 child: SizedBox(
                   height: 46,
                   child: FilledButton.icon(
-                    onPressed:
-                        state.isMutating ? null : () => _submit(context, ref),
-                    icon: const Icon(CupertinoIcons.person_badge_plus, size: 18),
+                    onPressed: state.isMutating
+                        ? null
+                        : () => _submit(context, ref),
+                    icon: const Icon(
+                      CupertinoIcons.person_badge_plus,
+                      size: 18,
+                    ),
                     label: Text(
                       state.isMutating
                           ? '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c...'
@@ -1303,15 +1327,20 @@ class _InviteCodeCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              SizedBox(
-                height: 46,
-                child: OutlinedButton.icon(
-                  onPressed: () => context.push('/club/scan'),
-                  icon: const Icon(CupertinoIcons.qrcode_viewfinder, size: 18),
-                  label: const Text('\u0421\u043a\u0430\u043d QR'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.electricBlue,
-                    side: const BorderSide(color: AppColors.electricBlue),
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/club/scan'),
+                    icon: const Icon(
+                      CupertinoIcons.qrcode_viewfinder,
+                      size: 18,
+                    ),
+                    label: const Text('\u0421\u043a\u0430\u043d QR'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.electricBlue,
+                      side: const BorderSide(color: AppColors.electricBlue),
+                    ),
                   ),
                 ),
               ),
@@ -1965,9 +1994,9 @@ class _StylePicker extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             'Цвет, фон шапки и рамка логотипа — одним тапом.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -1982,8 +2011,10 @@ class _StylePicker extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [st.headerGradient[0], st.headerGradient[1]],
@@ -2005,9 +2036,7 @@ class _StylePicker extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: st.accent,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.muted,
-                          ),
+                          border: Border.all(color: AppColors.muted),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -2015,8 +2044,9 @@ class _StylePicker extends StatelessWidget {
                         st.label,
                         style: TextStyle(
                           color: AppColors.ink,
-                          fontWeight:
-                              selected ? FontWeight.w800 : FontWeight.w600,
+                          fontWeight: selected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
                           fontSize: 13,
                         ),
                       ),
@@ -2205,11 +2235,7 @@ class _ClubBadge extends StatelessWidget {
     child: Text(
       label,
       // Тёмный текст по цветной плашке: цветной по цветному не проходит норму.
-      style: TextStyle(
-        color: color,
-        fontSize: 12,
-        fontWeight: FontWeight.w800,
-      ),
+      style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800),
     ),
   );
 }
