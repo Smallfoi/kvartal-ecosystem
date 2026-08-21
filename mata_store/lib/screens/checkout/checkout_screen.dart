@@ -407,7 +407,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: AppColors.black,
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -474,7 +474,7 @@ class _Header extends StatelessWidget {
                                   ? const Icon(
                                       Icons.check,
                                       size: 13,
-                                      color: Colors.black,
+                                      color: AppColors.black,
                                     )
                                   : Text(
                                       '${i + 1}',

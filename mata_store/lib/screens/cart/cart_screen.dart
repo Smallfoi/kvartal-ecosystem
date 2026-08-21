@@ -124,7 +124,7 @@ class _CartHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: AppColors.black,
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       child: Row(
