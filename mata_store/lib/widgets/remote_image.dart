@@ -78,25 +78,31 @@ class RemoteImage extends StatelessWidget {
     final aspect = (width != null && height != null && height! > 0)
         ? width! / height!
         : 0.0;
+    final off = prov.posOffset(contentKey); // смещение перетаскивания (прод + правка)
+    final isHidden = prov.hidden(contentKey); // скрыто в конструкторе
+
+    void editTap() => postEditImage(
+          contentKey,
+          url,
+          focal: prov.focal(contentKey),
+          fit: prov.fit(contentKey) == 'contain' ? 'contain' : 'cover',
+          aspect: aspect,
+        );
+
     return ValueListenableBuilder<bool>(
       valueListenable: consoleEditNotifier,
       builder: (context, editing, _) {
-        if (!editing) return img; // «Просмотр» → обычное фото, тап проходит дальше
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => postEditImage(
-            contentKey,
-            url,
-            focal: prov.focal(contentKey),
-            fit: prov.fit(contentKey) == 'contain' ? 'contain' : 'cover',
-            aspect: aspect,
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0x660A84FF), width: 2),
-            ),
-            child: img,
-          ),
+        if (!editing) {
+          // «Просмотр»/прод: скрытое фото не показываем; иначе — со смещением.
+          if (isHidden) return const SizedBox.shrink();
+          return off == Offset.zero ? img : Transform.translate(offset: off, child: img);
+        }
+        return _EditableImage(
+          contentKey: contentKey,
+          baseOffset: off,
+          hidden: isHidden,
+          onEdit: editTap,
+          child: img,
         );
       },
     );
@@ -109,4 +115,118 @@ class RemoteImage extends StatelessWidget {
         alignment: Alignment.center,
         child: Icon(Icons.image_outlined, color: AppColors.grey400, size: 28),
       );
+}
+
+/// Режим правки фото: тап = сменить фото (модалка), ПЕРЕТАСКИВАНИЕ = смещение
+/// (`pos.<key>`), долгое нажатие = вернуть на место, бейдж «скрыть/вернуть» — как у текста.
+class _EditableImage extends StatefulWidget {
+  final String contentKey;
+  final Offset baseOffset;
+  final bool hidden;
+  final VoidCallback onEdit;
+  final Widget child;
+
+  const _EditableImage({
+    required this.contentKey,
+    required this.baseOffset,
+    required this.hidden,
+    required this.onEdit,
+    required this.child,
+  });
+
+  @override
+  State<_EditableImage> createState() => _EditableImageState();
+}
+
+class _EditableImageState extends State<_EditableImage> {
+  Offset _drag = Offset.zero;
+  bool _dragging = false;
+
+  void _commit(Offset off) {
+    final v = '${off.dx.round()},${off.dy.round()}';
+    postDraft('pos.${widget.contentKey}', v);
+    context.read<RemoteContentProvider>().applyDraft('pos.${widget.contentKey}', v);
+  }
+
+  void _setHidden(bool on) {
+    final v = on ? '1' : '';
+    postDraft('hidden.${widget.contentKey}', v);
+    context.read<RemoteContentProvider>().applyDraft('hidden.${widget.contentKey}', v);
+  }
+
+  Widget _badge(IconData icon, Color bg, VoidCallback onTap) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+          child: Icon(icon, size: 12, color: Colors.white),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final off = widget.baseOffset + _drag;
+
+    if (widget.hidden) {
+      return Transform.translate(
+        offset: off,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Opacity(opacity: 0.35, child: widget.child),
+            Positioned(
+              left: -9,
+              top: -9,
+              child: _badge(Icons.visibility, const Color(0xFF16A34A), () => _setHidden(false)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Transform.translate(
+      offset: off,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onEdit,
+        onLongPress: () {
+          _commit(Offset.zero);
+          setState(() => _drag = Offset.zero);
+        },
+        onPanStart: (_) => setState(() => _dragging = true),
+        onPanUpdate: (d) => setState(() => _drag += d.delta),
+        onPanEnd: (_) {
+          var f = widget.baseOffset + _drag;
+          if (f.dx.abs() < 6 && f.dy.abs() < 6) f = Offset.zero;
+          _commit(f);
+          setState(() {
+            _drag = Offset.zero;
+            _dragging = false;
+          });
+        },
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _dragging ? const Color(0xFFFF2D9B) : const Color(0xFF0A84FF),
+                  width: 2.5,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: widget.child,
+            ),
+            Positioned(
+              left: -9,
+              top: -9,
+              child: _badge(Icons.visibility_off, const Color(0xFF6B7280), () => _setHidden(true)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

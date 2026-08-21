@@ -411,18 +411,23 @@ class _StartCard extends ConsumerWidget {
                     shape: BoxShape.circle,
                     color: AppColors.line,
                     border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.28),
+                      color: AppColors.lime.withValues(alpha: 0.35),
                       width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.warning.withValues(alpha: 0.18),
+                        color: AppColors.lime.withValues(alpha: 0.22),
                         blurRadius: 28,
                         spreadRadius: 2,
                       ),
                     ],
                   ),
-                  child: const Center(child: KvartalLogoMark(size: 58)),
+                  child: const Center(
+                    child: KvartalLogoMark(
+                      size: 58,
+                      outline: Color(0xFFEDEFE8), // светлый контур на тёмной карточке
+                    ),
+                  ),
                 ),
               ],
             ),
