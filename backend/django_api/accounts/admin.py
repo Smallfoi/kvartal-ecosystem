@@ -4,6 +4,8 @@ from django.contrib.auth.admin import GroupAdmin as DjangoGroupAdmin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.models import Group, User
 from django.template.response import TemplateResponse
+from django.urls import reverse
+from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 
 from common.adminutils import ExportCsvMixin
@@ -95,8 +97,22 @@ admin.site.unregister(Group)
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin, ModelAdmin):
-    # Даты входа/регистрации — только история, не редактируются.
-    readonly_fields = ("last_login", "date_joined")
+    # Даты входа/регистрации — только история; «Пароль» — кнопка безопасной смены.
+    readonly_fields = ("last_login", "date_joined", "change_password_link")
+
+    @admin.display(description="Пароль")
+    def change_password_link(self, obj=None):
+        # Хэш не показываем — прямо в настройках аккаунта кнопка безопасной смены
+        # (форма: текущий → новый → подтвердить, требует текущий пароль).
+        if obj is None or not obj.pk:
+            return "—"
+        url = reverse("admin:password_change")
+        return format_html(
+            '<a href="{}" style="display:inline-flex;align-items:center;'
+            'padding:7px 14px;border-radius:8px;background:#0A84FF;color:#fff;'
+            'font-weight:600;text-decoration:none;">Сменить пароль</a>',
+            url,
+        )
 
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
@@ -114,9 +130,10 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
             if "date_joined" in fields:
                 fields = tuple(f for f in fields if f != "date_joined")  # только последний вход
             if "password" in fields:
-                # Не показываем технический хэш (алгоритм/соль). Смена пароля — отдельной
-                # безопасной формой «Сменить пароль» (требует текущий пароль).
-                fields = tuple(f for f in fields if f != "password")
+                # Хэш (алгоритм/соль) не показываем. На его месте — кнопка «Сменить пароль»
+                # прямо в настройках аккаунта (не отдельным пунктом меню).
+                fields = tuple("change_password_link" if f == "password" else f
+                               for f in fields)
             out.append((name, {**opts, "fields": fields}))
         return out
 
