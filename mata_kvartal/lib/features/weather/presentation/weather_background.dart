@@ -6,12 +6,38 @@ import 'package:flutter/material.dart';
 /// Фаза суток по МЕСТНОМУ времени устройства: рассвет / день / закат / ночь.
 enum WeatherPhase { dawn, day, dusk, night }
 
+/// Реальные восход/закат (часы, местное время) по солнечному уравнению.
+/// Раньше фазы были захардкожены («закат 18–21») — владелец заметил закатную
+/// сцену засветло: в Якутске летом солнце садится около 20:00, зимой в 15:00.
+/// Координаты по умолчанию — Якутск; точность пары минут сцене достаточна.
+({double sunriseH, double sunsetH}) sunTimes({
+  double lat = 62.03,
+  double lon = 129.73,
+  DateTime? when,
+}) {
+  final d = when ?? DateTime.now();
+  final n = d.difference(DateTime(d.year, 1, 1)).inDays + 1;
+  final decl =
+      -23.44 * math.cos(2 * math.pi / 365 * (n + 10)) * math.pi / 180;
+  final phi = lat * math.pi / 180;
+  final cosw = -math.tan(phi) * math.tan(decl);
+  if (cosw <= -1) return (sunriseH: 0, sunsetH: 24); // полярный день
+  if (cosw >= 1) return (sunriseH: 12, sunsetH: 12); // полярная ночь
+  final w = math.acos(cosw) * 180 / math.pi / 15; // полудлина дня в часах
+  final tz = d.timeZoneOffset.inMinutes / 60.0;
+  final solarNoon = 12 - lon / 15 + tz;
+  return (sunriseH: solarNoon - w, sunsetH: solarNoon + w);
+}
+
 WeatherPhase phaseNow() {
-  final h = DateTime.now().hour;
-  if (h >= 5 && h < 8) return WeatherPhase.dawn; // восход — солнце встаёт
-  if (h >= 8 && h < 18) return WeatherPhase.day; // день — солнце высоко
-  if (h >= 18 && h < 21) return WeatherPhase.dusk; // закат — солнце садится
-  return WeatherPhase.night; // ночь — луна
+  final now = DateTime.now();
+  final h = now.hour + now.minute / 60.0;
+  final sun = sunTimes(when: now);
+  const edge = 0.7; // ±40 минут вокруг восхода/заката — золотой час
+  if ((h - sun.sunriseH).abs() <= edge) return WeatherPhase.dawn;
+  if ((h - sun.sunsetH).abs() <= edge) return WeatherPhase.dusk;
+  if (h > sun.sunriseH && h < sun.sunsetH) return WeatherPhase.day;
+  return WeatherPhase.night;
 }
 
 /// Совместимость со старым кодом (иконки на карте): ночь = фаза night.
@@ -86,7 +112,11 @@ void _moonCraters(Canvas canvas, Offset c, double r) {
 }
 
 void _drawCloud(Canvas canvas, Offset at, double s, Color color) {
-  final p = Paint()..color = color;
+  // Мягкие края (MaskFilter.blur) — облака как в системных погодных сценах,
+  // а не «нарисованные» кружки с резким контуром.
+  final p = Paint()
+    ..color = color
+    ..maskFilter = MaskFilter.blur(BlurStyle.normal, 7 * s);
   canvas.drawCircle(at + Offset(-24 * s, 6 * s), 16 * s, p);
   canvas.drawCircle(at + Offset(0, -4 * s), 22 * s, p);
   canvas.drawCircle(at + Offset(26 * s, 6 * s), 17 * s, p);
@@ -247,13 +277,34 @@ class _WeatherPainter extends CustomPainter {
     final clear = kind == _Kind.sun || kind == _Kind.partlyCloudy;
     final List<Color> colors;
     if (clear) {
+      // Трёхстопные градиенты — глубина неба как в системных погодных сценах.
       colors = switch (phase) {
-        WeatherPhase.dawn => [const Color(0xFF5B7FB0), const Color(0xFFF2A968)],
+        WeatherPhase.dawn => [
+            const Color(0xFF3D5A94),
+            const Color(0xFF9B7FA8),
+            const Color(0xFFF6B27A),
+          ],
         WeatherPhase.day => kind == _Kind.sun
-            ? [const Color(0xFF2C82D6), const Color(0xFF8FD2F6)]
-            : [const Color(0xFF3B89CC), const Color(0xFF9AD4F2)],
-        WeatherPhase.dusk => [const Color(0xFF45508A), const Color(0xFFE3795A)],
-        WeatherPhase.night => [const Color(0xFF0B1A33), const Color(0xFF1E3A5F)],
+            ? [
+                const Color(0xFF1D6DC4),
+                const Color(0xFF5FA8E8),
+                const Color(0xFFA9DCF8),
+              ]
+            : [
+                const Color(0xFF2F7BBE),
+                const Color(0xFF6FB0E0),
+                const Color(0xFFB2DCF2),
+              ],
+        WeatherPhase.dusk => [
+            const Color(0xFF2C3364),
+            const Color(0xFF8A5878),
+            const Color(0xFFF0885A),
+          ],
+        WeatherPhase.night => [
+            const Color(0xFF060D1F),
+            const Color(0xFF122444),
+            const Color(0xFF29436B),
+          ],
       };
     } else {
       colors = _night
@@ -291,6 +342,22 @@ class _WeatherPainter extends CustomPainter {
       WeatherPhase.dusk => Offset(size.width * 0.74, size.height * 0.60), // закат (низко справа)
       _ => Offset(size.width * 0.78, size.height * 0.38), // день (высоко)
     };
+    if (warm) {
+      // Тёплое свечение у горизонта — золотой час как в системных сценах.
+      final rect = Rect.fromLTWH(
+          -size.width * 0.2, size.height * 0.55, size.width * 1.4, size.height * 0.6);
+      canvas.drawOval(
+        rect,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              const Color(0xFFFFB878).withValues(alpha: 0.42),
+              const Color(0x00FFB878),
+            ],
+          ).createShader(rect)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
+      );
+    }
     _drawSun(canvas, c, 30, t, warm: warm);
   }
 
