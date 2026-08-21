@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/remote_content_provider.dart';
 import '../util/console_bridge.dart';
+import 'remote_anim.dart';
 
 /// Текст приложения, редактируемый из «Конструктора» (мини-CMS, ключ `app.*`).
 ///
@@ -52,6 +53,7 @@ class RemoteText extends StatelessWidget {
     final effStyle = col != null ? (style ?? const TextStyle()).copyWith(color: col) : style;
     final off = prov.posOffset(contentKey); // смещение перетаскивания (прод + правка)
     final isHidden = prov.hidden(contentKey); // скрыт в конструкторе
+    final animName = prov.anim(contentKey); // пресет анимации появления
 
     final text = Text(
       upper ? value.toUpperCase() : value,
@@ -64,9 +66,11 @@ class RemoteText extends StatelessWidget {
       valueListenable: consoleEditNotifier,
       builder: (context, editing, _) {
         if (!editing) {
-          // «Просмотр»/прод: скрытый элемент не показываем; иначе — со смещением.
+          // «Просмотр»/прод: скрытый элемент не показываем; иначе — со смещением + анимацией.
           if (isHidden) return const SizedBox.shrink();
-          return off == Offset.zero ? text : Transform.translate(offset: off, child: text);
+          final positioned =
+              off == Offset.zero ? text : Transform.translate(offset: off, child: text);
+          return animatePreset(animName, positioned);
         }
         return _EditableText(
           contentKey: contentKey,
@@ -74,6 +78,7 @@ class RemoteText extends StatelessWidget {
           colorHex: colorHex,
           baseOffset: off,
           hidden: isHidden,
+          animName: animName,
           child: text,
         );
       },
@@ -90,6 +95,7 @@ class _EditableText extends StatefulWidget {
   final String colorHex;
   final Offset baseOffset;
   final bool hidden;
+  final String animName;
   final Widget child;
 
   const _EditableText({
@@ -98,6 +104,7 @@ class _EditableText extends StatefulWidget {
     required this.colorHex,
     required this.baseOffset,
     required this.hidden,
+    required this.animName,
     required this.child,
   });
 
@@ -139,34 +146,39 @@ class _EditableTextState extends State<_EditableText> {
   @override
   Widget build(BuildContext context) {
     final off = widget.baseOffset + _drag;
+    final built = widget.hidden ? _hiddenView(off) : _activeView(context, off);
+    // Превью анимации появления прямо в правке (ключ по пресету → перезапуск при смене).
+    return animatePreset(widget.animName, built);
+  }
 
-    // Скрытый элемент в правке — бледный «призрак» + кнопка «вернуть» (в проде его нет).
-    if (widget.hidden) {
-      return Transform.translate(
-        offset: off,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Opacity(
-              opacity: 0.35,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF9CA3AF)),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: widget.child,
+  // Скрытый элемент в правке — бледный «призрак» + кнопка «вернуть» (в проде его нет).
+  Widget _hiddenView(Offset off) {
+    return Transform.translate(
+      offset: off,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Opacity(
+            opacity: 0.35,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFF9CA3AF)),
+                borderRadius: BorderRadius.circular(4),
               ),
+              child: widget.child,
             ),
-            Positioned(
-              left: -9,
-              top: -9,
-              child: _badge(Icons.visibility, const Color(0xFF16A34A), () => _setHidden(false)),
-            ),
-          ],
-        ),
-      );
-    }
+          ),
+          Positioned(
+            left: -9,
+            top: -9,
+            child: _badge(Icons.visibility, const Color(0xFF16A34A), () => _setHidden(false)),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _activeView(BuildContext context, Offset off) {
     return Transform.translate(
       offset: off,
       child: GestureDetector(
@@ -202,11 +214,18 @@ class _EditableTextState extends State<_EditableText> {
               ),
               child: widget.child,
             ),
-            // Бейдж «скрыть» (глаз-перечёркнут) — в углу, чтобы не мешать тексту.
+            // Бейдж «скрыть» (глаз-перечёркнут) — слева-вверху.
             Positioned(
               left: -9,
               top: -9,
               child: _badge(Icons.visibility_off, const Color(0xFF6B7280), () => _setHidden(true)),
+            ),
+            // Бейдж «✨ анимация» — справа-вверху, открывает выбор пресета появления.
+            Positioned(
+              right: -9,
+              top: -9,
+              child: _badge(Icons.auto_awesome, const Color(0xFF7C3AED),
+                  () => showAnimPicker(context, widget.contentKey, widget.animName)),
             ),
           ],
         ),
