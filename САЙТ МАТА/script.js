@@ -720,10 +720,76 @@ function prCurrentLevelKey(points) {
 function prShowLevels() {
   const points = (window.STAW && window.STAW.ecoPoints) || 0;
   const cur = prCurrentLevelKey(points);
+  prRenderCard(points);
   prModal.querySelectorAll("[data-level-key]").forEach((el) => {
     el.classList.toggle("is-current", el.getAttribute("data-level-key") === cur);
   });
   prSetView("levels");
+}
+
+// ── Единая карта лояльности МАТА (дизайн-проект v5): живое лицо в профиле ────
+// Словомарка (М·А·А + акцентная Т) и знак (три луча) — точные пути бренда,
+// те же, что в LoyaltyCard3D приложений. Материал/анимации — styles.css (.lc-*).
+const LC_WM =
+  '<svg class="lc-wm" viewBox="312 580 656 112" xmlns="http://www.w3.org/2000/svg">' +
+  '<path class="m" d="M327.996 580H324.857H312V691.964H327.996V585.434L389.495 691.964H407.964L343.326 580H327.996Z"/>' +
+  '<path class="m" d="M487.937 580H472.606L407.964 691.964H426.432L487.937 585.434V691.964H503.933V580H491.075H487.937Z"/>' +
+  '<path class="m" d="M619.03 580H612.759H600.562L535.924 691.964H554.393L563.625 675.969H633.446L642.678 659.973H572.861L615.897 585.434L677.397 691.964H695.866L631.228 580H619.03Z"/>' +
+  '<path class="t" d="M814.324 580H688.838L679.605 595.996H743.583H759.579H823.556L814.324 580Z"/>' +
+  '<path class="t" d="M759.848 611.991H743.853V691.964H759.848V611.991Z"/>' +
+  '<path class="m" d="M903.402 580H890.135H884.933H871.666L807.023 691.964H825.492L887.534 584.504L931.103 659.973H860.485L869.717 675.969H940.339L949.571 691.964H968.04L903.402 580Z"/>' +
+  "</svg>";
+const LC_SIGN =
+  '<svg class="lc-sign" viewBox="490 472 300 336" xmlns="http://www.w3.org/2000/svg">' +
+  '<path d="M502.371 500.66L578.165 632.29L599.723 632.311L562.451 567.578L513.177 482L502.371 500.66Z"/>' +
+  '<path d="M769.167 632.534L617.277 632.359L606.477 651.019L681.175 651.109L779.925 651.221L769.167 632.534Z"/>' +
+  '<path d="M521.563 797.65L597.66 666.195L586.902 647.509L549.471 712.156L500 797.623L521.563 797.65Z"/>' +
+  "</svg>";
+const LC_METAL =
+  '<svg width="0" height="0" style="position:absolute"><defs>' +
+  '<linearGradient id="lcPlatMetal" x1="0" y1="0" x2="0" y2="1">' +
+  '<stop offset="0" stop-color="#F6FAFE"/><stop offset=".45" stop-color="#C9D5E2"/>' +
+  '<stop offset=".55" stop-color="#93A2B3"/><stop offset=".7" stop-color="#DCE6F0"/>' +
+  '<stop offset="1" stop-color="#AEBCCB"/></linearGradient></defs></svg>';
+
+function prRenderCard(points) {
+  const slot = prModal && prModal.querySelector("[data-pr-card]");
+  if (!slot) return;
+  const lv = prComputeLevel(points);
+  const u = prGetUser();
+  const esc = (s) =>
+    String(s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
+  const name = esc(((u && u.name) || "Гость МАТА").toUpperCase());
+  slot.innerHTML =
+    LC_METAL +
+    '<div class="lc lc-' + lv.key + '"><div class="lc-tilt"><div class="lc-card">' +
+    (lv.key === "platinum" ? '<div class="lc-aur"><i></i><i></i><i></i></div>' : "") +
+    (lv.key !== "basic" ? LC_SIGN : "") +
+    (lv.key === "platinum" ? LC_SIGN.replace('class="lc-sign"', 'class="lc-signGlow"') : "") +
+    (lv.key === "platinum" ? '<div class="lc-edge"></div>' : "") +
+    '<div class="lc-rowTop">' + LC_WM +
+    '<span class="lc-lvl">' + esc(lv.name.toUpperCase()) + "</span></div>" +
+    '<div class="lc-pts"><span class="n">' + points + '</span><span class="l">' +
+    prPtsWord(points) + "</span></div>" +
+    '<div class="lc-rowBot"><span class="lc-holder"><span class="cap">ДЕРЖАТЕЛЬ</span>' +
+    '<span class="nm">' + name + "</span></span>" +
+    '<span class="lc-uni">ЕДИНАЯ КАРТА</span></div>' +
+    "</div></div></div>";
+  // 3D-наклон платины за курсором (как в дизайн-проекте; в приложениях — гироскоп).
+  if (lv.key === "platinum") {
+    const scene = slot.querySelector(".lc");
+    const tilt = slot.querySelector(".lc-tilt");
+    scene.addEventListener("mousemove", (e) => {
+      const r = scene.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5;
+      const py = (e.clientY - r.top) / r.height - 0.5;
+      tilt.style.transform =
+        "rotateX(" + (-py * 10).toFixed(2) + "deg) rotateY(" + (px * 14).toFixed(2) + "deg)";
+    });
+    scene.addEventListener("mouseleave", () => { tilt.style.transform = ""; });
+  }
 }
 
 const PR_TIERS = [
