@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_theme.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
@@ -70,10 +71,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.black,
       body: RemoteBackground(
         'app.onb.bg',
-        fallbackColor: Colors.black,
+        fallbackColor: AppColors.black,
         child: SafeArea(
         child: Column(
           children: [
@@ -145,7 +146,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        color: AppColors.black,
                         letterSpacing: 2,
                       ),
                     ),

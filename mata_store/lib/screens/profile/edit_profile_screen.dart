@@ -793,7 +793,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: AppColors.black,
       child: SafeArea(
         bottom: false,
         child: Padding(

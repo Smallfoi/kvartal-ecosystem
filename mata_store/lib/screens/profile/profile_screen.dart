@@ -409,18 +409,20 @@ class _LoyaltyCard extends StatelessWidget {
             ),
           ),
           child: Container(
-            color: Colors.black,
+            color: AppColors.black,
             padding: const EdgeInsets.fromLTRB(24, 0, 20, 20),
+            // Лаймовая карта лояльности — как носитель из брендбука (D-34).
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.white24),
+                color: AppColors.lime,
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.stars_rounded,
-                    color: Colors.white,
+                    color: AppColors.black,
                     size: 26,
                   ),
                   const SizedBox(width: 12),
@@ -434,10 +436,11 @@ class _LoyaltyCard extends StatelessWidget {
                           '${loyalty.balance} баллов',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.5,
+                            color: AppColors.black,
                           ),
                         ),
                         Text(
@@ -446,13 +449,13 @@ class _LoyaltyCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF888888),
+                            color: Color(0xB32A302C),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: Colors.white54),
+                  const Icon(Icons.chevron_right, color: Color(0x992A302C)),
                 ],
               ),
             ),
@@ -479,7 +482,7 @@ class _UserHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: AppColors.black,
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
       child: Row(
@@ -530,7 +533,8 @@ class _UserHeader extends StatelessWidget {
                     user.name,
                     style: const TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
                       color: Colors.white,
                     ),
                   ),
@@ -698,7 +702,10 @@ class _OrderCard extends StatelessWidget {
     final data = order.checkoutData;
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(border: Border.all(color: AppColors.grey200)),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.grey200),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -714,7 +721,10 @@ class _OrderCard extends StatelessWidget {
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                color: AppColors.grey100,
+                decoration: BoxDecoration(
+                  color: AppColors.grey100,
+                  borderRadius: BorderRadius.circular(6),
+                ),
                 child: Text(
                   OrderProvider.statusLabel(order.status),
                   style: const TextStyle(
