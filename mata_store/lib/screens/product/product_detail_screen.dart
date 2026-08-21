@@ -158,8 +158,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         oldPrice: product.oldPrice,
                         priceStyle: const TextStyle(
                           fontSize: 22,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.6,
                           color: AppColors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Голос бренда — серифная строка с лаймовой чертой (D-34)
+                      Container(
+                        padding: const EdgeInsets.only(left: 12),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            left: BorderSide(color: AppColors.lime, width: 2),
+                          ),
+                        ),
+                        child: RemoteText(
+                          'app.product.brandLine',
+                          'Рядом с тобой в любом состоянии',
+                          style: GoogleFonts.robotoSerif(
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w200,
+                            color: AppColors.grey600,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -365,6 +386,7 @@ class _SizeSelector extends StatelessWidget {
                     color: isSelected ? AppColors.black : AppColors.grey200,
                     width: 1.5,
                   ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -372,7 +394,7 @@ class _SizeSelector extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? AppColors.white : AppColors.black,
+                    color: isSelected ? AppColors.lime : AppColors.black,
                   ),
                 ),
               ),
@@ -443,13 +465,14 @@ class _ColorSelector extends StatelessWidget {
                     color: isSelected ? AppColors.black : AppColors.grey200,
                     width: 1.5,
                   ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   color,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: isSelected ? AppColors.white : AppColors.black,
+                    color: isSelected ? AppColors.lime : AppColors.black,
                   ),
                 ),
               ),
@@ -506,7 +529,7 @@ class _BottomBar extends StatelessWidget {
           Expanded(
             child: ElevatedButton(
               onPressed: onAddToCart,
-              child: const RemoteText('app.product.addToCart', 'ДОБАВИТЬ В КОРЗИНУ'),
+              child: const RemoteText('app.product.addToCart', 'Добавить в корзину'),
             ),
           ),
         ],
@@ -568,11 +591,11 @@ class _AddedToCartSheet extends StatelessWidget {
               RemoteText(
                 'app.product.addedToCart',
                 'Добавлено в корзину',
-                style: GoogleFonts.oswald(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.black,
-                  letterSpacing: 0.5,
+                  letterSpacing: -0.3,
                 ),
               ).animate(delay: 150.ms).fadeIn(duration: 300.ms),
             ],
@@ -640,14 +663,17 @@ class _AddedToCartSheet extends StatelessWidget {
             },
             child: Container(
               height: 52,
-              color: AppColors.black,
+              decoration: BoxDecoration(
+                color: AppColors.black,
+                borderRadius: BorderRadius.circular(12),
+              ),
               alignment: Alignment.center,
-              child: RemoteText(
+              child: const RemoteText(
                 'app.product.toCart',
-                'ПЕРЕЙТИ В КОРЗИНУ',
-                style: GoogleFonts.oswald(
-                  fontSize: 15, fontWeight: FontWeight.w600,
-                  color: AppColors.white, letterSpacing: 2,
+                'Перейти в корзину',
+                style: TextStyle(
+                  fontSize: 14.5, fontWeight: FontWeight.w600,
+                  color: AppColors.lime, letterSpacing: 0.2,
                 ),
               ),
             ),
