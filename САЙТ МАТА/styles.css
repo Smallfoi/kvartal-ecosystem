@@ -2887,3 +2887,177 @@ html:has(.mobile-nav.is-open),
 html:has(.eco-modal.is-open) {
   overflow: hidden;
 }
+
+/* ── Единая карта лояльности МАТА в профиле (дизайн-проект v5, D-34) ──────────
+   Материалы уровней + «живые» анимации 1:1 с приложениями:
+   базовый — «уголёк Т», серебро — «лунный блик», золото — «расплав»,
+   платина — аврора + «сердцебиение» знака + комета по кромке + tilt. */
+@property --lcea { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+.lc-slot { perspective: 1200px; margin-bottom: 10px; }
+.lc-note { margin: 0 0 18px; font-size: 12px; color: var(--muted); text-align: center; }
+.lc { width: 100%; max-width: 400px; margin: 0 auto; }
+.lc-tilt { transform-style: preserve-3d; transition: transform 0.35s ease-out; }
+.lc-card {
+  position: relative; width: 100%; aspect-ratio: 1.586; border-radius: 18px;
+  overflow: hidden; padding: 20px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+.lc-card::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 34%, var(--lcsheen, rgba(255, 255, 255, 0.14)) 48%, transparent 60%);
+  transform: translateX(-140%);
+}
+.lc-wm { height: 15px; width: auto; display: block; position: relative; z-index: 2; }
+.lc-wm .m { fill: var(--lcink); }
+.lc-wm .t { fill: var(--lct, var(--lcink)); }
+.lc-sign { position: absolute; pointer-events: none; z-index: 1; }
+.lc-rowTop { display: flex; align-items: center; position: relative; z-index: 2; }
+.lc-lvl {
+  margin-left: auto; font-size: 9px; letter-spacing: 2.2px; font-weight: 700;
+  padding: 5px 12px; border-radius: 99px; color: var(--lcink);
+  border: 1px solid var(--lcpill, currentColor);
+}
+.lc-pts { margin: auto 0; display: flex; align-items: flex-end; gap: 8px; color: var(--lcink); position: relative; z-index: 2; }
+.lc-pts .n { font-size: 34px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.lc-pts .l { font-size: 12px; opacity: 0.6; padding-bottom: 3px; }
+.lc-rowBot { display: flex; align-items: flex-end; color: var(--lcink); position: relative; z-index: 2; }
+.lc-holder .cap { font-size: 7.5px; letter-spacing: 1.8px; opacity: 0.5; }
+.lc-holder .nm { font-size: 11.5px; font-weight: 700; letter-spacing: 0.6px; margin-top: 3px; display: block; }
+.lc-uni { margin-left: auto; font-size: 7.5px; letter-spacing: 1.8px; opacity: 0.5; }
+
+/* базовый графит — жизнь: «уголёк» Т */
+.lc-basic { --lcink: #F2F4F6; --lct: #EEEA83; --lcsheen: rgba(255, 255, 255, 0.10); }
+.lc-basic .lc-card {
+  background:
+    radial-gradient(140% 100% at 22% 0%, rgba(255, 255, 255, 0.07), transparent 52%),
+    linear-gradient(135deg, #272D34 0%, #1B2026 48%, #12161B 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.lc-basic .lc-lvl { color: #EEEA83; --lcpill: rgba(238, 234, 131, 0.7); }
+.lc-basic .lc-wm .t { animation: lcEmber 4.6s ease-in-out infinite; }
+@keyframes lcEmber {
+  0%, 62%, 100% { fill: #EEEA83; filter: none; }
+  76%, 86% { fill: #FBF7AE; filter: drop-shadow(0 0 6px rgba(238, 234, 131, 0.85)); }
+}
+
+/* серебро — жизнь: «лунный блик» + знак дышит */
+.lc-silver { --lcink: #2B323A; --lct: #2B323A; --lcsheen: rgba(255, 255, 255, 0.4); }
+.lc-silver .lc-card {
+  background:
+    radial-gradient(140% 100% at 22% 0%, rgba(255, 255, 255, 0.75), transparent 55%),
+    linear-gradient(120deg, #E9EDF2 0%, #D4DAE1 18%, #C2C9D2 34%, #DDE2E9 50%, #AFB8C2 66%, #CBD2DA 82%, #B7BFC9 100%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.85), inset 0 -12px 26px rgba(120, 132, 146, 0.28), 0 14px 34px rgba(0, 0, 0, 0.25);
+}
+.lc-silver .lc-lvl { --lcpill: rgba(78, 90, 104, 0.5); }
+.lc-silver .lc-sign {
+  right: -6px; bottom: -10px; width: 35%;
+  fill: #B6BFC9;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.75)) drop-shadow(0 -1px 0 rgba(96, 108, 122, 0.5));
+  animation: lcBreath 7.3s ease-in-out infinite;
+}
+@keyframes lcBreath { 0%, 100% { opacity: 0.5; } 45%, 60% { opacity: 1; } }
+.lc-silver .lc-card::after { animation: lcMoon 9.4s ease-in-out infinite; }
+@keyframes lcMoon { 0%, 64% { transform: translateX(-140%); } 92%, 100% { transform: translateX(140%); } }
+
+/* золото — жизнь: «расплав» (градиент течёт) + тёплая волна */
+.lc-gold { --lcink: #42300C; --lct: #42300C; --lcsheen: rgba(255, 248, 220, 0.5); }
+.lc-gold .lc-card {
+  background:
+    radial-gradient(140% 100% at 22% 0%, rgba(255, 246, 214, 0.8), transparent 55%),
+    linear-gradient(120deg, #F3DFA0 0%, #E5C06E 18%, #D3A94F 34%, #EDD494 50%, #C1943A 66%, #E2C177 82%, #CBA14A 100%);
+  background-size: 230% 230%;
+  border: 1px solid rgba(255, 243, 205, 0.75);
+  box-shadow: inset 0 1px 1px rgba(255, 249, 225, 0.9), inset 0 0 0 1px rgba(146, 110, 36, 0.28), inset 0 -14px 30px rgba(140, 104, 32, 0.35), 0 14px 34px rgba(0, 0, 0, 0.25);
+  animation: lcGoldFlow 12s ease-in-out infinite alternate;
+}
+@keyframes lcGoldFlow { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
+.lc-gold .lc-lvl { --lcpill: rgba(110, 82, 22, 0.55); }
+.lc-gold .lc-sign {
+  right: -8%; top: 50%; transform: translateY(-50%); width: 64%;
+  fill: #C79B3F;
+  filter: drop-shadow(0 1px 0 rgba(255, 244, 205, 0.8)) drop-shadow(0 -1px 0 rgba(122, 90, 24, 0.55));
+  animation: lcBreath 8.1s ease-in-out infinite;
+}
+.lc-gold .lc-card::after { animation: lcWarm 7.6s ease-in-out infinite; }
+@keyframes lcWarm { 0%, 58% { transform: translateX(-140%); } 86%, 100% { transform: translateX(140%); } }
+
+/* платина — чёрный титан, ЖИВАЯ: аврора + сердцебиение знака + комета + tilt */
+.lc-platinum { --lcink: #E7ECF3; --lct: #E7ECF3; --lcsheen: rgba(214, 228, 244, 0.22); }
+.lc-platinum .lc-card {
+  background:
+    radial-gradient(150% 110% at 20% -5%, rgba(120, 138, 158, 0.32), transparent 55%),
+    linear-gradient(120deg, #15181D 0%, #0B0D11 30%, #1B2027 52%, #07090C 74%, #141820 100%);
+  border: 1px solid rgba(202, 214, 228, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(10, 12, 16, 0.9), inset 0 0 0 2.5px rgba(186, 200, 216, 0.22), inset 0 1px 1px rgba(214, 228, 244, 0.28), inset 0 -14px 32px rgba(0, 0, 0, 0.7), 0 16px 38px rgba(0, 0, 0, 0.45);
+}
+.lc-platinum .lc-wm { height: 17px; }
+.lc-platinum .lc-wm .m, .lc-platinum .lc-wm .t { fill: url(#lcPlatMetal); }
+.lc-platinum .lc-lvl {
+  color: #10141A; border: 0;
+  background: linear-gradient(180deg, #F4F8FC, #B9C6D4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.lc-platinum .lc-sign {
+  right: -12%; top: 50%; transform: translateY(-50%); width: 88%;
+  fill: rgba(228, 238, 250, 0.05);
+  filter: drop-shadow(0 1px 0 rgba(214, 228, 244, 0.14)) drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.8));
+}
+.lc-platinum .lc-aur {
+  position: absolute; inset: -30%; z-index: 0; pointer-events: none;
+  filter: blur(34px); opacity: 0.5; mix-blend-mode: screen;
+}
+.lc-platinum .lc-aur i { position: absolute; border-radius: 50%; }
+.lc-platinum .lc-aur i:nth-child(1) {
+  width: 55%; height: 60%; left: 6%; top: 12%;
+  background: radial-gradient(circle at 50% 50%, rgba(96, 140, 190, 0.55), transparent 65%);
+  animation: lcAur1 13s ease-in-out infinite;
+}
+.lc-platinum .lc-aur i:nth-child(2) {
+  width: 50%; height: 55%; right: 2%; bottom: 6%;
+  background: radial-gradient(circle at 50% 50%, rgba(150, 120, 205, 0.4), transparent 65%);
+  animation: lcAur2 17s ease-in-out infinite;
+}
+.lc-platinum .lc-aur i:nth-child(3) {
+  width: 40%; height: 45%; left: 34%; top: 30%;
+  background: radial-gradient(circle at 50% 50%, rgba(120, 190, 200, 0.35), transparent 65%);
+  animation: lcAur1 21s ease-in-out infinite reverse;
+}
+@keyframes lcAur1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(16%, 10%) scale(1.25); } }
+@keyframes lcAur2 { 0%, 100% { transform: translate(0, 0) scale(1.15); } 50% { transform: translate(-14%, -12%) scale(0.9); } }
+.lc-platinum .lc-signGlow {
+  position: absolute; right: -12%; top: 50%; transform: translateY(-50%);
+  width: 88%; z-index: 1; pointer-events: none;
+}
+.lc-platinum .lc-signGlow path {
+  fill: url(#lcPlatMetal); opacity: 0;
+  animation: lcRay 5.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(190, 214, 240, 0.9));
+}
+.lc-platinum .lc-signGlow path:nth-child(1) { animation-delay: 0s; }
+.lc-platinum .lc-signGlow path:nth-child(2) { animation-delay: 0.35s; }
+.lc-platinum .lc-signGlow path:nth-child(3) { animation-delay: 0.7s; }
+@keyframes lcRay { 0%, 55%, 100% { opacity: 0; } 8%, 30% { opacity: 0.75; } 42% { opacity: 0; } }
+.lc-platinum .lc-edge {
+  position: absolute; inset: 0; border-radius: 18px; z-index: 3;
+  pointer-events: none; padding: 1.6px;
+  background: conic-gradient(from var(--lcea), transparent 0 335deg, rgba(232, 242, 252, 0.95) 351deg, rgba(150, 172, 196, 0.25) 359deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: lcEdgeRun 5.2s linear infinite;
+}
+@keyframes lcEdgeRun { to { --lcea: 360deg; } }
+.lc-platinum .lc-card::after { animation: lcPlat 6.5s ease-in-out infinite; }
+@keyframes lcPlat { 0%, 58% { transform: translateX(-140%); } 88%, 100% { transform: translateX(140%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-tilt { transition-duration: 0.01ms; }
+  .lc-basic .lc-wm .t, .lc-silver .lc-sign, .lc-silver .lc-card::after,
+  .lc-gold .lc-card, .lc-gold .lc-sign, .lc-gold .lc-card::after,
+  .lc-platinum .lc-card::after, .lc-platinum .lc-aur i,
+  .lc-platinum .lc-signGlow path, .lc-platinum .lc-edge { animation: none; }
+}
+
