@@ -48,6 +48,10 @@ class RemoteContentProvider extends ChangeNotifier {
   /// Абсолютный URL фото по ключу или '' (фолбэк-ассет решает виджет).
   String imageUrl(String key) => _images[key] ?? '';
 
+  /// Скрыт ли элемент (в конструкторе «скрыть/вернуть») — ключ `hidden.<key>`="1".
+  /// Как `data-hideable` на сайте: в проде скрытый элемент не показывается.
+  bool hidden(String key) => _content['hidden.$key'] == '1';
+
   /// Сырое значение по полному ключу или '' (для служебных bg-полей:
   /// `bgvid.<k>`/`bgoff.<k>`/`bgfocal.<k>`/`bgfit.<k>`). Фото фона — `imageUrl('bg.<k>')`.
   String value(String key) => _content[key] ?? '';
