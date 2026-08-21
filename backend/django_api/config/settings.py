@@ -241,11 +241,14 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Аккаунт",
+                "title": "Обзор",
                 "separator": True,
                 "items": [
-                    # Своя страница профиля: правка почты/имени/пароля текущего админа.
-                    {"title": "Мой профиль", "icon": "account_circle",
+                    # Дашборд — сводка по экосистеме (заказы, пользователи, баллы, античит…).
+                    {"title": "Дашборд", "icon": "space_dashboard",
+                     "link": reverse_lazy("admin:index")},
+                    # Профиль — правка почты/имени/пароля текущего админа.
+                    {"title": "Профиль", "icon": "account_circle",
                      "link": lambda request: (
                          reverse_lazy("admin:accounts_account_change", args=[request.user.pk])
                          if getattr(request.user, "pk", None) else reverse_lazy("admin:index")
