@@ -95,7 +95,36 @@ admin.site.unregister(Group)
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin, ModelAdmin):
-    pass
+    # Даты входа/регистрации — только история, не редактируются.
+    readonly_fields = ("last_login", "date_joined")
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        # Свой аккаунт суперпользователя (создатель, «вшитый» админ): прячем управление
+        # правами/группами (он и так суперюзер) и дату регистрации — оставляем только
+        # последний вход. Для чужих аккаунтов (сотрудники) — всё как обычно.
+        own_super = obj is not None and obj.pk == request.user.pk and request.user.is_superuser
+        if not own_super:
+            return fieldsets
+        out = []
+        for name, opts in fieldsets:
+            fields = tuple(opts.get("fields", ()))
+            if any(f in fields for f in ("is_superuser", "user_permissions", "groups")):
+                continue  # убрать блок «Права доступа» целиком
+            if "date_joined" in fields:
+                fields = tuple(f for f in fields if f != "date_joined")  # только последний вход
+            if "password" in fields:
+                # Не показываем технический хэш (алгоритм/соль). Смена пароля — отдельной
+                # безопасной формой «Сменить пароль» (требует текущий пароль).
+                fields = tuple(f for f in fields if f != "password")
+            out.append((name, {**opts, "fields": fields}))
+        return out
+
+    def has_delete_permission(self, request, obj=None):
+        # Себя (суперпользователя-создателя) удалять нельзя — прячем кнопку «Удалить».
+        if obj is not None and obj.pk == request.user.pk:
+            return False
+        return super().has_delete_permission(request, obj)
 
 
 @admin.register(Group)
