@@ -49,6 +49,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  /// Нотифаер территорий, снятый один раз при инициализации: таймер и колбэки
+  /// камеры срабатывают и после ухода с вкладки, а искать провайдер через
+  /// деактивированный элемент нельзя.
+  late final TerritoryNotifier _territories;
+
   void _loadTerritories() {
     if (!mounted) return;
     final LatLngBounds bounds;
@@ -57,9 +62,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     } catch (_) {
       return; // камера ещё не готова
     }
-    ref
-        .read(territoryProvider.notifier)
-        .loadBbox(
+    _territories.loadBbox(
           minLng: bounds.west,
           minLat: bounds.south,
           maxLng: bounds.east,
@@ -88,10 +91,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void initState() {
     super.initState();
+    _territories = ref.read(territoryProvider.notifier);
     _territoryRefreshTimer = Timer.periodic(_territoryRefreshInterval, (_) {
       _loadTerritories();
       // Досылаем отложенные офлайн-захваты, когда вернулась связь (S-07).
-      ref.read(territoryProvider.notifier).flushQueue();
+      _territories.flushQueue();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerOnCurrentLocation();
@@ -127,10 +131,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ref.listen(positionStreamProvider, (_, next) {
       final pos = next.valueOrNull;
       if (!_followUser || pos == null) return;
-      if (ref.read(runProvider).status != RunStatus.idle) return;
+      // Статус берём из значения, снятого в build: ref.read в отложенном
+      // колбэке падает, если экран уже ушёл с вкладки.
+      if (runState.status != RunStatus.idle) return;
       _mapController.move(pos.toLatLng, _mapController.camera.zoom);
     });
     ref.listen(runProvider, (previous, next) {
+      if (!context.mounted) return;
       if (!_followUser || next.status == RunStatus.idle || next.route.isEmpty) {
         return;
       }
