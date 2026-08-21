@@ -67,12 +67,7 @@ class ToolsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.soft, AppColors.bgDark],
-          stops: [0.0, 0.32],
-        ),
+        color: AppColors.bg,
       ),
       child: SafeArea(
         bottom: false,

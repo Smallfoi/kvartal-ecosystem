@@ -213,6 +213,11 @@ class _ClubSliverHeader extends ConsumerWidget {
     final s = ClubStyle.byKey(club?.style);
     final cover = club?.cover;
     final hasCover = cover != null && cover.isNotEmpty;
+    // Поверх фотографии текст светлый (под ним вуаль), на светлом пресете — тёмный.
+    final onHeader = hasCover ? AppColors.onDark : AppColors.ink;
+    final onHeaderSoft = hasCover
+        ? AppColors.onDark.withValues(alpha: 0.78)
+        : AppColors.muted;
     // Логотип в «рамке» пресета (кольцо цвета s.frame).
     Widget ringed(Widget logo) => Container(
       padding: const EdgeInsets.all(2.5),
@@ -248,9 +253,9 @@ class _ClubSliverHeader extends ConsumerWidget {
                   gradient: LinearGradient(
                     colors: hasCover
                         ? [
-                            Colors.black.withValues(alpha: 0.15),
-                            Colors.black.withValues(alpha: 0.45),
-                            AppColors.bgDark,
+                            Colors.black.withValues(alpha: 0.10),
+                            Colors.black.withValues(alpha: 0.42),
+                            Colors.black.withValues(alpha: 0.68),
                           ]
                         : s.headerGradient,
                     begin: Alignment.topCenter,
@@ -310,7 +315,10 @@ class _ClubSliverHeader extends ConsumerWidget {
                             _FitText(
                               hasClub ? club!.name : '\u041a\u043b\u0443\u0431',
                               style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(fontWeight: FontWeight.w800),
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: onHeader,
+                                  ),
                             ),
                             const SizedBox(height: 2),
                             _FitText(
@@ -318,7 +326,7 @@ class _ClubSliverHeader extends ConsumerWidget {
                                   ? '${club!.memberCount} \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432'
                                   : '\u0421\u043e\u0437\u0434\u0430\u0439 \u043a\u043b\u0443\u0431 \u0438\u043b\u0438 \u043a\u043e\u043c\u0430\u043d\u0434\u0443',
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.textSecondary),
+                                  ?.copyWith(color: onHeaderSoft),
                             ),
                           ],
                         ),
@@ -389,7 +397,7 @@ class _ClubSliverHeader extends ConsumerWidget {
                           child: Icon(
                             CupertinoIcons.photo_on_rectangle,
                             size: 18,
-                            color: AppColors.ink,
+                            color: AppColors.onDark,
                           ),
                         ),
                       ),
@@ -668,13 +676,9 @@ class _ClubChallengeSection extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [s.accent.withValues(alpha: 0.16), AppColors.bgCard],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: s.accent.withValues(alpha: 0.40)),
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1029,9 +1033,9 @@ class _OwnerToolsCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: AppColors.electricBlue.withValues(alpha: 0.10),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.electricBlue.withValues(alpha: 0.28)),
+      color: AppColors.paper,
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: AppColors.line),
     ),
     child: Row(
       children: [
@@ -1039,13 +1043,13 @@ class _OwnerToolsCard extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: AppColors.electricBlue.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(10),
+            color: AppColors.soft,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
             CupertinoIcons.slider_horizontal_3,
             size: 18,
-            color: AppColors.electricBlue,
+            color: AppColors.accentInk,
           ),
         ),
         const SizedBox(width: 12),
@@ -1975,9 +1979,9 @@ class _ClubMetricCard extends StatelessWidget {
       height: 82,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: AppColors.glassPaper,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
+        border: Border.all(color: AppColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2062,13 +2066,18 @@ class _ClubBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: color.withValues(alpha: 0.35)),
+      color: color.withValues(alpha: 0.22),
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(color: AppColors.line),
     ),
     child: Text(
       label,
-      style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
+      // Тёмный текст по цветной плашке: цветной по цветному не проходит норму.
+      style: const TextStyle(
+        color: AppColors.ink,
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+      ),
     ),
   );
 }
