@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../data/api/api_client.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/mata_logo.dart';
 import '../../widgets/otp_verify_boxes.dart';
 import '../../widgets/phone_mask.dart';
 import '../../widgets/remote_text.dart';
@@ -180,7 +181,7 @@ class _BlackHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: AppColors.black,
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -203,16 +204,25 @@ class _BlackHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              RemoteText(
-                'app.auth.brand',
-                'МАТА STORE',
-                style: GoogleFonts.oswald(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 4,
+              Center(
+                child: MataLogo(
+                  width: 168,
+                  color: const Color(0xFFE9EAE5),
+                  accent: AppColors.lime,
                 ),
               ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
+              const SizedBox(height: 14),
+              RemoteText(
+                'app.auth.tagline',
+                'Рядом с тобой в любом состоянии',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.robotoSerif(
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w200,
+                  color: AppColors.lavender,
+                ),
+              ).animate().fadeIn(duration: 400.ms, delay: 60.ms),
               const SizedBox(height: 4),
               RemoteText(
                 isLogin
