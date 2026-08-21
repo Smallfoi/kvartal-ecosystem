@@ -106,7 +106,8 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
                 ),
                 const Padding(
                   padding: EdgeInsets.only(top: 8, left: 4, right: 4),
-                  child: Text(
+                  child: RemoteText(
+                    'app.account.privacyHint',
                     'Видимость маршрутов и положения в реальном времени настраивается '
                     'в приложении «Квартал» (аккаунт общий).',
                     style: TextStyle(color: AppColors.grey600, fontSize: 13),

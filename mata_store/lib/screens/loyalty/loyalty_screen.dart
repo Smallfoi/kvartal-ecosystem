@@ -42,10 +42,9 @@ class LoyaltyScreen extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.all(40),
                     child: Center(
-                      child: Text(
-                        'Пока нет операций с баллами',
-                        style: TextStyle(color: AppColors.grey600),
-                      ),
+                      child: RemoteText('app.loyalty.emptyOps',
+                          'Пока нет операций с баллами',
+                          style: TextStyle(color: AppColors.grey600)),
                     ),
                   ),
                 )
