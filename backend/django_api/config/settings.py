@@ -214,7 +214,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 from django.urls import reverse_lazy  # noqa: E402
 
 UNFOLD = {
-    "SITE_TITLE": "МАТА Админка",
+    "SITE_TITLE": "МАТА Админ",
     "SITE_HEADER": "МАТА — администрирование",
     "SITE_SUBHEADER": "Экосистема: Квартал · Store · Сайт",
     "SHOW_HISTORY": True,
@@ -240,6 +240,18 @@ UNFOLD = {
         "show_search": True,
         "show_all_applications": False,
         "navigation": [
+            {
+                "title": "Аккаунт",
+                "separator": True,
+                "items": [
+                    # Своя страница профиля: правка почты/имени/пароля текущего админа.
+                    {"title": "Мой профиль", "icon": "account_circle",
+                     "link": lambda request: (
+                         reverse_lazy("admin:accounts_account_change", args=[request.user.pk])
+                         if getattr(request.user, "pk", None) else reverse_lazy("admin:index")
+                     )},
+                ],
+            },
             {
                 "title": "Каталог",
                 "separator": True,
