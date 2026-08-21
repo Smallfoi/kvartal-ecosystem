@@ -148,14 +148,16 @@ class _WeatherBody extends StatelessWidget {
       children: [
         // Живой анимированный баннер-«штрих» по текущему условию (солнце/облака/
         // дождь/снег/туман/гроза). Текст поверх — белый с тенью для контраста.
+        // 164 (было 150): контент с крупным шрифтом устройства переполнял
+        // баннер на ~5px («BOTTOM OVERFLOWED», замечание владельца 2026-08-21).
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: SizedBox(
-            height: 150,
+            height: 164,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                WeatherBackground(weatherCode: w.weatherCode, height: 150),
+                WeatherBackground(weatherCode: w.weatherCode, height: 164),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
