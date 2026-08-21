@@ -51,7 +51,10 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Spacer(flex: 2),
-              const KvartalLogoMark(size: 58),
+              const KvartalLogoMark(
+                size: 58,
+                outline: Color(0xFFEDEFE8), // тёмный фон экрана входа
+              ),
               const SizedBox(height: 18),
               Text(
                 'КВАРТАЛ',
