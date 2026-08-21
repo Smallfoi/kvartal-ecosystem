@@ -99,37 +99,48 @@ void _drawCloud(Canvas canvas, Offset at, double s, Color color) {
   );
 }
 
-/// Яркое солнце с пульсацией и вращающимися лучами. Центр/радиус — параметры,
-/// чтобы переиспользовать в большом фоне и мини-иконке. warm — тёплое (закат/рассвет).
+/// Мягкое «дышащее» солнце (дизайн погоды, утверждён 2026-08-21): диск с тёплым
+/// градиентом + два слоя свечения, БЕЗ лучей-палок — владелец счёл их клипартом.
+/// Центр/радиус — параметры для большого фона и мини-иконки. warm — закат/рассвет.
 void _drawSun(Canvas canvas, Offset c, double r, double t, {bool warm = false}) {
   final pulse = 0.5 + 0.5 * math.sin(t * 2 * math.pi);
-  final glowColor = warm ? const Color(0xFFFF8A3C) : const Color(0xFFFFC93C);
+  final glow = warm ? const Color(0xFFFF9E52) : const Color(0xFFFFD98F);
+
+  // Широкий ореол — медленно «дышит».
+  final haloR = r * (3.2 + 0.5 * pulse);
   canvas.drawCircle(
     c,
-    r * 3.0 + pulse * r * 0.4,
+    haloR,
     Paint()
       ..shader = RadialGradient(
-        colors: [glowColor.withValues(alpha: 0.55 + 0.2 * pulse), glowColor.withValues(alpha: 0)],
-      ).createShader(Rect.fromCircle(center: c, radius: r * 3.0 + pulse * r * 0.4)),
+        colors: [glow.withValues(alpha: 0.30 + 0.10 * pulse), glow.withValues(alpha: 0)],
+      ).createShader(Rect.fromCircle(center: c, radius: haloR)),
   );
-  final ray = Paint()
-    ..color = (warm ? const Color(0xFFFFB04A) : const Color(0xFFFFD23C)).withValues(alpha: 0.9)
-    ..strokeWidth = math.max(2.0, r * 0.13)
-    ..strokeCap = StrokeCap.round;
-  for (int i = 0; i < 12; i++) {
-    final a = t * 2 * math.pi + i * math.pi / 6;
-    final dir = Offset(math.cos(a), math.sin(a));
-    canvas.drawLine(c + dir * r * 1.2, c + dir * (r * 1.72 + pulse * r * 0.3), ray);
-  }
+
+  // Ближнее свечение вокруг диска.
+  final nearR = r * 1.8;
+  canvas.drawCircle(
+    c,
+    nearR,
+    Paint()
+      ..shader = RadialGradient(
+        colors: [glow.withValues(alpha: 0.52), glow.withValues(alpha: 0)],
+      ).createShader(Rect.fromCircle(center: c, radius: nearR)),
+  );
+
+  // Сам диск: светлое пятно смещено к верхнему левому краю — объём без резкости.
   final body = warm
-      ? const [Color(0xFFFFE0A3), Color(0xFFFF9D33), Color(0xFFF4621E)]
-      : const [Color(0xFFFFF7D6), Color(0xFFFFC107), Color(0xFFFF8F00)];
+      ? const [Color(0xFFFFEFD0), Color(0xFFFFB662), Color(0xFFF0813C)]
+      : const [Color(0xFFFFF6DC), Color(0xFFFFD98F), Color(0xFFF7BE62)];
   canvas.drawCircle(
     c,
     r,
     Paint()
-      ..shader = RadialGradient(colors: body, stops: const [0.0, 0.62, 1.0])
-          .createShader(Rect.fromCircle(center: c, radius: r)),
+      ..shader = RadialGradient(
+        center: const Alignment(-0.25, -0.3),
+        colors: body,
+        stops: const [0.0, 0.62, 1.0],
+      ).createShader(Rect.fromCircle(center: c, radius: r)),
   );
 }
 
