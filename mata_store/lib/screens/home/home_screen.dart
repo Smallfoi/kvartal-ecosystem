@@ -195,7 +195,11 @@ class _BannerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Stack(
       fit: StackFit.expand,
       children: [
         ProductImage(path: banner['imageUrl']!),
@@ -204,7 +208,7 @@ class _BannerItem extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Color(0xDD000000)],
+              colors: [Colors.transparent, Color(0xDD20241F)],
               stops: [0.35, 1.0],
             ),
           ),
@@ -218,22 +222,22 @@ class _BannerItem extends StatelessWidget {
             children: [
               Text(
                 banner['title']!,
-                style: GoogleFonts.oswald(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w700,
+                style: const TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w500,
                   color: AppColors.white,
-                  letterSpacing: 1,
+                  letterSpacing: -1.2,
                   height: 1.05,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                banner['subtitle']!.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.grey400,
-                  letterSpacing: 2,
+                banner['subtitle']!,
+                style: GoogleFonts.robotoSerif(
+                  fontSize: 13.5,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w200,
+                  color: const Color(0xFFD8D9DE),
                 ),
               ),
               const SizedBox(height: 20),
@@ -245,6 +249,8 @@ class _BannerItem extends StatelessWidget {
           ),
         ),
       ],
+        ),
+      ),
     );
   }
 }
@@ -285,14 +291,17 @@ class _BannerButtonState extends State<_BannerButton> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        color: _pressed ? AppColors.grey200 : AppColors.white,
+        decoration: BoxDecoration(
+          color: _pressed ? const Color(0xFFD8D477) : AppColors.lime,
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Text(
-          widget.label.toUpperCase(),
-          style: GoogleFonts.oswald(
-            fontSize: 14,
+          widget.label,
+          style: const TextStyle(
+            fontSize: 13.5,
             fontWeight: FontWeight.w600,
             color: AppColors.black,
-            letterSpacing: 2,
+            letterSpacing: 0.2,
           ),
         ),
       ),
@@ -323,11 +332,11 @@ class _SectionHeader extends StatelessWidget {
           RemoteText(
             contentKey,
             title,
-            style: GoogleFonts.oswald(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.black,
-              letterSpacing: 2,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.grey600,
+              letterSpacing: 1.5,
             ),
           ),
           if (onTap != null)
@@ -486,11 +495,11 @@ class _CategoryCardState extends State<_CategoryCard> {
                   upper: true,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.oswald(
-                    fontSize: 13,
+                  style: const TextStyle(
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: AppColors.white,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),

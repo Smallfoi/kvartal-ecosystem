@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/wishlist_provider.dart';
@@ -46,8 +45,10 @@ class _ProductCardState extends State<ProductCard> {
           width: widget.width,
           // ── Рамка объединяет фото и текст в единый блок ───────────────
           child: Container(
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.grey200, width: 1),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,38 +69,44 @@ class _ProductCardState extends State<ProductCard> {
                       if (p.isNew)
                         Positioned(
                           top: 8,
-                          left: 0,
+                          left: 8,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 7, vertical: 3),
-                            color: AppColors.black,
-                            child: Text(
+                            decoration: BoxDecoration(
+                              color: AppColors.black,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
                               'НОВИНКА',
-                              style: GoogleFonts.oswald(
+                              style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.white,
+                                color: AppColors.lime,
                                 letterSpacing: 0.5,
                               ),
                             ),
                           ),
                         ),
 
-                      // Бейдж скидки
+                      // Бейдж скидки — лайм (брендбук), не красный
                       if (p.isOnSale)
                         Positioned(
-                          top: p.isNew ? 30 : 8,
-                          left: 0,
+                          top: p.isNew ? 32 : 8,
+                          left: 8,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 7, vertical: 3),
-                            color: AppColors.red,
+                            decoration: BoxDecoration(
+                              color: AppColors.lime,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                             child: Text(
-                              '-${p.discountPercent}%',
+                              '−${p.discountPercent}%',
                               style: const TextStyle(
                                 fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.white,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.black,
                               ),
                             ),
                           ),
@@ -121,7 +128,7 @@ class _ProductCardState extends State<ProductCard> {
                                 alignment: Alignment.center,
                                 child: Icon(
                                   isFav ? Icons.favorite : Icons.favorite_border,
-                                  color: isFav ? AppColors.red : AppColors.black,
+                                  color: AppColors.black,
                                   size: 19,
                                 )
                                     .animate(key: ValueKey(isFav))
