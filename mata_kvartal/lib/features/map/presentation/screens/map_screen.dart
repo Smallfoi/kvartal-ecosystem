@@ -608,10 +608,7 @@ class _AnimatedUserMarker extends StatefulWidget {
 
 class _AnimatedUserMarkerState extends State<_AnimatedUserMarker>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..addListener(() => setState(() {}));
+  late final AnimationController _controller;
 
   LatLng? _from;
   LatLng? _to;
@@ -619,6 +616,10 @@ class _AnimatedUserMarkerState extends State<_AnimatedUserMarker>
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..addListener(() => setState(() {}));
     _from = widget.target;
     _to = widget.target;
   }

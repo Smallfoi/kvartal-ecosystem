@@ -129,7 +129,9 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.graphite,
           foregroundColor: AppColors.onDark,
-          minimumSize: const Size.fromHeight(54),
+          // Только высота: Size.fromHeight — это Size(бесконечность, 54), и в Row
+          // такая кнопка требует бесконечную ширину и роняет раскладку экрана.
+          minimumSize: const Size(64, 54),
           shape: const StadiumBorder(),
           textStyle: _t(15, FontWeight.w800, AppColors.onDark, letterSpacing: 0.15),
           elevation: 0,
@@ -139,7 +141,9 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.graphite,
           foregroundColor: AppColors.onDark,
-          minimumSize: const Size.fromHeight(54),
+          // Только высота: Size.fromHeight — это Size(бесконечность, 54), и в Row
+          // такая кнопка требует бесконечную ширину и роняет раскладку экрана.
+          minimumSize: const Size(64, 54),
           shape: const StadiumBorder(),
           textStyle: _t(15, FontWeight.w800, AppColors.onDark, letterSpacing: 0.15),
         ),
@@ -147,7 +151,9 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.ink,
-          minimumSize: const Size.fromHeight(54),
+          // Только высота: Size.fromHeight — это Size(бесконечность, 54), и в Row
+          // такая кнопка требует бесконечную ширину и роняет раскладку экрана.
+          minimumSize: const Size(64, 54),
           side: const BorderSide(color: AppColors.line),
           shape: const StadiumBorder(),
           textStyle: _t(15, FontWeight.w800, AppColors.ink, letterSpacing: 0.15),
