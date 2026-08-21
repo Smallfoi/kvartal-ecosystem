@@ -6,6 +6,27 @@ import 'package:latlong2/latlong.dart';
 
 import '../../map/data/location_provider.dart';
 
+/// Один час прогноза — для «лучшего времени пробежки» (дизайн 2026-08-21).
+class HourForecast {
+  final DateTime timeLocal;
+  final double tempC;
+  final double feelsLikeC;
+  final double windKmh;
+  final int precipProbPct;
+  final double precipMm;
+  final int wmo;
+
+  const HourForecast({
+    required this.timeLocal,
+    required this.tempC,
+    required this.feelsLikeC,
+    required this.windKmh,
+    required this.precipProbPct,
+    required this.precipMm,
+    required this.wmo,
+  });
+}
+
 /// Текущая погода для точки (реальные данные MET Norway).
 /// Морозный коэффициент к баллам тут НЕ считается — это отдельная фича (D-20).
 class WeatherData {
@@ -16,6 +37,7 @@ class WeatherData {
   final int precipProbabilityPct;
   final int humidityPct;
   final int weatherCode; // WMO weather code (маппим из symbol_code met.no)
+  final List<HourForecast> hourly; // почасовой ряд (до ~24 ч, с текущего часа)
 
   const WeatherData({
     required this.tempC,
@@ -25,6 +47,7 @@ class WeatherData {
     required this.precipProbabilityPct,
     required this.humidityPct,
     required this.weatherCode,
+    this.hourly = const [],
   });
 }
 
@@ -89,7 +112,40 @@ Future<WeatherData> _fetchWeather(LatLng at) async {
         (next1Details['probability_of_precipitation'] as num?)?.round() ?? 0,
     humidityPct: (details['relative_humidity'] as num?)?.round() ?? 0,
     weatherCode: _wmoFromSymbol(symbol),
+    hourly: _parseHourly(series),
   );
+}
+
+/// Почасовой ряд из timeseries met.no: первые ~24 записи с next_1_hours
+/// (дальше провайдер отдаёт 6-часовые шаги — они для окна не нужны).
+List<HourForecast> _parseHourly(List<dynamic> series) {
+  final out = <HourForecast>[];
+  for (final raw in series) {
+    if (out.length >= 24) break;
+    final entry = raw as Map<String, dynamic>;
+    final data = (entry['data'] as Map<String, dynamic>?) ?? const {};
+    final next1 = data['next_1_hours'] as Map<String, dynamic>?;
+    if (next1 == null) continue; // почасовые кончились
+    final time = DateTime.tryParse((entry['time'] as String?) ?? '');
+    if (time == null) continue;
+    final details =
+        (data['instant']?['details'] as Map<String, dynamic>?) ?? const {};
+    final n1d = (next1['details'] as Map<String, dynamic>?) ?? const {};
+    final t = (details['air_temperature'] as num?)?.toDouble() ?? 0;
+    final wind = ((details['wind_speed'] as num?)?.toDouble() ?? 0) * 3.6;
+    out.add(HourForecast(
+      timeLocal: time.toLocal(),
+      tempC: t,
+      feelsLikeC: _windChill(t, wind),
+      windKmh: wind,
+      precipProbPct:
+          (n1d['probability_of_precipitation'] as num?)?.round() ?? 0,
+      precipMm: (n1d['precipitation_amount'] as num?)?.toDouble() ?? 0,
+      wmo: _wmoFromSymbol(
+          (next1['summary']?['symbol_code'] as String?) ?? ''),
+    ));
+  }
+  return out;
 }
 
 /// «Ощущается как» — ветрохолодовой индекс (важно бегунам в мороз). Формула
