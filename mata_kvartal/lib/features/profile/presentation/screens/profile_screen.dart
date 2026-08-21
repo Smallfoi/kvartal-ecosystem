@@ -814,9 +814,8 @@ class _PointsCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.paper,
+          color: AppColors.graphite,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.line),
         ),
         child: Row(
           children: [
@@ -824,12 +823,12 @@ class _PointsCard extends ConsumerWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.15),
+                color: AppColors.onDark.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 CupertinoIcons.star_fill,
-                color: AppColors.warning,
+                color: AppColors.lime,
                 size: 24,
               ),
             ),
@@ -841,7 +840,7 @@ class _PointsCard extends ConsumerWidget {
                   Text(
                     'Баллы экосистемы',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.onDark.withValues(alpha: 0.66),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -850,8 +849,8 @@ class _PointsCard extends ConsumerWidget {
                         ? '…'
                         : '${loyalty.balance}',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w900,
+                      color: AppColors.lime,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -860,22 +859,22 @@ class _PointsCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.onDark.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
                 loyalty.levelTitle,
                 style: const TextStyle(
-                  color: AppColors.warning,
+                  color: AppColors.onDark,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
             const SizedBox(width: 6),
-            const Icon(
+            Icon(
               CupertinoIcons.chevron_right,
-              color: AppColors.textTertiary,
+              color: AppColors.onDark.withValues(alpha: 0.55),
               size: 18,
             ),
           ],

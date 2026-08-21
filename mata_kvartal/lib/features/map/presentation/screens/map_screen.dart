@@ -560,7 +560,7 @@ class _NoticeButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 40,
+        height: 48,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color,
@@ -883,7 +883,8 @@ class _WeatherChip extends ConsumerWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () => showWeatherDetailSheet(context),
       child: _Glass(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        // Поля подобраны так, чтобы высота дотягивала до нормы 48 dp.
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

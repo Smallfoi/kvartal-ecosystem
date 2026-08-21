@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/kvartal_logo.dart';
 import '../../auth/data/auth_provider.dart';
 
@@ -56,10 +57,12 @@ class _KvartalSplashContent extends StatelessWidget {
         const Text(
               'КВАРТАЛ',
               style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: 4,
+                // Дисплейный шрифт и чернила: экран стал светлым, белое на нём пропадало.
+                fontFamily: AppTheme.fontDisplay,
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+                letterSpacing: 2,
               ),
             )
             .animate()

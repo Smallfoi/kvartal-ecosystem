@@ -110,7 +110,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.warning,
+                        color: AppColors.accentInk,
                       ),
                     ),
                   ],
@@ -134,7 +134,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.warning,
+                          color: AppColors.accentInk,
                         ),
                       ),
                     ),
@@ -253,21 +253,21 @@ class _QuickStatsRow extends StatelessWidget {
           icon: CupertinoIcons.flame_fill,
           value: stats.todayKm.toStringAsFixed(1),
           label: 'км сегодня',
-          color: AppColors.error,
+          color: AppColors.accentInk,
         ),
         const SizedBox(width: 10),
         _QuickStat(
           icon: CupertinoIcons.bolt_fill,
           value: '${stats.streakDays}',
           label: 'дней подряд',
-          color: AppColors.warning,
+          color: AppColors.accentInk,
         ),
         const SizedBox(width: 10),
         _QuickStat(
           icon: CupertinoIcons.location_fill,
           value: '${stats.totalZones}',
           label: 'зон моих',
-          color: AppColors.warning,
+          color: AppColors.accentInk,
         ),
       ],
     );
