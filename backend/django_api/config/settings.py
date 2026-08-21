@@ -220,6 +220,17 @@ UNFOLD = {
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,
     "DASHBOARD_CALLBACK": "config.dashboard.dashboard_callback",
+    # Нижнее меню пользователя (кнопка «admin» внизу слева, рядом с выбором темы):
+    # «Настройки» → свой аккаунт (почта, имя, смена пароля). Профиль/пароль — тут, не отдельно.
+    "ACCOUNT": {
+        "navigation": [
+            {"title": "Настройки",
+             "link": lambda request: (
+                 reverse_lazy("admin:auth_user_change", args=[request.user.pk])
+                 if getattr(request.user, "pk", None) else reverse_lazy("admin:index")
+             )},
+        ],
+    },
     "COLORS": {
         # Брендовый electric blue (#0A84FF) как акцент — оттенки tailwind.
         "primary": {
@@ -247,12 +258,6 @@ UNFOLD = {
                     # Дашборд — сводка по экосистеме (заказы, пользователи, баллы, античит…).
                     {"title": "Дашборд", "icon": "space_dashboard",
                      "link": reverse_lazy("admin:index")},
-                    # Профиль — правка почты/имени/пароля текущего админа.
-                    {"title": "Профиль", "icon": "account_circle",
-                     "link": lambda request: (
-                         reverse_lazy("admin:accounts_account_change", args=[request.user.pk])
-                         if getattr(request.user, "pk", None) else reverse_lazy("admin:index")
-                     )},
                 ],
             },
             {
