@@ -1,3 +1,5 @@
+import 'dart:ui' show Offset;
+
 import 'package:flutter/foundation.dart';
 
 import '../data/api/api_client.dart';
@@ -48,6 +50,19 @@ class RemoteContentProvider extends ChangeNotifier {
   /// Сырое значение по полному ключу или '' (для служебных bg-полей:
   /// `bgvid.<k>`/`bgoff.<k>`/`bgfocal.<k>`/`bgfit.<k>`). Фото фона — `imageUrl('bg.<k>')`.
   String value(String key) => _content[key] ?? '';
+
+  /// Смещение элемента (перетаскивание в конструкторе) — ключ `pos.<key>` = "x,y".
+  /// Применяется и в проде (как `content.js` на сайте), и в правке. Пусто → без сдвига.
+  Offset posOffset(String key) {
+    final raw = _content['pos.$key'];
+    if (raw == null || raw.isEmpty) return Offset.zero;
+    final parts = raw.split(',');
+    if (parts.length != 2) return Offset.zero;
+    final dx = double.tryParse(parts[0].trim());
+    final dy = double.tryParse(parts[1].trim());
+    if (dx == null || dy == null) return Offset.zero;
+    return Offset(dx, dy);
+  }
 
   Future<void> _init() async {
     await _load(); // сначала опубликованное как база

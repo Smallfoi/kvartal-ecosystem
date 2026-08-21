@@ -1,5 +1,6 @@
 // Заглушка для мобильных сборок (не web): конструктор недоступен.
 void postReorder(List<String> productIds) {}
+void postDraft(String key, String value) {}
 void postEditContent(String key, String value,
     {String color = '', bool hasColor = false}) {}
 void postEditImage(String key, String url,

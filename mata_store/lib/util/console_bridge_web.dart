@@ -14,6 +14,13 @@ void postReorder(List<String> productIds) {
   _send({'type': 'reorder', 'platform': 'app', 'order': productIds});
 }
 
+/// Черновая правка «ключ→значение» БЕЗ модалки (как editor.js сайта): позиция
+/// перетаскивания `pos.<key>`, список добавленных подписей `xlabels`, и т.п.
+/// Консоль копит это в pendingContent и публикует по «Опубликовать».
+void postDraft(String key, String value) {
+  _send({'type': 'draftContent', 'key': key, 'value': value});
+}
+
 void postEditContent(String key, String value,
     {String color = '', bool hasColor = false}) {
   _send({
