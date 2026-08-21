@@ -5,16 +5,27 @@ import 'package:badges/badges.dart' as badges;
 import '../providers/cart_provider.dart';
 import '../providers/tab_notifier.dart';
 import '../theme/app_theme.dart';
+import '../widgets/remote_labels.dart';
 
 class MainShell extends StatelessWidget {
   final StatefulNavigationShell shell;
 
   const MainShell({super.key, required this.shell});
 
+  /// Ключ экрана для добавленных подписей конструктора (по активной вкладке).
+  static const _tabKeys = ['home', 'catalog', 'cart', 'profile'];
+
   @override
   Widget build(BuildContext context) {
+    final screenKey = _tabKeys[shell.currentIndex.clamp(0, _tabKeys.length - 1)];
     return Scaffold(
-      body: shell,
+      body: Stack(
+        children: [
+          shell,
+          // Слой «➕ добавить текст» поверх активной вкладки (правится в конструкторе).
+          Positioned.fill(child: RemoteLabelsLayer(screenKey)),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: AppColors.grey200, width: 1)),
