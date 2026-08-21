@@ -148,8 +148,8 @@ def merch_site_image(request):
     f = request.FILES.get("image")
     if not f:
         return JsonResponse({"detail": "Нет файла"}, status=400)
-    if f.size > 5 * 1024 * 1024:
-        return JsonResponse({"detail": "Файл слишком большой (макс 5 МБ)"}, status=400)
+    if f.size > 40 * 1024 * 1024:
+        return JsonResponse({"detail": "Файл слишком большой (макс 40 МБ)"}, status=400)
     if not (f.content_type or "").startswith("image/"):
         return JsonResponse({"detail": "Нужен файл-изображение"}, status=400)
     obj, _ = SiteContent.objects.get_or_create(key=key)
@@ -276,8 +276,8 @@ def _apply_banner_fields(b, post, files):
         b.image_focal = v if v else "50% 50%"
     f = files.get("image")
     if f:
-        if f.size > 5 * 1024 * 1024:
-            raise ValueError("Файл слишком большой (макс 5 МБ)")
+        if f.size > 40 * 1024 * 1024:
+            raise ValueError("Файл слишком большой (макс 40 МБ)")
         if not (f.content_type or "").startswith("image/"):
             raise ValueError("Нужен файл-изображение")
         b.image = f
