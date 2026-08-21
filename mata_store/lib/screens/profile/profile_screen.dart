@@ -78,7 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         return Scaffold(
           backgroundColor: AppColors.white,
           appBar: AppBar(
-            title: Text(
+            title: const RemoteText(
+              'app.profile.title',
               'ПРОФИЛЬ',
               style: TextStyle(
                 fontSize: 20,
@@ -641,12 +642,14 @@ class _OrdersTab extends StatelessWidget {
                   color: AppColors.grey200,
                 ),
                 SizedBox(height: 12),
-                Text(
+                RemoteText(
+                  'app.profile.orders.emptyTitle',
                   'Заказов пока нет',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 SizedBox(height: 4),
-                Text(
+                RemoteText(
+                  'app.profile.orders.emptySub',
                   'Ваши заказы появятся здесь',
                   style: TextStyle(fontSize: 13, color: AppColors.grey600),
                 ),
@@ -776,12 +779,14 @@ class _WishlistTab extends StatelessWidget {
               children: const [
                 Icon(Icons.favorite_border, size: 56, color: AppColors.grey200),
                 SizedBox(height: 12),
-                Text(
+                RemoteText(
+                  'app.profile.wishlist.emptyTitle',
                   'Избранное пусто',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 SizedBox(height: 4),
-                Text(
+                RemoteText(
+                  'app.profile.wishlist.emptySub',
                   'Добавляйте понравившиеся товары',
                   style: TextStyle(fontSize: 13, color: AppColors.grey600),
                 ),

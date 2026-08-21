@@ -164,7 +164,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ),
           Expanded(
             child: items.isEmpty
-                ? const Center(child: Text('Нет товаров'))
+                ? const Center(
+                    child: RemoteText('app.catalog.emptyProducts', 'Нет товаров'))
                 : ReorderableGridView.builder(
                     padding: const EdgeInsets.all(16),
                     gridDelegate: _catalogGrid,

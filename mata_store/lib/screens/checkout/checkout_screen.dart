@@ -1107,7 +1107,8 @@ class _ReviewStep extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                const RemoteText(
+                  'app.checkout.pointsLabel',
                   'Баллы',
                   style: TextStyle(fontSize: 13, color: AppColors.grey600),
                 ),
@@ -1126,7 +1127,8 @@ class _ReviewStep extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              const RemoteText(
+                'app.checkout.total',
                 'Итого',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
