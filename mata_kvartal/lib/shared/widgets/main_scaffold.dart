@@ -27,10 +27,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     if (location.startsWith('/map')) return 0;
     if (location.startsWith('/run')) return 1;
     if (location.startsWith('/leaderboard')) return 2;
-    if (location.startsWith('/club')) return 3;
-    if (location.startsWith('/profile')) return 4;
-    if (location.startsWith('/races')) return 5;
-    if (location.startsWith('/tools')) return 6;
+    // «Старты» живут внутри Клуба, «Сервис» — внутри Профиля: подсвечиваем
+    // владельца раздела, чтобы вкладка не «гасла» при переходе вглубь.
+    if (location.startsWith('/club') || location.startsWith('/races')) return 3;
+    if (location.startsWith('/profile') || location.startsWith('/tools')) return 4;
     return 0;
   }
 
@@ -104,8 +104,9 @@ class _KvartalNavBar extends StatelessWidget {
             top: false,
             child: SizedBox(
               height: 62,
-              // Порядок слева→направо: Карта · Рейтинг · Инструменты · [БЕГ центр] ·
-              // Старты · Клуб · Профиль. «Бег» — акцентная центральная кнопка (3+центр+3).
+              // Порядок слева→направо: Карта · Рейтинг · [БЕГ центр] · Клуб · Профиль.
+              // Пять пунктов — рекомендованный максимум; «Бег» остаётся акцентной
+              // центральной кнопкой (2+центр+2).
               child: Row(
                 children: [
                   _NavItem(
@@ -122,23 +123,9 @@ class _KvartalNavBar extends StatelessWidget {
                     isActive: currentIndex == 2,
                     onTap: () => onTap(2),
                   ),
-                  _NavItem(
-                    icon: CupertinoIcons.wrench,
-                    activeIcon: CupertinoIcons.wrench_fill,
-                    label: AppStrings.tabTools,
-                    isActive: currentIndex == 6,
-                    onTap: () => onTap(6),
-                  ),
                   _RunNavItem(
                     isActive: currentIndex == 1,
                     onTap: () => onTap(1),
-                  ),
-                  _NavItem(
-                    icon: CupertinoIcons.calendar,
-                    activeIcon: CupertinoIcons.calendar_today,
-                    label: AppStrings.tabEvents,
-                    isActive: currentIndex == 5,
-                    onTap: () => onTap(5),
                   ),
                   _NavItem(
                     icon: CupertinoIcons.person_2,

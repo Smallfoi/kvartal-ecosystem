@@ -90,6 +90,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     const SizedBox(height: 12),
                     const _ShoesCard(),
                     const SizedBox(height: 12),
+                    // «Сервис» больше не отдельная вкладка внизу (D-45): вход сюда.
+                    _SettingsTile(
+                      icon: CupertinoIcons.wrench,
+                      label: 'Сервис · инструменты бегуна',
+                      onTap: () => context.push('/tools'),
+                    ),
                     _AccountCard(user: user),
                     const SizedBox(height: 24),
                     Text(

@@ -424,6 +424,10 @@ class _DiscoverBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Календарь забегов не зависит от членства в клубе — вход виден и здесь,
+        // иначе без клуба раздел оказался бы недоступен вовсе.
+        const _RacesEntryCard(),
+        const SizedBox(height: 14),
         _StatusCard(
           icon: CupertinoIcons.person_2_fill,
           title:
@@ -504,6 +508,9 @@ class _MyClubBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // «Старты» больше не отдельная вкладка внизу (D-45): вход сюда.
+        const _RacesEntryCard(),
+        const SizedBox(height: 14),
         if (club.isOwner) ...[
           _OwnerToolsCard(club: club),
           const SizedBox(height: 14),
@@ -1024,6 +1031,64 @@ class _ClubTerritoryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Вход в календарь забегов. Раздел уехал из нижней панели, но остался
+/// самостоятельным маршрутом `/races` — ссылки и «назад» работают как раньше.
+class _RacesEntryCard extends StatelessWidget {
+  const _RacesEntryCard();
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: () => context.push('/races'),
+    child: Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.soft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              CupertinoIcons.calendar,
+              size: 18,
+              color: AppColors.accentInk,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Старты',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Календарь забегов',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            CupertinoIcons.chevron_right,
+            size: 18,
+            color: AppColors.faint,
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _OwnerToolsCard extends StatelessWidget {
@@ -2067,15 +2132,15 @@ class _ClubBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.22),
+      color: AppColors.glassPaper,
       borderRadius: BorderRadius.circular(999),
       border: Border.all(color: AppColors.line),
     ),
     child: Text(
       label,
       // Тёмный текст по цветной плашке: цветной по цветному не проходит норму.
-      style: const TextStyle(
-        color: AppColors.ink,
+      style: TextStyle(
+        color: color,
         fontSize: 12,
         fontWeight: FontWeight.w800,
       ),

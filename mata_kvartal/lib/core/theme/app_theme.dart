@@ -93,6 +93,11 @@ class AppTheme {
         surface: AppColors.paper,
         onSurface: AppColors.ink,
         surfaceContainerHighest: AppColors.soft,
+        // Тональные кнопки (IconButton.filledTonal) берут цвет отсюда. Без явных
+        // значений Material выводил ярко-голубой контейнер, и одинаковые по смыслу
+        // кнопки выглядели по-разному.
+        secondaryContainer: AppColors.soft,
+        onSecondaryContainer: AppColors.accentInk,
         outline: AppColors.line,
         error: AppColors.error,
         onError: AppColors.onDark,
