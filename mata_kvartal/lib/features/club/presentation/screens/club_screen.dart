@@ -53,12 +53,20 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
       body: RefreshIndicator(
         onRefresh: () => ref.read(clubProvider.notifier).refresh(),
         child: CustomScrollView(
+          // Свой ключ хранения прокрутки: иначе экран делит позицию с Профилем.
+          key: const PageStorageKey<String>('club-scroll'),
           slivers: [
             _ClubSliverHeader(club: state.myClub),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  // «Старты» — не часть клуба, а самостоятельный раздел (D-45).
+                  // Держим его здесь, а не внутри тел «клуб есть»/«клуба нет»:
+                  // так он виден в любом состоянии экрана и не зависит от того,
+                  // как эти тела устроены внутри.
+                  const _RacesEntryCard(),
+                  const SizedBox(height: 14),
                   if (state.error != null) ...[
                     _StatusCard(
                       icon: CupertinoIcons.exclamationmark_triangle_fill,
@@ -424,10 +432,6 @@ class _DiscoverBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Календарь забегов не зависит от членства в клубе — вход виден и здесь,
-        // иначе без клуба раздел оказался бы недоступен вовсе.
-        const _RacesEntryCard(),
-        const SizedBox(height: 14),
         _StatusCard(
           icon: CupertinoIcons.person_2_fill,
           title:
@@ -508,9 +512,6 @@ class _MyClubBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // «Старты» больше не отдельная вкладка внизу (D-45): вход сюда.
-        const _RacesEntryCard(),
-        const SizedBox(height: 14),
         if (club.isOwner) ...[
           _OwnerToolsCard(club: club),
           const SizedBox(height: 14),
