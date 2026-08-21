@@ -323,6 +323,12 @@ img {
   transform-origin: 50% 38%;
 }
 
+/* Когда в конструкторе героя задан фон (фото/видео) — прячем дефолтное фото,
+   чтобы был виден фон-слой (.staw-bg-layer). Без фона — показываем фото как обычно. */
+.hero-media.staw-bg-on > img[data-edit-img] {
+  opacity: 0;
+}
+
 .hero-scrim {
   position: absolute;
   inset: 0;
