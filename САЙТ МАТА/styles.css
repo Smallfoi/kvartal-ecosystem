@@ -323,9 +323,13 @@ img {
   transform-origin: 50% 38%;
 }
 
-/* Когда в конструкторе героя задан фон (фото/видео) — прячем дефолтное фото,
-   чтобы был виден фон-слой (.staw-bg-layer). Без фона — показываем фото как обычно. */
-.hero-media.staw-bg-on > img[data-edit-img] {
+/* Когда в конструкторе героя задан фон — прячем дефолтное фото, чтобы был виден фон.
+   ВИДЕО: refreshBg вешает класс staw-bg-on (слой .staw-bg-layer).
+   ФОТО: refreshBg НЕ вешает staw-bg-on, а ставит inline background-image на hero-media —
+   ловим это через [style*="background-image"]. Без фона — показываем фото как обычно.
+   (У героя больше нет data-edit-img — фон только через «Фон».) */
+.hero-media.staw-bg-on > img,
+.hero-media[style*="background-image"] > img {
   opacity: 0;
 }
 
