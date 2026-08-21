@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/remote_content_provider.dart';
 import '../theme/app_theme.dart';
 import '../util/console_bridge.dart';
+import 'remote_anim.dart';
 
 /// Фото приложения, редактируемое из «Конструктора» (мини-CMS, ключ `app.*`).
 ///
@@ -80,6 +81,7 @@ class RemoteImage extends StatelessWidget {
         : 0.0;
     final off = prov.posOffset(contentKey); // смещение перетаскивания (прод + правка)
     final isHidden = prov.hidden(contentKey); // скрыто в конструкторе
+    final animName = prov.anim(contentKey); // анимация появления
 
     void editTap() => postEditImage(
           contentKey,
@@ -93,14 +95,17 @@ class RemoteImage extends StatelessWidget {
       valueListenable: consoleEditNotifier,
       builder: (context, editing, _) {
         if (!editing) {
-          // «Просмотр»/прод: скрытое фото не показываем; иначе — со смещением.
+          // «Просмотр»/прод: скрытое фото не показываем; иначе — со смещением + анимацией.
           if (isHidden) return const SizedBox.shrink();
-          return off == Offset.zero ? img : Transform.translate(offset: off, child: img);
+          final positioned =
+              off == Offset.zero ? img : Transform.translate(offset: off, child: img);
+          return animatePreset(animName, positioned);
         }
         return _EditableImage(
           contentKey: contentKey,
           baseOffset: off,
           hidden: isHidden,
+          animName: animName,
           onEdit: editTap,
           child: img,
         );
@@ -123,6 +128,7 @@ class _EditableImage extends StatefulWidget {
   final String contentKey;
   final Offset baseOffset;
   final bool hidden;
+  final String animName;
   final VoidCallback onEdit;
   final Widget child;
 
@@ -130,6 +136,7 @@ class _EditableImage extends StatefulWidget {
     required this.contentKey,
     required this.baseOffset,
     required this.hidden,
+    required this.animName,
     required this.onEdit,
     required this.child,
   });
@@ -148,44 +155,58 @@ class _EditableImageState extends State<_EditableImage> {
     context.read<RemoteContentProvider>().applyDraft('pos.${widget.contentKey}', v);
   }
 
-  void _setHidden(bool on) {
-    final v = on ? '1' : '';
-    postDraft('hidden.${widget.contentKey}', v);
-    context.read<RemoteContentProvider>().applyDraft('hidden.${widget.contentKey}', v);
-  }
+  void _openSheet(BuildContext context) => showElementSheet(
+        context,
+        contentKey: widget.contentKey,
+        animName: widget.animName,
+        hidden: widget.hidden,
+      );
 
-  Widget _badge(IconData icon, Color bg, VoidCallback onTap) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          child: Icon(icon, size: 12, color: Colors.white),
+  /// Одна кнопка «⋯» ВНУТРИ границ (надёжно нажимается) → шторка действий.
+  Widget _menuButton(BuildContext context, Color bg) => Positioned(
+        top: 0,
+        right: 0,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _openSheet(context),
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: bg,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1.5),
+            ),
+            child: const Icon(Icons.more_horiz, size: 15, color: Colors.white),
+          ),
         ),
       );
 
   @override
   Widget build(BuildContext context) {
     final off = widget.baseOffset + _drag;
+    final built = widget.hidden ? _hiddenView(context, off) : _activeView(context, off);
+    return animatePreset(widget.animName, built);
+  }
 
-    if (widget.hidden) {
-      return Transform.translate(
-        offset: off,
+  Widget _hiddenView(BuildContext context, Offset off) {
+    return Transform.translate(
+      offset: off,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openSheet(context),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             Opacity(opacity: 0.35, child: widget.child),
-            Positioned(
-              left: -9,
-              top: -9,
-              child: _badge(Icons.visibility, const Color(0xFF16A34A), () => _setHidden(false)),
-            ),
+            _menuButton(context, const Color(0xFF16A34A)),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
+  Widget _activeView(BuildContext context, Offset off) {
     return Transform.translate(
       offset: off,
       child: GestureDetector(
@@ -219,11 +240,7 @@ class _EditableImageState extends State<_EditableImage> {
               ),
               child: widget.child,
             ),
-            Positioned(
-              left: -9,
-              top: -9,
-              child: _badge(Icons.visibility_off, const Color(0xFF6B7280), () => _setHidden(true)),
-            ),
+            _menuButton(context, const Color(0xFF0A84FF)),
           ],
         ),
       ),
