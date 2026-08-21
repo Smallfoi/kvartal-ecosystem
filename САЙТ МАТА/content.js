@@ -56,7 +56,11 @@
       ".staw-bg-layer{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}" +
       ".staw-bg-layer video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s ease}" +
       ".staw-bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5))}" +
-      "[data-edit-bg].staw-bg-on>:not(.staw-bg-layer){position:relative;z-index:1}";
+      "[data-edit-bg].staw-bg-on>:not(.staw-bg-layer){position:relative;z-index:1}" +
+      // Исключение: НАМЕРЕННО абсолютные декоративные слои (бегущая строка «МАТА») НЕ
+      // переводим в relative — иначе они начинают занимать место в grid и высота секции
+      // растёт + перекрывает текст (баг «видео на motion → текст исчезает + высота»).
+      "[data-edit-bg].staw-bg-on>.brand-motion-word{position:absolute!important}";
     (document.head || document.documentElement).appendChild(st);
   }
 

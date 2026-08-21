@@ -53,8 +53,9 @@
     // панель перекрыта текстом-оверлеем, навести на неё сложно. Виден только активный слой.
     "html.staw-edit .eco-photo>.staw-bg-btn{opacity:1}" +
     // Герой (главный экран): фон-медиа накрыт контентом (hover не доходит) + верх под
-    // фикс-навбаром. Кнопку «Фон» показываем ВСЕГДА и опускаем НИЖЕ навбара (справа-вверху).
-    "html.staw-edit [data-edit-bg='hero']>.staw-bg-btn{opacity:1;top:78px!important;right:14px!important;left:auto!important}" +
+    // фикс-навбаром. Кнопку «Фон» показываем ВСЕГДА и опускаем НИЖЕ навбара (слева-вверху —
+    // стандартное место кнопки «Фон»).
+    "html.staw-edit [data-edit-bg='hero']>.staw-bg-btn{opacity:1;top:78px!important;left:14px!important;right:auto!important}" +
     "html.staw-edit .staw-size-btn{background:rgba(37,99,235,.95)}" +
     // «Добавить блок» — плитка ВНУТРИ сетки (не ломает раскладку секции).
     "html.staw-edit .staw-add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:64px;padding:14px;" +

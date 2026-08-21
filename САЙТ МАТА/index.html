@@ -109,7 +109,9 @@
           <!-- Слот под hero-видео: когда появится ролик в Референсы/Видео — заменить
                <img> на <video autoplay muted loop playsinline poster="...">…</video>.
                Разметка/анимация рассчитаны на обе версии. -->
-          <img src="media/staw-hero.jpg" alt="" data-edit-img="hero.image" />
+          <!-- Дефолт-фото героя. Смена фото/видео стартовой — ТОЛЬКО через кнопку «Фон»
+               (data-edit-bg="hero"); отдельный клик-по-фото (data-edit-img) убран. -->
+          <img src="media/staw-hero.jpg" alt="" />
           <span class="hero-scrim" aria-hidden="true"></span>
         </div>
         <div class="hero-content">
