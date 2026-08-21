@@ -672,7 +672,7 @@
     el.setAttribute("data-hideable", "xl." + sid);
     el.setAttribute("data-extra", "1");
     el.textContent = "Новая надпись";
-    el.style.position = "absolute"; el.style.left = "24px"; el.style.zIndex = "40";
+    el.style.position = "absolute"; el.style.left = "24px"; el.style.zIndex = "20";
     return el;
   }
   function materializeLabels(list) {

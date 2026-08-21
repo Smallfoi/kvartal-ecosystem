@@ -300,7 +300,7 @@
       el.className = "staw-newlabel";
       el.setAttribute("data-edit", "xl." + it.id);
       el.setAttribute("data-hideable", "xl." + it.id);
-      el.style.cssText = "position:absolute;left:24px;top:24px;z-index:40;font-weight:600;font-size:18px;line-height:1.3;max-width:82%";
+      el.style.cssText = "position:absolute;left:24px;top:24px;z-index:20;font-weight:600;font-size:18px;line-height:1.3;max-width:82%";
       section.appendChild(el);
     });
   }
