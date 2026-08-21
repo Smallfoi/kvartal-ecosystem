@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../models/loyalty.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/loyalty_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/loyalty_card.dart';
 import '../../widgets/remote_text.dart';
 
 class LoyaltyScreen extends StatelessWidget {
@@ -50,10 +52,9 @@ class LoyaltyScreen extends StatelessWidget {
                 SliverList.separated(
                   itemCount: loyalty.transactions.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) =>
-                      _TxnTile(tx: loyalty.transactions[i])
-                          .animate(delay: (i * 30).ms)
-                          .fadeIn(duration: 250.ms),
+                  itemBuilder: (context, i) => _TxnTile(
+                    tx: loyalty.transactions[i],
+                  ).animate(delay: (i * 30).ms).fadeIn(duration: 250.ms),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
@@ -85,8 +86,11 @@ class _Header extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Icons.arrow_back,
-                        color: Colors.white, size: 22),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   RemoteText(
@@ -101,37 +105,27 @@ class _Header extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${loyalty.balance}',
-                    style: TextStyle(
-                      fontSize: 56,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1,
-                    ),
+              const SizedBox(height: 22),
+              // Виртуальная карта лояльности: 3D-переворот по эталону —
+              // лицо с баллами, оборот с QR для кассы.
+              Center(
+                child: Consumer<AuthProvider>(
+                  builder: (context, auth, _) => LoyaltyCard3D(
+                    balance: loyalty.balance,
+                    levelLabel: loyalty.level.label,
+                    holderName: auth.user?.name ?? 'Гость МАТА',
+                    qrData:
+                        'MATA:LOYALTY:${auth.user?.id ?? ''}:${loyalty.balance}',
                   ),
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      'баллов',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white54,
-                      ),
-                    ),
-                  ),
-                ],
-              ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.05),
-              const SizedBox(height: 4),
-              const RemoteText(
-                'app.loyalty.rule',
-                '1 балл = 1 ₽ скидки · до 30% от заказа',
-                style: TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                ),
+              ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.06),
+              const SizedBox(height: 14),
+              Center(
+                child: const RemoteText(
+                  'app.loyalty.rule',
+                  '1 балл = 1 ₽ скидки · до 30% от заказа · нажми карту — QR',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                ),
               ),
             ],
           ),
@@ -165,22 +159,29 @@ class _LevelCard extends StatelessWidget {
               Text(
                 'Уровень: ${level.label}',
                 style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w700),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 color: AppColors.grey100,
-                child: Text('кэшбэк ${level.cashbackPercent}%',
-                    style: const TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.w600)),
+                child: Text(
+                  'кэшбэк ${level.cashbackPercent}%',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text(level.perk,
-              style: const TextStyle(fontSize: 12, color: AppColors.grey600)),
+          Text(
+            level.perk,
+            style: const TextStyle(fontSize: 12, color: AppColors.grey600),
+          ),
           if (next != null) ...[
             const SizedBox(height: 14),
             ClipRRect(
@@ -189,8 +190,7 @@ class _LevelCard extends StatelessWidget {
                 value: loyalty.levelProgress,
                 minHeight: 6,
                 backgroundColor: AppColors.grey200,
-                valueColor:
-                    const AlwaysStoppedAnimation(AppColors.black),
+                valueColor: const AlwaysStoppedAnimation(AppColors.black),
               ),
             ),
             const SizedBox(height: 6),
@@ -213,11 +213,21 @@ class _EarnHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      ('app.loyalty.earn1', 'Бег и территории в «Квартал»', Icons.directions_run),
-      ('app.loyalty.earn2', 'Покупки: +1 балл за каждые 10 ₽',
-          Icons.shopping_bag_outlined),
-      ('app.loyalty.earn3', 'Отзыв с фото: +10 баллов',
-          Icons.rate_review_outlined),
+      (
+        'app.loyalty.earn1',
+        'Бег и территории в «Квартал»',
+        Icons.directions_run,
+      ),
+      (
+        'app.loyalty.earn2',
+        'Покупки: +1 балл за каждые 10 ₽',
+        Icons.shopping_bag_outlined,
+      ),
+      (
+        'app.loyalty.earn3',
+        'Отзыв с фото: +10 баллов',
+        Icons.rate_review_outlined,
+      ),
     ];
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -226,27 +236,38 @@ class _EarnHint extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RemoteText('app.loyalty.earnTitle', 'КАК ЗАРАБОТАТЬ БАЛЛЫ',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                  color: AppColors.grey600)),
+          RemoteText(
+            'app.loyalty.earnTitle',
+            'КАК ЗАРАБОТАТЬ БАЛЛЫ',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+              color: AppColors.grey600,
+            ),
+          ),
           const SizedBox(height: 10),
-          ...items.map((it) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Icon(it.$3, size: 16, color: AppColors.black),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: RemoteText(it.$1, it.$2,
-                          style: const TextStyle(
-                              fontSize: 13, color: AppColors.black)),
+          ...items.map(
+            (it) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(it.$3, size: 16, color: AppColors.black),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: RemoteText(
+                      it.$1,
+                      it.$2,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.black,
+                      ),
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -287,22 +308,32 @@ class _TxnTile extends StatelessWidget {
               shape: BoxShape.circle,
               color: tx.source.isRunner ? AppColors.black : AppColors.grey100,
             ),
-            child: Icon(_icon,
-                size: 18,
-                color: tx.source.isRunner ? Colors.white : AppColors.black),
+            child: Icon(
+              _icon,
+              size: 18,
+              color: tx.source.isRunner ? Colors.white : AppColors.black,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tx.description,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(
+                  tx.description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(_date(tx.createdAt),
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.grey400)),
+                Text(
+                  _date(tx.createdAt),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.grey400,
+                  ),
+                ),
               ],
             ),
           ),
@@ -321,8 +352,19 @@ class _TxnTile extends StatelessWidget {
 
   String _date(DateTime dt) {
     const months = [
-      '', 'янв', 'фев', 'мар', 'апр', 'мая', 'июн',
-      'июл', 'авг', 'сен', 'окт', 'ноя', 'дек',
+      '',
+      'янв',
+      'фев',
+      'мар',
+      'апр',
+      'мая',
+      'июн',
+      'июл',
+      'авг',
+      'сен',
+      'окт',
+      'ноя',
+      'дек',
     ];
     return '${dt.day} ${months[dt.month]} ${dt.year}';
   }
