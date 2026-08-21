@@ -29,8 +29,12 @@ class AppColors {
 
   // ── Текст ─────────────────────────────────────────────────────────────────
   static const ink = Color(0xFF111317);
-  static const muted = Color(0xFF6F7278);
-  static const faint = Color(0xFF8A8D93);
+  // Вторичный и третий уровни затемнены против сайта: замерено по WCAG на нашем
+  // фоне — #6F7278 давал 4.28:1, #8A8D93 всего 2.95:1 при норме 4.5:1.
+  // Стало 5.10:1 и 4.54:1 (D-43).
+  static const muted = Color(0xFF63666C);
+  static const faint = Color(0xFF6A6E75);
+  // Только для по-настоящему недоступных элементов: у них порог не действует.
   static const disabled = Color(0xFFA9ACB1);
   static const onDark = Color(0xFFFFFFFF);
 
@@ -38,11 +42,14 @@ class AppColors {
   static const line = Color(0x1F111317);
 
   // ── Акценты ───────────────────────────────────────────────────────────────
-  /// Технический голубой — главный сигнал (фокус, запись, ссылки).
+  /// Технический голубой — ТОЛЬКО заливка крупных элементов, и поверх него
+  /// всегда тёмный текст: белый по нему даёт 2.19:1 при норме 4.5:1, а как
+  /// мелкая иконка или обводка он даёт 2.15:1 при норме 3:1 (D-43).
   static const accent = Color(0xFF57BCD8);
 
-  /// Затемнённый голубой: тем же цветом можно писать текст по светлому.
-  static const accentInk = Color(0xFF167A95);
+  /// Затемнённый голубой — всё мелкое: подписи, ссылки, значимые иконки,
+  /// обводки. 5.46:1 на фоне против 4.38:1 у исходного #167A95.
+  static const accentInk = Color(0xFF136A82);
 
   /// Лайм — спортивный сигнал, дозированно (главное действие, свои зоны).
   static const lime = Color(0xFFDFF45F);
@@ -59,9 +66,11 @@ class AppColors {
 
   // ── Статусы ───────────────────────────────────────────────────────────────
   // Цвет здесь несёт смысл, а не оформление: только состояния, никогда — декор.
-  static const success = Color(0xFF2E9E5B);
-  static const warning = Color(0xFFE0A325);
-  static const error = Color(0xFFD5453B);
+  // Затемнены до нормы: на «бумаге» было 3.35 / 2.19 / 4.35 при 4.5:1 для
+  // текста и 3:1 для значимых иконок. Стало 5.26 / 5.27 / 6.04 (D-43).
+  static const success = Color(0xFF1F7A44);
+  static const warning = Color(0xFF8F6209);
+  static const error = Color(0xFFB33328);
   static const info = accent;
 
   // ── Зоны на карте ─────────────────────────────────────────────────────────
@@ -80,8 +89,10 @@ class AppColors {
   // ── Переходные псевдонимы ─────────────────────────────────────────────────
   // Имена из тёмной темы. На них завязано ~720 мест в экранах; удалять их будем
   // по мере перевода экранов на новые имена, иначе пришлось бы менять всё разом.
-  static const electricBlue = accent;
-  static const accentBlue = accent;
+  // Указывают на ЗАТЕМНЁННЫЙ голубой, а не на заливочный: этими именами набраны
+  // мелкий текст и иконки (102 места), а заливочный #57BCD8 даёт там 2.15:1.
+  static const electricBlue = accentInk;
+  static const accentBlue = accentInk;
   static const iceWhite = soft;
   static const bgDark = bg;
   static const bgSurface = paper;

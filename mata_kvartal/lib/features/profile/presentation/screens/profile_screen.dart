@@ -190,13 +190,7 @@ class _ProfileAppBar extends ConsumerWidget {
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.soft, AppColors.bgDark],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          decoration: const BoxDecoration(color: AppColors.bg),
           child: SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -242,10 +236,9 @@ class _ProfileAppBar extends ConsumerWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.gradientStart, AppColors.gradientEnd],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.soft,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: AppColors.line),
                   ),
                   child: Text(
                     city,
@@ -821,15 +814,9 @@ class _PointsCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.soft, AppColors.bgCard],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.electricBlue.withValues(alpha: 0.35),
-          ),
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.line),
         ),
         child: Row(
           children: [
@@ -962,13 +949,9 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.soft, AppColors.bgCard],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.electricBlue.withValues(alpha: 0.35),
-                ),
+                color: AppColors.paper,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: AppColors.line),
               ),
               child: Row(
                 children: [

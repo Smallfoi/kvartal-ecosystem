@@ -214,12 +214,23 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 from django.urls import reverse_lazy  # noqa: E402
 
 UNFOLD = {
-    "SITE_TITLE": "МАТА Админка",
+    "SITE_TITLE": "МАТА Админ",
     "SITE_HEADER": "МАТА — администрирование",
     "SITE_SUBHEADER": "Экосистема: Квартал · Store · Сайт",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,
     "DASHBOARD_CALLBACK": "config.dashboard.dashboard_callback",
+    # Нижнее меню пользователя (кнопка «admin» внизу слева, рядом с выбором темы):
+    # «Настройки» → свой аккаунт (почта, имя, смена пароля). Профиль/пароль — тут, не отдельно.
+    "ACCOUNT": {
+        "navigation": [
+            {"title": "Настройки",
+             "link": lambda request: (
+                 reverse_lazy("admin:auth_user_change", args=[request.user.pk])
+                 if getattr(request.user, "pk", None) else reverse_lazy("admin:index")
+             )},
+        ],
+    },
     "COLORS": {
         # Брендовый electric blue (#0A84FF) как акцент — оттенки tailwind.
         "primary": {
@@ -240,6 +251,15 @@ UNFOLD = {
         "show_search": True,
         "show_all_applications": False,
         "navigation": [
+            {
+                "title": "Обзор",
+                "separator": True,
+                "items": [
+                    # Дашборд — сводка по экосистеме (заказы, пользователи, баллы, античит…).
+                    {"title": "Дашборд", "icon": "space_dashboard",
+                     "link": reverse_lazy("admin:index")},
+                ],
+            },
             {
                 "title": "Каталог",
                 "separator": True,

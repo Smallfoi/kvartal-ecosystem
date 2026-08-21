@@ -78,12 +78,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
       // Фоновый градиент (синий сверху → чёрный) — как на профиле/клубе/рейтинге.
       body: DecoratedBox(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.soft, AppColors.bgDark],
-            stops: [0.0, 0.32],
-          ),
+          color: AppColors.bg,
         ),
         child: SafeArea(
           child: RefreshIndicator(
