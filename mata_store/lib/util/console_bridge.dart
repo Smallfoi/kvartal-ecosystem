@@ -29,6 +29,11 @@ void onConsoleSetEditMode(void Function(bool on) cb) => impl.onConsoleSetEditMod
 /// Отправить новый порядок товаров (площадка app) родителю-конструктору.
 void postReorder(List<String> productIds) => impl.postReorder(productIds);
 
+/// Черновая правка «ключ→значение» без модалки (позиция `pos.<key>`, `xlabels` …).
+/// Тот же механизм, что draftContent у editor.js сайта: копится в конструкторе и
+/// публикуется на бэкенд по «Опубликовать».
+void postDraft(String key, String value) => impl.postDraft(key, value);
+
 /// Клик по редактируемому тексту → правка в конструкторе (как editContent сайта).
 /// [color]/[hasColor] — текущий цвет текста, чтобы модалка предвыбрала его.
 void postEditContent(String key, String value,
