@@ -51,6 +51,7 @@ class RemoteText extends StatelessWidget {
     final col = parseHex(colorHex);
     final effStyle = col != null ? (style ?? const TextStyle()).copyWith(color: col) : style;
     final off = prov.posOffset(contentKey); // смещение перетаскивания (прод + правка)
+    final isHidden = prov.hidden(contentKey); // скрыт в конструкторе
 
     final text = Text(
       upper ? value.toUpperCase() : value,
@@ -63,7 +64,8 @@ class RemoteText extends StatelessWidget {
       valueListenable: consoleEditNotifier,
       builder: (context, editing, _) {
         if (!editing) {
-          // «Просмотр»/прод: применяем сохранённое смещение, тап проходит дальше.
+          // «Просмотр»/прод: скрытый элемент не показываем; иначе — со смещением.
+          if (isHidden) return const SizedBox.shrink();
           return off == Offset.zero ? text : Transform.translate(offset: off, child: text);
         }
         return _EditableText(
@@ -71,6 +73,7 @@ class RemoteText extends StatelessWidget {
           value: value,
           colorHex: colorHex,
           baseOffset: off,
+          hidden: isHidden,
           child: text,
         );
       },
@@ -86,6 +89,7 @@ class _EditableText extends StatefulWidget {
   final String value;
   final String colorHex;
   final Offset baseOffset;
+  final bool hidden;
   final Widget child;
 
   const _EditableText({
@@ -93,6 +97,7 @@ class _EditableText extends StatefulWidget {
     required this.value,
     required this.colorHex,
     required this.baseOffset,
+    required this.hidden,
     required this.child,
   });
 
@@ -111,9 +116,57 @@ class _EditableTextState extends State<_EditableText> {
     context.read<RemoteContentProvider>().applyDraft('pos.${widget.contentKey}', v);
   }
 
+  void _setHidden(bool on) {
+    final v = on ? '1' : '';
+    postDraft('hidden.${widget.contentKey}', v);
+    context.read<RemoteContentProvider>().applyDraft('hidden.${widget.contentKey}', v);
+  }
+
+  /// Круглый бейдж-кнопка в углу элемента (скрыть / вернуть).
+  Widget _badge(IconData icon, Color bg, VoidCallback onTap) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+        child: Icon(icon, size: 12, color: Colors.white),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final off = widget.baseOffset + _drag;
+
+    // Скрытый элемент в правке — бледный «призрак» + кнопка «вернуть» (в проде его нет).
+    if (widget.hidden) {
+      return Transform.translate(
+        offset: off,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Opacity(
+              opacity: 0.35,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFF9CA3AF)),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: widget.child,
+              ),
+            ),
+            Positioned(
+              left: -9,
+              top: -9,
+              child: _badge(Icons.visibility, const Color(0xFF16A34A), () => _setHidden(false)),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Transform.translate(
       offset: off,
       child: GestureDetector(
@@ -135,16 +188,27 @@ class _EditableTextState extends State<_EditableText> {
             _dragging = false;
           });
         },
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0x1A0A84FF),
-            border: Border.all(
-              color: _dragging ? const Color(0xFFFF2D9B) : const Color(0xFF0A84FF),
-              width: _dragging ? 1.8 : 1.4,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0x1A0A84FF),
+                border: Border.all(
+                  color: _dragging ? const Color(0xFFFF2D9B) : const Color(0xFF0A84FF),
+                  width: _dragging ? 1.8 : 1.4,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: widget.child,
             ),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: widget.child,
+            // Бейдж «скрыть» (глаз-перечёркнут) — в углу, чтобы не мешать тексту.
+            Positioned(
+              left: -9,
+              top: -9,
+              child: _badge(Icons.visibility_off, const Color(0xFF6B7280), () => _setHidden(true)),
+            ),
+          ],
         ),
       ),
     );
