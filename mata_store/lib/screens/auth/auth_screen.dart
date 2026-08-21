@@ -474,7 +474,8 @@ class _RegisterForm extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              child: Text(
+              child: RemoteText(
+                'app.auth.openDocs',
                 'Открыть документы',
                 style: TextStyle(
                   fontSize: 12,
