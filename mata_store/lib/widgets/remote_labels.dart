@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../providers/remote_content_provider.dart';
 import '../theme/app_theme.dart';
 import '../util/console_bridge.dart';
+import 'remote_anim.dart';
 import 'remote_text.dart';
 
 /// Слой ДОБАВЛЕННЫХ текстовых подписей поверх экрана — «➕ добавить текст», как на
@@ -82,6 +83,7 @@ class _AddedLabelState extends State<_AddedLabel> {
     final text = prov.text(_key, 'Новая надпись');
     final base = prov.posOffset(_key);
     final colorHex = prov.color(_key);
+    final animName = prov.anim(_key);
     final col = RemoteText.parseHex(colorHex);
     final label = Text(
       text,
@@ -92,7 +94,10 @@ class _AddedLabelState extends State<_AddedLabel> {
       return Positioned(
         left: 0,
         top: 0,
-        child: Transform.translate(offset: base, child: label),
+        child: Transform.translate(
+          offset: base,
+          child: animatePreset(animName, label),
+        ),
       );
     }
 
@@ -102,47 +107,62 @@ class _AddedLabelState extends State<_AddedLabel> {
       top: 0,
       child: Transform.translate(
         offset: off,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => postEditContent(_key, text, color: colorHex, hasColor: colorHex.isNotEmpty),
-          onPanStart: (_) => setState(() => _dragging = true),
-          onPanUpdate: (d) => setState(() => _drag += d.delta),
-          onPanEnd: (_) {
-            _commitPos(prov, base + _drag);
-            setState(() {
-              _drag = Offset.zero;
-              _dragging = false;
-            });
-          },
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: const Color(0x1A0A84FF),
-                  border: Border.all(
-                    color: _dragging ? const Color(0xFFFF2D9B) : const Color(0xFF0A84FF),
-                    width: _dragging ? 1.8 : 1.4,
+        child: animatePreset(
+          animName,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => postEditContent(_key, text, color: colorHex, hasColor: colorHex.isNotEmpty),
+            onPanStart: (_) => setState(() => _dragging = true),
+            onPanUpdate: (d) => setState(() => _drag += d.delta),
+            onPanEnd: (_) {
+              _commitPos(prov, base + _drag);
+              setState(() {
+                _drag = Offset.zero;
+                _dragging = false;
+              });
+            },
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0x1A0A84FF),
+                    border: Border.all(
+                      color: _dragging ? const Color(0xFFFF2D9B) : const Color(0xFF0A84FF),
+                      width: _dragging ? 1.8 : 1.4,
+                    ),
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(padding: const EdgeInsets.all(2), child: label),
                 ),
-                child: Padding(padding: const EdgeInsets.all(2), child: label),
-              ),
-              Positioned(
-                right: -9,
-                top: -9,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => _delete(prov),
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: const BoxDecoration(color: Color(0xFFFF2D5B), shape: BoxShape.circle),
-                    child: const Icon(Icons.close, size: 13, color: Colors.white),
+                // Одна кнопка «⋯» ВНУТРИ границ → шторка (удалить/анимация).
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => showElementSheet(
+                      context,
+                      contentKey: _key,
+                      animName: animName,
+                      hidden: false,
+                      showHide: false,
+                      onDelete: () => _delete(prov),
+                    ),
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0A84FF),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: const Icon(Icons.more_horiz, size: 15, color: Colors.white),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -123,22 +123,31 @@ class _EditableTextState extends State<_EditableText> {
     context.read<RemoteContentProvider>().applyDraft('pos.${widget.contentKey}', v);
   }
 
-  void _setHidden(bool on) {
-    final v = on ? '1' : '';
-    postDraft('hidden.${widget.contentKey}', v);
-    context.read<RemoteContentProvider>().applyDraft('hidden.${widget.contentKey}', v);
-  }
+  void _openSheet(BuildContext context) => showElementSheet(
+        context,
+        contentKey: widget.contentKey,
+        animName: widget.animName,
+        hidden: widget.hidden,
+      );
 
-  /// Круглый бейдж-кнопка в углу элемента (скрыть / вернуть).
-  Widget _badge(IconData icon, Color bg, VoidCallback onTap) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-        child: Icon(icon, size: 12, color: Colors.white),
+  /// Единая кнопка «⋯» ВНУТРИ границ элемента (надёжно нажимается) → шторка действий.
+  Widget _menuButton(BuildContext context, Color bg) {
+    return Positioned(
+      top: 0,
+      right: 0,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openSheet(context),
+        child: Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: bg,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 1.5),
+          ),
+          child: const Icon(Icons.more_horiz, size: 15, color: Colors.white),
+        ),
       ),
     );
   }
@@ -146,34 +155,34 @@ class _EditableTextState extends State<_EditableText> {
   @override
   Widget build(BuildContext context) {
     final off = widget.baseOffset + _drag;
-    final built = widget.hidden ? _hiddenView(off) : _activeView(context, off);
+    final built = widget.hidden ? _hiddenView(context, off) : _activeView(context, off);
     // Превью анимации появления прямо в правке (ключ по пресету → перезапуск при смене).
     return animatePreset(widget.animName, built);
   }
 
-  // Скрытый элемент в правке — бледный «призрак» + кнопка «вернуть» (в проде его нет).
-  Widget _hiddenView(Offset off) {
+  // Скрытый элемент в правке — бледный «призрак»; тап/⋯ → шторка (там «Вернуть»).
+  Widget _hiddenView(BuildContext context, Offset off) {
     return Transform.translate(
       offset: off,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Opacity(
-            opacity: 0.35,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF9CA3AF)),
-                borderRadius: BorderRadius.circular(4),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openSheet(context),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Opacity(
+              opacity: 0.35,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFF9CA3AF)),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: widget.child,
               ),
-              child: widget.child,
             ),
-          ),
-          Positioned(
-            left: -9,
-            top: -9,
-            child: _badge(Icons.visibility, const Color(0xFF16A34A), () => _setHidden(false)),
-          ),
-        ],
+            _menuButton(context, const Color(0xFF16A34A)),
+          ],
+        ),
       ),
     );
   }
@@ -214,19 +223,8 @@ class _EditableTextState extends State<_EditableText> {
               ),
               child: widget.child,
             ),
-            // Бейдж «скрыть» (глаз-перечёркнут) — слева-вверху.
-            Positioned(
-              left: -9,
-              top: -9,
-              child: _badge(Icons.visibility_off, const Color(0xFF6B7280), () => _setHidden(true)),
-            ),
-            // Бейдж «✨ анимация» — справа-вверху, открывает выбор пресета появления.
-            Positioned(
-              right: -9,
-              top: -9,
-              child: _badge(Icons.auto_awesome, const Color(0xFF7C3AED),
-                  () => showAnimPicker(context, widget.contentKey, widget.animName)),
-            ),
+            // Одна кнопка «⋯» справа-вверху ВНУТРИ границ → шторка (анимация/скрыть).
+            _menuButton(context, const Color(0xFF0A84FF)),
           ],
         ),
       ),
