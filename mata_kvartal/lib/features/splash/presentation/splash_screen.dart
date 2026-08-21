@@ -45,7 +45,11 @@ class _KvartalSplashContent extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const KvartalLogoMark(size: 112, glow: true)
+        const KvartalLogoMark(
+              size: 112,
+              glow: true,
+              outline: Color(0xFFEDEFE8), // тёмный фон заставки
+            )
             .animate(onPlay: (controller) => controller.repeat(reverse: true))
             .scaleXY(
               begin: 1.0,

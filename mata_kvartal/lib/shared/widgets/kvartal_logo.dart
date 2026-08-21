@@ -1,79 +1,183 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 
-const kvartalLogoAsset = 'assets/brand/kvartal-logo-transparent.png';
-
-class KvartalLogoMark extends StatelessWidget {
+/// Знак Квартала «Последний метр» (вариант А3, утверждён владельцем 2026-08-21,
+/// дизайн-проект 37ed0b07): контур-маршрут почти обвёл квартал — внутри уже
+/// лаймовая захваченная территория, впереди пунктир незавершённых метров,
+/// «бегун»-точка несётся замкнуть петлю.
+///
+/// Векторный (CustomPainter) — чёткий в любом размере; цвета параметризованы:
+/// [outline] по умолчанию графит (светлые фоны), на тёмных передать светлый.
+/// [animated] — живое замыкание петли (уважает отключение анимаций в системе).
+class KvartalLogoMark extends StatefulWidget {
   final double size;
   final bool animated;
   final bool glow;
+  final Color? outline;
+  final Color? fill;
 
   const KvartalLogoMark({
     super.key,
     this.size = 44,
     this.animated = true,
     this.glow = true,
+    this.outline,
+    this.fill,
   });
 
   @override
+  State<KvartalLogoMark> createState() => _KvartalLogoMarkState();
+}
+
+class _KvartalLogoMarkState extends State<KvartalLogoMark>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2200),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animated) _c.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant KvartalLogoMark old) {
+    super.didUpdateWidget(old);
+    if (widget.animated && !_c.isAnimating) _c.repeat(reverse: true);
+    if (!widget.animated && _c.isAnimating) _c.stop();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    Widget logo = SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (glow)
-            Container(
-              width: size * 0.78,
-              height: size * 0.78,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.warning.withValues(alpha: 0.22),
-                    blurRadius: size * 0.32,
-                    spreadRadius: size * 0.02,
-                  ),
-                ],
-              ),
-            ),
-          Image.asset(
-            kvartalLogoAsset,
-            width: size,
-            height: size,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-          ),
-        ],
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final outline = widget.outline ?? AppColors.ink;
+    final fill = widget.fill ?? AppColors.lime;
+
+    Widget mark = AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) => CustomPaint(
+        size: Size.square(widget.size),
+        painter: _MarkPainter(
+          outline: outline,
+          fill: fill,
+          close: (widget.animated && !reduceMotion)
+              ? Curves.easeInOutCubic.transform(_c.value)
+              : 0,
+        ),
       ),
     );
 
-    if (!animated) return logo;
-
-    return logo
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .scaleXY(
-          begin: 0.985,
-          end: 1.035,
-          duration: 1800.ms,
-          curve: Curves.easeInOut,
-        )
-        .then()
-        .custom(
-          duration: 2400.ms,
-          curve: Curves.easeInOut,
-          builder: (context, value, child) => Transform.rotate(
-            angle: math.sin(value * math.pi * 2) * 0.018,
-            child: child,
+    if (!widget.glow) return mark;
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: widget.size * 0.72,
+            height: widget.size * 0.72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.lime.withValues(alpha: 0.30),
+                  blurRadius: widget.size * 0.30,
+                  spreadRadius: widget.size * 0.02,
+                ),
+              ],
+            ),
           ),
-        );
+          mark,
+        ],
+      ),
+    );
   }
+}
+
+class _MarkPainter extends CustomPainter {
+  final Color outline;
+  final Color fill;
+  final double close; // 0 — разрыв полный, 1 — петля замкнута
+
+  _MarkPainter({required this.outline, required this.fill, required this.close});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final k = size.width / 48;
+    canvas.scale(k);
+
+    // Захваченная территория.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(15.5, 15.5, 17, 17),
+        const Radius.circular(4.5),
+      ),
+      Paint()..color = fill,
+    );
+
+    // Контур-маршрут с разрывом «последнего метра».
+    final ring = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        const Rect.fromLTWH(9, 9, 30, 30),
+        const Radius.circular(9),
+      ));
+    final metric = ring.computeMetrics().first;
+    final len = metric.length;
+
+    final gapFull = len * 0.14;
+    final gap = gapFull * (1 - close);
+    final dotT = 5 + gapFull * close; // бегун закрывает петлю
+    final solidLen = len - gap;
+    final start = dotT - solidLen;
+
+    final stroke = Paint()
+      ..color = outline
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.6
+      ..strokeCap = StrokeCap.round;
+
+    if (start < 0) {
+      canvas.drawPath(metric.extractPath(start + len, len), stroke);
+      canvas.drawPath(metric.extractPath(0, dotT), stroke);
+    } else {
+      canvas.drawPath(metric.extractPath(start, dotT), stroke);
+    }
+
+    // Пунктир впереди бегуна — незавершённые метры.
+    if (gap > 4.5) {
+      final dashPaint = Paint()
+        ..color = outline.withValues(alpha: 0.45)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4.2
+        ..strokeCap = StrokeCap.round;
+      var t = dotT + 3.4;
+      final end = dotT + gap - 2.2;
+      while (t + 2.4 < end) {
+        canvas.drawPath(metric.extractPath(t % len, (t + 2.4) % len == 0 ? len : t + 2.4), dashPaint);
+        t += 5.2;
+      }
+    }
+
+    // «Бегун» на конце сплошной линии.
+    final pos = metric.getTangentForOffset(dotT % len)!.position;
+    canvas.drawCircle(pos, 5, Paint()..color = outline);
+    canvas.drawCircle(pos, 2.2, Paint()..color = fill);
+  }
+
+  @override
+  bool shouldRepaint(_MarkPainter old) =>
+      old.outline != outline || old.fill != fill || old.close != close;
 }
 
 class KvartalLogoBadge extends StatelessWidget {
@@ -93,7 +197,7 @@ class KvartalLogoBadge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        KvartalLogoMark(size: size, glow: false),
+        KvartalLogoMark(size: size, glow: false, animated: false),
         if (showText) ...[
           const SizedBox(width: 8),
           Text(
