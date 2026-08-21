@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/remote_content_provider.dart';
@@ -211,7 +212,15 @@ class _EditableImageState extends State<_EditableImage> {
       offset: off,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.onEdit,
+        onTap: () {
+          // Alt+клик = вернуть фото на место (как на сайте); обычный тап = сменить фото.
+          if (HardwareKeyboard.instance.isAltPressed) {
+            _commit(Offset.zero);
+            setState(() => _drag = Offset.zero);
+            return;
+          }
+          widget.onEdit();
+        },
         onLongPress: () {
           _commit(Offset.zero);
           setState(() => _drag = Offset.zero);

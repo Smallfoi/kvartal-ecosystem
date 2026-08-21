@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/remote_content_provider.dart';
@@ -192,10 +193,18 @@ class _EditableTextState extends State<_EditableText> {
       offset: off,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => postEditContent(widget.contentKey, widget.value,
-            color: widget.colorHex, hasColor: widget.colorHex.isNotEmpty),
+        onTap: () {
+          // Alt+клик = вернуть на исходное место (как на сайте); обычный тап = правка.
+          if (HardwareKeyboard.instance.isAltPressed) {
+            _commit(Offset.zero);
+            setState(() => _drag = Offset.zero);
+            return;
+          }
+          postEditContent(widget.contentKey, widget.value,
+              color: widget.colorHex, hasColor: widget.colorHex.isNotEmpty);
+        },
         onLongPress: () {
-          _commit(Offset.zero); // вернуть на исходное место
+          _commit(Offset.zero); // вернуть на исходное место (тач-фолбэк)
           setState(() => _drag = Offset.zero);
         },
         onPanStart: (_) => setState(() => _dragging = true),
