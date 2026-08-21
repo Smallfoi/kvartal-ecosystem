@@ -392,8 +392,9 @@ class _ClubSliverHeader extends ConsumerWidget {
                       child: InkWell(
                         customBorder: const CircleBorder(),
                         onTap: () => _editClubCover(context, ref, hasCover),
-                        child: const Padding(
-                          padding: EdgeInsets.all(8),
+                        child: const SizedBox(
+                          width: 48,
+                          height: 48,
                           child: Icon(
                             CupertinoIcons.photo_on_rectangle,
                             size: 18,
