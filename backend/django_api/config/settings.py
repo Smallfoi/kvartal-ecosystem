@@ -229,6 +229,8 @@ UNFOLD = {
                  reverse_lazy("admin:auth_user_change", args=[request.user.pk])
                  if getattr(request.user, "pk", None) else reverse_lazy("admin:index")
              )},
+            # Безопасная смена пароля: текущий → новый → подтвердить (требует текущий пароль).
+            {"title": "Сменить пароль", "link": reverse_lazy("admin:password_change")},
         ],
     },
     "COLORS": {
