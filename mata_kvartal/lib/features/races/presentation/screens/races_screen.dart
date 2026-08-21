@@ -82,12 +82,7 @@ class _RacesScreenState extends ConsumerState<RacesScreen> {
         : (sel.label.isNotEmpty ? sel.label : 'Мой регион');
     return DecoratedBox(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.soft, AppColors.bgDark],
-          stops: [0.0, 0.32],
-        ),
+        color: AppColors.bg,
       ),
       child: SafeArea(
         bottom: false,
