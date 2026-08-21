@@ -103,3 +103,79 @@ Future<void> showAnimPicker(
     },
   );
 }
+
+/// Единая шторка действий для элемента конструктора (кнопка «⋯»): скрыть/вернуть,
+/// удалить (если [onDelete] задан) + выбор анимации появления. Одна надёжно
+/// нажимаемая кнопка вместо нескольких мелких бейджей по углам.
+Future<void> showElementSheet(
+  BuildContext context, {
+  required String contentKey,
+  required String animName,
+  required bool hidden,
+  bool showHide = true,
+  VoidCallback? onDelete,
+}) async {
+  final prov = context.read<RemoteContentProvider>();
+  void setKey(String k, String v) {
+    postDraft(k, v);
+    prov.applyDraft(k, v);
+  }
+
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.white,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+    builder: (ctx) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showHide)
+              ListTile(
+                leading: Icon(hidden ? Icons.visibility : Icons.visibility_off,
+                    color: hidden ? const Color(0xFF16A34A) : const Color(0xFF374151)),
+                title: Text(hidden ? 'Вернуть элемент' : 'Скрыть элемент',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                onTap: () {
+                  setKey('hidden.$contentKey', hidden ? '' : '1');
+                  Navigator.of(ctx).pop();
+                },
+              ),
+            if (onDelete != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
+                title: const Text('Удалить',
+                    style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFFEF4444))),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  onDelete();
+                },
+              ),
+            const Divider(height: 1),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 14, 20, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Анимация появления',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF6B7280))),
+              ),
+            ),
+            for (final p in kAnimPresets)
+              ListTile(
+                dense: true,
+                title: Text(p['label']!),
+                trailing: p['id'] == animName
+                    ? const Icon(Icons.check, color: Color(0xFF0A84FF), size: 20)
+                    : null,
+                onTap: () {
+                  setKey('anim.$contentKey', p['id']!);
+                  Navigator.of(ctx).pop();
+                },
+              ),
+          ],
+        ),
+      );
+    },
+  );
+}
