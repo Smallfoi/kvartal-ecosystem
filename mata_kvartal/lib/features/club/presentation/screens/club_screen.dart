@@ -18,9 +18,7 @@ class ClubScreen extends ConsumerStatefulWidget {
 }
 
 class _ClubScreenState extends ConsumerState<ClubScreen> {
-  final _searchCtrl = TextEditingController();
-  final _inviteCtrl = TextEditingController();
-  final _scrollCtrl = ScrollController();
+  final _scrollCtrl = ScrollController(keepScrollOffset: false);
 
   @override
   void initState() {
@@ -32,8 +30,6 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
-    _inviteCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
@@ -41,6 +37,10 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<ClubState>(clubProvider, (previous, next) {
+      // Ответ мог прийти, когда экран уже убран из дерева (ушли на другую
+      // вкладку). Обращаться к его контексту нельзя — иначе исключение
+      // «deactivated widget's ancestor», после которого вкладка остаётся пустой.
+      if (!context.mounted) return;
       // Клуб удалили или вышли из него: страница резко становится короче, а
       // прокрутка осталась внизу — без этого экран выглядел бы пустым.
       if (previous?.myClub != null && next.myClub == null &&
@@ -48,7 +48,7 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
         _scrollCtrl.jumpTo(0);
       }
       final message = next.message;
-      if (message != null && message != previous?.message && mounted) {
+      if (message != null && message != previous?.message) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
         );
@@ -61,8 +61,6 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
       body: RefreshIndicator(
         onRefresh: () => ref.read(clubProvider.notifier).refresh(),
         child: CustomScrollView(
-          // Свой ключ хранения прокрутки: иначе экран делит позицию с Профилем.
-          key: const PageStorageKey<String>('club-scroll'),
           controller: _scrollCtrl,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -93,10 +91,7 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
                   else if (state.myClub != null)
                     _MyClubBody(club: state.myClub!)
                   else
-                    _DiscoverBody(
-                      searchCtrl: _searchCtrl,
-                      inviteCtrl: _inviteCtrl,
-                    ),
+                    const _DiscoverBody(),
                 ]),
               ),
             ),
@@ -431,15 +426,34 @@ class _ClubSliverHeader extends ConsumerWidget {
   }
 }
 
-class _DiscoverBody extends ConsumerWidget {
-  final TextEditingController searchCtrl;
-  final TextEditingController inviteCtrl;
-  const _DiscoverBody({required this.searchCtrl, required this.inviteCtrl});
+class _DiscoverBody extends ConsumerStatefulWidget {
+  const _DiscoverBody();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DiscoverBody> createState() => _DiscoverBodyState();
+}
+
+/// Контроллеры полей живут здесь, а не в экране. Экран при уходе с вкладки
+/// уничтожается вместе со своими контроллерами, и поля, которые на них
+/// ссылались, переставали отрисовываться — вкладка выглядела пустой (D-47).
+class _DiscoverBodyState extends ConsumerState<_DiscoverBody> {
+  final _searchCtrl = TextEditingController();
+  final _inviteCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _inviteCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(clubProvider);
     return Column(
+      // Виджет — элемент списка слайверов, высота не ограничена:
+      // без mainAxisSize.min Column схлопывается до первого потомка.
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _StatusCard(
@@ -455,7 +469,7 @@ class _DiscoverBody extends ConsumerWidget {
           onAction: () => _showCreateClubSheet(context),
         ),
         const SizedBox(height: 16),
-        _InviteCodeCard(controller: inviteCtrl),
+        _InviteCodeCard(controller: _inviteCtrl),
         const SizedBox(height: 16),
         _SectionHeader(
           title:
@@ -463,7 +477,7 @@ class _DiscoverBody extends ConsumerWidget {
         ),
         const SizedBox(height: 10),
         TextField(
-          controller: searchCtrl,
+          controller: _searchCtrl,
           style: const TextStyle(color: AppColors.textPrimary),
           textInputAction: TextInputAction.search,
           onSubmitted: (value) =>
@@ -478,7 +492,7 @@ class _DiscoverBody extends ConsumerWidget {
               icon: const Icon(CupertinoIcons.arrow_right_circle_fill),
               onPressed: () => ref
                   .read(clubProvider.notifier)
-                  .refresh(search: searchCtrl.text),
+                  .refresh(search: _searchCtrl.text),
             ),
             filled: true,
             fillColor: AppColors.bgCard,
@@ -520,6 +534,9 @@ class _MyClubBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(clubProvider);
     return Column(
+      // Виджет — элемент списка слайверов, высота не ограничена:
+      // без mainAxisSize.min Column схлопывается до первого потомка.
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (club.isOwner) ...[
