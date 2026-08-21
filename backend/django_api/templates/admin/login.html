@@ -34,7 +34,6 @@
         --cx-card: rgba(255,255,255,.94); --cx-fieldBg: #F2F4F3;
         --cx-accent: #1F6F63; --cx-accentInk: #FFFFFF; --cx-accentSoft: rgba(31,111,99,.18);
         --cx-shadow: 0 26px 46px -22px rgba(18,38,44,.5), 0 3px 10px rgba(18,38,44,.07);
-        --cx-poolColor: rgba(31,111,99,.16); --cx-poolX: 0px; --cx-poolW: 300px;
       }
       html.cx-night {
         /* ── ночная палитра (эталон) ── */
@@ -42,7 +41,6 @@
         --cx-card: rgba(20,26,40,.86); --cx-fieldBg: rgba(255,255,255,.05);
         --cx-accent: #F0A85C; --cx-accentInk: #1A1206; --cx-accentSoft: rgba(240,168,92,.2);
         --cx-shadow: 26px 30px 60px -26px rgba(0,0,0,.85), 0 2px 8px rgba(0,0,0,.4);
-        --cx-poolColor: rgba(240,168,92,.2); --cx-poolX: -70px; --cx-poolW: 420px;
       }
 
       /* ── небо ─────────────────────────────────────────────────────── */
@@ -76,17 +74,14 @@
       html.cx-night .cx-sun { opacity: 0; }
       html.cx-night .cx-moon { opacity: 1; }
 
-      /* ── горизонт и световое пятно ────────────────────────────────── */
+      /* ── горизонт ─────────────────────────────────────────────────────
+         Световое пятно у горизонта (.cx-pool) убрано: владелец счёл, что
+         оно читается как «вода с волнами» (2026-08-19). ─────────────── */
       .cx-horizon { position: fixed; left: 0; right: 0; top: 78%; height: 1px; z-index: 0;
         pointer-events: none; transition: background 1s ease;
         background: linear-gradient(90deg,transparent,rgba(16,24,32,.22) 22%,rgba(16,24,32,.22) 78%,transparent); }
       html.cx-night .cx-horizon {
         background: linear-gradient(90deg,transparent,rgba(237,241,247,.16) 22%,rgba(237,241,247,.16) 78%,transparent); }
-      .cx-pool { position: fixed; left: 50%; top: 78%; height: 110px; z-index: 0;
-        border-radius: 50%; filter: blur(26px); pointer-events: none;
-        width: var(--cx-poolW); background: var(--cx-poolColor);
-        transform: translate(calc(-50% + var(--cx-poolX)), -46%);
-        transition: width 1s ease, background 1s ease, transform 1s cubic-bezier(.45,.05,.35,1); }
 
       /* ── карточка ─────────────────────────────────────────────────── */
       .staw-card {
@@ -212,7 +207,7 @@
       @media (prefers-reduced-motion: reduce) {
         .cx-stars i, .staw-card, .staw-card > *, .cx-foot,
         #login-form .submit-row:hover::after { animation: none !important; }
-        .cx-orbit, .cx-pool, .cx-sky, .cx-sun, .cx-moon { transition-duration: .15s !important; }
+        .cx-orbit, .cx-sky, .cx-sun, .cx-moon { transition-duration: .15s !important; }
         .staw-card { opacity: 1; transform: none; }
       }
     </style>
@@ -232,7 +227,6 @@
       </div></div>
     </div>
     <div class="cx-horizon" aria-hidden="true"></div>
-    <div class="cx-pool" aria-hidden="true"></div>
 
     <div class="staw-card{% if form.errors or form.non_field_errors %} staw-returning{% endif %}">
         <div class="cx-top">
