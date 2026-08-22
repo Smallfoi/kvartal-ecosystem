@@ -6,12 +6,18 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/kvartal_logo.dart';
 import '../../auth/data/auth_provider.dart';
 
-/// Заставка «Захват» (замечание владельца 2026-08-21: старая сливалась и мигала).
+/// Заставка «Захват» (Вариант 2 дизайн-проекта 24d1c230, утверждён 2026-08-23).
 ///
-/// Единая графитовая сцена с нативным сплэшем (#2A302C — тот же цвет, без скачка):
-/// по пунктирному «плану» лаймовый маршрут рисуется бегуном, петля замыкается —
-/// территория врывается заливкой, появляется «КВАРТАЛ». Хореография — это сам
-/// смысл игры: замкни маршрут, забери квартал. Уважает reduced motion.
+/// Единая графитовая сцена с нативным сплэшем (#2A302C — тот же цвет): знак
+/// стоит ровно как системная сплэш-иконка, бегун на глазах дорисовывает
+/// последний метр, петля замыкается — вспышка по контуру, «КВАРТАЛ».
+/// Хореография — сам смысл игры: замкни маршрут, забери квартал.
+///
+/// Против «склейки» (замечание владельца 2026-08-23): анимация стартует ТОЛЬКО
+/// после первого отрисованного кадра (иначе под системным сплэшем вслепую
+/// проигрывается начало, и первый видимый кадр Flutter ловится с бегуном уже
+/// в пути — виден обрыв). Масштабных скачков нет: знак сразу в размере,
+/// совпадающем с системной иконкой. Уважает reduced motion.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -29,13 +35,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     vsync: this,
     duration: const Duration(milliseconds: 2200),
   );
-
-  // «Иконка разворачивается»: знак чуть подрастает из состояния плитки.
-  late final Animation<double> _unfold = Tween<double>(begin: 0.86, end: 1.0)
-      .animate(CurvedAnimation(
-    parent: _c,
-    curve: const Interval(0.0, 0.30, curve: Curves.easeOutCubic),
-  ));
 
   // Бегун срывается с места и добегает последний метр — петля замыкается.
   late final Animation<double> _close = CurvedAnimation(
@@ -66,13 +65,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
-    _c.forward();
-    Future.delayed(const Duration(milliseconds: 2300), () {
+    // Старт строго после первого показанного кадра: первый видимый кадр
+    // Flutter = системная сплэш-иконка (close 0), анимация идёт на глазах.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final auth = ref.read(authProvider);
-      context.go(
-        auth.status == AuthStatus.authenticated ? '/map' : '/auth/phone',
-      );
+      _c.forward();
+      Future.delayed(const Duration(milliseconds: 2300), () {
+        if (!mounted) return;
+        final auth = ref.read(authProvider);
+        context.go(
+          auth.status == AuthStatus.authenticated ? '/map' : '/auth/phone',
+        );
+      });
     });
   }
 
@@ -93,7 +97,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         child: AnimatedBuilder(
           animation: _c,
           builder: (context, _) {
-            final unfold = reduceMotion ? 1.0 : _unfold.value;
             final close = reduceMotion ? 1.0 : _close.value;
             final flash = reduceMotion ? 0.0 : _flash.value;
             final title = reduceMotion ? 1.0 : _title.value;
@@ -133,15 +136,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             ),
                           ),
                         ),
-                      Transform.scale(
-                        scale: unfold,
-                        child: CustomPaint(
-                          size: Size.square(markSize),
-                          painter: KvartalMarkPainter(
-                            outline: _light,
-                            fill: _limeBright,
-                            close: close,
-                          ),
+                      CustomPaint(
+                        size: Size.square(markSize),
+                        painter: KvartalMarkPainter(
+                          outline: _light,
+                          fill: _limeBright,
+                          close: close,
                         ),
                       ),
                     ],
