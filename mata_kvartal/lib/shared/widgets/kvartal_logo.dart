@@ -4,13 +4,16 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Знак Квартала «Последний метр» (вариант А3, утверждён владельцем 2026-08-21,
-/// дизайн-проект 37ed0b07): контур-маршрут почти обвёл квартал — внутри уже
-/// лаймовая захваченная территория, впереди пунктир незавершённых метров,
-/// «бегун»-точка несётся замкнуть петлю.
+/// дизайн-проект 37ed0b07; хореография запуска — Вариант 2, 2026-08-22,
+/// дизайн-проект 24d1c230): жирный контур-маршрут почти обвёл квартал — внутри
+/// лаймовая захваченная территория, «бегун»-точка готова замкнуть петлю.
+/// Никаких пунктиров и кругов — ровно как иконка приложения.
 ///
 /// Векторный (CustomPainter) — чёткий в любом размере; цвета параметризованы:
 /// [outline] по умолчанию графит (светлые фоны), на тёмных передать светлый.
-/// [animated] — живое замыкание петли (уважает отключение анимаций в системе).
+/// [animated] — цикл «замыкание периметра»: пауза → бегун дорисовывает
+/// последний метр → вспышка свечения по контуру знака → петля открывается в
+/// новый круг (уважает отключение анимаций в системе).
 class KvartalLogoMark extends StatefulWidget {
   final double size;
   final bool animated;
@@ -35,19 +38,19 @@ class _KvartalLogoMarkState extends State<KvartalLogoMark>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2200),
+    duration: const Duration(milliseconds: 3200),
   );
 
   @override
   void initState() {
     super.initState();
-    if (widget.animated) _c.repeat(reverse: true);
+    if (widget.animated) _c.repeat();
   }
 
   @override
   void didUpdateWidget(covariant KvartalLogoMark old) {
     super.didUpdateWidget(old);
-    if (widget.animated && !_c.isAnimating) _c.repeat(reverse: true);
+    if (widget.animated && !_c.isAnimating) _c.repeat();
     if (!widget.animated && _c.isAnimating) _c.stop();
   }
 
@@ -57,57 +60,90 @@ class _KvartalLogoMarkState extends State<KvartalLogoMark>
     super.dispose();
   }
 
+  /// Таймлайн цикла (как в утверждённом сценарии запуска):
+  /// пауза → замыкание последнего метра → вспышка → пауза → открытие петли.
+  static double _closeAt(double t) {
+    if (t < 0.30) return 0;
+    if (t < 0.58) {
+      return Curves.easeInOutCubic.transform((t - 0.30) / 0.28);
+    }
+    if (t < 0.90) return 1;
+    return 1 - Curves.easeInCubic.transform((t - 0.90) / 0.10);
+  }
+
+  /// Вспышка свечения по контуру в момент замыкания (0..1).
+  static double _flashAt(double t) {
+    if (t < 0.55 || t > 0.84) return 0;
+    final x = (t - 0.55) / 0.29;
+    return x < 0.28
+        ? Curves.easeOut.transform(x / 0.28)
+        : 1 - Curves.easeIn.transform((x - 0.28) / 0.72);
+  }
+
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final outline = widget.outline ?? AppColors.ink;
     final fill = widget.fill ?? AppColors.lime;
+    final live = widget.animated && !reduceMotion;
 
-    Widget mark = AnimatedBuilder(
+    return AnimatedBuilder(
       animation: _c,
-      builder: (_, __) => CustomPaint(
-        size: Size.square(widget.size),
-        painter: KvartalMarkPainter(
-          outline: outline,
-          fill: fill,
-          close: (widget.animated && !reduceMotion)
-              ? Curves.easeInOutCubic.transform(_c.value)
-              : 0,
-        ),
-      ),
-    );
+      builder: (_, __) {
+        final t = _c.value;
+        final flash = live ? _flashAt(t) : 0.0;
 
-    if (!widget.glow) return mark;
-    return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: widget.size * 0.72,
-            height: widget.size * 0.72,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.lime.withValues(alpha: 0.30),
-                  blurRadius: widget.size * 0.30,
-                  spreadRadius: widget.size * 0.02,
-                ),
-              ],
-            ),
+        final mark = CustomPaint(
+          size: Size.square(widget.size),
+          painter: KvartalMarkPainter(
+            outline: outline,
+            fill: fill,
+            close: live ? _closeAt(t) : 0,
           ),
-          mark,
-        ],
-      ),
+        );
+
+        if (!widget.glow) return mark;
+
+        // Свечение строго по форме знака (скруглённый квадрат рамки),
+        // никаких кругов: базовый ореол + вспышка в момент замыкания.
+        final inset = widget.size * (9 / 48);
+        return SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.all(inset),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(inset),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.lime.withValues(
+                            alpha: 0.26 + 0.34 * flash,
+                          ),
+                          blurRadius: widget.size * (0.26 + 0.18 * flash),
+                          spreadRadius: widget.size * 0.02,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              mark,
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
-/// Painter знака: обычный режим ([draw] = 1) — статика/дыхание петли через
-/// [close]; режим заставки ([draw] < 1) — маршрут рисуется с нуля по
-/// пунктирному «плану», а территория появляется через [fillScale].
+/// Painter знака: [close] 0 — разрыв «последнего метра» (состояние иконки),
+/// 1 — петля замкнута; [draw] < 1 — режим заставки, маршрут растёт с нуля;
+/// [fillScale] — масштаб лаймовой территории. Без пунктиров — как иконка.
 class KvartalMarkPainter extends CustomPainter {
   final Color outline;
   final Color fill;
@@ -128,7 +164,7 @@ class KvartalMarkPainter extends CustomPainter {
     final k = size.width / 48;
     canvas.scale(k);
 
-    // Захваченная территория (в сплэше «врывается» масштабом).
+    // Захваченная территория.
     if (fillScale > 0.01) {
       canvas.save();
       canvas.translate(24, 24);
@@ -177,29 +213,14 @@ class KvartalMarkPainter extends CustomPainter {
       canvas.drawPath(metric.extractPath(start, dotT), stroke);
     }
 
-    // Пунктир впереди бегуна — незавершённые метры.
-    if (gap > 4.5) {
-      final dashPaint = Paint()
-        ..color = outline.withValues(alpha: 0.45)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4.2
-        ..strokeCap = StrokeCap.round;
-      var t = dotT + 3.4;
-      final end = dotT + gap - 2.2;
-      while (t + 2.4 < end) {
-        canvas.drawPath(metric.extractPath(t % len, (t + 2.4) % len == 0 ? len : t + 2.4), dashPaint);
-        t += 5.2;
-      }
-    }
-
     // «Бегун» на конце сплошной линии.
     final pos = metric.getTangentForOffset(dotT % len)!.position;
     canvas.drawCircle(pos, 5, Paint()..color = outline);
     canvas.drawCircle(pos, 2.2, Paint()..color = fill);
   }
 
-  /// Режим заставки: сплошная линия растёт от старта, впереди — слабый
-  /// пунктирный «план маршрута» на весь остаток, бегун ведёт линию.
+  /// Режим заставки: сплошная линия растёт от старта, бегун ведёт линию.
+  /// Без пунктирного «плана» — только жирный маршрут и точка (Вариант 2).
   void _paintDrawing(Canvas canvas) {
     final ring = Path()
       ..addRRect(RRect.fromRectAndRadius(
@@ -211,19 +232,6 @@ class KvartalMarkPainter extends CustomPainter {
     const t0 = 5.0;
     final solid = len * draw;
     final dotT = t0 + solid;
-
-    // План-пунктир впереди — тонкий, чтобы не спорил с маршрутом.
-    final plan = Paint()
-      ..color = outline.withValues(alpha: 0.26)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round;
-    var t = dotT + 4.0;
-    while (t + 1.8 < t0 + len - 2.0) {
-      canvas.drawPath(
-        metric.extractPath(t % len, (t + 1.8) % len), plan);
-      t += 4.8;
-    }
 
     // Нарисованный маршрут.
     if (solid > 0.5) {
