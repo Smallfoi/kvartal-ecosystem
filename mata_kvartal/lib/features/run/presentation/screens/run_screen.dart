@@ -404,11 +404,13 @@ class _StartCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
+                // Плитка знака — скруглённый квадрат, как иконка приложения
+                // (владелец 2026-08-22: никаких кругов, знак везде одинаковый).
                 Container(
                   width: 82,
                   height: 82,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(22),
                     color: AppColors.line,
                     border: Border.all(
                       color: AppColors.lime.withValues(alpha: 0.35),

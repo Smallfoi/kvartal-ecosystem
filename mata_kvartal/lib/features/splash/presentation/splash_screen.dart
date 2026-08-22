@@ -43,24 +43,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     curve: const Interval(0.14, 0.40, curve: Curves.easeInOutCubic),
   );
 
-  // Пульс захвата: территория упруго вздрагивает в момент замыкания.
-  late final Animation<double> _pulse = TweenSequence<double>([
-    TweenSequenceItem(
-      tween: Tween(begin: 1.0, end: 1.16)
-          .chain(CurveTween(curve: Curves.easeOut)),
-      weight: 35,
-    ),
-    TweenSequenceItem(
-      tween: Tween(begin: 1.16, end: 1.0)
-          .chain(CurveTween(curve: Curves.elasticOut)),
-      weight: 65,
-    ),
-  ]).animate(CurvedAnimation(
-    parent: _c,
-    curve: const Interval(0.40, 0.66),
-  ));
-
-  // Короткая вспышка свечения в момент захвата.
+  // Короткая вспышка свечения по контуру знака в момент захвата
+  // (Вариант 2 дизайн-проекта 24d1c230: без пульса и кругов).
   late final Animation<double> _flash = TweenSequence<double>([
     TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 30),
     TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.35), weight: 70),
@@ -111,7 +95,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           builder: (context, _) {
             final unfold = reduceMotion ? 1.0 : _unfold.value;
             final close = reduceMotion ? 1.0 : _close.value;
-            final pulse = reduceMotion ? 1.0 : _pulse.value;
             final flash = reduceMotion ? 0.0 : _flash.value;
             final title = reduceMotion ? 1.0 : _title.value;
             final tagline = reduceMotion ? 1.0 : _tagline.value;
@@ -126,21 +109,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
+                      // Вспышка строго по форме знака (рамка со скруглением),
+                      // никаких кругов — Вариант 2 утверждённого дизайна.
                       if (flash > 0.01)
-                        Container(
-                          width: markSize * 0.78,
-                          height: markSize * 0.78,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: _limeBright.withValues(
-                                  alpha: 0.38 * flash,
+                        Positioned.fill(
+                          child: Padding(
+                            padding: EdgeInsets.all(markSize * (9 / 48)),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  markSize * (9 / 48),
                                 ),
-                                blurRadius: markSize * 0.34,
-                                spreadRadius: markSize * 0.03,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _limeBright.withValues(
+                                      alpha: 0.42 * flash,
+                                    ),
+                                    blurRadius: markSize * 0.30,
+                                    spreadRadius: markSize * 0.02,
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       Transform.scale(
@@ -151,7 +141,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             outline: _light,
                             fill: _limeBright,
                             close: close,
-                            fillScale: pulse,
                           ),
                         ),
                       ),
@@ -160,19 +149,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 ),
                 const SizedBox(height: 34),
 
-                // «КВАРТАЛ» — появляется в момент захвата.
+                // «КВАРТАЛ» — собирается из разреженных букв в момент захвата
+                // (трекинг съезжается, как в утверждённом дизайне).
                 Opacity(
                   opacity: title,
                   child: Transform.translate(
                     offset: Offset(0, 14 * (1 - title)),
-                    child: const Text(
+                    child: Text(
                       'КВАРТАЛ',
                       style: TextStyle(
                         fontFamily: AppTheme.fontDisplay,
                         fontSize: 34,
                         fontWeight: FontWeight.w700,
                         color: _light,
-                        letterSpacing: 2,
+                        letterSpacing: 2 + 12 * (1 - title),
                       ),
                     ),
                   ),
