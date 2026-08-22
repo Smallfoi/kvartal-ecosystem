@@ -219,6 +219,12 @@ SITE_PREVIEW_URL = os.environ.get("SITE_PREVIEW_URL", "http://localhost:5581")
 # затем: cd build/web && python <preview-сервер no-store> 5579
 APP_PREVIEW_URL = os.environ.get("APP_PREVIEW_URL", "http://localhost:5579")
 
+# Куда ведёт кнопка «Открыть сайт» в меню админки. По умолчанию Django считает,
+# что сайт лежит в корне того же хоста — у нас там только API, и кнопка вела в 404.
+# Обычно совпадает с адресом превью, поэтому отдельная переменная нужна лишь если
+# публичный домен витрины отличается от того, что показывается в конструкторе.
+SITE_PUBLIC_URL = os.environ.get("SITE_PUBLIC_URL") or SITE_PREVIEW_URL
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ── Unfold (тема + структура админки) ───────────────────────────────────────
@@ -228,6 +234,9 @@ UNFOLD = {
     "SITE_TITLE": "МАТА Админ",
     "SITE_HEADER": "МАТА — администрирование",
     "SITE_SUBHEADER": "Экосистема: Квартал · Store · Сайт",
+    # Куда ведёт «Открыть сайт» в меню внизу слева. Задавать нужно ИМЕННО здесь:
+    # Unfold подставляет свой site_url и `admin.site.site_url` не смотрит.
+    "SITE_URL": SITE_PUBLIC_URL,
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,
     "DASHBOARD_CALLBACK": "config.dashboard.dashboard_callback",

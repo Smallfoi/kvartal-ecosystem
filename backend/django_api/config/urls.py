@@ -8,6 +8,8 @@ from django.urls import include, path
 admin.site.site_header = "МАТА — администрирование экосистемы"
 admin.site.site_title = "МАТА Admin"
 admin.site.index_title = "Управление: каталог, заказы, клубы, баллы"
+# «Открыть сайт» настраивается в UNFOLD["SITE_URL"] (settings), а не здесь:
+# тема подставляет свой site_url и это поле игнорирует.
 
 from accounts import views as account_views
 from catalog import views as catalog_views
