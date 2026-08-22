@@ -11,14 +11,31 @@
     Всё на transform/opacity + переходам цвета; prefers-reduced-motion уважаем.
     Механика Django-формы (CSRF, ошибки+шейк, глазик пароля) сохранена.{% endcomment %}
     <script>
-      // Тема сцены до первой отрисовки (без вспышки): сохранённый выбор,
-      // иначе — тёмная тема ОС.
+      // Тема до первой отрисовки (без вспышки).
+      //
+      // Источник правды ОДИН — тема самой админки: Unfold хранит её в
+      // localStorage.adminTheme (Alpine $persist, значение в JSON) и после
+      // загрузки сам вешает на <html> класс dark. Раньше сцена жила отдельным
+      // ключом, поэтому состояния расходились: сцена дневная, а Alpine ставил
+      // dark → подписи полей (.text-important) становились почти белыми на белой
+      // карточке. Перещёлкивание тумблера убирало класс — «после переключения
+      // читаемо». Теперь тему выводим ровно по правилу Alpine. См. PITFALLS.
       (function () {
-        var saved = null;
-        try { saved = localStorage.getItem("mata-admin-scene"); } catch (e) {}
-        var night = saved ? saved === "night"
-          : (document.documentElement.classList.contains("dark") ||
-             (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches));
+        var stored = null, legacy = null;
+        try { stored = JSON.parse(localStorage.getItem("adminTheme")); } catch (e) {}
+        try { legacy = localStorage.getItem("mata-admin-scene"); } catch (e) {}
+        var osDark = !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+        var night;
+        if (stored === "dark" || stored === "light") {
+          night = stored === "dark";
+        } else if (stored === "auto") {
+          night = osDark;                       // то же правило, что у Alpine
+        } else {
+          // Темы админки ещё нет: берём прежний выбор на этой странице, иначе ОС,
+          // и сразу записываем — чтобы Alpine не пришёл к другому выводу.
+          night = legacy ? legacy === "night" : osDark;
+          try { localStorage.setItem("adminTheme", JSON.stringify(night ? "dark" : "light")); } catch (e) {}
+        }
         document.documentElement.classList.toggle("cx-night", night);
         document.documentElement.classList.toggle("dark", night);
       })();
@@ -148,6 +165,16 @@
       .cx-tlabel.nite { right: 2px; color: var(--cx-soft); }
       html.cx-night .cx-tlabel.day  { color: var(--cx-soft); }
       html.cx-night .cx-tlabel.nite { color: var(--cx-accentInk); }
+
+      /* Подписи и текст полей — всегда чернилами сцены. Страховка на случай,
+         если класс dark и сцена всё-таки разойдутся: цвет не «улетит» в белый
+         на белом (--cx-ink сам переключается день/ночь). */
+      .staw-card label, .staw-card .text-important,
+      #login-form input, #login-form input::placeholder {
+        color: var(--cx-ink) !important; }
+      #login-form input::placeholder { opacity: .45; }
+      .staw-card .help, .staw-card .helptext, .staw-card small {
+        color: var(--cx-soft) !important; }
 
       /* ── поля: акцентная подсветка темы ────────────────────────────── */
       #login-form input {
@@ -308,7 +335,9 @@
           wrap.appendChild(i);
         });
 
-        // ── тумблер день/ночь (синхронизируется с тёмной темой Unfold) ──
+        // ── тумблер день/ночь = тема админки ──────────────────────────
+        // Пишем в тот же ключ, что и Unfold: два независимых состояния
+        // расходились и делали подписи нечитаемыми.
         var toggle = document.getElementById("cx-toggle");
         function syncPressed() {
           toggle.setAttribute("aria-pressed",
@@ -319,9 +348,17 @@
           var night = !document.documentElement.classList.contains("cx-night");
           document.documentElement.classList.toggle("cx-night", night);
           document.documentElement.classList.toggle("dark", night);
-          try { localStorage.setItem("mata-admin-scene", night ? "night" : "day"); } catch (e) {}
+          try { localStorage.setItem("adminTheme", JSON.stringify(night ? "dark" : "light")); } catch (e) {}
           syncPressed();
         });
+
+        // Переключателем темы Unfold (в углу) тоже можно менять тему — тогда
+        // класс dark меняет Alpine, а сцена должна ехать за ним.
+        new MutationObserver(function () {
+          var dark = document.documentElement.classList.contains("dark");
+          document.documentElement.classList.toggle("cx-night", dark);
+          syncPressed();
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 
         // ── спиннер на отправке формы ──
         var form = document.getElementById("login-form");
