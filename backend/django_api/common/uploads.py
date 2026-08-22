@@ -7,7 +7,7 @@
 Тип определяется ПО СОДЕРЖИМОМУ (сигнатуре файла), имя и заголовок игнорируются.
 """
 
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_IMAGE_BYTES = 40 * 1024 * 1024
 
 # Сигнатуры (magic bytes) → расширение, которое мы сами и подставим в имя файла.
 _SIGNATURES = (
@@ -33,7 +33,7 @@ def image_extension(f):
     if not f:
         return None, "Нет файла"
     if f.size > MAX_IMAGE_BYTES:
-        return None, "Файл слишком большой (макс 5 МБ)"
+        return None, "Файл слишком большой (макс 40 МБ)"
     head = f.read(16)
     f.seek(0)  # вернуть курсор — файл ещё предстоит сохранить
     ext = _sniff(head or b"")
