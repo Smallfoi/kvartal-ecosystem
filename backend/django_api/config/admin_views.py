@@ -153,9 +153,51 @@ def merch_site_image(request):
     if not (f.content_type or "").startswith("image/"):
         return JsonResponse({"detail": "Нужен файл-изображение"}, status=400)
     obj, _ = SiteContent.objects.get_or_create(key=key)
-    obj.image = f
+    obj.image = _webify_image(f)   # даунскейл больших фото + пережатие → быстрый старт
     obj.save()
     return JsonResponse({"ok": True, "content": {key: obj.to_json()}})
+
+
+# Оптимизация загружаемых фото для web: большие камерные снимки (5000×3500, 15+ МБ)
+# грузятся на сайте секундами. Даунскейлим до 2560px по длинной стороне (ретина-качество
+# для героя/секций) и пережимаем: JPEG q85 (без альфы) / PNG (с прозрачностью). Загружать
+# можно крупные (лимит 40 МБ) — на сайт уходит лёгкая версия. Ошибка/нет Pillow → оригинал.
+_IMG_MAXDIM = 2560
+
+
+def _webify_image(f):
+    try:
+        import io
+
+        from django.core.files.base import ContentFile
+        from PIL import Image, ImageOps
+
+        f.seek(0)
+        img = Image.open(f)
+        img = ImageOps.exif_transpose(img)  # ориентация с телефона
+        has_alpha = img.mode in ("RGBA", "LA") or (
+            img.mode == "P" and "transparency" in img.info
+        )
+        w, h = img.size
+        scale = min(1.0, _IMG_MAXDIM / float(max(w, h)))
+        if scale < 1.0:
+            img = img.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.LANCZOS)
+        buf = io.BytesIO()
+        base = (getattr(f, "name", None) or "image").rsplit(".", 1)[0]
+        if has_alpha:
+            img.save(buf, format="PNG", optimize=True)
+            name = base + "_web.png"
+        else:
+            img.convert("RGB").save(buf, format="JPEG", quality=85, optimize=True, progressive=True)
+            name = base + "_web.jpg"
+        buf.seek(0)
+        return ContentFile(buf.read(), name=name)
+    except Exception:
+        try:
+            f.seek(0)
+        except Exception:
+            pass
+        return f
 
 
 @staff_member_required
@@ -280,7 +322,7 @@ def _apply_banner_fields(b, post, files):
             raise ValueError("Файл слишком большой (макс 40 МБ)")
         if not (f.content_type or "").startswith("image/"):
             raise ValueError("Нужен файл-изображение")
-        b.image = f
+        b.image = _webify_image(f)   # даунскейл + пережатие → лёгкий баннер
 
 
 @staff_member_required
