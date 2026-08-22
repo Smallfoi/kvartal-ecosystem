@@ -119,6 +119,31 @@ def merch_product(request, pid):
 
 @staff_member_required
 @require_http_methods(["POST"])
+def _delete_media_url(url):
+    """Удалить файл из хранилища по его /media/-URL. Чистим ТОЛЬКО загрузки (uploads/…),
+    чтобы случайно не снести чужое. Тихо игнорируем ошибки (уборка не должна ронять запрос)."""
+    from django.conf import settings
+    from django.core.files.storage import default_storage
+    try:
+        u = (url or "").split("?")[0].strip()
+        if not u:
+            return
+        prefix = settings.MEDIA_URL or "/media/"
+        if u.startswith(prefix):
+            name = u[len(prefix):]
+        elif "/media/" in u:
+            name = u.split("/media/", 1)[1]
+        else:
+            return
+        name = name.lstrip("/")
+        if not name.startswith("uploads/"):
+            return  # только наши загрузки
+        if default_storage.exists(name):
+            default_storage.delete(name)
+    except Exception:
+        pass
+
+
 def merch_site_content(request):
     """Правка текста блока сайта: {key, value} → SiteContent (публикуется на сайт)."""
     from catalog.models import SiteContent
@@ -138,7 +163,12 @@ def merch_site_content(request):
             obj.image.delete(save=False)
         obj.image = None
     else:
-        obj.value = str(d.get("value") or "")
+        new_val = str(d.get("value") or "")
+        # Видео на фон (bgvid.<key>): при СМЕНЕ или ОЧИСТКЕ ссылки удаляем старый
+        # видеофайл с диска — иначе он остаётся «сиротой».
+        if key.startswith("bgvid.") and obj.value and obj.value != new_val:
+            _delete_media_url(obj.value)
+        obj.value = new_val
     obj.save()
     return JsonResponse({"ok": True, "content": {key: obj.to_json()}})
 
@@ -160,6 +190,11 @@ def merch_site_image(request):
     if not (f.content_type or "").startswith("image/"):
         return JsonResponse({"detail": "Нужен файл-изображение"}, status=400)
     obj, _ = SiteContent.objects.get_or_create(key=key)
+    if obj.image:
+        try:
+            obj.image.delete(save=False)   # убрать старый файл при замене (не копить сирот)
+        except Exception:
+            pass
     obj.image = _webify_image(f)   # даунскейл больших фото + пережатие → быстрый старт
     obj.save()
     return JsonResponse({"ok": True, "content": {key: obj.to_json()}})
@@ -329,6 +364,11 @@ def _apply_banner_fields(b, post, files):
             raise ValueError("Файл слишком большой (макс 40 МБ)")
         if not (f.content_type or "").startswith("image/"):
             raise ValueError("Нужен файл-изображение")
+        if b.image:
+            try:
+                b.image.delete(save=False)   # убрать старый файл баннера при замене
+            except Exception:
+                pass
         b.image = _webify_image(f)   # даунскейл + пережатие → лёгкий баннер
 
 
