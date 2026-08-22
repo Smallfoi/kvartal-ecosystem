@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+
+from common import admin2fa
 from django.urls import include, path
 
 admin.site.site_header = "МАТА — администрирование экосистемы"
@@ -52,6 +54,8 @@ urlpatterns = [
     # «Ошибки» — GlitchTip внутри нашей админки (D-32). ДО admin/ catch-all.
     path("admin/errors/", errors_console, name="errors_console"),
     path("admin/errors/<str:issue_id>/", error_detail, name="error_detail"),
+    # Второй шаг входа должен стоять выше админки, иначе путь перехватит она.
+    path("admin/2fa/", admin2fa.verify_view, name="admin-2fa"),
     path("admin/", admin.site.urls),
     path("v1/", include("core.urls")),
     path("v1/auth/", include("accounts.urls")),

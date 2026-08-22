@@ -31,6 +31,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    # Двухфакторный вход в админку (D-49): устройство TOTP + запасные коды.
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
     "core",
     "accounts",
     "loyalty",
@@ -47,6 +51,9 @@ INSTALLED_APPS = [
     "races",
 ]
 
+# Так админка подписана в приложении-аутентификаторе (D-49).
+OTP_TOTP_ISSUER = "МАТА"
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -54,12 +61,14 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Должен идти сразу после аутентификации: добавляет user.is_verified().
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Анти-брутфорс формы входа в админку: лимиты DRF её не покрывают (D-39).
     "common.adminsec.AdminLoginRateLimitMiddleware",
-    # Белый список IP для админки (D-48): пусто — выключено, в проде обязателен.
-    "common.adminsec.AdminIpAllowlistMiddleware",
+    # Второй шаг входа: код из приложения (D-49).
+    "common.admin2fa.AdminOtpRequiredMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
