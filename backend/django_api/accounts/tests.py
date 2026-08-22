@@ -109,6 +109,35 @@ class AuthFlowTests(ApiTestCase):
                                content_type="application/json")
         self.assertEqual(bad.status_code, 401)
 
+    def test_phone_register_with_code_then_password_login(self):
+        """Регистрация по телефону с SMS-кодом (dev 1234) → вход по телефон+пароль."""
+        phone = "+79995554433"
+        self.client.post("/v1/auth/phone/request",
+                         data=json.dumps({"phone": phone}),
+                         content_type="application/json")
+        # регистрация без кода — отказ
+        no_code = self.client.post("/v1/auth/register",
+                                   data=json.dumps({"phone": phone, "password": "p@ss12345"}),
+                                   content_type="application/json")
+        self.assertEqual(no_code.status_code, 401)
+        # с кодом — успех
+        reg = self.client.post("/v1/auth/register",
+                               data=json.dumps({"phone": phone, "code": "1234",
+                                                "password": "p@ss12345", "name": "Тел"}),
+                               content_type="application/json")
+        self.assertEqual(reg.status_code, 200)
+        self.assertTrue(reg.json()["token"])
+        # вход по телефон+пароль
+        ok = self.client.post("/v1/auth/login",
+                              data=json.dumps({"phone": phone, "password": "p@ss12345"}),
+                              content_type="application/json")
+        self.assertEqual(ok.status_code, 200)
+        # неверный пароль — 401
+        bad = self.client.post("/v1/auth/login",
+                               data=json.dumps({"phone": phone, "password": "nope"}),
+                               content_type="application/json")
+        self.assertEqual(bad.status_code, 401)
+
     def test_blocked_account_cannot_login(self):
         from accounts.models import Account
         Account.objects.filter(id=self.uid).update(is_blocked=True)

@@ -23,21 +23,51 @@ from .sms import check_code, request_code, sms_enabled
 @api_view(["POST"])
 @throttle_classes([AuthEndpointThrottle])
 def register(request):
+    """Регистрация в экосистеме.
+
+    Основной путь (телефон+пароль): {phone, code, password, name, email?} — код
+    из SMS (phone/request) подтверждает телефон ОДИН раз, дальше вход по паролю.
+    Легаси (email+пароль, без phone/code) сохранён для обратной совместимости.
+    """
     d = request.data
+    from analytics.models import E_REGISTER, track
+
+    phone = normalize_phone(d.get("phone") or "")
+    password = d.get("password") or ""
+    name = (d.get("name") or "").strip()
     email = (d.get("email") or "").strip().lower()
+
+    if phone:  # регистрация по телефону — обязательное SMS-подтверждение
+        if not check_code(phone, d.get("code") or ""):
+            return Response({"detail": "Неверный код подтверждения"}, status=401)
+        if len(password) < 4:
+            return Response({"detail": "Пароль слишком короткий (мин. 4 символа)"}, status=400)
+        if Account.objects.filter(phone=phone).exists():
+            return Response({"detail": "Этот телефон уже зарегистрирован — войдите по паролю"}, status=409)
+        if not email:
+            email = synthetic_email_for_phone(phone)
+        elif Account.objects.filter(email=email).exists():
+            return Response({"detail": "Этот email уже используется"}, status=409)
+        acc = Account.objects.create(
+            id=new_user_id(), name=name, email=email, phone=phone,
+            provider="phone", password_hash=hash_password(password),
+        )
+        seed_runner_points(acc.id)
+        track(E_REGISTER, user_id=acc.id, source="phone")
+        return Response({"token": make_token(acc.id), "user": acc.to_json()})
+
+    # Легаси: регистрация по email+паролю (обратная совместимость).
     if Account.objects.filter(email=email).exists():
         return Response({"detail": "Пользователь с таким email уже существует"}, status=409)
     acc = Account.objects.create(
         id=new_user_id(),
-        name=(d.get("name") or "").strip(),
+        name=name,
         email=email,
         phone=d.get("phone"),
         provider="email",
-        password_hash=hash_password(d.get("password") or ""),
+        password_hash=hash_password(password),
     )
     seed_runner_points(acc.id)
-    from analytics.models import E_REGISTER, track
-
     track(E_REGISTER, user_id=acc.id, source="email")  # аналитика (D-30)
     return Response({"token": make_token(acc.id), "user": acc.to_json()})
 
@@ -45,11 +75,16 @@ def register(request):
 @api_view(["POST"])
 @throttle_classes([AuthEndpointThrottle])
 def login(request):
+    """Вход по паролю: {phone, password} (основной путь) или {email, password} (легаси)."""
     d = request.data
-    email = (d.get("email") or "").strip().lower()
-    acc = Account.objects.filter(email=email).first()
+    phone = normalize_phone(d.get("phone") or "")
+    if phone:
+        acc = Account.objects.filter(phone=phone).first()
+    else:
+        email = (d.get("email") or "").strip().lower()
+        acc = Account.objects.filter(email=email).first()
     if not acc or not verify_password(d.get("password") or "", acc.password_hash or ""):
-        return Response({"detail": "Неверный email или пароль"}, status=401)
+        return Response({"detail": "Неверный телефон/email или пароль"}, status=401)
     if acc.is_blocked:
         return Response({"detail": "Аккаунт заблокирован"}, status=403)
     return Response({"token": make_token(acc.id), "user": acc.to_json()})
