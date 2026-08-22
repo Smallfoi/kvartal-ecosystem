@@ -32,6 +32,11 @@
     "html.staw-edit [data-hideable]{position:relative}" +
     "html.staw-edit [data-extra]{outline:2px solid #22c55e !important;outline-offset:2px}" +
     "html.staw-edit .staw-cms-hidden{opacity:.32;filter:grayscale(1)}" +
+    // В режиме правки ГЛУШИМ анимации появления: их transform создаёт новый stacking-контекст,
+    // и служебные контролы (кнопка «Фон», панель блока) проваливаются под соседние слои —
+    // становятся некликабельными (баг на экране входа и не только). Анимация всё равно
+    // играет на живом/опубликованном сайте; в конструкторе контент и так статичен.
+    "html.staw-edit [class*='staw-anim-']{animation:none!important}" +
     // Панель управления блоком — ПО НАВЕДЕНИЮ (не перекрывает контент постоянно).
     // ВАЖНО: жёстко фиксируем позицию/размер через !important. Панель — это <div>, и правила
     // сайта вида «.cinema-card div{position:absolute;inset;z-index:1}» иначе ловят наш служебный
@@ -420,6 +425,9 @@
           img: el._bgImg || "", vid: el._bgVid || "", off: el._bgOff || "",
           focal: el._bgFocal || "", fit: el._bgFit || "cover",
           zoom: el._bgZoom || "", fade: el._bgFade || "", loop: el._bgLoop || "",
+          // Реальные пропорции блока — чтобы рамка кадра в окне «Фон» повторяла форму
+          // именно этого блока (герой — вытянутый, карточка — горизонтальная и т.п.).
+          aspect: (el.offsetHeight ? (el.offsetWidth / el.offsetHeight) : 0),
           anim: currentAnim(el),   // текущая анимация фона — для пикера «✨» в окне «Фон»
         });
       });

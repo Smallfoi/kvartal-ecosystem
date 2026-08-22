@@ -597,7 +597,7 @@
     } else if (d.type === "editImage") {
       openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect, d.anim || "");
     } else if (d.type === "editBg") {
-      openBgEdit(d.key, d.img || "", d.vid || "", d.off || "", d.focal || "", d.fit || "cover", d.fade || "", d.loop || "", d.anim || "", d.zoom || "");
+      openBgEdit(d.key, d.img || "", d.vid || "", d.off || "", d.focal || "", d.fit || "cover", d.fade || "", d.loop || "", d.anim || "", d.zoom || "", d.aspect || 0);
     } else if (d.type === "editAnim") {
       openAnimPick(d.key, d.value || "none");
     } else if (d.type === "editBanner") {
@@ -798,7 +798,8 @@
   var bgModalEl = document.getElementById("merch-bg");
   var bgFileInput = document.getElementById("merch-bg-file");
   var bgKey = null, bgFocal = "50% 50%", bgFit = "cover", bgVid = "", bgCurImg = "", bgAnim = "", bgZoom = 1;
-  var BG_ASPECT = 2.0;
+  var BG_ASPECT = 2.0;   // фолбэк, если реальные пропорции блока не пришли
+  var bgAspect = BG_ASPECT;
   var bgPicker = makeCropPicker(
     document.getElementById("merch-bg-fp"),
     document.getElementById("merch-bg-fpimg"),
@@ -832,7 +833,9 @@
     document.getElementById("merch-bg-cover").style.cssText = base + (bgFit === "contain" ? off : on);
     document.getElementById("merch-bg-contain").style.cssText = base + (bgFit === "contain" ? on : off);
   }
-  function openBgEdit(key, img, vid, off, focal, fit, fade, loop, anim, zoom) {
+  function openBgEdit(key, img, vid, off, focal, fit, fade, loop, anim, zoom, aspect) {
+    // Пропорции рамки кадра = реальная форма блока (пришла из editor.js). Фолбэк — BG_ASPECT.
+    bgAspect = (aspect && aspect > 0.05) ? aspect : BG_ASPECT;
     bgKey = key; bgVid = vid || ""; bgAnim = anim || "";
     bgFocal = /^\d{1,3}% \d{1,3}%$/.test(focal) ? focal : "50% 50%";
     bgFit = (fit === "contain") ? "contain" : "cover";
@@ -850,7 +853,7 @@
     document.getElementById("merch-bg-loop").checked = loopV !== "0";
     bgModalEl.style.display = "flex";
     bgFitBtns(); bgZoomUI();
-    bgPicker.set(bgCurImg, bgFocal, bgZoom, BG_ASPECT, bgFit !== "contain", bgPickCb(bgKey));
+    bgPicker.set(bgCurImg, bgFocal, bgZoom, bgAspect, bgFit !== "contain", bgPickCb(bgKey));
     bgPreviewVideo(bgVid);   // если есть видео — показать/проиграть его в окне «Фон»
     bgUpdateEmpty();         // нет фото и видео → показать заглушку «Фон не выбран»
   }
@@ -905,7 +908,7 @@
     bgDraft("bgzoom." + key, "");                         // сбросить масштаб
     bgZoom = 1; bgZoomUI();
     bgPreviewVideo("");                                   // убрать видео-превью
-    bgPicker.set("", bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(key)); // очистить превью
+    bgPicker.set("", bgFocal, 1, bgAspect, bgFit !== "contain", bgPickCb(key)); // очистить превью
     bgUpdateEmpty();                                      // показать заглушку «Фон не выбран»
     updatePending();
   }
@@ -921,7 +924,7 @@
       bgCurImg = rd.result;
       bgZoom = 1; bgDraft("bgzoom." + key, ""); bgZoomUI();   // новое фото → масштаб с нуля
       bgPreviewVideo("");   // выбрали ФОТО → убрать видео-превью, показать фото
-      bgPicker.set(rd.result, bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(key));
+      bgPicker.set(rd.result, bgFocal, 1, bgAspect, bgFit !== "contain", bgPickCb(key));
       bgUpdateEmpty();
     };
     rd.readAsDataURL(f);
@@ -942,7 +945,7 @@
       bgDraft("bgoff." + key, "");
       delete pendingImages["bg." + key];   // видео перекрывает фото
       bgZoom = 1; bgZoomUI();
-      bgPicker.set("", bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(key));
+      bgPicker.set("", bgFocal, 1, bgAspect, bgFit !== "contain", bgPickCb(key));
       bgPreviewVideo(d.url);   // показать загруженное видео прямо в окне «Фон»
       bgUpdateEmpty();
       status.textContent = "Загружено ✓";

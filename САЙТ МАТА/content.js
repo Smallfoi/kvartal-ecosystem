@@ -53,7 +53,7 @@
       // Фон блока: слой видео (за контентом) + затемнение для читаемости; контент поднимаем над видео.
       // position:relative только когда включён видео-фон (staw-bg-on) — не трогаем верстку остальных секций.
       "[data-edit-bg].staw-bg-on{position:relative}" +
-      ".staw-bg-layer{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}" +
+      ".staw-bg-layer{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;border-radius:inherit}" +
       ".staw-bg-layer video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s ease}" +
       ".staw-bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5))}" +
       "[data-edit-bg].staw-bg-on>:not(.staw-bg-layer){position:relative;z-index:1}" +
