@@ -106,7 +106,24 @@
       </div>
       <p style="font-size:11px;color:#9ca3af;margin:8px 0 0">Первый квадрат — вернуть цвет по умолчанию. Удобно на тёмном/светлом фоне, чтобы текст было видно.</p>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #eee;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <label style="font-size:12px;font-weight:700;color:#374151">Шрифт
+        <select id="merch-txt-font" style="width:100%;margin-top:5px;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;cursor:pointer">
+          <option value="">По умолчанию</option>
+          <option value="unbounded">Unbounded (дисплейный)</option>
+          <option value="manrope">Manrope (основной)</option>
+          <option value="inter">Inter</option>
+        </select>
+      </label>
+      <label style="font-size:12px;font-weight:700;color:#374151">Размер: <span id="merch-txt-size-val" style="font-weight:600;color:#6b7280">авто</span>
+        <input type="range" id="merch-txt-size" min="0" max="80" step="1" value="0" style="width:100%;margin-top:8px;cursor:pointer">
+      </label>
+    </div>
+    <label style="display:block;margin-top:12px;font-size:12px;font-weight:700;color:#374151">Тень текста: <span id="merch-txt-shadow-val" style="font-weight:600;color:#6b7280">нет</span>
+      <input type="range" id="merch-txt-shadow" min="0" max="100" step="5" value="0" style="width:100%;margin-top:8px;cursor:pointer">
+    </label>
+    <p style="font-size:11px;color:#9ca3af;margin:6px 0 0">Размер «авто» — как на сайте (адаптивный). Двиньте ползунок, чтобы задать точный размер/тень.</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
       <button type="button" id="merch-txt-cancel" style="padding:9px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600">Отмена</button>
       <button type="button" id="merch-txt-save" style="padding:9px 18px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600">Готово</button>
     </div>
@@ -593,7 +610,7 @@
     } else if (d.type === "editProduct") {
       openEdit(d.id);
     } else if (d.type === "editContent") {
-      openTextEdit(d.key, d.value || "", d.color || "", !!d.hasColor);
+      openTextEdit(d.key, d.value || "", d.color || "", !!d.hasColor, d.font || "", d.fontsize || "", d.shadow || "");
     } else if (d.type === "editImage") {
       openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect, d.anim || "");
     } else if (d.type === "editBg") {
@@ -684,19 +701,41 @@
   var txtColor = "";       // рабочий цвет в окне
   var txtOrigText = "";    // текст до открытия (для отмены)
   var txtOrigColor = "";   // цвет до открытия (для отмены)
-  function openTextEdit(key, value, color, hasColor) {
+  var txtFont = "", txtSize = "", txtShadow = "";           // рабочие шрифт/размер/тень
+  var txtOrigFont = "", txtOrigSize = "", txtOrigShadow = ""; // до открытия (для отмены)
+  function txtPrefill(key, k, fallback) {
+    return (k + "." + key) in pendingContent ? (pendingContent[k + "." + key] || "") : (fallback || "");
+  }
+  function openTextEdit(key, value, color, hasColor, font, fontsize, shadow) {
     txtKey = key;
     txtOrigText = value;
     // «до»: если по этому ключу уже был черновик цвета — берём его; иначе текущий видимый цвет.
     txtOrigColor = ("color." + key) in pendingContent ? (pendingContent["color." + key] || "") : (hasColor ? (color || "") : "");
     txtColor = txtOrigColor;
+    // Шрифт/размер/тень: приоритет — черновик, иначе значение с сайта.
+    txtOrigFont = txtPrefill(key, "font", font); txtFont = txtOrigFont;
+    txtOrigSize = txtPrefill(key, "fontsize", fontsize ? String(fontsize) : ""); txtSize = txtOrigSize;
+    txtOrigShadow = txtPrefill(key, "shadow", shadow ? String(shadow) : ""); txtShadow = txtOrigShadow;
     document.getElementById("merch-txt-title").textContent = "Текст: " + key;
     document.getElementById("merch-txt-val").value = value;
     if (color && /^#[0-9a-fA-F]{6}$/.test(color)) document.getElementById("merch-txt-color").value = color;
+    document.getElementById("merch-txt-font").value = txtFont;
+    document.getElementById("merch-txt-size").value = parseInt(txtSize, 10) || 0;
+    document.getElementById("merch-txt-shadow").value = parseInt(txtShadow, 10) || 0;
     updateTxtColorUI();
+    updateTxtStyleUI();
     txtModal.style.display = "flex";
     document.getElementById("merch-txt-val").focus();
   }
+  function updateTxtStyleUI() {
+    var s = parseInt(txtSize, 10) || 0, sh = parseInt(txtShadow, 10) || 0;
+    document.getElementById("merch-txt-size-val").textContent = s > 0 ? (s + "px") : "авто";
+    document.getElementById("merch-txt-shadow-val").textContent = sh > 0 ? (sh + "%") : "нет";
+  }
+  // Живой предпросмотр шрифта/размера/тени (в черновик пишем только по «Готово»).
+  function txtSetFont(v) { if (!txtKey) return; txtFont = v || ""; tellFrame({ type: "setContent", key: "font." + txtKey, value: txtFont }); }
+  function txtSetSize(v) { if (!txtKey) return; txtSize = (parseInt(v, 10) > 0) ? String(parseInt(v, 10)) : ""; tellFrame({ type: "setContent", key: "fontsize." + txtKey, value: txtSize }); updateTxtStyleUI(); }
+  function txtSetShadow(v) { if (!txtKey) return; txtShadow = (parseInt(v, 10) > 0) ? String(parseInt(v, 10)) : ""; tellFrame({ type: "setContent", key: "shadow." + txtKey, value: txtShadow }); updateTxtStyleUI(); }
   function updateTxtColorUI() {
     var cur = (txtColor || "").toLowerCase();
     [].forEach.call(document.querySelectorAll("#merch-txt-colors .merch-sw"), function (b) {
@@ -721,17 +760,27 @@
     if (txtKey) {
       tellFrame({ type: "setContent", key: txtKey, value: txtOrigText });
       tellFrame({ type: "setContent", key: "color." + txtKey, value: txtOrigColor });
+      tellFrame({ type: "setContent", key: "font." + txtKey, value: txtOrigFont });
+      tellFrame({ type: "setContent", key: "fontsize." + txtKey, value: txtOrigSize });
+      tellFrame({ type: "setContent", key: "shadow." + txtKey, value: txtOrigShadow });
     }
     txtModal.style.display = "none"; txtKey = null;
   }
-  // «Готово»: зафиксировать И текст, И цвет в черновик.
+  // «Готово»: зафиксировать текст + цвет + шрифт/размер/тень в черновик.
   function saveText() {
     if (!txtKey) return;
+    var key = txtKey;
     var val = document.getElementById("merch-txt-val").value;
-    pendingContent[txtKey] = val;
-    pendingContent["color." + txtKey] = txtColor;
-    tellFrame({ type: "setContent", key: txtKey, value: val });
-    tellFrame({ type: "setContent", key: "color." + txtKey, value: txtColor });
+    pendingContent[key] = val;
+    pendingContent["color." + key] = txtColor;
+    pendingContent["font." + key] = txtFont;
+    pendingContent["fontsize." + key] = txtSize;
+    pendingContent["shadow." + key] = txtShadow;
+    tellFrame({ type: "setContent", key: key, value: val });
+    tellFrame({ type: "setContent", key: "color." + key, value: txtColor });
+    tellFrame({ type: "setContent", key: "font." + key, value: txtFont });
+    tellFrame({ type: "setContent", key: "fontsize." + key, value: txtSize });
+    tellFrame({ type: "setContent", key: "shadow." + key, value: txtShadow });
     txtModal.style.display = "none"; txtKey = null;
     updatePending();
   }
@@ -1167,6 +1216,9 @@
     b.addEventListener("click", function () { txtSetColor(b.getAttribute("data-color") || ""); });
   });
   document.getElementById("merch-txt-color").addEventListener("input", function () { txtSetColor(this.value); });
+  document.getElementById("merch-txt-font").addEventListener("change", function () { txtSetFont(this.value); });
+  document.getElementById("merch-txt-size").addEventListener("input", function () { txtSetSize(this.value); });
+  document.getElementById("merch-txt-shadow").addEventListener("input", function () { txtSetShadow(this.value); });
   document.getElementById("merch-anim-close").addEventListener("click", closeAnim);
   animModal.addEventListener("click", function (e) { if (e.target === animModal) closeAnim(); });
   document.getElementById("merch-im-close").addEventListener("click", imClose);
