@@ -127,6 +127,10 @@
       <button type="button" id="merch-im-cover" style="padding:8px 12px;border:1px solid #111;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600;font-size:13px">Заполнить</button>
       <button type="button" id="merch-im-contain" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;cursor:pointer;font-weight:600;font-size:13px">Целиком (всё фото)</button>
     </div>
+    <p style="font-size:12px;color:#6b7280;margin:0 0 6px">Анимация появления фото:</p>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button type="button" id="merch-im-anim" style="padding:8px 12px;border:1px solid #7c3aed;border-radius:8px;background:#7c3aed;color:#fff;cursor:pointer;font-weight:600;font-size:13px">✨ Анимация появления</button>
+    </div>
     <div style="display:flex;justify-content:space-between;gap:10px">
       <button type="button" id="merch-im-replace" style="padding:9px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600">Заменить фото</button>
       <button type="button" id="merch-im-done" style="padding:9px 18px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600">Готово</button>
@@ -425,7 +429,7 @@
     } else if (d.type === "editContent") {
       openTextEdit(d.key, d.value || "", d.color || "", !!d.hasColor);
     } else if (d.type === "editImage") {
-      openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect);
+      openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect, d.anim || "");
     } else if (d.type === "editBg") {
       openBgEdit(d.key, d.img || "", d.vid || "", d.off || "", d.focal || "", d.fit || "cover", d.fade || "", d.loop || "");
     } else if (d.type === "editAnim") {
@@ -569,7 +573,7 @@
   // ── Модалка фото блока: перетаскиваемая рамка фокус-области + подгон + замена (в черновик) ──
   var imgInput = document.getElementById("merch-img-input");
   var imEl = document.getElementById("merch-im");
-  var imgKey = null, imgFocal = "50% 50%", imgFit = "cover", imgAspect = 1.6;
+  var imgKey = null, imgFocal = "50% 50%", imgFit = "cover", imgAspect = 1.6, imgAnim = "";
   var imPicker = makeFocalPicker(
     document.getElementById("merch-im-fp"),
     document.getElementById("merch-im-fpimg"),
@@ -584,11 +588,12 @@
       ? "Фото показывается целиком — область выбирать не нужно."
       : "Перетащите рамку — выберите, какая область фото попадёт в блок:";
   }
-  function openImageEdit(key, url, focal, fit, aspect) {
+  function openImageEdit(key, url, focal, fit, aspect, anim) {
     imgKey = key;
     imgFocal = /^\d{1,3}% \d{1,3}%$/.test(focal) ? focal : "50% 50%";
     imgFit = (fit === "contain") ? "contain" : "cover";
     imgAspect = (aspect && aspect > 0.05) ? aspect : 1.6;
+    imgAnim = anim || "";
     imEl.style.display = "flex";
     imFitBtns();
     imPicker.set(url || "", imgFocal, imgAspect, imgFit !== "contain", imSetFocal);
@@ -959,6 +964,7 @@
   document.getElementById("merch-im-replace").addEventListener("click", function () { imgInput.value = ""; imgInput.click(); });
   document.getElementById("merch-im-cover").addEventListener("click", function () { imSetFit("cover"); });
   document.getElementById("merch-im-contain").addEventListener("click", function () { imSetFit("contain"); });
+  document.getElementById("merch-im-anim").addEventListener("click", function () { if (imgKey) openAnimPick(imgKey, imgAnim); });
   imEl.addEventListener("click", function (e) { if (e.target === imEl) imClose(); });
   document.getElementById("merch-bg-close").addEventListener("click", bgClose);
   document.getElementById("merch-bg-done").addEventListener("click", function () { bgSetVideo(); bgClose(); });

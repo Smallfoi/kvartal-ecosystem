@@ -239,7 +239,8 @@
   }
   function applyAnim(key, val) {
     if (!safeId(key)) return;
-    document.querySelectorAll('[data-hideable="' + key + '"]').forEach(function (el) {
+    // Анимация применяется к блокам (data-hideable) И к отдельным фото (data-edit-img).
+    document.querySelectorAll('[data-hideable="' + key + '"], [data-edit-img="' + key + '"]').forEach(function (el) {
       el.className = el.className.replace(/\s*\bstaw-anim-[\w-]+/g, "").trim();
       if (val && /^[\w-]+$/.test(val) && val !== "none") el.classList.add("staw-anim-" + val);
     });
