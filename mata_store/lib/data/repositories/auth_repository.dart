@@ -8,6 +8,11 @@ abstract class AuthRepository {
   Future<AuthUser> login(String email, String password);
   Future<AuthUser> loginByPhone(String phone, String code, {String? name});
   Future<AuthUser> register(String name, String email, String password);
+  // Вход/регистрация по ТЕЛЕФОНУ+ПАРОЛЮ (основной путь экосистемы, #8).
+  Future<AuthUser> loginByPassword(String phone, String password);
+  Future<void> requestSmsCode(String phone);
+  Future<AuthUser> registerByPhone(String phone, String code, String password, String name);
+  Future<AuthUser> resetPasswordByPhone(String phone, String code, String password);
   Future<void> sendPasswordReset(String email);
   Future<void> resetPassword(String newPassword);
   Future<void> changePassword(String oldPassword, String newPassword);
@@ -70,6 +75,29 @@ class MockAuthRepository implements AuthRepository {
   Future<AuthUser> register(String name, String email, String password) async {
     await Future.delayed(const Duration(milliseconds: 1400));
     return AuthUser(name: name.trim(), email: email.trim());
+  }
+
+  @override
+  Future<AuthUser> loginByPassword(String phone, String password) async {
+    await Future.delayed(const Duration(milliseconds: 900));
+    return AuthUser(name: 'Гость', email: 'u_$phone@mata.local', phone: phone, provider: LoginProvider.phone);
+  }
+
+  @override
+  Future<void> requestSmsCode(String phone) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+  }
+
+  @override
+  Future<AuthUser> registerByPhone(String phone, String code, String password, String name) async {
+    await Future.delayed(const Duration(milliseconds: 1200));
+    return AuthUser(name: name.trim(), email: 'u_$phone@mata.local', phone: phone, provider: LoginProvider.phone);
+  }
+
+  @override
+  Future<AuthUser> resetPasswordByPhone(String phone, String code, String password) async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    return AuthUser(name: 'Гость', email: 'u_$phone@mata.local', phone: phone, provider: LoginProvider.phone);
   }
 
   @override
@@ -178,6 +206,44 @@ class ApiAuthRepository implements AuthRepository {
     final data = await _client.post(
       '/auth/register',
       body: {'name': name, 'email': email, 'password': password},
+    );
+    final map = data as Map<String, dynamic>;
+    _client.authToken = map['token'] as String?;
+    return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AuthUser> loginByPassword(String phone, String password) async {
+    final data = await _client.post(
+      '/auth/login',
+      body: {'phone': phone, 'password': password},
+    );
+    final map = data as Map<String, dynamic>;
+    _client.authToken = map['token'] as String?;
+    return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> requestSmsCode(String phone) async {
+    await _client.post('/auth/phone/request', body: {'phone': phone});
+  }
+
+  @override
+  Future<AuthUser> registerByPhone(String phone, String code, String password, String name) async {
+    final data = await _client.post(
+      '/auth/register',
+      body: {'phone': phone, 'code': code, 'password': password, 'name': name},
+    );
+    final map = data as Map<String, dynamic>;
+    _client.authToken = map['token'] as String?;
+    return AuthUser.fromJson(map['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AuthUser> resetPasswordByPhone(String phone, String code, String password) async {
+    final data = await _client.post(
+      '/auth/password/reset',
+      body: {'phone': phone, 'code': code, 'password': password},
     );
     final map = data as Map<String, dynamic>;
     _client.authToken = map['token'] as String?;
