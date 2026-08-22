@@ -1121,50 +1121,121 @@ window.STAW.openProfile = openProfile;
   setTier(DEFAULT, false);
 })();
 
-// ── Колода карт лояльности (база/серебро/золото/платина): 3D-веер + авто-цикл ──
+// ── Карты лояльности МАТА — окно-портал (одобрено 2026-08-23) ──
+// Колода уровней стоит ЗА окном, передняя карта («герой») выходит к зрителю.
 (function () {
-  const deck = document.querySelector("[data-loyalty-deck]");
-  if (!deck) return;
-  const cards = [].slice.call(deck.querySelectorAll(".mata-card"));
-  if (!cards.length) return;
-  const dotsBox = deck.querySelector("[data-loyalty-dots]");
+  const stage = document.querySelector("[data-ml-loyalty]");
+  if (!stage) return;
+  const deckEl = stage.querySelector("[data-ml-deck]");
+  const heroEl = stage.querySelector("[data-ml-hero]");
+  const dotsBox = stage.querySelector("[data-ml-dots]");
+  const capT = stage.querySelector("[data-ml-cap] .ml-cap-t");
+  const capS = stage.querySelector("[data-ml-cap] .ml-cap-s");
+  if (!deckEl || !heroEl) return;
   const reduce =
     window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const N = cards.length;
-  let front = 0;
-  let timer = null;
+
+  const WM = '<svg class="ml-wm" viewBox="312 580 656 112" xmlns="http://www.w3.org/2000/svg">' +
+    '<path class="m" d="M327.996 580H324.857H312V691.964H327.996V585.434L389.495 691.964H407.964L343.326 580H327.996Z"/>' +
+    '<path class="m" d="M487.937 580H472.606L407.964 691.964H426.432L487.937 585.434V691.964H503.933V580H491.075H487.937Z"/>' +
+    '<path class="m" d="M619.03 580H612.759H600.562L535.924 691.964H554.393L563.625 675.969H633.446L642.678 659.973H572.861L615.897 585.434L677.397 691.964H695.866L631.228 580H619.03Z"/>' +
+    '<path class="t" d="M814.324 580H688.838L679.605 595.996H743.583H759.579H823.556L814.324 580Z"/>' +
+    '<path class="t" d="M759.848 611.991H743.853V691.964H759.848V611.991Z"/>' +
+    '<path class="m" d="M903.402 580H890.135H884.933H871.666L807.023 691.964H825.492L887.534 584.504L931.103 659.973H860.485L869.717 675.969H940.339L949.571 691.964H968.04L903.402 580Z"/>' +
+    '</svg>';
+  const SIGN = '<svg class="ml-sign" viewBox="490 472 300 336" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M502.371 500.66L578.165 632.29L599.723 632.311L562.451 567.578L513.177 482L502.371 500.66Z"/>' +
+    '<path d="M769.167 632.534L617.277 632.359L606.477 651.019L681.175 651.109L779.925 651.221L769.167 632.534Z"/>' +
+    '<path d="M521.563 797.65L597.66 666.195L586.902 647.509L549.471 712.156L500 797.623L521.563 797.65Z"/>' +
+    '</svg>';
+  const QR = '<rect width="29" height="29" fill="#fff"/><path fill="#111" d="M0 0h7v7H0zM2 2h3v3H2zM22 0h7v7h-7zM24 2h3v3h-3zM0 22h7v7H0zM2 24h3v3H2zM10 0h2v2h-2zM14 2h2v2h-2zM10 6h4v2h-4zM18 4h2v4h-2zM9 9h3v3H9zM14 10h4v2h-4zM20 9h3v3h-3zM25 10h2v4h-2zM10 14h2v4h-2zM14 14h3v3h-3zM19 15h4v2h-4zM9 20h4v2H9zM15 19h2v4h-2zM22 20h3v3h-3zM26 18h2v3h-2zM10 24h3v3h-3zM15 25h4v2h-4zM21 25h2v2h-2zM25 24h3v3h-3z"/>';
+
+  const CARDS = [
+    { cls: "ml-platinum", name: "Платина", pts: "3 852", cash: "кэшбэк 5%", range: "от 1000 баллов", sign: true },
+    { cls: "ml-gold",     name: "Золото",  pts: "742",   cash: "кэшбэк 3%", range: "от 500 баллов",  sign: true },
+    { cls: "ml-silver",   name: "Серебро", pts: "368",   cash: "кэшбэк 2%", range: "от 200 баллов",  sign: true },
+    { cls: "ml-basic",    name: "Базовый", pts: "140",   cash: "кэшбэк 1%", range: "0–199 баллов",   sign: false },
+  ];
+
+  function faces(c) {
+    return '<div class="ml-face ml-front">' +
+        (c.cls === "ml-platinum" ? '<div class="ml-aur"><i></i><i></i><i></i></div>' : "") +
+        (c.sign ? SIGN : "") +
+        (c.cls === "ml-platinum" ? SIGN.replace('class="ml-sign"', 'class="ml-signGlow"') : "") +
+        (c.cls === "ml-platinum" ? '<div class="ml-edge"></div>' : "") +
+        '<div class="ml-rowTop">' + WM + '<span class="ml-lvl">' + c.name.toUpperCase() + "</span></div>" +
+        '<div class="ml-pts"><span class="ml-n">' + c.pts + '</span><span class="ml-l">баллов</span></div>' +
+        '<div class="ml-rowBot"><span class="ml-hname">ДЕРЖАТЕЛЬ КАРТЫ</span><span class="ml-uni">ЕДИНАЯ КАРТА</span></div>' +
+      "</div>" +
+      '<div class="ml-face ml-back">' +
+        '<div class="ml-stripe"></div>' +
+        '<div class="ml-backBody"><div class="ml-backTxt"><div class="ml-bcap">ПОКАЖИ НА КАССЕ</div><div class="ml-bd">Баллы спишутся со счёта. Код лояльности в QR.</div></div><div class="ml-qr"><svg viewBox="0 0 29 29">' + QR + "</svg></div></div>" +
+      "</div>";
+  }
+
+  deckEl.innerHTML = CARDS.map(function (c, i) {
+    return '<div class="ml-card ' + c.cls + '" data-i="' + i + '"><div class="ml-flip">' + faces(c) + "</div></div>";
+  }).join("");
+  const cards = [].slice.call(deckEl.querySelectorAll(".ml-card"));
+  const N = CARDS.length;
 
   const dots = [];
   if (dotsBox) {
-    cards.forEach(function (c, i) {
+    CARDS.forEach(function (_, i) {
       const b = document.createElement("button");
       b.type = "button";
-      b.setAttribute("aria-label", "Показать карту: " + (c.getAttribute("data-tier-name") || ("" + (i + 1))));
-      b.addEventListener("click", function () { go(i); restart(); });
+      b.setAttribute("aria-label", "Показать уровень " + CARDS[i].name);
+      b.addEventListener("click", function () { setFront(i); });
       dotsBox.appendChild(b);
       dots.push(b);
     });
   }
 
-  function render() {
-    cards.forEach(function (c, i) {
-      const pos = (i - front + N) % N;
-      c.className = c.className.replace(/\bpos-\d\b/g, "").trim() + " pos-" + pos;
-    });
-    dots.forEach(function (d, i) { d.classList.toggle("is-on", i === front); });
+  let front = 0;
+  let timer = null;
+
+  function buildHero(c) {
+    heroEl.className = "ml-hero " + c.cls;
+    heroEl.innerHTML = '<div class="ml-tilt"><div class="ml-flip">' + faces(c) + "</div></div>";
+    if (!reduce) { heroEl.classList.remove("pop"); void heroEl.offsetWidth; heroEl.classList.add("pop"); }
+    heroEl.onclick = function () { heroEl.classList.toggle("flipped"); stop(); };
   }
-  function go(i) { front = ((i % N) + N) % N; render(); }
-  function next() { go(front + 1); }
-  function start() { if (!timer && !reduce) timer = setInterval(next, 3400); }
+  function render() {
+    cards.forEach(function (el, i) {
+      const pos = (i - front + N) % N;
+      el.className = el.className.replace(/\bpos-\d\b/g, "").trim() + " pos-" + pos;
+    });
+    dots.forEach(function (d, i) { d.classList.toggle("on", i === front); });
+    const c = CARDS[front];
+    if (capT) capT.innerHTML = "Уровень <b>" + c.name + "</b>";
+    if (capS) capS.textContent = c.cash + " · " + c.range;
+    buildHero(c);
+  }
+  function setFront(i) { front = ((i % N) + N) % N; render(); restart(); }
+  function tick() { front = (front + 1) % N; render(); }
+  function start() { if (!timer && !reduce) timer = setInterval(tick, 5000); }
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
   function restart() { stop(); start(); }
 
+  cards.forEach(function (el) {
+    el.addEventListener("click", function (e) { setFront(+el.dataset.i); e.stopPropagation(); });
+  });
+
+  // Параллакс — только на вышедшей карте (герой); колода за окном неподвижна.
+  stage.addEventListener("mousemove", function (e) {
+    const t = heroEl.querySelector(".ml-tilt");
+    if (!t) return;
+    const r = stage.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    t.style.transform = "rotateX(" + (-py * 10).toFixed(2) + "deg) rotateY(" + (px * 14).toFixed(2) + "deg)";
+  });
+  stage.addEventListener("mouseleave", function () { const t = heroEl.querySelector(".ml-tilt"); if (t) t.style.transform = ""; });
+  stage.addEventListener("focusin", stop);
+  stage.addEventListener("focusout", start);
+
   render();
-  start();
-  deck.addEventListener("mouseenter", stop);
-  deck.addEventListener("mouseleave", start);
-  deck.addEventListener("focusin", stop);
-  deck.addEventListener("focusout", start);
+  setTimeout(start, 200);
 })();
 
 observeReveals();

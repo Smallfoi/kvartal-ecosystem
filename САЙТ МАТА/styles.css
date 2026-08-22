@@ -1304,141 +1304,146 @@ html.js.motion-off .hero .brand-wordmark span {
   color: var(--accent-ink);
 }
 
-/* ── Колода карт лояльности МАТА (база/серебро/золото/платина) ──────────────
-   Премиум-металлик 1:1 с картой приложения + 3D-веер с авто-перелистыванием,
-   бликом и точками. Управление позициями — script.js (класс .pos-N). */
-.loyalty-deck {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
-  margin-inline: auto;
-  aspect-ratio: 1.58;
-  perspective: 1400px;
-  outline: none;
-}
+/* ── Карты лояльности МАТА — окно-портал (одобрено 2026-08-23) ───────────────
+   Тёмное окно; колода уровней стоит ЗА окном (обрезается), передняя карта
+   выходит ИЗ окна к зрителю. Материалы 1:1 с дизайн-проектом карт v5.
+   Все классы префикс .ml- (изоляция от глобальных .hero/.card сайта). */
+.ml-stage { position: relative; height: clamp(486px, 40vw, 580px); margin-top: 40px;
+  perspective: 1300px; isolation: isolate; --ml-lime: #EEEA83; }
 
-.mata-card {
-  position: absolute;
-  inset: 0;
-  border-radius: 20px;
-  padding: clamp(20px, 2.4vw, 28px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  color: #f2f4f6;
-  box-shadow: 0 26px 60px -22px rgba(6, 9, 14, 0.7);
-  transform-style: preserve-3d;
-  will-change: transform, opacity;
-  transition:
-    transform 780ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 640ms ease,
-    box-shadow 640ms ease;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-}
+.ml-window { position: absolute; inset: 0; z-index: 1; border-radius: var(--r-lg); overflow: hidden;
+  perspective: 1050px;
+  background: radial-gradient(120% 90% at 32% 0%, #2b323a 0%, #20252b 42%, #14171c 100%);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 0 1px rgba(255,255,255,.06); }
+.ml-window::before { content: ""; position: absolute; inset: -20%; z-index: 0; pointer-events: none;
+  background: radial-gradient(40% 34% at 48% 30%, rgba(223,244,95,.10), transparent 70%),
+    radial-gradient(46% 40% at 62% 34%, rgba(87,188,216,.12), transparent 72%);
+  mix-blend-mode: screen; animation: mlSpot 16s ease-in-out infinite; }
+@keyframes mlSpot { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-5%,4%) scale(1.1)} }
+.ml-window::after { content: ""; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 42%, transparent 54%, rgba(0,0,0,.5) 100%); }
 
-/* Позиции в 3D-веере: 0 — фронт, дальше уходят вправо-назад. */
-.mata-card.pos-0 { transform: translate3d(0, 0, 60px) rotateY(0) scale(1);            opacity: 1;    z-index: 4; }
-.mata-card.pos-1 { transform: translate3d(7%, 6%, 0) rotateY(-15deg) scale(0.93);     opacity: 0.97; z-index: 3; }
-.mata-card.pos-2 { transform: translate3d(13%, 12%, -70px) rotateY(-21deg) scale(0.86); opacity: 0.9;  z-index: 2; }
-.mata-card.pos-3 { transform: translate3d(18%, 17%, -140px) rotateY(-25deg) scale(0.8); opacity: 0.8;  z-index: 1; }
+.ml-deck { position: absolute; inset: 0; z-index: 3; transform-style: preserve-3d; }
+.ml-cap { position: absolute; left: 0; right: 0; top: 20px; z-index: 8; text-align: center; pointer-events: none; }
+.ml-cap-t { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: .4px; color: #EEF1F5; }
+.ml-cap-t b { color: var(--ml-lime); }
+.ml-cap-s { font-size: 12.5px; color: #AEB6C0; margin-top: 4px; letter-spacing: .2px; }
+.ml-dots { position: absolute; left: 0; right: 0; bottom: 22px; z-index: 8; display: flex; gap: 14px; justify-content: center; }
+.ml-dots button { width: 9px; height: 9px; border-radius: 99px; padding: 0; cursor: pointer; background: transparent;
+  border: 1.5px solid rgba(255,255,255,.55); transition: transform .3s var(--ease-out), background .3s, border-color .3s; }
+.ml-dots button.on { background: var(--ml-lime); border-color: var(--ml-lime); transform: scale(1.5); }
 
-/* Металлик-градиенты тиров (цвета — из loyalty_card.dart приложения). */
-.mc-basic    { background: linear-gradient(142deg, #272d34 0%, #1b2026 48%, #12161b 100%); color: #f2f4f6; }
-.mc-silver   { background: linear-gradient(142deg, #e9edf2 0%, #d4dae1 18%, #c2c9d2 34%, #dde2e9 50%, #afb8c2 66%, #cbd2da 82%, #b7bfc9 100%); color: #2b323a; border-color: rgba(255,255,255,.75); }
-.mc-gold     { background: linear-gradient(142deg, #f3dfa0 0%, #e5c06e 18%, #d3a94f 34%, #edd494 50%, #c1943a 66%, #e2c177 82%, #cba14a 100%); color: #42300c; border-color: rgba(255,243,205,.75); }
-.mc-platinum { background: linear-gradient(142deg, #15181d 0%, #0b0d11 30%, #1b2027 52%, #07090c 74%, #141820 100%); color: #e7ecf3; border-color: rgba(202,214,228,.45); }
+.ml-card { position: absolute; top: 50%; left: 50%; width: clamp(280px, 80%, 360px); aspect-ratio: 1.586;
+  transform-style: preserve-3d; cursor: pointer;
+  transition: transform var(--dur-3) var(--ease-staw), opacity var(--dur-3) var(--ease-staw), filter var(--dur-3) var(--ease-staw); }
+.ml-card { transform: translate(-24%,-48%) translateZ(-280px) scale(.7); opacity: 0; }
+.ml-card.pos-0 { opacity: 0; }
+.ml-card.pos-1 { transform: translate(-40%,-55%) translateZ(-15px)  rotateY(-8deg) scale(.9);  opacity: 1;   z-index: 3; filter: brightness(.92); }
+.ml-card.pos-2 { transform: translate(-24%,-47%) translateZ(-100px) rotateY(-11deg) scale(.84); opacity: .96; z-index: 2; filter: brightness(.79) blur(.4px); }
+.ml-card.pos-3 { transform: translate(-9%,-39%)  translateZ(-185px) rotateY(-14deg) scale(.79); opacity: .92; z-index: 1; filter: brightness(.68) blur(.8px); }
 
-/* Диагональный блик — постоянно едет по ФРОНТ-карте. */
-.mc-shine {
-  position: absolute;
-  inset: -60% -20%;
-  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.42) 50%, transparent 62%);
-  transform: translateX(-120%);
-  pointer-events: none;
-  mix-blend-mode: soft-light;
-  opacity: 0;
-}
-.mata-card.pos-0 .mc-shine { animation: mc-sheen 3.6s ease-in-out 0.4s infinite; opacity: 1; }
-@keyframes mc-sheen {
-  0% { transform: translateX(-120%); }
-  55%, 100% { transform: translateX(120%); }
-}
+.ml-hero { position: absolute; top: 50%; left: 50%; width: clamp(280px, 80%, 360px); aspect-ratio: 1.586; z-index: 5;
+  transform: translate(-60%,-50%) translateZ(160px) rotateY(-8deg) rotateX(2deg) scale(1);
+  border-radius: 18px; box-shadow: 0 60px 92px -22px rgba(0,0,0,.55); cursor: pointer; transform-style: preserve-3d; }
+.ml-hero.pop { animation: mlHeroPop .62s var(--ease-staw); }
+@keyframes mlHeroPop { 0%{transform:translate(-50%,-50%) translateZ(20px) rotateY(-8deg) rotateX(2deg) scale(.86);opacity:.3}
+  100%{transform:translate(-60%,-50%) translateZ(160px) rotateY(-8deg) rotateX(2deg) scale(1);opacity:1} }
 
-.mata-card > :not(.mc-shine) { position: relative; z-index: 1; }
+.ml-tilt { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .3s ease-out; }
+.ml-flip { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.34,1.4,.5,1); }
+.ml-hero.flipped .ml-flip { transform: rotateY(180deg); }
+.ml-face { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; padding: 18px;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; }
+.ml-back { transform: rotateY(180deg); padding: 0; }
+.ml-face::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg,transparent 34%,var(--ml-sheen,rgba(255,255,255,.14)) 48%,transparent 60%); transform: translateX(-140%); }
 
-.mc-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.mc-brand { opacity: 0.82; }
-.mc-tier {
-  padding: 4px 11px;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-  font-size: 11px;
-}
-.mc-basic .mc-tier { color: var(--accent-2); border-color: rgba(223, 244, 95, 0.7); }
+.ml-wm { height: 15px; width: auto; display: block; position: relative; z-index: 2; }
+.ml-wm .m { fill: var(--ml-cink); } .ml-wm .t { fill: var(--ml-t, var(--ml-cink)); }
+.ml-sign { position: absolute; pointer-events: none; z-index: 1; }
+.ml-rowTop { display: flex; align-items: center; position: relative; z-index: 2; }
+.ml-lvl { margin-left: auto; font-size: 9px; letter-spacing: 2.2px; font-weight: 700; padding: 5px 11px; border-radius: 99px; color: var(--ml-cink); border: 1px solid var(--ml-pill, currentColor); }
+.ml-pts { margin: auto 0; display: flex; align-items: flex-end; gap: 8px; color: var(--ml-cink); position: relative; z-index: 2; }
+.ml-pts .ml-n { font-size: 36px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.ml-pts .ml-l { font-size: 12px; opacity: .6; padding-bottom: 3px; }
+.ml-rowBot { display: flex; align-items: flex-end; color: var(--ml-cink); position: relative; z-index: 2; }
+.ml-hname { font-size: 11px; font-weight: 700; letter-spacing: 1px; opacity: .72; text-transform: uppercase; }
+.ml-uni { margin-left: auto; font-size: 7.5px; letter-spacing: 1.8px; opacity: .5; }
+.ml-stripe { height: 26%; margin-top: 16px; }
+.ml-backBody { flex: 1; display: flex; align-items: center; gap: 14px; padding: 0 18px; color: var(--ml-cink); }
+.ml-bcap { font-size: 9px; letter-spacing: 2px; font-weight: 700; color: var(--ml-t, var(--ml-cink)); }
+.ml-bd { font-size: 10px; opacity: .6; line-height: 1.5; margin-top: 5px; }
+.ml-qr { width: 84px; height: 84px; background: #fff; border-radius: 10px; flex: 0 0 auto; display: grid; place-items: center; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.ml-qr svg { width: 70px; height: 70px; }
 
-.mc-chip {
-  width: 40px;
-  height: 30px;
-  margin-top: clamp(14px, 2.2vw, 22px);
-  border-radius: 7px;
-  background: linear-gradient(135deg, #f3e2a8, #c79a3f 55%, #9a742a);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6), inset 0 -1px 3px rgba(0, 0, 0, 0.3);
-}
+/* Материалы v5 */
+.ml-basic { --ml-cink:#F2F4F6; --ml-t:var(--ml-lime); --ml-sheen:rgba(255,255,255,.10); }
+.ml-basic .ml-face { background: radial-gradient(140% 100% at 22% 0%, rgba(255,255,255,.07), transparent 52%),
+  linear-gradient(135deg,#272D34 0%,#1B2026 48%,#12161B 100%); border: 1px solid rgba(255,255,255,.09); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+.ml-basic .ml-lvl { color: var(--ml-lime); --ml-pill: rgba(238,234,131,.7); }
+.ml-basic .ml-stripe { background: #101317; }
+.ml-basic .ml-wm .t { animation: mlEmber 4.6s ease-in-out infinite; }
+@keyframes mlEmber { 0%,62%,100%{fill:#EEEA83;filter:none} 76%,86%{fill:#FBF7AE;filter:drop-shadow(0 0 6px rgba(238,234,131,.85))} }
 
-.mc-mark {
-  margin-top: auto;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(30px, 4.4vw, 46px);
-  line-height: 1;
-  letter-spacing: 0.02em;
-}
+.ml-silver { --ml-cink:#2B323A; --ml-t:#2B323A; --ml-sheen:rgba(255,255,255,.4); }
+.ml-silver .ml-face { background: radial-gradient(140% 100% at 22% 0%, rgba(255,255,255,.75), transparent 55%),
+  linear-gradient(120deg,#E9EDF2 0%,#D4DAE1 18%,#C2C9D2 34%,#DDE2E9 50%,#AFB8C2 66%,#CBD2DA 82%,#B7BFC9 100%);
+  border: 1px solid rgba(255,255,255,.75); box-shadow: inset 0 1px 1px rgba(255,255,255,.85), inset 0 -12px 26px rgba(120,132,146,.28); }
+.ml-silver .ml-lvl { --ml-pill: rgba(78,90,104,.5); }
+.ml-silver .ml-stripe { background: linear-gradient(180deg,#9AA4B0,#7E8894); }
+.ml-silver .ml-sign { right:-6px; bottom:-10px; width:120px; fill:#B6BFC9; filter: drop-shadow(0 1px 0 rgba(255,255,255,.75)) drop-shadow(0 -1px 0 rgba(96,108,122,.5)); animation: mlBreath 7.3s ease-in-out infinite; }
+@keyframes mlBreath { 0%,100%{opacity:.5} 45%,60%{opacity:1} }
+.ml-silver .ml-front::after { animation: mlMoon 9.4s ease-in-out infinite; }
+@keyframes mlMoon { 0%,64%{transform:translateX(-140%)} 92%,100%{transform:translateX(140%)} }
 
-.mc-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 14px;
-  font-size: 13px;
-}
-.mc-cash { font-weight: 800; }
-.mc-range { opacity: 0.62; font-size: 12px; font-variant-numeric: tabular-nums; }
+.ml-gold { --ml-cink:#42300C; --ml-t:#42300C; --ml-sheen:rgba(255,248,220,.5); }
+.ml-gold .ml-face { background: radial-gradient(140% 100% at 22% 0%, rgba(255,246,214,.8), transparent 55%),
+  linear-gradient(120deg,#F3DFA0 0%,#E5C06E 18%,#D3A94F 34%,#EDD494 50%,#C1943A 66%,#E2C177 82%,#CBA14A 100%);
+  border: 1px solid rgba(255,243,205,.75); box-shadow: inset 0 1px 1px rgba(255,249,225,.9), inset 0 0 0 1px rgba(146,110,36,.28), inset 0 -14px 30px rgba(140,104,32,.35);
+  background-size: 230% 230%; animation: mlGoldFlow 12s ease-in-out infinite alternate; }
+@keyframes mlGoldFlow { 0%{background-position:0% 0%} 100%{background-position:100% 100%} }
+.ml-gold .ml-lvl { --ml-pill: rgba(110,82,22,.55); }
+.ml-gold .ml-stripe { background: linear-gradient(180deg,#BE9433,#9C7722); }
+.ml-gold .ml-sign { right:-28px; top:50%; transform:translateY(-50%); width:220px; fill:#C79B3F; filter: drop-shadow(0 1px 0 rgba(255,244,205,.8)) drop-shadow(0 -1px 0 rgba(122,90,24,.55)); animation: mlBreath 8.1s ease-in-out infinite; }
+.ml-gold .ml-front::after { animation: mlWarm 7.6s ease-in-out infinite; }
+@keyframes mlWarm { 0%,58%{transform:translateX(-140%)} 86%,100%{transform:translateX(140%)} }
 
-/* Точки-индикатор + быстрый переход по клику. */
-.loyalty-dots {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -26px;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  z-index: 5;
-}
-.loyalty-dots button {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(17, 19, 23, 0.22);
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-.loyalty-dots button.is-on { background: var(--ink); transform: scale(1.35); }
+.ml-platinum { --ml-cink:#E7ECF3; --ml-t:#E7ECF3; --ml-sheen:rgba(214,228,244,.22); }
+.ml-platinum .ml-aur { position:absolute; inset:-30%; z-index:0; pointer-events:none; filter:blur(34px); opacity:.55; mix-blend-mode:screen; }
+.ml-platinum .ml-aur i { position:absolute; border-radius:50%; }
+.ml-platinum .ml-aur i:nth-child(1){ width:55%;height:60%;left:6%;top:12%; background:radial-gradient(circle at 50% 50%, rgba(96,140,190,.55), transparent 65%); animation:mlAur1 13s ease-in-out infinite; }
+.ml-platinum .ml-aur i:nth-child(2){ width:50%;height:55%;right:2%;bottom:6%; background:radial-gradient(circle at 50% 50%, rgba(150,120,205,.4), transparent 65%); animation:mlAur2 17s ease-in-out infinite; }
+.ml-platinum .ml-aur i:nth-child(3){ width:40%;height:45%;left:34%;top:30%; background:radial-gradient(circle at 50% 50%, rgba(120,190,200,.35), transparent 65%); animation:mlAur1 21s ease-in-out infinite reverse; }
+@keyframes mlAur1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(16%,10%) scale(1.25)} }
+@keyframes mlAur2 { 0%,100%{transform:translate(0,0) scale(1.15)} 50%{transform:translate(-14%,-12%) scale(.9)} }
+.ml-platinum .ml-signGlow { position:absolute; right:-46px; top:50%; transform:translateY(-50%); width:300px; z-index:1; pointer-events:none; }
+.ml-platinum .ml-signGlow path { fill:url(#mlPlatMetal); opacity:0; animation:mlRay 5.2s ease-in-out infinite; filter:drop-shadow(0 0 6px rgba(190,214,240,.9)); }
+.ml-platinum .ml-signGlow path:nth-child(1){animation-delay:0s} .ml-platinum .ml-signGlow path:nth-child(2){animation-delay:.35s} .ml-platinum .ml-signGlow path:nth-child(3){animation-delay:.7s}
+@keyframes mlRay { 0%,55%,100%{opacity:0} 8%,30%{opacity:.75} 42%{opacity:0} }
+.ml-platinum .ml-edge { position:absolute; inset:0; border-radius:18px; z-index:3; pointer-events:none; padding:1.6px;
+  background: conic-gradient(from var(--ml-ea,0deg), transparent 0 335deg, rgba(232,242,252,.95) 351deg, rgba(150,172,196,.25) 359deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: mlEdge 5.2s linear infinite; }
+@property --ml-ea { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+@keyframes mlEdge { to { --ml-ea: 360deg; } }
+.ml-platinum .ml-face { background: radial-gradient(150% 110% at 20% -5%, rgba(120,138,158,.32), transparent 55%),
+  linear-gradient(120deg,#15181D 0%,#0B0D11 30%,#1B2027 52%,#07090C 74%,#141820 100%); border: 1px solid rgba(202,214,228,.45);
+  box-shadow: inset 0 0 0 1px rgba(10,12,16,.9), inset 0 0 0 2.5px rgba(186,200,216,.22), inset 0 1px 1px rgba(214,228,244,.28), inset 0 -14px 32px rgba(0,0,0,.7); }
+.ml-platinum .ml-lvl { color:#10141A; border:0; background:linear-gradient(180deg,#F4F8FC,#B9C6D4); box-shadow:0 1px 3px rgba(0,0,0,.6); }
+.ml-platinum .ml-stripe { background: linear-gradient(180deg,#0A0C10,#04060A); }
+.ml-platinum .ml-wm .m, .ml-platinum .ml-wm .t { fill:url(#mlPlatMetal); }
+.ml-platinum .ml-wm { height:17px; }
+.ml-platinum .ml-sign { right:-46px; top:50%; transform:translateY(-50%); width:300px; fill:rgba(228,238,250,.05); filter: drop-shadow(0 1px 0 rgba(214,228,244,.14)) drop-shadow(0 -1px 0 rgba(0,0,0,.8)); }
+.ml-platinum .ml-front::after { animation: mlPlatLoop 6.5s ease-in-out infinite; }
+@keyframes mlPlatLoop { 0%,58%{transform:translateX(-140%)} 88%,100%{transform:translateX(140%)} }
+.ml-platinum .ml-bcap { color:#C6D2E0; }
 
+@media (max-width: 900px) {
+  .ml-stage { max-width: 460px; margin-inline: auto; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .mata-card { transition: none; }
-  .mata-card.pos-0 .mc-shine { animation: none; }
+  .ml-card, .ml-flip, .ml-hero { transition-duration: .01ms; } .ml-hero.pop { animation: none; }
+  .ml-window::before, .ml-platinum .ml-front::after, .ml-basic .ml-wm .t, .ml-silver .ml-sign, .ml-silver .ml-front::after,
+  .ml-gold .ml-face, .ml-gold .ml-sign, .ml-gold .ml-front::after, .ml-platinum .ml-aur i, .ml-platinum .ml-signGlow path, .ml-platinum .ml-edge { animation: none; }
 }
 
 /* — Секция «О бренде»: RUN / TRAIL / RACE / EVERYDAY — */
