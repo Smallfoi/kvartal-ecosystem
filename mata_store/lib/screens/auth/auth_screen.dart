@@ -22,11 +22,14 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   late bool _isLogin;
+  bool _reset = false;    // режим «Забыл пароль?» (внутри «Входа»)
+  bool _smsSent = false;  // SMS-код отправлен (регистрация/сброс)
+  bool _busy = false;
   String? _error;
 
-  // Вход и регистрация — ТОЛЬКО по единому номеру телефона (директива
-  // владельца 2026-08-19): email/пароль из форм убраны.
+  // Вход по ТЕЛЕФОН+ПАРОЛЬ; регистрация — телефон+пароль+SMS-подтверждение (#8).
   final _nameCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
   // Маска телефона: образец «912 345-67-89» виден сразу и не исчезает при вводе.
   final _phoneCtrl = PhoneMaskController(
     hintColor: AppColors.black.withValues(alpha: 0.32),
@@ -41,39 +44,85 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _passCtrl.dispose();
     _phoneCtrl.dispose();
     super.dispose();
   }
 
-  // Переключение табов — мягкий фейд (шторку-проезд владелец отклонил
-  // для этого перехода 2026-08-19).
+  String get _phone => '+7${_phoneCtrl.text.replaceAll(RegExp(r'\D'), '')}';
+  bool get _phoneOk => _phoneCtrl.text.replaceAll(RegExp(r'\D'), '').length >= 10;
+
+  // Переключение Вход/Регистрация — мягкий фейд.
   void _toggle(bool isLogin) {
     setState(() {
       _isLogin = isLogin;
+      _reset = false;
+      _smsSent = false;
       _error = null;
+      _passCtrl.clear();
     });
   }
 
-  /// Проверка кода; вызывается виджетом OtpVerifyBoxes (хореография «OTP V5»
-  /// играет, пока идёт запрос). При регистрации дополнительно передаём имя —
-  /// verify создаёт аккаунт при первом входе.
-  Future<bool> _verifyPhoneCode(String code, {bool register = false}) async {
+  void _startReset() {
+    setState(() {
+      _reset = true;
+      _smsSent = false;
+      _error = null;
+      _passCtrl.clear();
+    });
+  }
+
+  // ВХОД: телефон + пароль (без OTP).
+  Future<void> _submitLogin() async {
+    if (_busy) return;
+    setState(() {
+      _error = null;
+      _busy = true;
+    });
+    final err = await context.read<AuthProvider>().loginByPassword(_phone, _passCtrl.text);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (err != null) {
+      setState(() => _error = err);
+      return;
+    }
+    await _afterLogin();
+  }
+
+  // Запросить SMS-код (регистрация/сброс).
+  Future<void> _requestSms() async {
+    if (_busy) return;
+    setState(() => _error = null);
+    if (!_reset && _nameCtrl.text.trim().isEmpty) {
+      setState(() => _error = 'Введите имя');
+      return;
+    }
+    if (!_phoneOk) {
+      setState(() => _error = 'Введите номер полностью');
+      return;
+    }
+    if (_passCtrl.text.length < 4) {
+      setState(() => _error = 'Пароль — минимум 4 символа');
+      return;
+    }
+    setState(() => _busy = true);
+    final err = await context.read<AuthProvider>().requestSmsCode(_phone);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (err != null) {
+      setState(() => _error = err);
+      return;
+    }
+    setState(() => _smsSent = true);
+  }
+
+  /// Проверка кода (OtpVerifyBoxes) → регистрация или сброс пароля.
+  Future<bool> _verifyCode(String code) async {
     if (mounted) setState(() => _error = null);
-    if (register && _nameCtrl.text.trim().isEmpty) {
-      _phoneError = 'Введите имя';
-      return false;
-    }
-    final digits = _phoneCtrl.text.replaceAll(RegExp(r'\D'), '');
-    if (digits.length < 10) {
-      _phoneError = 'Введите номер полностью';
-      return false;
-    }
     final auth = context.read<AuthProvider>();
-    final err = await auth.loginByPhone(
-      '+7$digits',
-      code,
-      name: register ? _nameCtrl.text.trim() : null,
-    );
+    final err = _reset
+        ? await auth.resetPasswordByPhone(_phone, code, _passCtrl.text)
+        : await auth.registerByPhone(_phone, code, _passCtrl.text, _nameCtrl.text.trim());
     if (err != null) {
       _phoneError = err;
       return false;
@@ -85,7 +134,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _onPhoneFailed() {
     if (!mounted) return;
-    setState(() => _error = _phoneError ?? 'Не удалось войти');
+    setState(() => _error = _phoneError ?? 'Не удалось');
   }
 
   Future<void> _onPhoneVerified() async {
@@ -137,24 +186,29 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: child,
                   ),
                 ),
-                child: _isLogin
+                child: (_isLogin && !_reset)
                     ? _LoginForm(
                         key: const ValueKey('login'),
                         phoneCtrl: _phoneCtrl,
+                        passCtrl: _passCtrl,
                         error: _error,
-                        onPhoneVerify: _verifyPhoneCode,
-                        onPhoneVerified: _onPhoneVerified,
-                        onPhoneFailed: _onPhoneFailed,
+                        busy: _busy,
+                        onSubmit: _submitLogin,
+                        onForgot: _startReset,
                       )
-                    : _RegisterForm(
-                        key: const ValueKey('register'),
+                    : _SmsForm(
+                        key: ValueKey(_reset ? 'reset' : 'register'),
+                        reset: _reset,
                         nameCtrl: _nameCtrl,
                         phoneCtrl: _phoneCtrl,
+                        passCtrl: _passCtrl,
                         error: _error,
-                        onPhoneVerify: (code) =>
-                            _verifyPhoneCode(code, register: true),
-                        onPhoneVerified: _onPhoneVerified,
-                        onPhoneFailed: _onPhoneFailed,
+                        busy: _busy,
+                        smsSent: _smsSent,
+                        onRequestSms: _requestSms,
+                        onVerify: _verifyCode,
+                        onVerified: _onPhoneVerified,
+                        onFailed: _onPhoneFailed,
                       ),
               ),
             ),
@@ -321,20 +375,55 @@ class _Tab extends StatelessWidget {
 
 // ─── Login form: вход только по номеру телефона (единый аккаунт) ─────────────
 
+// Основная кнопка формы (с индикатором загрузки).
+class _PrimaryButton extends StatelessWidget {
+  final String label;
+  final bool busy;
+  final Future<void> Function() onPressed;
+  const _PrimaryButton({required this.label, required this.busy, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 52,
+      child: ElevatedButton(
+        onPressed: busy ? null : () => onPressed(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.black,
+          foregroundColor: AppColors.white,
+          disabledBackgroundColor: AppColors.grey400,
+          shape: const RoundedRectangleBorder(),
+          elevation: 0,
+        ),
+        child: busy
+            ? const SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+              )
+            : Text(label.toUpperCase(),
+                style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1.2, fontSize: 14)),
+      ),
+    );
+  }
+}
+
+// ─── Вход: телефон + пароль (+ «Забыл пароль?») ──────────────────────────────
 class _LoginForm extends StatelessWidget {
   final TextEditingController phoneCtrl;
+  final TextEditingController passCtrl;
   final String? error;
-  final Future<bool> Function(String code) onPhoneVerify;
-  final VoidCallback onPhoneVerified;
-  final VoidCallback onPhoneFailed;
+  final bool busy;
+  final Future<void> Function() onSubmit;
+  final VoidCallback onForgot;
 
   const _LoginForm({
     super.key,
     required this.phoneCtrl,
+    required this.passCtrl,
     required this.error,
-    required this.onPhoneVerify,
-    required this.onPhoneVerified,
-    required this.onPhoneFailed,
+    required this.busy,
+    required this.onSubmit,
+    required this.onForgot,
   });
 
   @override
@@ -342,74 +431,61 @@ class _LoginForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        RemoteText(
+        const RemoteText(
           'app.auth.phoneHint',
-          'Вход по единому номеру',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.2,
-            color: AppColors.black,
-          ),
-        ).animate().fadeIn(duration: 350.ms, delay: 50.ms).slideY(begin: 0.1),
-        const SizedBox(height: 12),
-        _InputField(
-          controller: phoneCtrl,
-          label: 'Телефон',
-          hint: '',
-          prefixText: '+7 ',
-          keyboardType: TextInputType.phone,
-          inputFormatters: const [PhoneMaskFormatter()],
-          icon: Icons.phone_outlined,
-        ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.1),
-        if (error != null) ...[
-          const SizedBox(height: 12),
-          _ErrorBanner(message: error!),
-        ],
-        const SizedBox(height: 16),
-        // Ввод кода — хореография «OTP V5»: при вводе 4-й цифры код уходит на
-        // проверку сам, кнопка не нужна (стандарт анимаций экосистемы МАТА).
-        OtpVerifyBoxes(
-          hasError: error != null,
-          onSubmit: onPhoneVerify,
-          onSuccess: onPhoneVerified,
-          onFailed: onPhoneFailed,
+          'Вход по телефону и паролю',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: AppColors.black),
         ),
+        const SizedBox(height: 14),
+        _InputField(
+          controller: phoneCtrl, label: 'Телефон', hint: '', prefixText: '+7 ',
+          keyboardType: TextInputType.phone, inputFormatters: const [PhoneMaskFormatter()],
+          icon: Icons.phone_outlined,
+        ),
+        const SizedBox(height: 14),
+        _InputField(controller: passCtrl, label: 'Пароль', hint: '', icon: Icons.lock_outline, obscureText: true),
+        if (error != null) ...[const SizedBox(height: 12), _ErrorBanner(message: error!)],
+        const SizedBox(height: 20),
+        _PrimaryButton(label: 'Войти', busy: busy, onPressed: onSubmit),
         const SizedBox(height: 6),
         Center(
-          child: Text(
-            'Тестовый код: 1234',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.grey400,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+          child: TextButton(
+            onPressed: onForgot,
+            child: const Text('Забыл пароль?', style: TextStyle(color: AppColors.grey600, fontSize: 13)), // staw-static
           ),
         ),
-        const SizedBox(height: 8),
       ],
     );
   }
 }
 
-// ─── Register form: регистрация тоже только по номеру телефона ────────────────
-
-class _RegisterForm extends StatelessWidget {
+// ─── Регистрация / сброс пароля: поля → SMS-код → OTP V5 ─────────────────────
+class _SmsForm extends StatelessWidget {
+  final bool reset;
   final TextEditingController nameCtrl;
   final TextEditingController phoneCtrl;
+  final TextEditingController passCtrl;
   final String? error;
-  final Future<bool> Function(String code) onPhoneVerify;
-  final VoidCallback onPhoneVerified;
-  final VoidCallback onPhoneFailed;
+  final bool busy;
+  final bool smsSent;
+  final Future<void> Function() onRequestSms;
+  final Future<bool> Function(String code) onVerify;
+  final VoidCallback onVerified;
+  final VoidCallback onFailed;
 
-  const _RegisterForm({
+  const _SmsForm({
     super.key,
+    required this.reset,
     required this.nameCtrl,
     required this.phoneCtrl,
+    required this.passCtrl,
     required this.error,
-    required this.onPhoneVerify,
-    required this.onPhoneVerified,
-    required this.onPhoneFailed,
+    required this.busy,
+    required this.smsSent,
+    required this.onRequestSms,
+    required this.onVerify,
+    required this.onVerified,
+    required this.onFailed,
   });
 
   @override
@@ -417,54 +493,50 @@ class _RegisterForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (!reset) ...[
+          _InputField(
+            controller: nameCtrl, label: 'Имя', hint: 'Иван Иванов',
+            icon: Icons.person_outline, textCapitalization: TextCapitalization.words,
+          ),
+          const SizedBox(height: 14),
+        ],
         _InputField(
-          controller: nameCtrl,
-          label: 'Имя',
-          hint: 'Иван Иванов',
-          icon: Icons.person_outline,
-          textCapitalization: TextCapitalization.words,
-        ).animate().fadeIn(duration: 350.ms, delay: 50.ms).slideY(begin: 0.1),
+          controller: phoneCtrl, label: 'Телефон', hint: '', prefixText: '+7 ',
+          keyboardType: TextInputType.phone, inputFormatters: const [PhoneMaskFormatter()],
+          icon: Icons.phone_outlined,
+        ),
         const SizedBox(height: 14),
         _InputField(
-          controller: phoneCtrl,
-          label: 'Телефон',
-          hint: '',
-          prefixText: '+7 ',
-          keyboardType: TextInputType.phone,
-          inputFormatters: const [PhoneMaskFormatter()],
-          icon: Icons.phone_outlined,
-        ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.1),
-        if (error != null) ...[
-          const SizedBox(height: 12),
-          _ErrorBanner(message: error!),
-        ],
-        const SizedBox(height: 16),
-        // Код подтверждения: verify создаёт аккаунт при первом входе (имя
-        // уходит вместе с кодом) — пароль не нужен.
-        OtpVerifyBoxes(
-          hasError: error != null,
-          onSubmit: onPhoneVerify,
-          onSuccess: onPhoneVerified,
-          onFailed: onPhoneFailed,
+          controller: passCtrl, label: reset ? 'Новый пароль' : 'Пароль', hint: '',
+          icon: Icons.lock_outline, obscureText: true,
         ),
-        const SizedBox(height: 6),
-        Center(
-          child: Text(
-            'Тестовый код: 1234',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.grey400,
-              fontFeatures: const [FontFeature.tabularFigures()],
+        if (error != null) ...[const SizedBox(height: 12), _ErrorBanner(message: error!)],
+        const SizedBox(height: 20),
+        if (!smsSent)
+          _PrimaryButton(label: 'Получить SMS-код', busy: busy, onPressed: onRequestSms)
+        else ...[
+          // Ввод кода — хореография «OTP V5» (стандарт анимаций экосистемы МАТА).
+          OtpVerifyBoxes(
+            hasError: error != null,
+            onSubmit: onVerify,
+            onSuccess: onVerified,
+            onFailed: onFailed,
+          ),
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              'Тестовый код: 1234',
+              style: TextStyle(fontSize: 12, color: AppColors.grey400, fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
-        ),
+        ],
         const SizedBox(height: 14),
         const RemoteText(
           'app.auth.consent',
           'Продолжая, вы соглашаетесь с условиями использования и политикой конфиденциальности',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 11, color: AppColors.grey400, height: 1.5),
-        ).animate().fadeIn(duration: 300.ms, delay: 320.ms),
+        ),
         const SizedBox(height: 6),
         Center(
           child: GestureDetector(
@@ -477,16 +549,11 @@ class _RegisterForm extends StatelessWidget {
               child: RemoteText(
                 'app.auth.openDocs',
                 'Открыть документы',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.black,
-                  decoration: TextDecoration.underline,
-                ),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.black, decoration: TextDecoration.underline),
               ),
             ),
           ),
-        ).animate().fadeIn(duration: 300.ms, delay: 340.ms),
+        ),
         const SizedBox(height: 8),
       ],
     );
@@ -504,6 +571,7 @@ class _InputField extends StatefulWidget {
   final TextCapitalization textCapitalization;
   final String? prefixText;
   final List<TextInputFormatter>? inputFormatters;
+  final bool obscureText;
 
   const _InputField({
     required this.controller,
@@ -514,6 +582,7 @@ class _InputField extends StatefulWidget {
     this.textCapitalization = TextCapitalization.none,
     this.prefixText,
     this.inputFormatters,
+    this.obscureText = false,
   });
 
   @override
@@ -553,6 +622,7 @@ class _InputFieldState extends State<_InputField> {
               keyboardType: widget.keyboardType,
               textCapitalization: widget.textCapitalization,
               inputFormatters: widget.inputFormatters,
+              obscureText: widget.obscureText,
               style: const TextStyle(
                 fontSize: 15,
                 color: AppColors.black,

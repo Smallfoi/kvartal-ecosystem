@@ -55,7 +55,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   /// проверка непринятых обязательных документов — гейт согласия.
   Future<bool> _submit(String code) async {
     if (mounted) setState(() => _localError = null);
-    final success = await ref.read(authProvider.notifier).verifyCode(code);
+    final success = await ref.read(authProvider.notifier).completeWithCode(code);
     if (!success) return false;
 
     // Fail-open: любая ошибка проверки документов не должна запирать вход.

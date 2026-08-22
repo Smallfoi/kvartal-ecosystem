@@ -242,6 +242,63 @@ class AuthNotifier extends StateNotifier<AuthState> {
     });
   }
 
+  // Отложенные данные для флоу с SMS (задаются перед sendCode): цель + имя/пароль.
+  String _pendingPurpose = 'login'; // login | register | reset
+  String _pendingName = '';
+  String _pendingPassword = '';
+
+  void setPending({required String purpose, String name = '', String password = ''}) {
+    _pendingPurpose = purpose;
+    _pendingName = name;
+    _pendingPassword = password;
+  }
+
+  /// Вход по ТЕЛЕФОНУ + ПАРОЛЮ (основной путь, #8) — без OTP.
+  Future<bool> loginByPassword(String phone, String password) async {
+    state = state.copyWith(isLoading: true, error: null, clearError: true);
+    try {
+      final session = await _postAuth('/auth/login', {'phone': phone, 'password': password});
+      await _completeSession(session, phone);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _authErrorText(e));
+      return false;
+    }
+  }
+
+  /// Проверка кода с учётом цели: регистрация / сброс пароля / (легаси) OTP-вход.
+  Future<bool> completeWithCode(String code) async {
+    state = state.copyWith(isLoading: true, error: null, clearError: true);
+    try {
+      final session = _pendingPurpose == 'register'
+          ? await _postAuth('/auth/register', {
+              'phone': state.phone, 'code': code,
+              'password': _pendingPassword, 'name': _pendingName,
+            })
+          : _pendingPurpose == 'reset'
+              ? await _postAuth('/auth/password/reset', {
+                  'phone': state.phone, 'code': code, 'password': _pendingPassword,
+                })
+              : await _loginOrRegisterByPhone(state.phone, code);
+      await _completeSession(session, state.phone);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _authErrorText(e));
+      return false;
+    }
+  }
+
+  Future<void> _completeSession(_BackendSession session, String phone) async {
+    await _saveSession(session.token, session.user, phone);
+    state = state.copyWith(
+      status: AuthStatus.authenticated,
+      isLoading: false,
+      token: session.token,
+      user: session.user,
+      clearError: true,
+    );
+  }
+
   Future<_BackendSession> _postAuth(
     String path,
     Map<String, dynamic> body,
@@ -366,12 +423,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           error.type == DioExceptionType.connectionError) {
         return 'Не удалось подключиться к серверу. Проверь backend и USB/Wi-Fi соединение.';
       }
-      if (error.response?.statusCode == 401) {
-        return 'Неверный код. Попробуй ещё раз';
-      }
       final message = error.response?.data;
       if (message is Map && message['detail'] != null) {
         return message['detail'].toString();
+      }
+      if (error.response?.statusCode == 401) {
+        return 'Неверный код. Попробуй ещё раз';
       }
     }
     return 'Не удалось войти. Попробуй ещё раз.';

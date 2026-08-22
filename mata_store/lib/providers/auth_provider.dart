@@ -112,6 +112,68 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Вход по ТЕЛЕФОНУ + ПАРОЛЮ (основной путь, #8).
+  Future<String?> loginByPassword(String phone, String password) async {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 10) return 'Введите корректный номер';
+    if (password.isEmpty) return 'Введите пароль';
+    _setLoading(true);
+    try {
+      _user = await _repo.loginByPassword(phone, password);
+      _save();
+      return null;
+    } catch (e) {
+      return 'Неверный телефон или пароль';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Отправить SMS-код на телефон (для регистрации/сброса пароля).
+  Future<String?> requestSmsCode(String phone) async {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 10) return 'Введите корректный номер';
+    try {
+      await _repo.requestSmsCode(phone);
+      return null;
+    } catch (e) {
+      return 'Не удалось отправить код';
+    }
+  }
+
+  /// Регистрация по телефону: код подтверждает телефон, аккаунт с паролем.
+  Future<String?> registerByPhone(String phone, String code, String password, String name) async {
+    if (name.trim().isEmpty) return 'Введите имя';
+    if (code.trim().length != 4) return 'Введите код из SMS';
+    if (password.length < 4) return 'Пароль — минимум 4 символа';
+    _setLoading(true);
+    try {
+      _user = await _repo.registerByPhone(phone, code, password, name.trim());
+      _save();
+      return null;
+    } catch (e) {
+      return 'Не удалось зарегистрироваться (проверьте код)';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Сброс пароля по SMS-коду.
+  Future<String?> resetPasswordByPhone(String phone, String code, String password) async {
+    if (code.trim().length != 4) return 'Введите код из SMS';
+    if (password.length < 4) return 'Пароль — минимум 4 символа';
+    _setLoading(true);
+    try {
+      _user = await _repo.resetPasswordByPhone(phone, code, password);
+      _save();
+      return null;
+    } catch (e) {
+      return 'Не удалось сбросить пароль (проверьте код)';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<String?> register(
     String name,
     String email,
