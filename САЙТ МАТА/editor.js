@@ -294,8 +294,8 @@
   // ── Анимация ──
   function currentAnim(el) { var m = /\bstaw-anim-([\w-]+)/.exec(el.className); return m ? m[1] : ""; }
   function applyAnimLocal(key, val) {
-    // Анимация применяется к блокам (data-hideable) И к отдельным фото (data-edit-img).
-    document.querySelectorAll('[data-hideable="' + key + '"], [data-edit-img="' + key + '"]').forEach(function (el) {
+    // Анимация применяется к блокам (data-hideable), к фото (data-edit-img) И к фону (data-edit-bg).
+    document.querySelectorAll('[data-hideable="' + key + '"], [data-edit-img="' + key + '"], [data-edit-bg="' + key + '"]').forEach(function (el) {
       el.className = el.className.replace(/\s*\bstaw-anim-[\w-]+/g, "").trim();
       if (val && /^[\w-]+$/.test(val) && val !== "none") el.classList.add("staw-anim-" + val);
     });
@@ -405,6 +405,7 @@
           img: el._bgImg || "", vid: el._bgVid || "", off: el._bgOff || "",
           focal: el._bgFocal || "", fit: el._bgFit || "cover",
           fade: el._bgFade || "", loop: el._bgLoop || "",
+          anim: currentAnim(el),   // текущая анимация фона — для пикера «✨» в окне «Фон»
         });
       });
       el.insertBefore(b, el.firstChild);
@@ -798,7 +799,9 @@
     }
   });
 
-  markDraggable(); initHide(); initAdders(); initAlign(); initBg();
+  // initAlign() убран: стрелки выравнивания больше не нужны — расположение задаётся
+  // перетаскиванием (drag). Опубликованные align.* если и есть — применяются пассивно.
+  markDraggable(); initHide(); initAdders(); initBg();
   var grid = document.querySelector("[data-product-grid]");
   if (grid && window.MutationObserver) new MutationObserver(markDraggable).observe(grid, { childList: true });
   // Промо-стрип рендерится promo.js асинхронно — перематить баннеры после наполнения.
