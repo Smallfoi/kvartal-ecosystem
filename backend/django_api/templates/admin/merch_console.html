@@ -151,11 +151,16 @@
       <button type="button" id="merch-bg-close" style="border:0;background:none;font-size:22px;cursor:pointer;color:#6b7280">×</button>
     </div>
     <p style="font-size:12px;color:#6b7280;margin:0 0 10px">На фон можно поставить <b>фото</b>, короткое <b>видео</b> или оставить <b>градиент</b> (по умолчанию). Так экраны можно чередовать. Кнопка <b>«Удалить фотографию»</b> убирает поставленное фото/видео и возвращает градиент — сам градиент не удаляется никогда.</p>
-    <p id="merch-bg-hint" style="font-size:12px;color:#6b7280;margin:0 0 6px">Фото: перетащите рамку — какая область фото на фоне:</p>
+    <p id="merch-bg-hint" style="font-size:12px;color:#6b7280;margin:0 0 6px">Фото: <b>колёсико мыши</b> — приближение, <b>перетащите</b> — какая область фото в кадре:</p>
     <div id="merch-bg-fp" style="position:relative;width:100%;height:180px;background:#111;border-radius:8px;overflow:hidden;margin-bottom:8px;touch-action:none;user-select:none;cursor:move">
       <img id="merch-bg-fpimg" alt="" style="position:absolute;left:0;top:0;pointer-events:none;-webkit-user-drag:none">
       <video id="merch-bg-fpvid" muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;pointer-events:none"></video>
       <div id="merch-bg-fpframe" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);box-sizing:border-box;pointer-events:none"></div>
+    </div>
+    <div id="merch-bg-zoomrow" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:#374151">
+      <span style="font-weight:600;white-space:nowrap">🔍 Масштаб</span>
+      <input id="merch-bg-zoom" type="range" min="100" max="400" value="100" step="5" style="flex:1;cursor:pointer">
+      <span id="merch-bg-zoomval" style="width:40px;text-align:right;font-variant-numeric:tabular-nums">100%</span>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <button type="button" id="merch-bg-photo" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:13px">Выбрать / заменить фото</button>
@@ -488,6 +493,83 @@
     };
   }
 
+  // Кроп-пикер окна «Фон»: рамка кадра ФИКСИРОВАНА по центру, а ФОТО двигается
+  // (перетаскивание) и приближается (колесо/ползунок) — как в Instagram/аватарке.
+  // Возвращает focal ("fx% fy%") + zoom (≥1). На сайте: background-position=focal,
+  // background-size=cover×zoom. Отдельный от makeFocalPicker (пикеры фото/баннера не трогаем).
+  var CROP_ZMAX = 4;
+  function makeCropPicker(box, img, frame) {
+    var natW = 0, natH = 0, aspect = 2, fx = 50, fy = 50, zoom = 1, enabled = true, onChange = null, geom = null, drag = null;
+    function frameFit(bw, bh) {
+      var fw, fh;
+      if (bw / bh > aspect) { fh = bh; fw = bh * aspect; } else { fw = bw; fh = bw / aspect; }
+      return { fw: fw, fh: fh, fx: (bw - fw) / 2, fy: (bh - fh) / 2 };
+    }
+    function computeGeom() {
+      var bw = box.clientWidth, bh = box.clientHeight;
+      if (!natW || !natH || !bw || !bh) { geom = null; render(); return; }
+      var fr = frameFit(bw, bh);
+      geom = { fw: fr.fw, fh: fr.fh, fcx: fr.fx + fr.fw / 2, fcy: fr.fy + fr.fh / 2, s0: Math.max(fr.fw / natW, fr.fh / natH) };
+      frame.style.width = fr.fw + "px"; frame.style.height = fr.fh + "px";
+      frame.style.left = fr.fx + "px"; frame.style.top = fr.fy + "px";
+      render();
+    }
+    function clampFocal() {
+      if (!geom) return;
+      var iw = natW * geom.s0 * zoom, ih = natH * geom.s0 * zoom;
+      var mx = iw > 0 ? 50 * geom.fw / iw : 50, my = ih > 0 ? 50 * geom.fh / ih : 50;
+      fx = Math.min(100 - mx, Math.max(mx, fx));
+      fy = Math.min(100 - my, Math.max(my, fy));
+    }
+    function render() {
+      if (!geom) { frame.style.display = "none"; return; }
+      clampFocal();
+      var iw = natW * geom.s0 * zoom, ih = natH * geom.s0 * zoom;
+      img.style.width = iw + "px"; img.style.height = ih + "px";
+      img.style.left = (geom.fcx - fx / 100 * iw) + "px";
+      img.style.top = (geom.fcy - fy / 100 * ih) + "px";
+      frame.style.display = enabled ? "block" : "none";
+    }
+    function emit() { if (onChange) onChange(Math.round(fx) + "% " + Math.round(fy) + "%", zoom); }
+    function down(e) { if (!enabled || !geom) return; e.preventDefault(); var p = (e.touches && e.touches[0]) || e; drag = { x: p.clientX, y: p.clientY, fx0: fx, fy0: fy }; }
+    function move(e) {
+      if (!drag || !geom) return; e.preventDefault();
+      var p = (e.touches && e.touches[0]) || e;
+      var iw = natW * geom.s0 * zoom, ih = natH * geom.s0 * zoom;
+      fx = drag.fx0 - (p.clientX - drag.x) / iw * 100;
+      fy = drag.fy0 - (p.clientY - drag.y) / ih * 100;
+      render(); emit();
+    }
+    function up() { drag = null; }
+    function wheel(e) {
+      if (!enabled || !geom) return; e.preventDefault();
+      zoom = Math.min(CROP_ZMAX, Math.max(1, zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+      render(); emit();
+    }
+    box.addEventListener("mousedown", down);
+    box.addEventListener("touchstart", down, { passive: false });
+    window.addEventListener("mousemove", move);
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("mouseup", up);
+    window.addEventListener("touchend", up);
+    box.addEventListener("wheel", wheel, { passive: false });
+    img.addEventListener("load", function () { natW = img.naturalWidth; natH = img.naturalHeight; computeGeom(); });
+    return {
+      set: function (url, focal, z, asp, en, cb) {
+        onChange = cb; aspect = (asp && asp > 0.05) ? asp : 2;
+        var m = /^(\d{1,3})% (\d{1,3})%$/.exec(focal || ""); fx = m ? +m[1] : 50; fy = m ? +m[2] : 50;
+        zoom = Math.min(CROP_ZMAX, Math.max(1, parseFloat(z) || 1));
+        enabled = en !== false; box.style.cursor = enabled ? "move" : "default";
+        if (img.getAttribute("src") !== (url || "")) { natW = 0; natH = 0; img.src = url || ""; }
+        if (img.complete && img.naturalWidth) { natW = img.naturalWidth; natH = img.naturalHeight; computeGeom(); } else { render(); }
+        setTimeout(computeGeom, 60);
+      },
+      setEnabled: function (en) { enabled = en; box.style.cursor = en ? "move" : "default"; render(); },
+      setZoom: function (z) { zoom = Math.min(CROP_ZMAX, Math.max(1, parseFloat(z) || 1)); render(); emit(); },
+      getZoom: function () { return zoom; },
+    };
+  }
+
   // ── Мост: сообщения от editor.js (сайт) и от приложения (Flutter web) ──
   window.addEventListener("message", function (e) {
     // Принимаем только от собственных фреймов (сайт/приложение). Без этой проверки
@@ -507,7 +589,7 @@
     } else if (d.type === "editImage") {
       openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect, d.anim || "");
     } else if (d.type === "editBg") {
-      openBgEdit(d.key, d.img || "", d.vid || "", d.off || "", d.focal || "", d.fit || "cover", d.fade || "", d.loop || "", d.anim || "");
+      openBgEdit(d.key, d.img || "", d.vid || "", d.off || "", d.focal || "", d.fit || "cover", d.fade || "", d.loop || "", d.anim || "", d.zoom || "");
     } else if (d.type === "editAnim") {
       openAnimPick(d.key, d.value || "none");
     } else if (d.type === "editBanner") {
@@ -707,24 +789,41 @@
   // ── Модалка ФОНА блока/секции: фото (рамка) / видео (ссылка) / убрать (градиент) ──
   var bgModalEl = document.getElementById("merch-bg");
   var bgFileInput = document.getElementById("merch-bg-file");
-  var bgKey = null, bgFocal = "50% 50%", bgFit = "cover", bgVid = "", bgCurImg = "", bgAnim = "";
+  var bgKey = null, bgFocal = "50% 50%", bgFit = "cover", bgVid = "", bgCurImg = "", bgAnim = "", bgZoom = 1;
   var BG_ASPECT = 2.0;
-  var bgPicker = makeFocalPicker(
+  var bgPicker = makeCropPicker(
     document.getElementById("merch-bg-fp"),
     document.getElementById("merch-bg-fpimg"),
     document.getElementById("merch-bg-fpframe")
   );
   function bgDraft(k, v) { pendingContent[k] = v; tellFrame({ type: "setContent", key: k, value: v }); updatePending(); }
+  // Обновить ползунок масштаба + подпись под текущий зум.
+  function bgZoomUI() {
+    var z = Math.round(bgZoom * 100);
+    document.getElementById("merch-bg-zoom").value = z;
+    document.getElementById("merch-bg-zoomval").textContent = z + "%";
+  }
+  // Пикер отдал новый кадр (перетаскивание/колесо/ползунок) → в черновик focal+zoom.
+  function bgPickCb(key) {
+    return function (focal, zoom) {
+      bgFocal = focal; bgZoom = zoom; bgZoomUI();
+      bgDraft("bgfocal." + key, focal);
+      bgDraft("bgzoom." + key, zoom > 1 ? String(Math.round(zoom * 100) / 100) : "");
+    };
+  }
   function bgFitBtns() {
     var base = "padding:8px 12px;border:1px solid;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;";
     var on = "background:#111;color:#fff;border-color:#111", off = "background:#fff;color:#374151;border-color:#d1d5db";
     document.getElementById("merch-bg-cover").style.cssText = base + (bgFit === "contain" ? off : on);
     document.getElementById("merch-bg-contain").style.cssText = base + (bgFit === "contain" ? on : off);
   }
-  function openBgEdit(key, img, vid, off, focal, fit, fade, loop, anim) {
+  function openBgEdit(key, img, vid, off, focal, fit, fade, loop, anim, zoom) {
     bgKey = key; bgVid = vid || ""; bgAnim = anim || "";
     bgFocal = /^\d{1,3}% \d{1,3}%$/.test(focal) ? focal : "50% 50%";
     bgFit = (fit === "contain") ? "contain" : "cover";
+    // Масштаб (приоритет — черновик, иначе значение с сайта).
+    var zoomV = ("bgzoom." + key) in pendingContent ? pendingContent["bgzoom." + key] : (zoom || "");
+    bgZoom = Math.min(4, Math.max(1, parseFloat(zoomV) || 1));
     var pend = pendingImages["bg." + key];
     bgCurImg = (pend && pend.url) || img || "";
     document.getElementById("merch-bg-video").value = bgVid;
@@ -735,8 +834,8 @@
     document.getElementById("merch-bg-fade").checked = fadeV !== "0";
     document.getElementById("merch-bg-loop").checked = loopV !== "0";
     bgModalEl.style.display = "flex";
-    bgFitBtns();
-    bgPicker.set(bgCurImg, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + bgKey, pos); });
+    bgFitBtns(); bgZoomUI();
+    bgPicker.set(bgCurImg, bgFocal, bgZoom, BG_ASPECT, bgFit !== "contain", bgPickCb(bgKey));
     bgPreviewVideo(bgVid);   // если есть видео — показать/проиграть его в окне «Фон»
   }
   // Превью в окне «Фон»: показываем В ТОМ ЖЕ месте либо фото (рамка фокуса), либо видео.
@@ -782,9 +881,11 @@
     bgCurImg = "";
     bgDraft("bgoff." + bgKey, "1");                       // показать градиент
     bgDraft("bgvid." + bgKey, "");                        // убрать видео
+    bgDraft("bgzoom." + bgKey, "");                       // сбросить масштаб
+    bgZoom = 1; bgZoomUI();
     bgPreviewVideo("");                                   // убрать видео-превью
     // очистить рамку-превью, чтобы было видно, что фото удалено
-    bgPicker.set("", bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + bgKey, pos); });
+    bgPicker.set("", bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(bgKey));
     updatePending();
   }
   bgFileInput.addEventListener("change", function () {
@@ -797,8 +898,9 @@
       bgVid = ""; document.getElementById("merch-bg-video").value = "";
       bgDraft("bgoff." + key, ""); bgDraft("bgvid." + key, "");
       bgCurImg = rd.result;
+      bgZoom = 1; bgDraft("bgzoom." + key, ""); bgZoomUI();   // новое фото → масштаб с нуля
       bgPreviewVideo("");   // выбрали ФОТО → убрать видео-превью, показать фото
-      bgPicker.set(rd.result, bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + key, pos); });
+      bgPicker.set(rd.result, bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(key));
     };
     rd.readAsDataURL(f);
   });
@@ -817,7 +919,8 @@
       bgDraft("bgvid." + key, d.url);
       bgDraft("bgoff." + key, "");
       delete pendingImages["bg." + key];   // видео перекрывает фото
-      bgPicker.set("", bgFocal, BG_ASPECT, bgFit !== "contain", function (pos) { bgFocal = pos; bgDraft("bgfocal." + key, pos); });
+      bgZoom = 1; bgZoomUI();
+      bgPicker.set("", bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(key));
       bgPreviewVideo(d.url);   // показать загруженное видео прямо в окне «Фон»
       status.textContent = "Загружено ✓";
       updatePending();
@@ -1050,6 +1153,7 @@
   document.getElementById("merch-bg-contain").addEventListener("click", function () { bgSetFit("contain"); });
   document.getElementById("merch-bg-remove").addEventListener("click", bgRemove);
   document.getElementById("merch-bg-anim").addEventListener("click", function () { if (bgKey) openAnimPick(bgKey, bgAnim); });
+  document.getElementById("merch-bg-zoom").addEventListener("input", function () { if (bgKey) bgPicker.setZoom(this.value / 100); });
   document.getElementById("merch-bg-fade").addEventListener("change", function () { if (bgKey) bgDraft("bgfade." + bgKey, this.checked ? "" : "0"); });
   document.getElementById("merch-bg-loop").addEventListener("change", function () { if (bgKey) bgDraft("bgloop." + bgKey, this.checked ? "" : "0"); });
   document.getElementById("merch-bg-video").addEventListener("change", bgSetVideo);

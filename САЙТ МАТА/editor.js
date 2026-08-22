@@ -369,11 +369,21 @@
     var pp = (layer._active || a).play(); if (pp && pp.catch) pp.catch(function () {});
   }
   function bgEl(key) { return safeId(key) ? document.querySelector('[data-edit-bg="' + key + '"]') : null; }
+  // Масштаб фото-фона (зеркалит content.js): cover×Z раскладываем на ведущую сторону.
+  function parseZoom(v) { var z = parseFloat(v); return (z && z > 1 && z <= 6) ? z : 1; }
+  function bgImgSize(el, fit, zoom) {
+    if (fit === "contain") return "contain";
+    if (zoom <= 1) return "cover";
+    var a = el._bgNatAspect, ew = el.clientWidth, eh = el.clientHeight;
+    if (!a || !ew || !eh) return "cover";
+    return (ew / eh >= a) ? (100 * zoom) + "% auto" : "auto " + (100 * zoom) + "%";
+  }
   function refreshBg(el) {
     if (!el) return;
     var off = el._bgOff === "1", vid = el._bgVid || "", img = el._bgImg || "";
     var focal = /^\d{1,3}% \d{1,3}%$/.test(el._bgFocal || "") ? el._bgFocal : "50% 50%";
     var fit = el._bgFit === "contain" ? "contain" : "cover";
+    var zoom = parseZoom(el._bgZoom);
     var layer = el.querySelector(":scope > .staw-bg-layer");
     if (!off && vid) {
       el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
@@ -382,8 +392,13 @@
       el.classList.add("staw-bg-on");
     } else if (!off && img) {
       if (layer) layer.remove(); el.classList.remove("staw-bg-on");
+      if (zoom > 1 && fit !== "contain" && !el._bgNatAspect) {
+        var probe = new Image();
+        probe.onload = function () { if (probe.naturalWidth && probe.naturalHeight) { el._bgNatAspect = probe.naturalWidth / probe.naturalHeight; refreshBg(el); } };
+        probe.src = img;
+      }
       el.style.backgroundImage = "linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5)), url('" + img + "')";
-      el.style.backgroundSize = "cover, " + (fit === "contain" ? "contain" : "cover");
+      el.style.backgroundSize = "cover, " + bgImgSize(el, fit, zoom);
       el.style.backgroundPosition = "center, " + focal; el.style.backgroundRepeat = "no-repeat";
     } else {
       if (layer) layer.remove(); el.classList.remove("staw-bg-on");
@@ -404,7 +419,7 @@
           type: "editBg", key: key,
           img: el._bgImg || "", vid: el._bgVid || "", off: el._bgOff || "",
           focal: el._bgFocal || "", fit: el._bgFit || "cover",
-          fade: el._bgFade || "", loop: el._bgLoop || "",
+          zoom: el._bgZoom || "", fade: el._bgFade || "", loop: el._bgLoop || "",
           anim: currentAnim(el),   // текущая анимация фона — для пикера «✨» в окне «Фон»
         });
       });
@@ -738,6 +753,7 @@
     if (key.indexOf("focal.") === 0) { var fk = key.slice(6); if (safeId(fk)) applyImgStyle(fk, "focal", value); return; }
     if (key.indexOf("fit.") === 0) { var itk = key.slice(4); if (safeId(itk)) applyImgStyle(itk, "fit", value); return; }
     if (key.indexOf("bgfocal.") === 0) { setBgField(key.slice(8), "_bgFocal", value); return; }
+    if (key.indexOf("bgzoom.") === 0) { setBgField(key.slice(7), "_bgZoom", value); return; }
     if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", value); return; }
     if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", value); return; }
     if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", value); return; }
