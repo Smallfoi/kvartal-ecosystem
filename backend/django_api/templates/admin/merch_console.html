@@ -153,9 +153,17 @@
     <p style="font-size:12px;color:#6b7280;margin:0 0 10px">На фон можно поставить <b>фото</b>, короткое <b>видео</b> или оставить <b>градиент</b> (по умолчанию). Так экраны можно чередовать. Кнопка <b>«Удалить фотографию»</b> убирает поставленное фото/видео и возвращает градиент — сам градиент не удаляется никогда.</p>
     <p id="merch-bg-hint" style="font-size:12px;color:#6b7280;margin:0 0 6px">Фото: <b>колёсико мыши</b> — приближение, <b>перетащите</b> — какая область фото в кадре:</p>
     <div id="merch-bg-fp" style="position:relative;width:100%;height:180px;background:#111;border-radius:8px;overflow:hidden;margin-bottom:8px;touch-action:none;user-select:none;cursor:move">
-      <img id="merch-bg-fpimg" alt="" style="position:absolute;left:0;top:0;pointer-events:none;-webkit-user-drag:none">
+      <!-- max-width/height:none — иначе глобальный admin-CSS img{max-width:100%} зажимает
+           фото при зуме (ширина упирается в окно, высота растёт → искажение). -->
+      <img id="merch-bg-fpimg" alt="" style="position:absolute;left:0;top:0;max-width:none;max-height:none;pointer-events:none;-webkit-user-drag:none">
       <video id="merch-bg-fpvid" muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;pointer-events:none"></video>
       <div id="merch-bg-fpframe" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);box-sizing:border-box;pointer-events:none"></div>
+      <!-- Заглушка, пока фон не выбран (нет фото и видео). -->
+      <div id="merch-bg-fpempty" style="position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;padding:12px;pointer-events:none">
+        <div style="font-size:30px;line-height:1;opacity:.65">🖼️</div>
+        <div style="font-size:13px;font-weight:600;color:#e5e7eb">Фон не выбран</div>
+        <div style="font-size:11px;color:#9ca3af">Загрузите фото или видео кнопками ниже</div>
+      </div>
     </div>
     <div id="merch-bg-zoomrow" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:#374151">
       <span style="font-weight:600;white-space:nowrap">🔍 Масштаб</span>
@@ -803,6 +811,13 @@
     document.getElementById("merch-bg-zoom").value = z;
     document.getElementById("merch-bg-zoomval").textContent = z + "%";
   }
+  // Заглушка «Фон не выбран» — пока нет ни фото, ни видео. Прячем ползунок масштаба,
+  // когда крутить нечего.
+  function bgUpdateEmpty() {
+    var empty = !bgCurImg && !bgVid;
+    document.getElementById("merch-bg-fpempty").style.display = empty ? "flex" : "none";
+    document.getElementById("merch-bg-zoomrow").style.display = (bgCurImg && !bgVid) ? "flex" : "none";
+  }
   // Пикер отдал новый кадр (перетаскивание/колесо/ползунок) → в черновик focal+zoom.
   function bgPickCb(key) {
     return function (focal, zoom) {
@@ -837,6 +852,7 @@
     bgFitBtns(); bgZoomUI();
     bgPicker.set(bgCurImg, bgFocal, bgZoom, BG_ASPECT, bgFit !== "contain", bgPickCb(bgKey));
     bgPreviewVideo(bgVid);   // если есть видео — показать/проиграть его в окне «Фон»
+    bgUpdateEmpty();         // нет фото и видео → показать заглушку «Фон не выбран»
   }
   // Превью в окне «Фон»: показываем В ТОМ ЖЕ месте либо фото (рамка фокуса), либо видео.
   var bgFpVid = document.getElementById("merch-bg-fpvid");
@@ -871,21 +887,26 @@
     bgVid = url; bgDraft("bgvid." + bgKey, url);
     if (url) bgDraft("bgoff." + bgKey, "");
     bgPreviewVideo(url);   // показать/убрать видео в превью окна «Фон»
+    bgUpdateEmpty();
   }
-  // «Удалить фотографию»: убираем поставленное фото И видео → возвращаем ГРАДИЕНТ.
-  // Градиент — базовый фон, он не удаляется никогда (bgoff="1" = показать градиент).
+  // «Удалить фотографию»: ПОЛНОСТЬЮ убираем фото И видео → возвращаем ГРАДИЕНТ.
+  // Раньше ставили только bgoff=1 — фото оставалось в хранилище и «возвращалось»
+  // при переоткрытии окна (путаница). Теперь чистим фото по-настоящему: живьём
+  // (setImage "") и при публикации (sentinel {clear:true} → бэкенд стирает bg.<key>).
   function bgRemove() {
     if (!bgKey) return;
-    delete pendingImages["bg." + bgKey];                 // убрать неопубликованное фото из очереди
+    var key = bgKey;
+    pendingImages["bg." + key] = { clear: true };        // при публикации — стереть хранимое фото
+    tellFrame({ type: "setImage", key: "bg." + key, url: "" }); // убрать фото на сайте живьём
     bgVid = ""; document.getElementById("merch-bg-video").value = "";
     bgCurImg = "";
-    bgDraft("bgoff." + bgKey, "1");                       // показать градиент
-    bgDraft("bgvid." + bgKey, "");                        // убрать видео
-    bgDraft("bgzoom." + bgKey, "");                       // сбросить масштаб
+    bgDraft("bgoff." + key, "");                          // фото убрано → градиент покажется сам
+    bgDraft("bgvid." + key, "");                          // убрать видео
+    bgDraft("bgzoom." + key, "");                         // сбросить масштаб
     bgZoom = 1; bgZoomUI();
     bgPreviewVideo("");                                   // убрать видео-превью
-    // очистить рамку-превью, чтобы было видно, что фото удалено
-    bgPicker.set("", bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(bgKey));
+    bgPicker.set("", bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(key)); // очистить превью
+    bgUpdateEmpty();                                      // показать заглушку «Фон не выбран»
     updatePending();
   }
   bgFileInput.addEventListener("change", function () {
@@ -901,6 +922,7 @@
       bgZoom = 1; bgDraft("bgzoom." + key, ""); bgZoomUI();   // новое фото → масштаб с нуля
       bgPreviewVideo("");   // выбрали ФОТО → убрать видео-превью, показать фото
       bgPicker.set(rd.result, bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(key));
+      bgUpdateEmpty();
     };
     rd.readAsDataURL(f);
   });
@@ -922,6 +944,7 @@
       bgZoom = 1; bgZoomUI();
       bgPicker.set("", bgFocal, 1, BG_ASPECT, bgFit !== "contain", bgPickCb(key));
       bgPreviewVideo(d.url);   // показать загруженное видео прямо в окне «Фон»
+      bgUpdateEmpty();
       status.textContent = "Загружено ✓";
       updatePending();
     }).catch(function (e) { status.textContent = "Ошибка: " + e.message; });
@@ -1041,10 +1064,15 @@
       calls.push(api("./site-content", { method: "POST", body: JSON.stringify({ key: k, value: pendingContent[k] }) }));
     });
     Object.keys(pendingImages).forEach(function (k) {
-      var fd = new FormData();
-      fd.append("key", k);
-      fd.append("image", pendingImages[k].file);
-      calls.push(apiForm("./site-image", fd));
+      var it = pendingImages[k];
+      if (it && it.clear) {   // «Удалить фотографию» → стереть хранимое фото на бэкенде
+        calls.push(api("./site-content", { method: "POST", body: JSON.stringify({ key: k, clearImage: true }) }));
+      } else {
+        var fd = new FormData();
+        fd.append("key", k);
+        fd.append("image", it.file);
+        calls.push(apiForm("./site-image", fd));
+      }
     });
     publishBtn.disabled = true; publishBtn.textContent = "Публикую…";
     Promise.all(calls).then(function () {
