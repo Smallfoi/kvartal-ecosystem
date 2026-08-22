@@ -417,5 +417,7 @@ class UploadValidationTests(ApiTestCase):
         self.assertTrue(r.json()["avatarPath"].endswith(".png"))
 
     def test_oversized_rejected(self):
-        big = self.PNG_HEAD + bytes(6 * 1024 * 1024)
+        # Больше текущего лимита (берём из константы, чтобы тест не зависел от значения).
+        from common.uploads import MAX_IMAGE_BYTES
+        big = self.PNG_HEAD + bytes(MAX_IMAGE_BYTES + 1)
         self.assertEqual(self._upload("big.png", big, "image/png").status_code, 400)
