@@ -1,0 +1,69 @@
+{% load i18n %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Подтверждение входа — МАТА</title>
+  <style>
+    /* Второй шаг входа. Оформление держим в духе страницы входа: тот же
+       графитовый фон и та же спокойная карточка, без отдельной темы. */
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      background: #141a17; color: #f2f1e9;
+      font: 15px/1.5 "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+      padding: 24px;
+    }
+    .card {
+      width: 100%; max-width: 380px; background: #1b2220;
+      border: 1px solid rgba(242,241,233,.12); border-radius: 22px;
+      padding: 28px 26px; box-shadow: 0 24px 70px rgba(0,0,0,.45);
+    }
+    h1 { font-size: 21px; margin: 0 0 6px; letter-spacing: -.01em; }
+    p  { margin: 0 0 20px; color: #9aa09b; font-size: 14px; }
+    label { display: block; font-size: 12px; font-weight: 800; letter-spacing: .12em;
+            text-transform: uppercase; color: #9aa09b; margin-bottom: 8px; }
+    input {
+      width: 100%; height: 56px; text-align: center;
+      font-size: 26px; font-weight: 700; letter-spacing: .32em;
+      color: #f2f1e9; background: #141a17;
+      border: 1px solid rgba(242,241,233,.18); border-radius: 14px;
+      outline: none;
+    }
+    input:focus { border-color: #eeea83; }
+    button {
+      width: 100%; height: 52px; margin-top: 16px; border: 0; border-radius: 999px;
+      background: #eeea83; color: #14181c; font-size: 15px; font-weight: 800;
+      cursor: pointer;
+    }
+    .err {
+      margin: 14px 0 0; padding: 11px 13px; border-radius: 12px;
+      background: rgba(214,84,72,.14); border: 1px solid rgba(214,84,72,.4);
+      color: #ffb4ab; font-size: 13.5px;
+    }
+    .hint { margin: 18px 0 0; font-size: 12.5px; color: #767c78; }
+    .who  { color: #eeea83; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <form class="card" method="post" action="{{ request.get_full_path }}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}" />
+    <h1>Подтверждение входа</h1>
+    <p>Вход как <span class="who">{{ username }}</span>. Открой приложение-аутентификатор
+       и введи текущий шестизначный код.</p>
+
+    <label for="token">Код</label>
+    {# inputmode=numeric — на телефоне сразу цифровая клавиатура #}
+    <input id="token" name="token" inputmode="numeric" autocomplete="one-time-code"
+           autofocus maxlength="8" placeholder="000000" />
+
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+    <button type="submit">Войти</button>
+    <p class="hint">Потерян телефон — введи один из запасных кодов, выданных при подключении.
+       Каждый работает один раз.</p>
+  </form>
+</body>
+</html>
