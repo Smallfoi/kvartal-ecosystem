@@ -92,6 +92,30 @@ def login(request):
 
 @api_view(["POST"])
 @throttle_classes([AuthEndpointThrottle])
+def password_reset(request):
+    """Сброс пароля по SMS: {phone, code, password}. Код из phone/request (dev 1234).
+    Тем же телефоном подтверждаем владение и ставим новый пароль."""
+    d = request.data
+    phone = normalize_phone(d.get("phone") or "")
+    if not phone:
+        return Response({"detail": "Нет телефона"}, status=400)
+    if not check_code(phone, d.get("code") or ""):
+        return Response({"detail": "Неверный код подтверждения"}, status=401)
+    password = d.get("password") or ""
+    if len(password) < 4:
+        return Response({"detail": "Пароль слишком короткий (мин. 4 символа)"}, status=400)
+    acc = Account.objects.filter(phone=phone).first()
+    if not acc:
+        return Response({"detail": "Аккаунт с таким телефоном не найден"}, status=404)
+    if acc.is_blocked:
+        return Response({"detail": "Аккаунт заблокирован"}, status=403)
+    acc.password_hash = hash_password(password)
+    acc.save(update_fields=["password_hash"])
+    return Response({"token": make_token(acc.id), "user": acc.to_json()})
+
+
+@api_view(["POST"])
+@throttle_classes([AuthEndpointThrottle])
 def phone_request(request):
     """Отправить код входа на телефон. В dev (без SMS-провайдера) реальная SMS не
     шлётся — код входа всегда 1234. С SMS_PROVIDER=smsc уходит одноразовый код."""
