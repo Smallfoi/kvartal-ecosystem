@@ -166,7 +166,10 @@ class LoyaltyAccount {
   final int balance;
   final List<LoyaltyTransaction> transactions;
 
-  const LoyaltyAccount({this.balance = 0, this.transactions = const []});
+  /// Постоянный 6-значный код лояльности клиента (для кассы/QR). Не меняется.
+  final String code;
+
+  const LoyaltyAccount({this.balance = 0, this.transactions = const [], this.code = ''});
 
   LoyaltyLevel get level => LoyaltyLevelX.forPoints(balance);
 

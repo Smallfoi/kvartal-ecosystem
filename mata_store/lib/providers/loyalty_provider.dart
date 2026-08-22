@@ -19,6 +19,7 @@ class LoyaltyProvider extends ChangeNotifier {
   static const _seededKey = 'loyalty_seeded';
 
   final List<LoyaltyTransaction> _txns = [];
+  String _code = '';
   bool _lastLoggedIn = false;
 
   LoyaltyProvider(this._prefs, this._repo, {this.serverBacked = false}) {
@@ -46,6 +47,7 @@ class LoyaltyProvider extends ChangeNotifier {
       _txns
         ..clear()
         ..addAll(acc.transactions);
+      _code = acc.code;
       notifyListeners();
     } catch (_) {
       // backend недоступен — оставляем текущее состояние
@@ -55,9 +57,10 @@ class LoyaltyProvider extends ChangeNotifier {
   // ── Геттеры ──────────────────────────────────────────────────────────────
   List<LoyaltyTransaction> get transactions => List.unmodifiable(_txns);
   int get balance => _txns.fold(0, (s, t) => s + t.amount);
+  String get code => _code;
   LoyaltyLevel get level => LoyaltyLevelX.forPoints(balance);
   LoyaltyAccount get account =>
-      LoyaltyAccount(balance: balance, transactions: _txns);
+      LoyaltyAccount(balance: balance, transactions: _txns, code: _code);
 
   /// Прогресс к следующему уровню (0..1) и сколько баллов осталось.
   double get levelProgress {

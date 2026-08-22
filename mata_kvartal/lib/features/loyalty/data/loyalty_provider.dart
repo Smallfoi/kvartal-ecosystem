@@ -39,6 +39,9 @@ class LoyaltyState {
   final bool loaded;
   final String? error;
 
+  /// Постоянный 6-значный код лояльности клиента (для кассы/QR). Не меняется.
+  final String code;
+
   const LoyaltyState({
     this.balance = 0,
     this.level = 'basic',
@@ -46,6 +49,7 @@ class LoyaltyState {
     this.isLoading = false,
     this.loaded = false,
     this.error,
+    this.code = '',
   });
 
   LoyaltyState copyWith({
@@ -56,6 +60,7 @@ class LoyaltyState {
     bool? loaded,
     String? error,
     bool clearError = false,
+    String? code,
   }) => LoyaltyState(
     balance: balance ?? this.balance,
     level: level ?? this.level,
@@ -63,6 +68,7 @@ class LoyaltyState {
     isLoading: isLoading ?? this.isLoading,
     loaded: loaded ?? this.loaded,
     error: clearError ? null : error ?? this.error,
+    code: code ?? this.code,
   );
 
   /// Русское название уровня по порогам экосистемы (0/200/500/1000).
@@ -116,6 +122,7 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
       state = state.copyWith(
         balance: (data['balance'] as num?)?.toInt() ?? 0,
         level: data['level']?.toString() ?? 'basic',
+        code: data['code']?.toString() ?? '',
         transactions: txns,
         isLoading: false,
         loaded: true,
