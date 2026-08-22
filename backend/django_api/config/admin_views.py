@@ -131,7 +131,14 @@ def merch_site_content(request):
     if not key:
         return JsonResponse({"detail": "Нет ключа"}, status=400)
     obj, _ = SiteContent.objects.get_or_create(key=key)
-    obj.value = str(d.get("value") or "")
+    if d.get("clearImage"):
+        # «Удалить фотографию» в окне «Фон»: стереть хранимое фото (bg.<key>),
+        # чтобы оно не «возвращалось» при переоткрытии. Значение не трогаем.
+        if obj.image:
+            obj.image.delete(save=False)
+        obj.image = None
+    else:
+        obj.value = str(d.get("value") or "")
     obj.save()
     return JsonResponse({"ok": True, "content": {key: obj.to_json()}})
 
