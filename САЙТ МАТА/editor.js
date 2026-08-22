@@ -96,6 +96,39 @@
       el.style.webkitTextFillColor = ok ? val : ""; // перебить брендовый gradient-text, если он есть
     });
   }
+  // Шрифт/размер/тень текста (правка в конструкторе) — зеркалит content.js.
+  function stawFontFamily(t) {
+    if (t === "unbounded") return "'Unbounded','Manrope','Inter',sans-serif";
+    if (t === "manrope") return "'Manrope','Inter',sans-serif";
+    if (t === "inter") return "'Inter','Segoe UI',Arial,sans-serif";
+    return "";
+  }
+  function stawShadowCss(v) {
+    var n = parseInt(v, 10) || 0;
+    if (n <= 0) return "";
+    var k = n / 100;
+    return "0 " + (1 + 3 * k).toFixed(1) + "px " + (2 + 10 * k).toFixed(1) +
+      "px rgba(0,0,0," + (0.25 + 0.5 * k).toFixed(2) + ")";
+  }
+  function applyFontLocal(key, val) {
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.fontFamily = stawFontFamily(val);
+      if (val) { el.dataset.stawFont = val; } else { delete el.dataset.stawFont; }
+    });
+  }
+  function applyFontSizeLocal(key, val) {
+    var n = parseInt(val, 10);
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.fontSize = (n && n > 0) ? n + "px" : "";
+    });
+  }
+  function applyShadowLocal(key, val) {
+    var css = stawShadowCss(val);
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.textShadow = css;
+      if (parseInt(val, 10) > 0) { el.dataset.stawShadow = val; } else { delete el.dataset.stawShadow; }
+    });
+  }
   var VOID_TAGS = { IMG: 1, INPUT: 1, BR: 1, HR: 1, AREA: 1, EMBED: 1 };
 
   function isItem(ch) { return ch.hasAttribute("data-sid") || (ch.classList && ch.classList.contains("product-card")); }
@@ -214,7 +247,10 @@
     if (ed) {
       e.preventDefault(); e.stopPropagation();
       send({ type: "editContent", key: ed.getAttribute("data-edit"), value: cleanText(ed).trim(),
-        color: rgbToHex(getComputedStyle(ed).color), hasColor: !!ed.style.color });
+        color: rgbToHex(getComputedStyle(ed).color), hasColor: !!ed.style.color,
+        // текущие шрифт/размер/тень — чтобы окно правки показало их (fallback к опубликованному)
+        font: ed.dataset.stawFont || "", fontsize: (parseInt(ed.style.fontSize, 10) || ""),
+        shadow: ed.dataset.stawShadow || "" });
       return;
     }
     // Fallback: у многих карточек поверх фото лежит декоративный оверлей/scrim
@@ -768,6 +804,9 @@
     if (key.indexOf("bgfade.") === 0) { setBgField(key.slice(7), "_bgFade", value); return; }
     if (key.indexOf("bgloop.") === 0) { setBgField(key.slice(7), "_bgLoop", value); return; }
     if (key.indexOf("color.") === 0) { var ck = key.slice(6); if (safeId(ck)) applyColorLocal(ck, value); return; }
+    if (key.indexOf("fontsize.") === 0) { var zk2 = key.slice(9); if (safeId(zk2)) applyFontSizeLocal(zk2, value); return; }
+    if (key.indexOf("font.") === 0) { var fk = key.slice(5); if (safeId(fk)) applyFontLocal(fk, value); return; }
+    if (key.indexOf("shadow.") === 0) { var shk = key.slice(7); if (safeId(shk)) applyShadowLocal(shk, value); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") {
       document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });

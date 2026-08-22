@@ -306,6 +306,43 @@
       el.style.webkitTextFillColor = ok ? val : "";
     });
   }
+  // Шрифт/размер/тень текста (правятся в конструкторе). Токен шрифта → семейство сайта.
+  function stawFontFamily(t) {
+    if (t === "unbounded") return "'Unbounded','Manrope','Inter',sans-serif";
+    if (t === "manrope") return "'Manrope','Inter',sans-serif";
+    if (t === "inter") return "'Inter','Segoe UI',Arial,sans-serif";
+    return "";
+  }
+  function applyFont(key, val) {
+    if (!safeId(key)) return;
+    var f = stawFontFamily(val);
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.fontFamily = f;
+      if (val) { el.dataset.stawFont = val; } else { delete el.dataset.stawFont; }
+    });
+  }
+  function applyFontSize(key, val) {
+    if (!safeId(key)) return;
+    var n = parseInt(val, 10);
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.fontSize = (n && n > 0) ? n + "px" : "";
+    });
+  }
+  function stawShadowCss(v) {
+    var n = parseInt(v, 10) || 0;
+    if (n <= 0) return "";
+    var k = n / 100;
+    return "0 " + (1 + 3 * k).toFixed(1) + "px " + (2 + 10 * k).toFixed(1) +
+      "px rgba(0,0,0," + (0.25 + 0.5 * k).toFixed(2) + ")";
+  }
+  function applyShadow(key, val) {
+    if (!safeId(key)) return;
+    var css = stawShadowCss(val);
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.textShadow = css;
+      if (parseInt(val, 10) > 0) { el.dataset.stawShadow = val; } else { delete el.dataset.stawShadow; }
+    });
+  }
   // Подгон фото: "contain" — фото целиком (не обрезается); иначе — заполнение (cover из CSS).
   function applyFit(key, val) {
     if (!safeId(key)) return;
@@ -370,6 +407,9 @@
         if (key.indexOf("focal.") === 0) { applyFocal(key.slice(6), c.value); return; }
         if (key.indexOf("fit.") === 0) { applyFit(key.slice(4), c.value); return; }
         if (key.indexOf("color.") === 0) { applyColor(key.slice(6), c.value); return; }
+        if (key.indexOf("fontsize.") === 0) { applyFontSize(key.slice(9), c.value); return; }
+        if (key.indexOf("font.") === 0) { applyFont(key.slice(5), c.value); return; }
+        if (key.indexOf("shadow.") === 0) { applyShadow(key.slice(7), c.value); return; }
         if (key.indexOf("bgfocal.") === 0) { setBgField(key.slice(8), "_bgFocal", c.value); return; }
         if (key.indexOf("bgzoom.") === 0) { setBgField(key.slice(7), "_bgZoom", c.value); return; }
         if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", c.value); return; }
