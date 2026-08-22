@@ -120,6 +120,20 @@
     var pp = (layer._active || a).play(); if (pp && pp.catch) pp.catch(function () {});
   }
   function bgEl(key) { return safeId(key) ? document.querySelector('[data-edit-bg="' + key + '"]') : null; }
+  // Масштаб фото-фона: 1 = «Заполнить» (cover), >1 = приближение. cover×Z нельзя выразить
+  // одним CSS-значением, поэтому раскладываем cover на ведущую сторону (сравнив соотношение
+  // элемента и картинки) и умножаем на Z: `{100Z}% auto` или `auto {100Z}%`. Соотношение
+  // картинки кэшируем на элементе (_bgNatAspect); при первой загрузке — дозагружаем и
+  // переприменяем. При ресайзе ведущая сторона может смениться → пересчитываем (ниже).
+  function parseZoom(v) { var z = parseFloat(v); return (z && z > 1 && z <= 6) ? z : 1; }
+  function bgImgSize(el, fit, zoom) {
+    if (fit === "contain") return "contain";
+    if (zoom <= 1) return "cover";
+    var a = el._bgNatAspect, ew = el.clientWidth, eh = el.clientHeight;
+    if (!a || !ew || !eh) return "cover"; // пока не знаем соотношение — обычный cover
+    var elA = ew / eh;
+    return (elA >= a) ? (100 * zoom) + "% auto" : "auto " + (100 * zoom) + "%";
+  }
   function refreshBg(el) {
     if (!el) return;
     var off = el._bgOff === "1";
@@ -127,6 +141,7 @@
     var img = el._bgImg || "";
     var focal = /^\d{1,3}% \d{1,3}%$/.test(el._bgFocal || "") ? el._bgFocal : "50% 50%";
     var fit = el._bgFit === "contain" ? "contain" : "cover";
+    var zoom = parseZoom(el._bgZoom);
     var layer = el.querySelector(":scope > .staw-bg-layer");
     if (!off && vid) {
       el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
@@ -135,8 +150,16 @@
       el.classList.add("staw-bg-on");
     } else if (!off && img) {
       if (layer) layer.remove(); el.classList.remove("staw-bg-on");
+      // Для зума нужно соотношение картинки — если ещё не знаем, дозагрузим и переприменим.
+      if (zoom > 1 && fit !== "contain" && !el._bgNatAspect) {
+        var probe = new Image();
+        probe.onload = function () {
+          if (probe.naturalWidth && probe.naturalHeight) { el._bgNatAspect = probe.naturalWidth / probe.naturalHeight; refreshBg(el); }
+        };
+        probe.src = img;
+      }
       el.style.backgroundImage = "linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.5)), url('" + img + "')";
-      el.style.backgroundSize = "cover, " + (fit === "contain" ? "contain" : "cover");
+      el.style.backgroundSize = "cover, " + bgImgSize(el, fit, zoom);
       el.style.backgroundPosition = "center, " + focal;
       el.style.backgroundRepeat = "no-repeat";
     } else {
@@ -144,6 +167,17 @@
       el.style.backgroundImage = ""; el.style.backgroundSize = ""; el.style.backgroundPosition = "";
     }
   }
+  // Ресайз: у зумленных фото-фонов ведущая сторона cover могла смениться (портрет↔ландшафт
+  // брейкпоинты) → пересчитать background-size. Дебаунс, только по зумленным элементам.
+  var bgResizeT = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(bgResizeT);
+    bgResizeT = setTimeout(function () {
+      document.querySelectorAll("[data-edit-bg]").forEach(function (el) {
+        if (parseZoom(el._bgZoom) > 1 && el._bgImg && el._bgFit !== "contain") refreshBg(el);
+      });
+    }, 150);
+  });
   function setBgField(key, field, val) { var el = bgEl(key); if (!el) return; el[field] = val; refreshBg(el); }
   function setBgImg(key, imageUrl) { var el = bgEl(key); if (!el) return; el._bgImg = imageUrl ? mediaUrl(imageUrl) : ""; refreshBg(el); }
 
@@ -155,6 +189,7 @@
     var g = function (k) { return (C[k] || {}).value; };
     if (C["bgoff." + key] !== undefined) setBgField(key, "_bgOff", g("bgoff." + key));
     if (C["bgfocal." + key] !== undefined) setBgField(key, "_bgFocal", g("bgfocal." + key));
+    if (C["bgzoom." + key] !== undefined) setBgField(key, "_bgZoom", g("bgzoom." + key));
     if (C["bgfit." + key] !== undefined) setBgField(key, "_bgFit", g("bgfit." + key));
     if (C["bgfade." + key] !== undefined) setBgField(key, "_bgFade", g("bgfade." + key));
     if (C["bgloop." + key] !== undefined) setBgField(key, "_bgLoop", g("bgloop." + key));
@@ -336,6 +371,7 @@
         if (key.indexOf("fit.") === 0) { applyFit(key.slice(4), c.value); return; }
         if (key.indexOf("color.") === 0) { applyColor(key.slice(6), c.value); return; }
         if (key.indexOf("bgfocal.") === 0) { setBgField(key.slice(8), "_bgFocal", c.value); return; }
+        if (key.indexOf("bgzoom.") === 0) { setBgField(key.slice(7), "_bgZoom", c.value); return; }
         if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", c.value); return; }
         if (key.indexOf("bgvid.") === 0) { setBgField(key.slice(6), "_bgVid", c.value); return; }
         if (key.indexOf("bgoff.") === 0) { setBgField(key.slice(6), "_bgOff", c.value); return; }
