@@ -117,8 +117,6 @@ def merch_product(request, pid):
 
 # ── Контент сайта (мини-CMS): тексты и фото шапки/hero/секций ────────────────
 
-@staff_member_required
-@require_http_methods(["POST"])
 def _delete_media_url(url):
     """Удалить файл из хранилища по его /media/-URL. Чистим ТОЛЬКО загрузки (uploads/…),
     чтобы случайно не снести чужое. Тихо игнорируем ошибки (уборка не должна ронять запрос)."""
@@ -144,6 +142,8 @@ def _delete_media_url(url):
         pass
 
 
+@staff_member_required
+@require_http_methods(["POST"])
 def merch_site_content(request):
     """Правка текста блока сайта: {key, value} → SiteContent (публикуется на сайт)."""
     from catalog.models import SiteContent
