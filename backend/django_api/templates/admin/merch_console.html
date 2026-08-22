@@ -16,7 +16,8 @@
       Это ваш <b>реальный сайт</b> в режиме правки — как увидят посетители. <b>Кликните</b> по любому
       тексту, кнопке или фото — правьте. <b>Перетаскивайте</b> карточки, фильтры и блоки — меняйте порядок.
       Наведите на блок: <b>«Скрыть»</b>/<b>«Удалить»</b>, <b>«✨»</b> (анимация), <b>«⟷ Шире»</b> (ширина). <b>«➕ Добавить блок»</b> —
-      плитка в конце секции. <b>⇤ ⇔ ⇥</b> — выравнивание. <b>Баннеры</b> правятся прямо в промо-стрипе (клик/перетаскивание/«➕»).
+      плитка в конце секции. <b>Баннеры</b> правятся прямо в промо-стрипе (клик/перетаскивание/«➕»).
+      <b>«↶ ↷»</b> вверху — отменить/вернуть правку (Ctrl+Z / Ctrl+Shift+Z).
       Всё копится в черновик — на сайт по «Опубликовать» (баннеры применяются сразу).
     </p>
   </div>
@@ -35,6 +36,10 @@
         <button type="button" class="merch-authmode" data-authmode="login" style="padding:8px 12px;border:0;cursor:pointer;font-weight:600;font-size:12px">Вход</button>
         <button type="button" class="merch-authmode" data-authmode="register" style="padding:8px 12px;border:0;cursor:pointer;font-weight:600;font-size:12px">Регистрация</button>
       </div>
+    </div>
+    <div style="display:inline-flex;border:1px solid #d1d5db;border-radius:8px;overflow:hidden" title="Отменить / Вернуть правки">
+      <button type="button" id="merch-undo" disabled title="Отменить (Ctrl+Z)" style="padding:8px 12px;border:0;border-right:1px solid #e5e7eb;cursor:not-allowed;font-weight:700;font-size:16px;line-height:1;background:#fff;color:#9ca3af">↶</button>
+      <button type="button" id="merch-redo" disabled title="Вернуть (Ctrl+Shift+Z)" style="padding:8px 12px;border:0;cursor:not-allowed;font-weight:700;font-size:16px;line-height:1;background:#fff;color:#9ca3af">↷</button>
     </div>
     <span id="merch-pending" style="display:none;font-size:12px;font-weight:600;color:#b45309;background:#fef3c7;padding:5px 10px;border-radius:8px">Черновик: <span id="merch-pending-n">0</span></span>
     <button type="button" id="merch-publish" disabled style="padding:8px 16px;border:0;border-radius:8px;background:#9ca3af;color:#fff;cursor:not-allowed;font-size:13px;font-weight:700">Опубликовать на сайт</button>
@@ -340,6 +345,73 @@
     publishBtn.disabled = !n;
     publishBtn.style.background = n ? "#111" : "#9ca3af";
     publishBtn.style.cursor = n ? "pointer" : "not-allowed";
+    histRecord();   // любое изменение черновика → точка в истории (дебаунс+дедуп внутри)
+  }
+
+  // ── История правок: Отменить/Вернуть (Undo/Redo) ──
+  // Снапшот черновика = поверхностные копии четырёх pending* (значения — строки или
+  // свежесоздаваемые объекты, File держим по ссылке). Запись повешена на updatePending
+  // (её зовёт каждая мутация) с дебаунсом (drag не плодит шаг-на-пиксель) и дедупом.
+  // Восстановление: выставить pending* = снапшот и reloadFrame() — iframe сбрасывается
+  // к опубликованному и заново накатывает черновик (ready-хендлер) → корректно и для
+  // «снятых» ключей (обычный diff не смог бы их убрать).
+  var history = [], histIdx = -1, histRestoring = false, histTimer = null;
+  var undoBtn = document.getElementById("merch-undo");
+  var redoBtn = document.getElementById("merch-redo");
+  function histSnapshot() {
+    return {
+      order: { site: pendingOrder.site, app: pendingOrder.app },
+      products: Object.assign({}, pendingProducts),
+      content: Object.assign({}, pendingContent),
+      images: Object.assign({}, pendingImages)
+    };
+  }
+  function histSig(s) {
+    var imgs = Object.keys(s.images).sort().map(function (k) {
+      var f = s.images[k] && s.images[k].file;
+      return k + ":" + (f ? (f.size + "_" + (f.lastModified || 0)) : "");
+    });
+    return JSON.stringify([s.order, s.products, s.content, imgs]);
+  }
+  function histApply(s) {
+    pendingOrder = { site: s.order.site, app: s.order.app };
+    pendingProducts = Object.assign({}, s.products);
+    pendingContent = Object.assign({}, s.content);
+    pendingImages = Object.assign({}, s.images);
+  }
+  function histButtons() {
+    var canU = histIdx > 0, canR = histIdx < history.length - 1;
+    if (undoBtn) { undoBtn.disabled = !canU; undoBtn.style.color = canU ? "#111" : "#9ca3af"; undoBtn.style.cursor = canU ? "pointer" : "not-allowed"; }
+    if (redoBtn) { redoBtn.disabled = !canR; redoBtn.style.color = canR ? "#111" : "#9ca3af"; redoBtn.style.cursor = canR ? "pointer" : "not-allowed"; }
+  }
+  function histRecord() {
+    if (histRestoring) return;
+    clearTimeout(histTimer);
+    histTimer = setTimeout(function () {
+      var snap = histSnapshot();
+      if (histIdx >= 0 && histSig(snap) === histSig(history[histIdx])) return; // без изменений — не дублируем
+      history = history.slice(0, histIdx + 1);   // обрезать «вперёд»-хвост
+      history.push(snap);
+      if (history.length > 120) { history.shift(); histIdx--; }  // потолок памяти
+      histIdx = history.length - 1;
+      histButtons();
+    }, 220);
+  }
+  function histReset() {          // старт и после публикации: текущее = новая база
+    clearTimeout(histTimer);
+    history = [histSnapshot()]; histIdx = 0; histButtons();
+  }
+  function histStep(dir) {
+    clearTimeout(histTimer);       // не дать отложенной записи вклиниться
+    var t = histIdx + dir;
+    if (t < 0 || t >= history.length) return;
+    histRestoring = true;
+    histIdx = t;
+    histApply(history[histIdx]);
+    updatePending();               // histRecord внутри — но histRestoring гасит запись
+    histButtons();
+    reloadFrame();                 // ready-хендлер заново накатит восстановленный черновик
+    histRestoring = false;
   }
   function cardFields(f) { return { price: Number(f.price) || 0, inStock: !!f.inStock }; }
 
@@ -876,7 +948,7 @@
       pendingOrder = { site: null, app: null }; pendingProducts = {}; pendingContent = {}; pendingImages = {};
       return loadProducts();
     }).then(function () {
-      updatePending(); publishBtn.textContent = "Опубликовать на сайт"; reloadFrame();
+      updatePending(); histReset(); publishBtn.textContent = "Опубликовать на сайт"; reloadFrame();
       alert("Опубликовано на сайт ✅");
     }).catch(function (err) {
       publishBtn.disabled = false; publishBtn.textContent = "Опубликовать на сайт";
@@ -995,8 +1067,21 @@
     if (pendingCount()) { e.preventDefault(); e.returnValue = ""; }
   });
 
+  // ── Undo/Redo: кнопки + горячие клавиши ──
+  if (undoBtn) undoBtn.addEventListener("click", function () { histStep(-1); });
+  if (redoBtn) redoBtn.addEventListener("click", function () { histStep(1); });
+  document.addEventListener("keydown", function (e) {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    // Не перехватывать Ctrl+Z в полях ввода (там нативная отмена текста).
+    var ae = document.activeElement;
+    if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return;
+    var k = (e.key || "").toLowerCase();
+    if (k === "z" && !e.shiftKey) { e.preventDefault(); histStep(-1); }
+    else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); histStep(1); }
+  });
+
   // init
-  setActiveTab(); setFrame(); loadProducts(); updatePending();
+  setActiveTab(); setFrame(); loadProducts(); updatePending(); histReset();
 })();
 </script>
 {% endverbatim %}
