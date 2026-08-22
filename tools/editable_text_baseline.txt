@@ -1,0 +1,33 @@
+# baseline стража редактируемости (tools/check_editable_text.py).
+# Существующий статичный UI приложения на момент внедрения. Формат: relpath<TAB>текст.
+# Страж падает только на НОВЫЕ строки вне этого списка. Обновлять осознанно (--update-baseline).
+
+mata_store/lib/app.dart	Сессия истекла — войдите снова
+mata_store/lib/screens/auth/auth_screen.dart	Тестовый код: 1234
+mata_store/lib/screens/catalog/catalog_screen.dart	Потяните карточку мышью, чтобы изменить порядок в приложении.
+mata_store/lib/screens/checkout/checkout_screen.dart	Войдите в аккаунт, чтобы оформить заказ
+mata_store/lib/screens/checkout/checkout_screen.dart	Не удалось оформить заказ. Проверьте соединение и попробуйте снова.
+mata_store/lib/screens/profile/account_data_screen.dart	Не удалось удалить аккаунт. Проверьте связь.
+mata_store/lib/screens/profile/account_data_screen.dart	Удаление аккаунта стирает все ваши данные без возможности
+mata_store/lib/screens/profile/legal_documents_screen.dart	Выйти
+mata_store/lib/screens/profile/legal_documents_screen.dart	ДОКУМЕНТЫ
+mata_store/lib/screens/profile/legal_documents_screen.dart	ПОДТВЕРЖДЕНИЕ
+mata_store/lib/screens/profile/legal_documents_screen.dart	ПРИНЯТЬ И ПРОДОЛЖИТЬ
+mata_store/lib/screens/profile/legal_documents_screen.dart	Повторить
+mata_store/lib/screens/profile/legal_documents_screen.dart	Чтобы продолжить, ознакомьтесь и примите обязательные документы:
+mata_store/lib/screens/profile/legal_documents_screen.dart	Я ознакомился(-ась) и принимаю перечисленные документы
+mata_store/lib/screens/profile/legal_documents_screen.dart	нажмите, чтобы прочитать
+mata_store/lib/screens/profile/legal_documents_screen.dart	обязательный
+mata_store/lib/screens/profile/legal_documents_screen.dart	принят
+mata_store/lib/screens/search/search_screen.dart	Отмена
+mata_store/lib/screens/search/search_screen.dart	Проверьте написание или\nпопробуйте другой запрос
+mata_store/lib/widgets/loyalty_card.dart	ДЕРЖАТЕЛЬ
+mata_store/lib/widgets/loyalty_card.dart	ЕДИНАЯ КАРТА
+mata_store/lib/widgets/loyalty_card.dart	ПОКАЖИ НА КАССЕ
+mata_store/lib/widgets/loyalty_card.dart	ПОКАЖИТЕ КАССИРУ
+mata_store/lib/widgets/loyalty_card.dart	баллов
+mata_store/lib/widgets/loyalty_card.dart	тап — закрыть
+mata_store/lib/widgets/product_card.dart	НОВИНКА
+mata_store/lib/widgets/remote_anim.dart	Анимация появления
+mata_store/lib/widgets/remote_anim.dart	Удалить
+mata_store/lib/widgets/remote_background.dart	🖼 Фон
