@@ -359,6 +359,9 @@ UNFOLD = {
                     # «Вкладка Ошибки» внутри админки (GlitchTip по API, D-32).
                     {"title": "Ошибки", "icon": "bug_report",
                      "link": reverse_lazy("errors_console")},
+                    # Свободное место на дисках/в БД — наглядно (D-?).
+                    {"title": "Диски", "icon": "storage",
+                     "link": reverse_lazy("admin_storage")},
                 ],
             },
         ],
