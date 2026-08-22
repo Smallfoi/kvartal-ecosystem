@@ -14,6 +14,7 @@ admin.site.index_title = "Управление: каталог, заказы, к
 from accounts import views as account_views
 from catalog import views as catalog_views
 from config.admin_views import (
+    admin_storage,
     merch_banner,
     merch_banner_create,
     merch_banner_delete,
@@ -55,6 +56,7 @@ urlpatterns = [
     path("admin/merch/banner/<int:bid>/delete", merch_banner_delete, name="merch_banner_delete"),
     # «Ошибки» — GlitchTip внутри нашей админки (D-32). ДО admin/ catch-all.
     path("admin/errors/", errors_console, name="errors_console"),
+    path("admin/storage/", admin_storage, name="admin_storage"),
     path("admin/errors/<str:issue_id>/", error_detail, name="error_detail"),
     # Второй шаг входа должен стоять выше админки, иначе путь перехватит она.
     path("admin/2fa/", admin2fa.verify_view, name="admin-2fa"),

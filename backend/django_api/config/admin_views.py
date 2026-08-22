@@ -453,3 +453,61 @@ def merch_banner_reorder(request):
     for i, bid in enumerate(order):
         Banner.objects.filter(id=bid).update(**{field: i})
     return JsonResponse({"ok": True, "count": len(order)})
+
+
+@staff_member_required
+@require_http_methods(["GET"])
+def admin_storage(request):
+    """Свободное место: диски (ФС) + размер БД + вес загрузок — наглядно, чтобы владелец
+    легко зашёл и посмотрел. Несколько дисков/томов показываются отдельными карточками."""
+    import os
+    import shutil
+
+    def human(n):
+        n = float(n or 0)
+        for unit in ("Б", "КБ", "МБ", "ГБ"):
+            if n < 1024:
+                return ("%.0f %s" % (n, unit)) if unit in ("Б", "КБ") else ("%.1f %s" % (n, unit))
+            n /= 1024
+        return "%.1f ТБ" % n
+
+    media_root = getattr(settings, "MEDIA_ROOT", "/srv/media")
+    disks = []
+    for name, path in (("Медиа-хранилище (загрузки)", media_root), ("Диск приложения", "/")):
+        try:
+            du = shutil.disk_usage(path)
+        except Exception:
+            continue
+        pct = round(du.used / du.total * 100) if du.total else 0
+        disks.append({
+            "name": name, "path": path,
+            "total": human(du.total), "used": human(du.used), "free": human(du.free),
+            "pct": pct, "level": ("danger" if pct >= 90 else "warn" if pct >= 75 else "ok"),
+        })
+
+    # Размер БД (PostgreSQL) — отдельным блоком (БД в своём контейнере/томе).
+    db = None
+    try:
+        from django.db import connection
+        with connection.cursor() as cur:
+            cur.execute("SELECT pg_database_size(current_database())")
+            db_bytes = cur.fetchone()[0]
+        db = {"name": connection.settings_dict.get("NAME", "—"), "size": human(db_bytes)}
+    except Exception:
+        pass
+
+    # Вес именно загрузок конструктора (uploads/*), для контекста.
+    up = 0
+    try:
+        for dp, _dn, fns in os.walk(os.path.join(media_root, "uploads")):
+            for fn in fns:
+                try:
+                    up += os.path.getsize(os.path.join(dp, fn))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    return render(request, "admin/storage.html", {
+        "disks": disks, "db": db, "uploads_size": human(up),
+    })
