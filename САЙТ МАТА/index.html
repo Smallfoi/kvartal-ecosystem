@@ -465,31 +465,41 @@
             </div>
           </div>
 
-          <aside class="loyalty-card reveal" data-sid="card" data-loyalty-card tabindex="0" aria-label="Уровни лояльности МАТА">
-            <div class="loyalty-card-glow" aria-hidden="true"></div>
-            <div class="loyalty-card-top">
-              <span>МАТА Points</span>
-              <span class="loyalty-level" data-lc-level>Серебро</span>
+          <!-- Колода карт лояльности МАТА: база / серебро / золото / платина.
+               Премиум-металлик (градиенты 1:1 с картой приложения) + 3D-колода
+               с авто-перелистыванием и бликом. Управление — data-loyalty-deck (script.js). -->
+          <div class="loyalty-deck reveal" data-sid="card" data-loyalty-deck tabindex="0"
+               aria-label="Карты лояльности МАТА: базовая, серебро, золото, платина">
+            <div class="mata-card mc-basic" data-tier-name="База">
+              <span class="mc-shine" aria-hidden="true"></span>
+              <div class="mc-top"><span class="mc-brand">МАТА&nbsp;Points</span><span class="mc-tier">База</span></div>
+              <div class="mc-chip" aria-hidden="true"></div>
+              <div class="mc-mark">МАТА</div>
+              <div class="mc-foot"><span class="mc-cash">Кэшбэк 1%</span><span class="mc-range">0–199 баллов</span></div>
             </div>
-            <div class="loyalty-balance">
-              <span class="loyalty-balance-num" data-lc-num>430</span>
-              <span class="loyalty-balance-cur">баллов</span>
+            <div class="mata-card mc-silver" data-tier-name="Серебро">
+              <span class="mc-shine" aria-hidden="true"></span>
+              <div class="mc-top"><span class="mc-brand">МАТА&nbsp;Points</span><span class="mc-tier">Серебро</span></div>
+              <div class="mc-chip" aria-hidden="true"></div>
+              <div class="mc-mark">МАТА</div>
+              <div class="mc-foot"><span class="mc-cash">Кэшбэк 2%</span><span class="mc-range">200–499 баллов</span></div>
             </div>
-            <p class="loyalty-card-note" data-lc-cashback>Кэшбэк 2% · ранний доступ к акциям</p>
-            <div class="loyalty-progress" aria-hidden="true">
-              <span class="loyalty-progress-bar" data-lc-bar style="--p: 45%"></span>
+            <div class="mata-card mc-gold" data-tier-name="Золото">
+              <span class="mc-shine" aria-hidden="true"></span>
+              <div class="mc-top"><span class="mc-brand">МАТА&nbsp;Points</span><span class="mc-tier">Золото</span></div>
+              <div class="mc-chip" aria-hidden="true"></div>
+              <div class="mc-mark">МАТА</div>
+              <div class="mc-foot"><span class="mc-cash">Кэшбэк 5%</span><span class="mc-range">500–1499 баллов</span></div>
             </div>
-            <div class="loyalty-tiers" data-lc-tiers aria-hidden="true">
-              <span class="loyalty-tier" data-tier="0">Базовый</span>
-              <span class="loyalty-tier is-active" data-tier="1">Серебро</span>
-              <span class="loyalty-tier" data-tier="2">Золото</span>
-              <span class="loyalty-tier" data-tier="3">Платина</span>
+            <div class="mata-card mc-platinum" data-tier-name="Платина">
+              <span class="mc-shine" aria-hidden="true"></span>
+              <div class="mc-top"><span class="mc-brand">МАТА&nbsp;Points</span><span class="mc-tier">Платина</span></div>
+              <div class="mc-chip" aria-hidden="true"></div>
+              <div class="mc-mark">МАТА</div>
+              <div class="mc-foot"><span class="mc-cash">Кэшбэк 10%</span><span class="mc-range">1500+ баллов</span></div>
             </div>
-            <p class="loyalty-card-foot">
-              <span data-lc-range>200–499 баллов</span>
-              <span class="loyalty-hint">Наведи — пролистать уровни ▸</span>
-            </p>
-          </aside>
+            <div class="loyalty-dots" data-loyalty-dots aria-hidden="true"></div>
+          </div>
         </div>
       </section>
 
