@@ -404,3 +404,29 @@ class AdminViewSiteLinkTests(TestCase):
 
         self.assertNotEqual(settings.SITE_PUBLIC_URL, "/")
         self.assertEqual(self.client.get("/").status_code, 404)
+
+
+class AdminLoginThemeTests(TestCase):
+    """Страница входа и тема Unfold должны жить одним состоянием.
+
+    Пока сцена хранилась своим ключом, Alpine после загрузки вешал класс `dark`
+    поверх дневной сцены: подписи полей становились белыми на белой карточке,
+    и читаемыми — только после перещёлкивания тумблера.
+    """
+
+    def _html(self):
+        return self.client.get("/admin/login/").content.decode()
+
+    def test_theme_is_stored_in_the_same_key_as_unfold(self):
+        html = self._html()
+        self.assertIn("adminTheme", html)
+        # Отдельный ключ сцены больше не пишем — только читаем для миграции.
+        self.assertNotIn('setItem("mata-admin-scene"', html)
+
+    def test_scene_follows_theme_switch(self):
+        """Переключателем Unfold класс dark меняет Alpine — сцена едет за ним."""
+        self.assertIn("MutationObserver", self._html())
+
+    def test_card_text_has_own_colour(self):
+        """Страховка: цвет подписей задан палитрой сцены, а не темой Unfold."""
+        self.assertIn("color: var(--cx-ink) !important", self._html())
