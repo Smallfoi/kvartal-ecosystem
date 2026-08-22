@@ -15,6 +15,10 @@ class Account(models.Model):
     password_hash = models.CharField(max_length=200, null=True, blank=True, verbose_name="Хэш пароля")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата регистрации")
 
+    # Код лояльности: постоянный 6-значный номер за клиентом (для кассы/QR). Выдаётся
+    # один раз, не меняется. QR карты лояльности кодирует именно его.
+    loyalty_code = models.CharField(max_length=6, blank=True, default="", db_index=True, verbose_name="Код лояльности")
+
     # Приватность (privacy by design, LAUNCH_READINESS §2): по умолчанию закрыто.
     profile_public = models.BooleanField(default=False, verbose_name="Профиль публичный")
     route_public = models.BooleanField(default=False, verbose_name="Маршруты публичны")
@@ -55,3 +59,22 @@ class Account(models.Model):
             "addresses": self.addresses or [],
             "privacy": self.privacy_json(),
         }
+
+
+def ensure_loyalty_code(uid) -> str:
+    """Постоянный 6-значный код лояльности за пользователем. Выдаётся ОДИН раз
+    (при первом обращении к карте лояльности) и больше не меняется. Уникален."""
+    import secrets
+
+    acc = Account.objects.filter(id=uid).first()
+    if not acc:
+        return ""
+    if acc.loyalty_code:
+        return acc.loyalty_code
+    for _ in range(12):
+        code = "%06d" % secrets.randbelow(1_000_000)
+        if not Account.objects.filter(loyalty_code=code).exists():
+            acc.loyalty_code = code
+            acc.save(update_fields=["loyalty_code"])
+            return code
+    return ""  # практически недостижимо (1M пространство)

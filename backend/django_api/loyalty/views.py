@@ -21,7 +21,9 @@ def account(request):
 
 
 def _account_payload(uid):
-    """Баланс (SQL-агрегат по всем транзакциям) + уровень + последние N операций."""
+    """Баланс (SQL-агрегат по всем транзакциям) + уровень + последние N операций + код."""
+    from accounts.models import ensure_loyalty_code
+
     balance = balance_of(uid)
     rows = LoyaltyTransaction.objects.filter(user_id=uid).order_by("-created_at")[
         :_TX_LIMIT
@@ -29,6 +31,7 @@ def _account_payload(uid):
     return {
         "balance": balance,
         "level": level_for(balance),
+        "code": ensure_loyalty_code(uid),  # постоянный 6-значный код лояльности (для QR/кассы)
         "transactions": [r.to_json() for r in rows],
     }
 

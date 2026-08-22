@@ -114,8 +114,11 @@ class _Header extends StatelessWidget {
                     balance: loyalty.balance,
                     levelLabel: loyalty.level.label,
                     holderName: auth.user?.name ?? 'Гость МАТА',
-                    qrData:
-                        'MATA:LOYALTY:${auth.user?.id ?? ''}:${loyalty.balance}',
+                    // QR кодирует ПОСТОЯННЫЙ 6-значный код лояльности (не баланс) —
+                    // сканирование на кассе даёт эти цифры. Пока не загружен — id (fallback).
+                    qrData: loyalty.code.isNotEmpty
+                        ? loyalty.code
+                        : (auth.user?.id ?? ''),
                     tier: switch (loyalty.level) {
                       LoyaltyLevel.basic => LoyaltyCardTier.basic,
                       LoyaltyLevel.silver => LoyaltyCardTier.silver,
@@ -126,6 +129,20 @@ class _Header extends StatelessWidget {
                 ),
               ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.06),
               const SizedBox(height: 14),
+              // Постоянный код лояльности (для кассы вручную, если нет сканера).
+              if (loyalty.code.isNotEmpty)
+                Center(
+                  child: Text(
+                    'Код лояльности: ${loyalty.code}', // staw-static
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                      color: Color(0xFF444444),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
               Center(
                 child: const RemoteText(
                   'app.loyalty.rule',

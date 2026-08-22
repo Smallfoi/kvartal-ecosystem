@@ -49,6 +49,7 @@ class ApiLoyaltyRepository implements LoyaltyRepository {
     final data = await _client.get('/loyalty/account') as Map<String, dynamic>;
     return LoyaltyAccount(
       balance: data['balance'] as int? ?? 0,
+      code: data['code'] as String? ?? '',
       transactions: (data['transactions'] as List? ?? [])
           .map((j) => LoyaltyTransaction.fromJson(j as Map<String, dynamic>))
           .toList(),

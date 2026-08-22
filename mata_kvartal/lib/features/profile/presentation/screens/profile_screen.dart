@@ -965,8 +965,10 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                       balance: loyalty.balance,
                       levelLabel: loyalty.levelTitle,
                       holderName: user?.name ?? 'Бегун КВАРТАЛ',
-                      qrData:
-                          'MATA:LOYALTY:${user?.id ?? ''}:${loyalty.balance}',
+                      // QR кодирует ПОСТОЯННЫЙ 6-значный код лояльности (не баланс).
+                      qrData: loyalty.code.isNotEmpty
+                          ? loyalty.code
+                          : (user?.id ?? ''),
                       tier: switch (loyalty.level) {
                         'platinum' => LoyaltyCardTier.platinum,
                         'gold' => LoyaltyCardTier.gold,
@@ -978,6 +980,18 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                 ),
               ),
             ),
+            if (loyalty.code.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  'Код лояльности: ${loyalty.code}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Text(
