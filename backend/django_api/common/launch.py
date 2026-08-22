@@ -83,6 +83,28 @@ def security():
     return {"prodMode": not debug, "insecure": insecure}
 
 
+def admin_access():
+    """Админка: ограничена ли по IP и не остался ли пароль по умолчанию (D-48)."""
+    from django.contrib.auth import get_user_model
+    from common.adminsec import admin_ip_allowlist
+
+    nets = admin_ip_allowlist()
+    # Пароли, которые ходили по документации и переписке: в проде их быть не должно.
+    known = ["staw-admin-2026", "admin", "admin123", "password"]
+    weak = []
+    try:
+        for u in get_user_model().objects.filter(is_superuser=True):
+            if any(u.check_password(p) for p in known):
+                weak.append(u.get_username())
+    except Exception:
+        pass
+    return {
+        "ipRestricted": bool(nets),
+        "allowlistSize": len(nets),
+        "weakPasswordUsers": sorted(weak),
+    }
+
+
 def legal_gate():
     """Обязательные юр-документы опубликованы? (launch-gate §3/§13 LAUNCH_READINESS)."""
     from legal.models import LegalDocument
@@ -108,5 +130,6 @@ def launch_report():
         "integrations": integrations(),
         "infra": infra(),
         "security": security(),
+        "admin": admin_access(),
         "legal": legal_gate(),
     }

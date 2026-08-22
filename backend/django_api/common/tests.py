@@ -297,3 +297,61 @@ class AdminLoginThrottleTests(TestCase):
         for _ in range(MAX_FAILS - 1):
             r = self._login("wrong")
         self.assertNotEqual(r.status_code, 429)
+
+
+class AdminIpAllowlistTests(TestCase):
+    """Админка доступна только с разрешённых адресов (D-48)."""
+
+    def test_disabled_by_default(self):
+        from common.adminsec import ip_allowed, _parse_allowlist
+
+        # Пустой список = ограничение выключено (dev), пускаем любой адрес.
+        self.assertTrue(ip_allowed("203.0.113.7", _parse_allowlist("")))
+
+    def test_single_address_and_subnet(self):
+        from common.adminsec import ip_allowed, _parse_allowlist
+
+        nets = _parse_allowlist("203.0.113.7, 198.51.100.0/24")
+        self.assertTrue(ip_allowed("203.0.113.7", nets))
+        self.assertTrue(ip_allowed("198.51.100.42", nets))
+        self.assertFalse(ip_allowed("203.0.113.8", nets))
+        self.assertFalse(ip_allowed("192.0.2.1", nets))
+
+    def test_garbage_entries_are_skipped_not_fatal(self):
+        from common.adminsec import _parse_allowlist
+
+        # Опечатка в переменной окружения не должна ронять приложение целиком.
+        nets = _parse_allowlist("не-адрес, 203.0.113.7, 999.1.1.1")
+        self.assertEqual(len(nets), 1)
+
+    def test_unknown_ip_is_rejected_when_list_set(self):
+        from common.adminsec import ip_allowed, _parse_allowlist
+
+        # Если адрес определить не удалось, а список задан — не пускаем.
+        self.assertFalse(ip_allowed("unknown", _parse_allowlist("203.0.113.7")))
+
+    def test_middleware_hides_admin_from_foreign_ip(self):
+        """Чужому адресу админка отдаёт 404: он не должен знать, что она здесь."""
+        import os
+        from django.http import Http404, HttpResponse
+        from django.test import RequestFactory
+
+        from common.adminsec import AdminIpAllowlistMiddleware
+
+        os.environ["ADMIN_IP_ALLOWLIST"] = "203.0.113.7"
+        try:
+            mw = AdminIpAllowlistMiddleware(lambda r: HttpResponse("ok"))
+            rf = RequestFactory()
+
+            own = rf.get("/admin/", HTTP_X_REAL_IP="203.0.113.7")
+            self.assertEqual(mw(own).status_code, 200)
+
+            foreign = rf.get("/admin/", HTTP_X_REAL_IP="198.51.100.1")
+            with self.assertRaises(Http404):
+                mw(foreign)
+
+            # Остальное приложение ограничением не затронуто.
+            api = rf.get("/v1/health", HTTP_X_REAL_IP="198.51.100.1")
+            self.assertEqual(mw(api).status_code, 200)
+        finally:
+            os.environ.pop("ADMIN_IP_ALLOWLIST", None)

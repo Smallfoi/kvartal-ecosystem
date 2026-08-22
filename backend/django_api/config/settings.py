@@ -58,6 +58,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Анти-брутфорс формы входа в админку: лимиты DRF её не покрывают (D-39).
     "common.adminsec.AdminLoginRateLimitMiddleware",
+    # Белый список IP для админки (D-48): пусто — выключено, в проде обязателен.
+    "common.adminsec.AdminIpAllowlistMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

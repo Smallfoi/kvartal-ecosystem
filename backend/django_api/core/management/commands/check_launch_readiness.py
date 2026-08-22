@@ -43,6 +43,23 @@ class Command(BaseCommand):
         else:
             self.stdout.write("  [OK] Прод-секреты заданы, ALLOWED_HOSTS ограничен")
 
+        adm = rep["admin"]
+        self.stdout.write("=== Доступ в админку ===")
+        if adm["ipRestricted"]:
+            self.stdout.write(
+                f"  [OK] Вход ограничен по IP (записей в списке: {adm['allowlistSize']})"
+            )
+        else:
+            self.stdout.write("  [--] Админка открыта с любого адреса")
+            self.stdout.write("        нужно: ADMIN_IP_ALLOWLIST=1.2.3.4,10.0.0.0/24 (D-48)")
+        if adm["weakPasswordUsers"]:
+            self.stdout.write(
+                "  [--] Пароль по умолчанию у: " + ", ".join(adm["weakPasswordUsers"])
+            )
+            self.stdout.write("        нужно: сменить пароль администратора")
+        else:
+            self.stdout.write("  [OK] Известных дефолтных паролей у админов нет")
+
         legal = rep["legal"]
         self.stdout.write("=== Юр-документы (launch-gate) ===")
         if legal["ok"]:
