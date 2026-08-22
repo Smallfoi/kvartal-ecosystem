@@ -178,6 +178,9 @@
       + ".eco-card .eco-primary{width:100%;margin-top:10px;padding:13px;border:none;"
       + "border-radius:12px;background:#20252b;color:#fff;font:inherit;font-weight:700;cursor:pointer}"
       + ".eco-card .eco-primary[disabled]{opacity:.5;cursor:default}"
+      + ".eco-card .eco-link{display:inline-block;margin-top:10px;background:none;border:none;"
+      + "color:#6f7278;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}"
+      + ".eco-card .eco-link:hover{color:#20252b}"
       + ".eco-err{color:#c0392b;font-size:13px;min-height:18px;margin:6px 0 0}"
       + ".eco-card .eco-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;opacity:.5}"
       // ── Ввод кода: хореография «OTP V5» (стандарт анимаций экосистемы) ──
@@ -380,28 +383,33 @@
       // левая половина — Вход (видна, когда панель уехала вправо).
       // data-edit / data-edit-ph — ключи «Конструктора» (правка текста / плейсхолдера).
       '<div class="eco-half eco-half--login"><div class="eco-form">' +
-      '<h3 data-edit="auth.loginTitle">Вход в МАТА</h3>' +
-      '<p class="eco-sub" data-edit="auth.loginSub">Баллы «Квартала», магазина и сайта — общие. Dev-код: 1234.</p>' +
+      '<h3 data-edit="auth.loginTitle" data-login-h>Вход в МАТА</h3>' +
+      '<p class="eco-sub" data-edit="auth.loginSub" data-login-sub>Баллы «Квартала», магазина и сайта — общие.</p>' +
       '<div class="eco-phone"><span class="eco-phone-prefix">+7</span>' +
       '<span class="eco-phone-field"><input data-login-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" autocomplete="tel" />' +
       '<span class="eco-phone-mask" aria-hidden="true"></span></span></div>' +
-      '<div class="eco-otp" data-login-otp>' +
+      '<input data-login-pass type="password" placeholder="Пароль" autocomplete="current-password" />' +
+      // OTP-шаг — только для «Забыл пароль?» (по умолчанию скрыт).
+      '<div class="eco-otp" data-login-otp style="display:none">' +
       '<input data-login-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
       '<p class="eco-err" data-login-err></p>' +
       '<button class="eco-primary" type="button" data-login-submit data-edit="auth.loginBtn">Войти</button>' +
+      '<button class="eco-link" type="button" data-login-forgot>Забыл пароль?</button>' +
       "</div></div>" +
       // правая половина — Регистрация (видна в исходном положении панели)
       '<div class="eco-half eco-half--reg"><div class="eco-form">' +
       '<h3 data-edit="auth.regTitle">Регистрация в МАТА</h3>' +
-      '<p class="eco-sub" data-edit="auth.regSub">Единый аккаунт экосистемы. Dev-код: 1234.</p>' +
+      '<p class="eco-sub" data-edit="auth.regSub" data-reg-sub>Единый аккаунт экосистемы. Подтвердим телефон по SMS.</p>' +
       '<input data-reg-name data-edit-ph="auth.namePh" type="text" placeholder="Имя и фамилия" autocomplete="name" />' +
       '<div class="eco-phone"><span class="eco-phone-prefix">+7</span>' +
       '<span class="eco-phone-field"><input data-reg-phone data-edit-ph="auth.phonePh" type="tel" inputmode="tel" autocomplete="tel" />' +
       '<span class="eco-phone-mask" aria-hidden="true"></span></span></div>' +
-      '<div class="eco-otp" data-reg-otp>' +
+      '<input data-reg-pass type="password" placeholder="Пароль (мин. 4 символа)" autocomplete="new-password" />' +
+      // OTP-шаг регистрации — появляется после отправки SMS.
+      '<div class="eco-otp" data-reg-otp style="display:none">' +
       '<input data-reg-code class="eco-otp-input" type="text" inputmode="numeric" maxlength="4" autocomplete="one-time-code" aria-label="Код из SMS" /></div>' +
       '<p class="eco-err" data-reg-err></p>' +
-      '<button class="eco-primary" type="button" data-reg-submit data-edit="auth.regBtn">Зарегистрироваться</button>' +
+      '<button class="eco-primary" type="button" data-reg-submit data-edit="auth.regBtn">Получить SMS-код</button>' +
       "</div></div>" +
       // панель: тёмный бренд-фон вместо фото (утверждённых фото пока нет),
       // стороны A/B — параллакс ±200%
@@ -433,37 +441,105 @@
     modal.querySelector("[data-go-signup]").addEventListener("click", function () {
       setMode("register"); focusActive();
     });
-    otpLogin = createOtpField({
-      stage: modal.querySelector("[data-login-otp]"),
-      input: modal.querySelector("[data-login-code]"),
-      errEl: modal.querySelector("[data-login-err]"),
-      btn: modal.querySelector("[data-login-submit]"),
-      getPayload: function () {
-        var digits = phoneDigits(modal.querySelector("[data-login-phone]"));
-        if (digits.length < 10) return { error: "Введите номер полностью" };
-        return { phone: "+7" + digits, name: "" };
-      }
-    });
+    var q = function (s) { return modal.querySelector(s); };
+    function regPayload() {
+      var name = q("[data-reg-name]").value.trim();
+      var digits = phoneDigits(q("[data-reg-phone]"));
+      var pass = q("[data-reg-pass]").value;
+      if (!name) return { error: "Введите имя" };
+      if (digits.length < 10) return { error: "Введите номер полностью" };
+      if (pass.length < 4) return { error: "Пароль мин. 4 символа" };
+      return { phone: "+7" + digits, name: name, password: pass };
+    }
+    function loginResetPayload() {
+      var digits = phoneDigits(q("[data-login-phone]"));
+      var pass = q("[data-login-pass]").value;
+      if (digits.length < 10) return { error: "Введите номер полностью" };
+      if (pass.length < 4) return { error: "Новый пароль мин. 4 символа" };
+      return { phone: "+7" + digits, password: pass };
+    }
+    // Регистрация: код подтверждает телефон один раз, аккаунт создаётся с паролем.
     otpReg = createOtpField({
-      stage: modal.querySelector("[data-reg-otp]"),
-      input: modal.querySelector("[data-reg-code]"),
-      errEl: modal.querySelector("[data-reg-err]"),
-      btn: modal.querySelector("[data-reg-submit]"),
-      getPayload: function () {
-        var name = modal.querySelector("[data-reg-name]").value.trim();
-        var digits = phoneDigits(modal.querySelector("[data-reg-phone]"));
-        if (!name) return { error: "Введите имя" };
-        if (digits.length < 10) return { error: "Введите номер полностью" };
-        return { phone: "+7" + digits, name: name };
+      stage: q("[data-reg-otp]"), input: q("[data-reg-code]"),
+      errEl: q("[data-reg-err]"), btn: q("[data-reg-submit]"),
+      getPayload: regPayload,
+      verify: function (p, code) {
+        return api("/auth/register", { method: "POST", body: { phone: p.phone, code: code, password: p.password, name: p.name } });
       }
     });
-    setupPhoneInput(modal.querySelector("[data-login-phone]"));
-    setupPhoneInput(modal.querySelector("[data-reg-phone]"));
-    modal.querySelector("[data-login-submit]").addEventListener("click", function () {
-      otpLogin.trySubmit();
+    // Сброс пароля (в половине «Вход»): телефон+код+новый пароль.
+    otpLogin = createOtpField({
+      stage: q("[data-login-otp]"), input: q("[data-login-code]"),
+      errEl: q("[data-login-err]"), btn: q("[data-login-submit]"),
+      getPayload: loginResetPayload,
+      verify: function (p, code) {
+        return api("/auth/password/reset", { method: "POST", body: { phone: p.phone, code: code, password: p.password } });
+      }
     });
-    modal.querySelector("[data-reg-submit]").addEventListener("click", function () {
-      otpReg.trySubmit();
+    setupPhoneInput(q("[data-login-phone]"));
+    setupPhoneInput(q("[data-reg-phone]"));
+
+    // ── Регистрация: 1-й клик — отправить SMS и показать OTP; далее — проверить код ──
+    var regSmsSent = false;
+    q("[data-reg-submit]").addEventListener("click", function () {
+      var btn = q("[data-reg-submit]"), err = q("[data-reg-err]");
+      if (regSmsSent) { otpReg.trySubmit(); return; }
+      var p = regPayload();
+      err.textContent = "";
+      if (p.error) { err.textContent = p.error; return; }
+      btn.disabled = true;
+      api("/auth/phone/request", { method: "POST", body: { phone: p.phone } })
+        .then(function () {
+          regSmsSent = true;
+          q("[data-reg-otp]").style.display = "";
+          btn.textContent = "Зарегистрироваться";
+          err.textContent = "Код отправлен на телефон (dev: 1234)";
+          q("[data-reg-code]").focus();
+        })
+        .catch(function (e) { err.textContent = e.message || "Не удалось отправить код"; })
+        .then(function () { btn.disabled = false; });
+    });
+
+    // ── Вход: телефон+пароль. «Забыл пароль?» → режим сброса (SMS-код) ──
+    var loginMode = "login", loginResetSmsSent = false;
+    q("[data-login-submit]").addEventListener("click", function () {
+      var btn = q("[data-login-submit]"), err = q("[data-login-err]");
+      err.textContent = "";
+      if (loginMode === "login") {
+        var digits = phoneDigits(q("[data-login-phone]"));
+        var pass = q("[data-login-pass]").value;
+        if (digits.length < 10) { err.textContent = "Введите номер полностью"; return; }
+        if (!pass) { err.textContent = "Введите пароль"; return; }
+        btn.disabled = true;
+        api("/auth/login", { method: "POST", body: { phone: "+7" + digits, password: pass } })
+          .then(function (data) { authDone(data, ""); })
+          .catch(function (e) { err.textContent = /401/.test(e.message || "") ? "Неверный телефон или пароль" : (e.message || "Не удалось войти"); })
+          .then(function () { btn.disabled = false; });
+        return;
+      }
+      // режим сброса
+      if (loginResetSmsSent) { otpLogin.trySubmit(); return; }
+      var p = loginResetPayload();
+      if (p.error) { err.textContent = p.error; return; }
+      btn.disabled = true;
+      api("/auth/phone/request", { method: "POST", body: { phone: p.phone } })
+        .then(function () {
+          loginResetSmsSent = true;
+          q("[data-login-otp]").style.display = "";
+          err.textContent = "Код отправлен (dev: 1234)";
+          q("[data-login-code]").focus();
+        })
+        .catch(function (e) { err.textContent = e.message || "Не удалось"; })
+        .then(function () { btn.disabled = false; });
+    });
+    q("[data-login-forgot]").addEventListener("click", function () {
+      loginMode = "reset";
+      q("[data-login-h]").textContent = "Сброс пароля";
+      q("[data-login-sub]").textContent = "Подтвердим телефон по SMS и зададим новый пароль.";
+      q("[data-login-pass]").placeholder = "Новый пароль (мин. 4)";
+      q("[data-login-pass]").value = "";
+      q("[data-login-submit]").textContent = "Получить SMS-код";
+      this.style.display = "none";
     });
     applyAuthOverrides(); // тексты/плейсхолдеры, заданные в «Конструкторе»
     // Медиа панели (фото/видео Вход/Регистрация) — тоже из общего контента.
@@ -733,12 +809,13 @@
       input.blur();
       render();
 
-      // SSO по телефону: verify создаёт аккаунт при первом входе; запрос идёт
-      // ПАРАЛЛЕЛЬНО хореографии — вращение и есть индикатор загрузки.
-      api("/auth/phone/verify", {
-        method: "POST",
-        body: { phone: payload.phone, code: input.value }
-      })
+      // Проверка кода. Эндпоинт задаёт форма (cfg.verify): регистрация →
+      // /auth/register (с паролем/именем), сброс → /auth/password/reset. По
+      // умолчанию — legacy phone/verify. Запрос идёт ПАРАЛЛЕЛЬНО хореографии.
+      var verifyCall = cfg.verify
+        ? cfg.verify(payload, input.value)
+        : api("/auth/phone/verify", { method: "POST", body: { phone: payload.phone, code: input.value } });
+      verifyCall
         .then(function (data) {
           result = { ok: true, data: data, name: payload.name || "" };
         })
