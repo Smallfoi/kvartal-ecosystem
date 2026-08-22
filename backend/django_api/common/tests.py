@@ -379,3 +379,28 @@ class AdminTwoFactorTests(TestCase):
         self.assertIn("otp_admin", admin_access()["usersWithout2fa"])
         self._enroll()
         self.assertNotIn("otp_admin", admin_access()["usersWithout2fa"])
+
+
+class AdminViewSiteLinkTests(TestCase):
+    """Кнопка «Открыть сайт» в меню админки ведёт на витрину, а не в корень API."""
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        get_user_model().objects.create_superuser("site_link_admin", "s@t.dev", "pass12345")
+        self.client.login(username="site_link_admin", password="pass12345")
+
+    def test_link_points_to_storefront_and_opens_in_new_tab(self):
+        from django.conf import settings
+
+        html = self.client.get("/admin/").content.decode()
+        self.assertIn(f'href="{settings.SITE_PUBLIC_URL}"', html)
+        # Без новой вкладки уход на сайт терял бы открытую страницу админки.
+        self.assertIn('target="_blank"', html)
+
+    def test_link_is_not_the_api_root(self):
+        """Корень бэкенда отдаёт 404 — именно из-за него кнопка была нерабочей."""
+        from django.conf import settings
+
+        self.assertNotEqual(settings.SITE_PUBLIC_URL, "/")
+        self.assertEqual(self.client.get("/").status_code, 404)
