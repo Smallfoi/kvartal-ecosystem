@@ -28,14 +28,13 @@ class RemoteLabelsLayer extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: consoleEditNotifier,
       builder: (context, editing, _) {
-        // Пустой слой без правки и без подписей — ничего не рисуем (и не перехватываем).
-        if (!editing && ids.isEmpty) return const SizedBox.shrink();
+        // Нет подписей — ничего не рисуем. Кнопка «➕ Текст» в приложении убрана
+        // (директива владельца); уже добавленные подписи продолжают редактироваться.
+        if (ids.isEmpty) return const SizedBox.shrink();
         return Stack(
           children: [
             for (final id in ids)
               _AddedLabel(id: id, screenKey: screenKey, editing: editing),
-            if (editing)
-              Positioned(right: 16, bottom: 16, child: _AddButton(screenKey)),
           ],
         );
       },
@@ -172,57 +171,6 @@ class _AddedLabelState extends State<_AddedLabel> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Плавающая кнопка «➕ Текст» — добавляет новую подпись в центр текущего экрана.
-class _AddButton extends StatelessWidget {
-  final String screenKey;
-  const _AddButton(this.screenKey);
-
-  void _add(BuildContext context) {
-    final prov = context.read<RemoteContentProvider>();
-    // id уникален по времени (рантайм Dart — DateTime доступен).
-    final id = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
-    final list = prov.allLabels()..add({'id': id, 's': screenKey});
-    final json = jsonEncode(list);
-    postDraft('applabels', json);
-    prov.applyDraft('applabels', json);
-
-    const defText = 'Новая надпись';
-    postDraft('app.xl.$id', defText);
-    prov.applyDraft('app.xl.$id', defText);
-
-    // Позиция — примерно центр экрана.
-    final size = MediaQuery.of(context).size;
-    final pos = '${(size.width / 2 - 70).round()},${(size.height / 2 - 40).round()}';
-    postDraft('pos.app.xl.$id', pos);
-    prov.applyDraft('pos.app.xl.$id', pos);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF0A84FF),
-      shape: const StadiumBorder(),
-      elevation: 3,
-      child: InkWell(
-        onTap: () => _add(context),
-        customBorder: const StadiumBorder(),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add, color: Colors.white, size: 18),
-              SizedBox(width: 6),
-              Text('Текст',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
-            ],
           ),
         ),
       ),
