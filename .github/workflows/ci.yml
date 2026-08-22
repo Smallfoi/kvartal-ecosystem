@@ -118,3 +118,20 @@ jobs:
           done < <(find "САЙТ МАТА" -maxdepth 1 -name '*.js' | sort)
           echo "checked $count file(s)"
           test "$count" -gt 0   # страховка: путь с кириллицей нашёлся, файлы проверены
+
+  editable-guard:
+    name: CMS · Editable text
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Страж редактируемости: на НОВОМ экране приложения не должно быть текста-контента
+      # мимо RemoteText (иначе владелец не сможет править его в Конструкторе). Существующий
+      # статичный UI — в baseline; осознанный статик помечается // staw-static. Подробности:
+      # tools/check_editable_text.py.
+      - name: Editable-text guard (RemoteText / staw-static)
+        run: python tools/check_editable_text.py
