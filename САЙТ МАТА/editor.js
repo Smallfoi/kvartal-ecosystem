@@ -173,6 +173,7 @@
       focal: (isImg ? img.style.objectPosition : img.style.backgroundPosition) || "",
       fit: ((isImg ? img.style.objectFit : img.style.backgroundSize) === "contain") ? "contain" : "cover",
       aspect: (img.clientWidth && img.clientHeight) ? (img.clientWidth / img.clientHeight) : 0,
+      anim: currentAnim(img),   // текущая анимация фото (для пикера «✨ Анимация» в модалке)
     });
   }
   // Текст элемента БЕЗ служебных вставок (.staw-ui: панель инструментов, крестик и т.п.).
@@ -293,7 +294,8 @@
   // ── Анимация ──
   function currentAnim(el) { var m = /\bstaw-anim-([\w-]+)/.exec(el.className); return m ? m[1] : ""; }
   function applyAnimLocal(key, val) {
-    document.querySelectorAll('[data-hideable="' + key + '"]').forEach(function (el) {
+    // Анимация применяется к блокам (data-hideable) И к отдельным фото (data-edit-img).
+    document.querySelectorAll('[data-hideable="' + key + '"], [data-edit-img="' + key + '"]').forEach(function (el) {
       el.className = el.className.replace(/\s*\bstaw-anim-[\w-]+/g, "").trim();
       if (val && /^[\w-]+$/.test(val) && val !== "none") el.classList.add("staw-anim-" + val);
     });
