@@ -1121,6 +1121,52 @@ window.STAW.openProfile = openProfile;
   setTier(DEFAULT, false);
 })();
 
+// ── Колода карт лояльности (база/серебро/золото/платина): 3D-веер + авто-цикл ──
+(function () {
+  const deck = document.querySelector("[data-loyalty-deck]");
+  if (!deck) return;
+  const cards = [].slice.call(deck.querySelectorAll(".mata-card"));
+  if (!cards.length) return;
+  const dotsBox = deck.querySelector("[data-loyalty-dots]");
+  const reduce =
+    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const N = cards.length;
+  let front = 0;
+  let timer = null;
+
+  const dots = [];
+  if (dotsBox) {
+    cards.forEach(function (c, i) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("aria-label", "Показать карту: " + (c.getAttribute("data-tier-name") || ("" + (i + 1))));
+      b.addEventListener("click", function () { go(i); restart(); });
+      dotsBox.appendChild(b);
+      dots.push(b);
+    });
+  }
+
+  function render() {
+    cards.forEach(function (c, i) {
+      const pos = (i - front + N) % N;
+      c.className = c.className.replace(/\bpos-\d\b/g, "").trim() + " pos-" + pos;
+    });
+    dots.forEach(function (d, i) { d.classList.toggle("is-on", i === front); });
+  }
+  function go(i) { front = ((i % N) + N) % N; render(); }
+  function next() { go(front + 1); }
+  function start() { if (!timer && !reduce) timer = setInterval(next, 3400); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  function restart() { stop(); start(); }
+
+  render();
+  start();
+  deck.addEventListener("mouseenter", stop);
+  deck.addEventListener("mouseleave", start);
+  deck.addEventListener("focusin", stop);
+  deck.addEventListener("focusout", start);
+})();
+
 observeReveals();
 bindAddButtons();
 bindQuickView();

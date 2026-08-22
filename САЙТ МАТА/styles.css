@@ -1304,163 +1304,141 @@ html.js.motion-off .hero .brand-wordmark span {
   color: var(--accent-ink);
 }
 
-/* Карточка баллов (тёмная — премиальный акцент) */
-.loyalty-card {
-  --tier-color: #c7ccd4;
+/* ── Колода карт лояльности МАТА (база/серебро/золото/платина) ──────────────
+   Премиум-металлик 1:1 с картой приложения + 3D-веер с авто-перелистыванием,
+   бликом и точками. Управление позициями — script.js (класс .pos-N). */
+.loyalty-deck {
   position: relative;
-  overflow: hidden;
-  padding: clamp(24px, 2.4vw, 34px);
-  border-radius: var(--r-xl);
-  background: linear-gradient(155deg, #272c33 0%, #16191e 100%);
-  color: var(--on-dark);
-  box-shadow: var(--shadow-lg);
-  cursor: pointer;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  aspect-ratio: 1.58;
+  perspective: 1400px;
   outline: none;
-  transition:
-    transform 450ms var(--ease-out),
-    box-shadow 500ms ease;
 }
 
-.loyalty-card:hover,
-.loyalty-card:focus {
-  transform: translateY(-4px);
-  box-shadow:
-    var(--shadow-lg),
-    0 18px 50px -16px var(--tier-color);
-}
-
-.loyalty-card-glow {
+.mata-card {
   position: absolute;
-  inset: -45% -10% auto -10%;
-  height: 75%;
-  background: radial-gradient(60% 80% at 70% 0%, var(--tier-color), transparent 70%);
-  opacity: 0.16;
-  pointer-events: none;
+  inset: 0;
+  border-radius: 20px;
+  padding: clamp(20px, 2.4vw, 28px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f2f4f6;
+  box-shadow: 0 26px 60px -22px rgba(6, 9, 14, 0.7);
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
   transition:
-    opacity 500ms ease,
-    background 600ms ease;
+    transform 780ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 640ms ease,
+    box-shadow 640ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.loyalty-card:hover .loyalty-card-glow,
-.loyalty-card:focus .loyalty-card-glow {
-  opacity: 0.34;
+/* Позиции в 3D-веере: 0 — фронт, дальше уходят вправо-назад. */
+.mata-card.pos-0 { transform: translate3d(0, 0, 60px) rotateY(0) scale(1);            opacity: 1;    z-index: 4; }
+.mata-card.pos-1 { transform: translate3d(7%, 6%, 0) rotateY(-15deg) scale(0.93);     opacity: 0.97; z-index: 3; }
+.mata-card.pos-2 { transform: translate3d(13%, 12%, -70px) rotateY(-21deg) scale(0.86); opacity: 0.9;  z-index: 2; }
+.mata-card.pos-3 { transform: translate3d(18%, 17%, -140px) rotateY(-25deg) scale(0.8); opacity: 0.8;  z-index: 1; }
+
+/* Металлик-градиенты тиров (цвета — из loyalty_card.dart приложения). */
+.mc-basic    { background: linear-gradient(142deg, #272d34 0%, #1b2026 48%, #12161b 100%); color: #f2f4f6; }
+.mc-silver   { background: linear-gradient(142deg, #e9edf2 0%, #d4dae1 18%, #c2c9d2 34%, #dde2e9 50%, #afb8c2 66%, #cbd2da 82%, #b7bfc9 100%); color: #2b323a; border-color: rgba(255,255,255,.75); }
+.mc-gold     { background: linear-gradient(142deg, #f3dfa0 0%, #e5c06e 18%, #d3a94f 34%, #edd494 50%, #c1943a 66%, #e2c177 82%, #cba14a 100%); color: #42300c; border-color: rgba(255,243,205,.75); }
+.mc-platinum { background: linear-gradient(142deg, #15181d 0%, #0b0d11 30%, #1b2027 52%, #07090c 74%, #141820 100%); color: #e7ecf3; border-color: rgba(202,214,228,.45); }
+
+/* Диагональный блик — постоянно едет по ФРОНТ-карте. */
+.mc-shine {
+  position: absolute;
+  inset: -60% -20%;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.42) 50%, transparent 62%);
+  transform: translateX(-120%);
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  opacity: 0;
+}
+.mata-card.pos-0 .mc-shine { animation: mc-sheen 3.6s ease-in-out 0.4s infinite; opacity: 1; }
+@keyframes mc-sheen {
+  0% { transform: translateX(-120%); }
+  55%, 100% { transform: translateX(120%); }
 }
 
-.loyalty-card > :not(.loyalty-card-glow) {
-  position: relative;
-  z-index: 1;
-}
+.mata-card > :not(.mc-shine) { position: relative; z-index: 1; }
 
-.loyalty-card-top {
+.mc-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 28px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+.mc-brand { opacity: 0.82; }
+.mc-tier {
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 11px;
+}
+.mc-basic .mc-tier { color: var(--accent-2); border-color: rgba(223, 244, 95, 0.7); }
 
-.loyalty-level {
-  padding: 5px 12px;
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--tier-color);
-  transition: color 450ms ease;
+.mc-chip {
+  width: 40px;
+  height: 30px;
+  margin-top: clamp(14px, 2.2vw, 22px);
+  border-radius: 7px;
+  background: linear-gradient(135deg, #f3e2a8, #c79a3f 55%, #9a742a);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6), inset 0 -1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.loyalty-balance {
+.mc-mark {
+  margin-top: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(30px, 4.4vw, 46px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.mc-foot {
   display: flex;
+  justify-content: space-between;
   align-items: baseline;
   gap: 10px;
-}
-
-.loyalty-balance-num {
-  font-family: var(--font-display);
-  font-size: clamp(48px, 6vw, 72px);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.loyalty-balance-cur {
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 700;
-}
-
-.loyalty-card-note {
-  margin: 10px 0 26px;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 14px;
-}
-
-.loyalty-progress {
-  height: 8px;
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-}
-
-.loyalty-progress-bar {
-  display: block;
-  width: var(--p, 50%);
-  height: 100%;
-  border-radius: var(--r-pill);
-  background: linear-gradient(90deg, var(--tier-color), #ffffff);
-  transition:
-    width 650ms var(--ease-staw),
-    background 500ms ease;
-}
-
-.loyalty-card-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 12px 0 0;
-  color: rgba(255, 255, 255, 0.6);
+  margin-top: 14px;
   font-size: 13px;
 }
+.mc-cash { font-weight: 800; }
+.mc-range { opacity: 0.62; font-size: 12px; font-variant-numeric: tabular-nums; }
 
-.loyalty-hint {
-  flex: 0 0 auto;
-  color: var(--tier-color);
-  font-weight: 850;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  transition:
-    color 450ms ease,
-    opacity var(--dur-1) ease;
-}
-
-.loyalty-card:hover .loyalty-hint,
-.loyalty-card:focus .loyalty-hint {
-  opacity: 0.6;
-}
-
-/* — Степпер уровней (анимируется на hover/focus) — */
-.loyalty-tiers {
+/* Точки-индикатор + быстрый переход по клику. */
+.loyalty-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -26px;
   display: flex;
+  justify-content: center;
   gap: 8px;
-  margin-top: 16px;
+  z-index: 5;
 }
-
-.loyalty-tier {
-  flex: 1;
-  padding-bottom: 9px;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.42);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
-  transition:
-    color 350ms ease,
-    border-color 350ms ease;
+.loyalty-dots button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(17, 19, 23, 0.22);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
 }
+.loyalty-dots button.is-on { background: var(--ink); transform: scale(1.35); }
 
-.loyalty-tier.is-active {
-  color: #fff;
-  border-color: var(--tier-color);
+@media (prefers-reduced-motion: reduce) {
+  .mata-card { transition: none; }
+  .mata-card.pos-0 .mc-shine { animation: none; }
 }
 
 /* — Секция «О бренде»: RUN / TRAIL / RACE / EVERYDAY — */
