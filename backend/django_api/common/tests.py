@@ -299,59 +299,83 @@ class AdminLoginThrottleTests(TestCase):
         self.assertNotEqual(r.status_code, 429)
 
 
-class AdminIpAllowlistTests(TestCase):
-    """Админка доступна только с разрешённых адресов (D-48)."""
+class AdminTwoFactorTests(TestCase):
+    """Второй шаг входа в админку (D-49)."""
 
-    def test_disabled_by_default(self):
-        from common.adminsec import ip_allowed, _parse_allowlist
+    PASSWORD = "strong-pass-12345"
 
-        # Пустой список = ограничение выключено (dev), пускаем любой адрес.
-        self.assertTrue(ip_allowed("203.0.113.7", _parse_allowlist("")))
+    def setUp(self):
+        from django.contrib.auth import get_user_model
 
-    def test_single_address_and_subnet(self):
-        from common.adminsec import ip_allowed, _parse_allowlist
+        self.user = get_user_model().objects.create_superuser(
+            "otp_admin", "otp@t.dev", self.PASSWORD
+        )
+        self.client.login(username="otp_admin", password=self.PASSWORD)
 
-        nets = _parse_allowlist("203.0.113.7, 198.51.100.0/24")
-        self.assertTrue(ip_allowed("203.0.113.7", nets))
-        self.assertTrue(ip_allowed("198.51.100.42", nets))
-        self.assertFalse(ip_allowed("203.0.113.8", nets))
-        self.assertFalse(ip_allowed("192.0.2.1", nets))
+    def _enroll(self):
+        from django_otp.plugins.otp_totp.models import TOTPDevice
 
-    def test_garbage_entries_are_skipped_not_fatal(self):
-        from common.adminsec import _parse_allowlist
+        return TOTPDevice.objects.create(user=self.user, name="test", confirmed=True)
 
-        # Опечатка в переменной окружения не должна ронять приложение целиком.
-        nets = _parse_allowlist("не-адрес, 203.0.113.7, 999.1.1.1")
-        self.assertEqual(len(nets), 1)
+    def test_without_device_admin_works_as_before(self):
+        """Нельзя запереть админа, который ещё не подключил второй фактор."""
+        self.assertEqual(self.client.get("/admin/").status_code, 200)
 
-    def test_unknown_ip_is_rejected_when_list_set(self):
-        from common.adminsec import ip_allowed, _parse_allowlist
+    def test_with_device_admin_redirects_to_second_step(self):
+        self._enroll()
+        r = self.client.get("/admin/")
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(r["Location"].startswith("/admin/2fa/"))
 
-        # Если адрес определить не удалось, а список задан — не пускаем.
-        self.assertFalse(ip_allowed("unknown", _parse_allowlist("203.0.113.7")))
+    def test_wrong_code_does_not_pass(self):
+        self._enroll()
+        r = self.client.post("/admin/2fa/", {"token": "000000", "next": "/admin/"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self.client.get("/admin/").status_code, 302)
 
-    def test_middleware_hides_admin_from_foreign_ip(self):
-        """Чужому адресу админка отдаёт 404: он не должен знать, что она здесь."""
-        import os
-        from django.http import Http404, HttpResponse
-        from django.test import RequestFactory
+    def test_valid_code_opens_admin(self):
+        device = self._enroll()
+        from django_otp.oath import totp
 
-        from common.adminsec import AdminIpAllowlistMiddleware
+        token = totp(device.bin_key, device.step, device.t0, device.digits, device.drift)
+        r = self.client.post(
+            "/admin/2fa/", {"token": f"{token:0{device.digits}d}", "next": "/admin/"}
+        )
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(self.client.get("/admin/").status_code, 200)
 
-        os.environ["ADMIN_IP_ALLOWLIST"] = "203.0.113.7"
-        try:
-            mw = AdminIpAllowlistMiddleware(lambda r: HttpResponse("ok"))
-            rf = RequestFactory()
+    def test_pause_after_wrong_code_is_explained(self):
+        """django-otp после ошибки отклоняет даже верный код — это надо сказать словами."""
+        device = self._enroll()
+        from django_otp.oath import totp
 
-            own = rf.get("/admin/", HTTP_X_REAL_IP="203.0.113.7")
-            self.assertEqual(mw(own).status_code, 200)
+        self.client.post("/admin/2fa/", {"token": "000000"})
+        token = totp(device.bin_key, device.step, device.t0, device.digits, device.drift)
+        r = self.client.post("/admin/2fa/", {"token": f"{token:0{device.digits}d}"})
+        self.assertContains(r, "Слишком много попыток")
 
-            foreign = rf.get("/admin/", HTTP_X_REAL_IP="198.51.100.1")
-            with self.assertRaises(Http404):
-                mw(foreign)
+    def test_backup_code_works_once(self):
+        from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 
-            # Остальное приложение ограничением не затронуто.
-            api = rf.get("/v1/health", HTTP_X_REAL_IP="198.51.100.1")
-            self.assertEqual(mw(api).status_code, 200)
-        finally:
-            os.environ.pop("ADMIN_IP_ALLOWLIST", None)
+        self._enroll()
+        static = StaticDevice.objects.create(user=self.user, name="backup", confirmed=True)
+        StaticToken.objects.create(device=static, token="rescue42")
+
+        self.assertEqual(
+            self.client.post("/admin/2fa/", {"token": "rescue42"}).status_code, 302
+        )
+        self.assertEqual(self.client.get("/admin/").status_code, 200)
+        # Повторное использование того же кода не должно работать.
+        self.assertFalse(StaticToken.objects.filter(token="rescue42").exists())
+
+    def test_logout_is_reachable_before_verification(self):
+        """Иначе на втором шаге нельзя было бы даже сменить аккаунт."""
+        self._enroll()
+        self.assertNotEqual(self.client.get("/admin/logout/").status_code, 302)
+
+    def test_launch_report_lists_admins_without_2fa(self):
+        from common.launch import admin_access
+
+        self.assertIn("otp_admin", admin_access()["usersWithout2fa"])
+        self._enroll()
+        self.assertNotIn("otp_admin", admin_access()["usersWithout2fa"])

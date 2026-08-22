@@ -13,13 +13,10 @@ IP берём из `X-Real-IP` — его проставляет наш nginx (�
 `REMOTE_ADDR` за прокси равен адресу самого прокси: по нему блокировка одного пользователя
 заблокировала бы всех.
 """
-import ipaddress
-import os
-
 from django.contrib.auth.signals import user_logged_in, user_login_failed
 from django.core.cache import cache
 from django.dispatch import receiver
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse
 
 MAX_FAILS = 10          # попыток
 WINDOW_SECONDS = 900    # 15 минут
@@ -97,61 +94,3 @@ class AdminLoginRateLimitMiddleware:
                 )
         return self.get_response(request)
 
-
-# ── Белый список IP для админки (D-48) ───────────────────────────────────────
-# За админкой возвраты денег, персональные данные и публикация контента. Даже с
-# сильным паролем и лимитом попыток форма входа доступна всему интернету —
-# а значит, её можно перебирать и на ней сработает любая будущая уязвимость
-# Django-админки. Дешевле не показывать её вовсе никому, кроме владельца.
-#
-# Список задаётся `ADMIN_IP_ALLOWLIST` (через запятую, адреса и/или подсети):
-#     ADMIN_IP_ALLOWLIST=203.0.113.7,198.51.100.0/24
-# Пусто — ограничение выключено (dev). Проверять и включать в проде:
-# `python manage.py check_launch_readiness`.
-
-
-def _parse_allowlist(raw: str):
-    """Строка из env → список сетей. Мусорные записи игнорируем, не падаем."""
-    nets = []
-    for chunk in (raw or "").split(","):
-        chunk = chunk.strip()
-        if not chunk:
-            continue
-        try:
-            nets.append(ipaddress.ip_network(chunk, strict=False))
-        except ValueError:
-            continue
-    return nets
-
-
-def admin_ip_allowlist():
-    return _parse_allowlist(os.environ.get("ADMIN_IP_ALLOWLIST", ""))
-
-
-def ip_allowed(ip: str, nets) -> bool:
-    """Пустой список = ограничение выключено, пускаем всех."""
-    if not nets:
-        return True
-    try:
-        addr = ipaddress.ip_address(ip)
-    except ValueError:
-        return False
-    return any(addr in net for net in nets)
-
-
-class AdminIpAllowlistMiddleware:
-    """Пускает в `/admin/` только с разрешённых адресов.
-
-    Отдаём 404, а не 403: чужому не нужно знать, что админка вообще существует
-    по этому адресу. Для владельца поведение не меняется.
-    """
-
-    def __init__(self, get_response):
-        self.get_response = get_response
-        self._nets = admin_ip_allowlist()
-
-    def __call__(self, request):
-        if self._nets and request.path.startswith("/admin"):
-            if not ip_allowed(_client_ip(request), self._nets):
-                raise Http404
-        return self.get_response(request)

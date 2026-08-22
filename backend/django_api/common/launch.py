@@ -84,25 +84,25 @@ def security():
 
 
 def admin_access():
-    """Админка: ограничена ли по IP и не остался ли пароль по умолчанию (D-48)."""
+    """Админка: двухфакторный вход и отсутствие дефолтных паролей (D-49)."""
     from django.contrib.auth import get_user_model
-    from common.adminsec import admin_ip_allowlist
 
-    nets = admin_ip_allowlist()
+    from common.admin2fa import user_has_device
+
     # Пароли, которые ходили по документации и переписке: в проде их быть не должно.
     known = ["staw-admin-2026", "admin", "admin123", "password"]
-    weak = []
+    weak, no2fa = [], []
     try:
         for u in get_user_model().objects.filter(is_superuser=True):
             if any(u.check_password(p) for p in known):
                 weak.append(u.get_username())
+            # Второй фактор обязателен для каждого админа: без него утёкший
+            # пароль = полный доступ к возвратам, персональным данным и контенту.
+            if not user_has_device(u):
+                no2fa.append(u.get_username())
     except Exception:
         pass
-    return {
-        "ipRestricted": bool(nets),
-        "allowlistSize": len(nets),
-        "weakPasswordUsers": sorted(weak),
-    }
+    return {"weakPasswordUsers": sorted(weak), "usersWithout2fa": sorted(no2fa)}
 
 
 def legal_gate():
