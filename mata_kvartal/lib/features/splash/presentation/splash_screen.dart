@@ -13,11 +13,12 @@ import '../../auth/data/auth_provider.dart';
 /// последний метр, петля замыкается — вспышка по контуру, «КВАРТАЛ».
 /// Хореография — сам смысл игры: замкни маршрут, забери квартал.
 ///
-/// Против «склейки» (замечание владельца 2026-08-23): анимация стартует ТОЛЬКО
-/// после первого отрисованного кадра (иначе под системным сплэшем вслепую
-/// проигрывается начало, и первый видимый кадр Flutter ловится с бегуном уже
-/// в пути — виден обрыв). Масштабных скачков нет: знак сразу в размере,
-/// совпадающем с системной иконкой. Уважает reduced motion.
+/// Против «склейки» (замечания владельца 2026-08-23):
+/// 1) системный сплэш — ЧИСТЫЙ графит без иконки: OEM-зум плитки лаунчера
+///    кроссфейдился с системной иконкой в другой позиции — был «двойник»
+///    знака; теперь плитка растворяется в графит, и знак рождается уже здесь;
+/// 2) анимация стартует только после первого отрисованного кадра — ничего не
+///    проигрывается вслепую под системным сплэшем. Уважает reduced motion.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -33,13 +34,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   late final AnimationController _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2200),
+    duration: const Duration(milliseconds: 2400),
+  );
+
+  // Знак рождается из графита: сначала ~360мс чистого фона (OEM-зум плитки
+  // лаунчера успевает раствориться — иначе видны два знака), затем рост.
+  late final Animation<double> _appear = CurvedAnimation(
+    parent: _c,
+    curve: const Interval(0.15, 0.29, curve: Curves.easeOutCubic),
   );
 
   // Бегун срывается с места и добегает последний метр — петля замыкается.
   late final Animation<double> _close = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.14, 0.40, curve: Curves.easeInOutCubic),
+    curve: const Interval(0.33, 0.55, curve: Curves.easeInOutCubic),
   );
 
   // Короткая вспышка свечения по контуру знака в момент захвата
@@ -49,28 +57,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.35), weight: 70),
   ]).animate(CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.40, 0.70, curve: Curves.easeOut),
+    curve: const Interval(0.55, 0.80, curve: Curves.easeOut),
   ));
 
   late final Animation<double> _title = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.48, 0.66, curve: Curves.easeOutCubic),
+    curve: const Interval(0.58, 0.74, curve: Curves.easeOutCubic),
   );
 
   late final Animation<double> _tagline = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.56, 0.76, curve: Curves.easeOutCubic),
+    curve: const Interval(0.66, 0.84, curve: Curves.easeOutCubic),
   );
 
   @override
   void initState() {
     super.initState();
     // Старт строго после первого показанного кадра: первый видимый кадр
-    // Flutter = системная сплэш-иконка (close 0), анимация идёт на глазах.
+    // Flutter = чистый графит (как системный сплэш), всё идёт на глазах.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _c.forward();
-      Future.delayed(const Duration(milliseconds: 2300), () {
+      Future.delayed(const Duration(milliseconds: 2500), () {
         if (!mounted) return;
         final auth = ref.read(authProvider);
         context.go(
@@ -97,6 +105,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         child: AnimatedBuilder(
           animation: _c,
           builder: (context, _) {
+            final appear = reduceMotion ? 1.0 : _appear.value;
             final close = reduceMotion ? 1.0 : _close.value;
             final flash = reduceMotion ? 0.0 : _flash.value;
             final title = reduceMotion ? 1.0 : _title.value;
@@ -105,7 +114,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Знак: свечение захвата + рисующийся маршрут.
+                // Знак рождается из графита и живёт: маршрут, вспышка захвата.
                 SizedBox(
                   width: markSize,
                   height: markSize,
@@ -136,12 +145,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             ),
                           ),
                         ),
-                      CustomPaint(
-                        size: Size.square(markSize),
-                        painter: KvartalMarkPainter(
-                          outline: _light,
-                          fill: _limeBright,
-                          close: close,
+                      Opacity(
+                        opacity: appear,
+                        child: Transform.scale(
+                          scale: 0.72 + 0.28 * appear,
+                          child: CustomPaint(
+                            size: Size.square(markSize),
+                            painter: KvartalMarkPainter(
+                              outline: _light,
+                              fill: _limeBright,
+                              close: close,
+                            ),
+                          ),
                         ),
                       ),
                     ],
