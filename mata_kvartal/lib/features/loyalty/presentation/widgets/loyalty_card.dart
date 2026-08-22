@@ -1114,27 +1114,32 @@ class _EdgeCometPainter extends CustomPainter {
     final len = metric.length;
     final head = f * len;
     final tail = .16 * len;
-    // Плотный шаг сэмплов: точки сливаются в сплошной световой штрих
-    // (26 точек на телефоне читались пунктиром).
-    const n = 72;
-    for (var i = 0; i < n; i++) {
-      final k = i / (n - 1);
-      var d = (head - k * tail) % len;
-      if (d < 0) d += len;
-      final pos = metric.getTangentForOffset(d)?.position;
-      if (pos == null) continue;
-      final a = 1 - k;
-      canvas.drawCircle(
-        pos,
-        1.6 * a + .4,
-        Paint()
-          ..color = Color.lerp(
-            const Color(0xFFE8F2FC),
-            const Color(0xFF96ACC4),
-            k,
-          )!.withValues(alpha: .55 * a * a),
-      );
+
+    // СПЛОШНОЙ штрих хвоста (раньше рисовали 72 точками-кружками → на телефоне
+    // читалось «пунктиром/зубчато»). extractPath даёт непрерывную линию; хвост
+    // может пересекать шов пути (голова у начала) — тогда режем на два куска.
+    void streak(double from, double to, double w, double alpha, double blur) {
+      final p = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0xFFEAF4FF).withValues(alpha: alpha);
+      if (blur > 0) p.maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
+      var a = from % len, b = to % len;
+      if (a < 0) a += len;
+      if (b < 0) b += len;
+      if (a <= b) {
+        canvas.drawPath(metric.extractPath(a, b), p);
+      } else {
+        canvas.drawPath(metric.extractPath(a, len), p);
+        canvas.drawPath(metric.extractPath(0, b), p);
+      }
     }
+
+    // Сужающийся световой след: широкая тусклая база → яркое ядро у головы.
+    streak(head - tail, head, 3.0, .10, 3);
+    streak(head - tail * .6, head, 2.2, .34, 1.4);
+    streak(head - tail * .25, head, 1.7, .8, 0);
     final hp = metric.getTangentForOffset(head % len)?.position;
     if (hp != null) {
       canvas.drawCircle(
