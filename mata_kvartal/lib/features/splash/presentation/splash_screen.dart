@@ -27,20 +27,38 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   late final AnimationController _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2450),
+    duration: const Duration(milliseconds: 2200),
   );
 
-  // Маршрут рисуется → петля замкнулась.
-  late final Animation<double> _draw = CurvedAnimation(
+  // «Иконка разворачивается»: знак чуть подрастает из состояния плитки.
+  late final Animation<double> _unfold = Tween<double>(begin: 0.86, end: 1.0)
+      .animate(CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.03, 0.50, curve: Curves.easeInOutCubic),
+    curve: const Interval(0.0, 0.30, curve: Curves.easeOutCubic),
+  ));
+
+  // Бегун срывается с места и добегает последний метр — петля замыкается.
+  late final Animation<double> _close = CurvedAnimation(
+    parent: _c,
+    curve: const Interval(0.14, 0.40, curve: Curves.easeInOutCubic),
   );
 
-  // Территория врывается заливкой.
-  late final Animation<double> _fill = CurvedAnimation(
+  // Пульс захвата: территория упруго вздрагивает в момент замыкания.
+  late final Animation<double> _pulse = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(begin: 1.0, end: 1.16)
+          .chain(CurveTween(curve: Curves.easeOut)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.16, end: 1.0)
+          .chain(CurveTween(curve: Curves.elasticOut)),
+      weight: 65,
+    ),
+  ]).animate(CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.50, 0.70, curve: Curves.elasticOut),
-  );
+    curve: const Interval(0.40, 0.66),
+  ));
 
   // Короткая вспышка свечения в момент захвата.
   late final Animation<double> _flash = TweenSequence<double>([
@@ -48,24 +66,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.35), weight: 70),
   ]).animate(CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.50, 0.78, curve: Curves.easeOut),
+    curve: const Interval(0.40, 0.70, curve: Curves.easeOut),
   ));
 
   late final Animation<double> _title = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.56, 0.74, curve: Curves.easeOutCubic),
+    curve: const Interval(0.48, 0.66, curve: Curves.easeOutCubic),
   );
 
   late final Animation<double> _tagline = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.64, 0.82, curve: Curves.easeOutCubic),
+    curve: const Interval(0.56, 0.76, curve: Curves.easeOutCubic),
   );
 
   @override
   void initState() {
     super.initState();
     _c.forward();
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    Future.delayed(const Duration(milliseconds: 2300), () {
       if (!mounted) return;
       final auth = ref.read(authProvider);
       context.go(
@@ -91,8 +109,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         child: AnimatedBuilder(
           animation: _c,
           builder: (context, _) {
-            final draw = reduceMotion ? 1.0 : _draw.value;
-            final fill = reduceMotion ? 1.0 : _fill.value;
+            final unfold = reduceMotion ? 1.0 : _unfold.value;
+            final close = reduceMotion ? 1.0 : _close.value;
+            final pulse = reduceMotion ? 1.0 : _pulse.value;
             final flash = reduceMotion ? 0.0 : _flash.value;
             final title = reduceMotion ? 1.0 : _title.value;
             final tagline = reduceMotion ? 1.0 : _tagline.value;
@@ -124,13 +143,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             ],
                           ),
                         ),
-                      CustomPaint(
-                        size: Size.square(markSize),
-                        painter: KvartalMarkPainter(
-                          outline: _light,
-                          fill: _limeBright,
-                          draw: draw >= 1 ? 0.999 : draw,
-                          fillScale: fill,
+                      Transform.scale(
+                        scale: unfold,
+                        child: CustomPaint(
+                          size: Size.square(markSize),
+                          painter: KvartalMarkPainter(
+                            outline: _light,
+                            fill: _limeBright,
+                            close: close,
+                            fillScale: pulse,
+                          ),
                         ),
                       ),
                     ],
