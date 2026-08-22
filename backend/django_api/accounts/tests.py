@@ -137,6 +137,15 @@ class AuthFlowTests(ApiTestCase):
                                data=json.dumps({"phone": phone, "password": "nope"}),
                                content_type="application/json")
         self.assertEqual(bad.status_code, 401)
+        # сброс пароля по SMS-коду → вход новым паролем
+        rst = self.client.post("/v1/auth/password/reset",
+                               data=json.dumps({"phone": phone, "code": "1234", "password": "newp@ss1"}),
+                               content_type="application/json")
+        self.assertEqual(rst.status_code, 200)
+        relog = self.client.post("/v1/auth/login",
+                                 data=json.dumps({"phone": phone, "password": "newp@ss1"}),
+                                 content_type="application/json")
+        self.assertEqual(relog.status_code, 200)
 
     def test_blocked_account_cannot_login(self):
         from accounts.models import Account
