@@ -67,7 +67,7 @@ class _KvartalLogoMarkState extends State<KvartalLogoMark>
       animation: _c,
       builder: (_, __) => CustomPaint(
         size: Size.square(widget.size),
-        painter: _MarkPainter(
+        painter: KvartalMarkPainter(
           outline: outline,
           fill: fill,
           close: (widget.animated && !reduceMotion)
@@ -105,26 +105,49 @@ class _KvartalLogoMarkState extends State<KvartalLogoMark>
   }
 }
 
-class _MarkPainter extends CustomPainter {
+/// Painter знака: обычный режим ([draw] = 1) — статика/дыхание петли через
+/// [close]; режим заставки ([draw] < 1) — маршрут рисуется с нуля по
+/// пунктирному «плану», а территория появляется через [fillScale].
+class KvartalMarkPainter extends CustomPainter {
   final Color outline;
   final Color fill;
   final double close; // 0 — разрыв полный, 1 — петля замкнута
+  final double draw; // 0..1 — сколько маршрута уже нарисовано (сплэш)
+  final double fillScale; // 0..1 — масштаб заливки территории (сплэш)
 
-  _MarkPainter({required this.outline, required this.fill, required this.close});
+  KvartalMarkPainter({
+    required this.outline,
+    required this.fill,
+    this.close = 0,
+    this.draw = 1,
+    this.fillScale = 1,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final k = size.width / 48;
     canvas.scale(k);
 
-    // Захваченная территория.
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(15.5, 15.5, 17, 17),
-        const Radius.circular(4.5),
-      ),
-      Paint()..color = fill,
-    );
+    // Захваченная территория (в сплэше «врывается» масштабом).
+    if (fillScale > 0.01) {
+      canvas.save();
+      canvas.translate(24, 24);
+      canvas.scale(fillScale);
+      canvas.translate(-24, -24);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTWH(15.5, 15.5, 17, 17),
+          const Radius.circular(4.5),
+        ),
+        Paint()..color = fill,
+      );
+      canvas.restore();
+    }
+
+    if (draw < 1) {
+      _paintDrawing(canvas);
+      return;
+    }
 
     // Контур-маршрут с разрывом «последнего метра».
     final ring = Path()
@@ -175,9 +198,61 @@ class _MarkPainter extends CustomPainter {
     canvas.drawCircle(pos, 2.2, Paint()..color = fill);
   }
 
+  /// Режим заставки: сплошная линия растёт от старта, впереди — слабый
+  /// пунктирный «план маршрута» на весь остаток, бегун ведёт линию.
+  void _paintDrawing(Canvas canvas) {
+    final ring = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        const Rect.fromLTWH(9, 9, 30, 30),
+        const Radius.circular(9),
+      ));
+    final metric = ring.computeMetrics().first;
+    final len = metric.length;
+    const t0 = 5.0;
+    final solid = len * draw;
+    final dotT = t0 + solid;
+
+    // План-пунктир впереди — тонкий, чтобы не спорил с маршрутом.
+    final plan = Paint()
+      ..color = outline.withValues(alpha: 0.26)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round;
+    var t = dotT + 4.0;
+    while (t + 1.8 < t0 + len - 2.0) {
+      canvas.drawPath(
+        metric.extractPath(t % len, (t + 1.8) % len), plan);
+      t += 4.8;
+    }
+
+    // Нарисованный маршрут.
+    if (solid > 0.5) {
+      final stroke = Paint()
+        ..color = outline
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4.6
+        ..strokeCap = StrokeCap.round;
+      if (dotT <= len) {
+        canvas.drawPath(metric.extractPath(t0, dotT), stroke);
+      } else {
+        canvas.drawPath(metric.extractPath(t0, len), stroke);
+        canvas.drawPath(metric.extractPath(0, dotT - len), stroke);
+      }
+    }
+
+    // Бегун.
+    final pos = metric.getTangentForOffset(dotT % len)!.position;
+    canvas.drawCircle(pos, 5, Paint()..color = outline);
+    canvas.drawCircle(pos, 2.2, Paint()..color = fill);
+  }
+
   @override
-  bool shouldRepaint(_MarkPainter old) =>
-      old.outline != outline || old.fill != fill || old.close != close;
+  bool shouldRepaint(KvartalMarkPainter old) =>
+      old.outline != outline ||
+      old.fill != fill ||
+      old.close != close ||
+      old.draw != draw ||
+      old.fillScale != fillScale;
 }
 
 class KvartalLogoBadge extends StatelessWidget {
