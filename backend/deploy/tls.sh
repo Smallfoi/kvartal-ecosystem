@@ -50,13 +50,19 @@ case "${1:-}" in
     # nginx не стартует без сертификата (ssl_certificate), поэтому первый выпуск —
     # standalone: certbot сам поднимает временный сервер на :80.
     $COMPOSE stop nginx 2>/dev/null || true
-    ACME1="${ACME_SERVER:-https://acme-v02.api.letsencrypt.org/directory}"   # LE по умолчанию
-    ACME2="https://api.buypass.com/acme/directory"                            # запасной CA (без лимитов LE)
-    issue_with() {
-      docker run --rm -p 80:80 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
-        certonly --standalone --non-interactive --agree-tos -m "$EMAIL" --server "$1" -d "$DOMAIN"
+    ACME_LE="${ACME_SERVER:-https://acme-v02.api.letsencrypt.org/directory}"   # LE (по умолчанию)
+    ACME_ZS="https://acme.zerossl.com/v2/DV90"                                  # запасной CA (без лимитов LE)
+    # --dns: форсируем публичные резолверы (у certbot-контейнера иногда не резолвится сторонний CA).
+    issue_le() {
+      docker run --rm -p 80:80 --dns 8.8.8.8 --dns 1.1.1.1 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
+        certonly --standalone --non-interactive --agree-tos -m "$EMAIL" --server "$ACME_LE" -d "$DOMAIN"
     }
-    issue_with "$ACME1" || { echo "Основной CA не выдал сертификат (лимит?) — пробую BuyPass…"; issue_with "$ACME2"; }
+    issue_zerossl() {
+      docker run --rm -p 80:80 --dns 8.8.8.8 --dns 1.1.1.1 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
+        certonly --standalone --non-interactive --agree-tos -m "$EMAIL" --server "$ACME_ZS" \
+        --eab-kid "${ZEROSSL_EAB_KID:-}" --eab-hmac-key "${ZEROSSL_EAB_HMAC:-}" -d "$DOMAIN"
+    }
+    issue_le || { echo "LE не выдал сертификат (лимит?) — пробую ZeroSSL…"; issue_zerossl; }
     install_certs
     $COMPOSE up -d nginx
     echo "Готово. Проверь: curl -I https://$DOMAIN/v1/health"
