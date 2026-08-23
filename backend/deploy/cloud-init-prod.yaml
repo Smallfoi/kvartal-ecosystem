@@ -26,15 +26,15 @@ write_files:
       cd /opt/mata/backend
       gen() { openssl rand -hex 32; }
       umask 077
+      # Стабильные секреты (POSTGRES_PASSWORD/DJANGO_SECRET_KEY/JWT_SECRET) НЕ генерируем —
+      # они приходят из Lockbox ниже (одни на все пересоздания, иначе постоянная БД
+      # с прежним паролем перестанет пускать web).
       cat > .env <<ENVEOF
       DJANGO_DEBUG=0
-      DJANGO_SECRET_KEY=$(gen)$(gen)
-      JWT_SECRET=$(gen)$(gen)
       DJANGO_ALLOWED_HOSTS=api.mata-club.ru
       DJANGO_CORS_ORIGINS=https://mata-club.ru,https://www.mata-club.ru
       POSTGRES_DB=mata
       POSTGRES_USER=mata
-      POSTGRES_PASSWORD=$(gen)
       POSTGRES_HOST=db
       POSTGRES_PORT=5432
       REDIS_URL=redis://redis:6379/0
@@ -52,6 +52,10 @@ write_files:
         curl -s -H "Authorization: Bearer $IAM" "https://payload.lockbox.api.cloud.yandex.net/lockbox/v1/secrets/$LB_SECRET_ID/payload" 2>/dev/null \
           | python3 -c "import sys,json;[print(e['key']+'='+e.get('textValue','')) for e in json.load(sys.stdin).get('entries',[])]" >> .env 2>/dev/null || true
       fi
+      # Критичные секреты обязаны прийти из Lockbox (иначе БД/токены сломаются) — иначе стоп.
+      for k in POSTGRES_PASSWORD DJANGO_SECRET_KEY JWT_SECRET; do
+        grep -q "^$k=" .env || { echo "FATAL: $k отсутствует (Lockbox не отдал) — abort"; exit 1; }
+      done
       # Постоянный диск под БД (второй диск /dev/vdb) — данные переживают пересоздание ВМ.
       # Форматируем ТОЛЬКО пустой диск (иначе потеряли бы данные); монтируем в /mnt/data.
       DBDEV=/dev/vdb
