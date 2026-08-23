@@ -1,9 +1,15 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 class ApiConfig {
   ApiConfig._();
 
+  /// Release-сборки (apk/ipa/web) → боевой backend; debug → локальный dev.
+  /// Переопределить: --dart-define=KVARTAL_API_BASE_URL=https://.../v1
+  static const _prodBaseUrl = 'https://api.mata-club.ru/v1';
+  static const _devBaseUrl = 'http://127.0.0.1:8000/v1';
   static const baseUrl = String.fromEnvironment(
     'KVARTAL_API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000/v1',
+    defaultValue: kReleaseMode ? _prodBaseUrl : _devBaseUrl,
   );
 
   static const connectTimeout = Duration(seconds: 6);
