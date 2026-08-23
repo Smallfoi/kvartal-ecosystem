@@ -4,6 +4,7 @@
 import json
 
 from django.conf import settings
+from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -509,5 +510,8 @@ def admin_storage(request):
         pass
 
     return render(request, "admin/storage.html", {
+        # each_context → сайдбар/шапка/навигация Unfold: вкладка внутри админки,
+        # а не «голый» экран без кнопки назад (как «Ошибки»).
+        **admin.site.each_context(request),
         "disks": disks, "db": db, "uploads_size": human(up),
     })

@@ -115,14 +115,18 @@
           <option value="inter">Inter</option>
         </select>
       </label>
-      <label style="font-size:12px;font-weight:700;color:#374151">Размер: <span id="merch-txt-size-val" style="font-weight:600;color:#6b7280">авто</span>
-        <input type="range" id="merch-txt-size" min="0" max="80" step="1" value="0" style="width:100%;margin-top:8px;cursor:pointer">
-      </label>
+      <div style="font-size:12px;font-weight:700;color:#374151">Размер шрифта, px <span id="merch-txt-size-val" style="font-weight:600;color:#6b7280">авто</span></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <input type="number" id="merch-txt-size" min="0" step="1" placeholder="авто"
+               style="flex:1;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px">
+        <button type="button" id="merch-txt-size-auto"
+                style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:12px;color:#374151">Авто</button>
+      </div>
     </div>
     <label style="display:block;margin-top:12px;font-size:12px;font-weight:700;color:#374151">Тень текста: <span id="merch-txt-shadow-val" style="font-weight:600;color:#6b7280">нет</span>
       <input type="range" id="merch-txt-shadow" min="0" max="100" step="5" value="0" style="width:100%;margin-top:8px;cursor:pointer">
     </label>
-    <p style="font-size:11px;color:#9ca3af;margin:6px 0 0">Размер «авто» — как на сайте (адаптивный). Двиньте ползунок, чтобы задать точный размер/тень.</p>
+    <p style="font-size:11px;color:#9ca3af;margin:6px 0 0">Размер «авто» — как на сайте (адаптивный). Впишите точное значение в px (сколько угодно) или нажмите «Авто». Тень — ползунком.</p>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
       <button type="button" id="merch-txt-cancel" style="padding:9px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600">Отмена</button>
       <button type="button" id="merch-txt-save" style="padding:9px 18px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-weight:600">Готово</button>
@@ -720,7 +724,7 @@
     document.getElementById("merch-txt-val").value = value;
     if (color && /^#[0-9a-fA-F]{6}$/.test(color)) document.getElementById("merch-txt-color").value = color;
     document.getElementById("merch-txt-font").value = txtFont;
-    document.getElementById("merch-txt-size").value = parseInt(txtSize, 10) || 0;
+    document.getElementById("merch-txt-size").value = (parseInt(txtSize, 10) > 0) ? parseInt(txtSize, 10) : "";
     document.getElementById("merch-txt-shadow").value = parseInt(txtShadow, 10) || 0;
     updateTxtColorUI();
     updateTxtStyleUI();
@@ -1218,6 +1222,9 @@
   document.getElementById("merch-txt-color").addEventListener("input", function () { txtSetColor(this.value); });
   document.getElementById("merch-txt-font").addEventListener("change", function () { txtSetFont(this.value); });
   document.getElementById("merch-txt-size").addEventListener("input", function () { txtSetSize(this.value); });
+  document.getElementById("merch-txt-size-auto").addEventListener("click", function () {
+    document.getElementById("merch-txt-size").value = ""; txtSetSize("");
+  });
   document.getElementById("merch-txt-shadow").addEventListener("input", function () { txtSetShadow(this.value); });
   document.getElementById("merch-anim-close").addEventListener("click", closeAnim);
   animModal.addEventListener("click", function (e) { if (e.target === animModal) closeAnim(); });
