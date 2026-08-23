@@ -34,8 +34,20 @@ for dpi, n in (('mdpi', 48), ('hdpi', 72), ('xhdpi', 96),
 compose(432, 167).save(
     'android/app/src/main/res/drawable/ic_launcher_foreground.png')
 
-# ── нативный сплэш launch_logo (432, рамка 198 как раньше) ──
-compose(432, 198).save('android/app/src/main/res/drawable/launch_logo.png')
+# ── нативный сплэш launch_logo ──
+# Калибровка бесшовного запуска (2026-08-23): системная сплэш-иконка живёт в
+# контейнере 240dp с центром выше центра экрана; OEM-зум плитки лаунчера
+# заканчивается рамкой ~316px (90dp) ровно в центре экрана. Знак внутри холста
+# 432 смещён вниз и уменьшен так, чтобы на экране встать точно в финал зума:
+# рамка 196px холста, центр знака (216, 320) — по замерам rec5 система
+# рисует контент с масштабом 1.611: экранная рамка 196*1.611=316px точно в
+# финале зума. Сборка через расширенный холст: scaled-квадрат вылезает за
+# 432 прозрачными полями — компонуем на 600 и режем.
+li_mark, li_s = scaled(196)
+tmp = Image.new('RGBA', (600, 600), (0, 0, 0, 0))
+tmp.alpha_composite(li_mark, (300 - li_s // 2, 404 - li_s // 2))
+tmp.crop((84, 84, 516, 516)).save(
+    'android/app/src/main/res/drawable/launch_logo.png')
 
 # ── iOS AppIcon (фон обязателен) ──
 ios = 'ios/Runner/Assets.xcassets/AppIcon.appiconset/'
