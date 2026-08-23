@@ -94,7 +94,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       ShellRoute(
         navigatorKey: shellNavigatorKey,
-        builder: (context, state, child) => MainScaffold(child: child),
+        // Вход со сплэша (?from=splash) — приложение поднимается снизу поверх
+        // графита, пока знак сплэша улетает в чип шапки (финал дизайн-проекта
+        // 24d1c230). Любой другой вход/переключение табов — без анимации.
+        pageBuilder: (context, state, child) {
+          final reduceMotion =
+              MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+          if (state.uri.queryParameters['from'] == 'splash' && !reduceMotion) {
+            return CustomTransitionPage(
+              key: state.pageKey,
+              transitionDuration: const Duration(milliseconds: 520),
+              child: MainScaffold(child: child),
+              transitionsBuilder: (_, animation, __, page) => SlideTransition(
+                position: animation.drive(
+                  Tween(begin: const Offset(0, 1), end: Offset.zero)
+                      .chain(CurveTween(curve: const Cubic(0.32, 0.01, 0.18, 1))),
+                ),
+                child: page,
+              ),
+            );
+          }
+          return NoTransitionPage(
+            key: state.pageKey,
+            child: MainScaffold(child: child),
+          );
+        },
         routes: [
           GoRoute(
             path: '/map',
