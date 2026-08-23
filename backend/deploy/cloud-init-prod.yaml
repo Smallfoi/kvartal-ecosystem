@@ -52,6 +52,18 @@ write_files:
         curl -s -H "Authorization: Bearer $IAM" "https://payload.lockbox.api.cloud.yandex.net/lockbox/v1/secrets/$LB_SECRET_ID/payload" 2>/dev/null \
           | python3 -c "import sys,json;[print(e['key']+'='+e.get('textValue','')) for e in json.load(sys.stdin).get('entries',[])]" >> .env 2>/dev/null || true
       fi
+      # Постоянный диск под БД (второй диск /dev/vdb) — данные переживают пересоздание ВМ.
+      # Форматируем ТОЛЬКО пустой диск (иначе потеряли бы данные); монтируем в /mnt/data.
+      DBDEV=/dev/vdb
+      mkdir -p /mnt/data
+      if [ -b "$DBDEV" ]; then
+        blkid "$DBDEV" >/dev/null 2>&1 || mkfs.ext4 -F "$DBDEV"
+        DBUUID=$(blkid -s UUID -o value "$DBDEV")
+        grep -q "$DBUUID" /etc/fstab || echo "UUID=$DBUUID /mnt/data ext4 defaults,nofail 0 2" >> /etc/fstab
+        mount -a
+      fi
+      mountpoint -q /mnt/data || { echo "FATAL: /mnt/data not mounted — abort"; exit 1; }
+      mkdir -p /mnt/data/pgdata
       # nginx-конфиг под наш домен
       cp nginx/mata.conf.example nginx/mata.conf
       sed -i 's/api\.mata-store\.ru/api.mata-club.ru/g' nginx/mata.conf
@@ -62,6 +74,8 @@ write_files:
       ./deploy/smoke.sh || true
       docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py seed_catalog || true
       echo "MATA deploy done" > /opt/mata-deploy.done
+      # Разовый бэкап при первом развёртывании (проверка выгрузки в S3-бакет бэкапов).
+      ./deploy/backup.sh >> /var/log/mata-backup.log 2>&1 || true
   - path: /opt/mata-tls.sh
     permissions: "0755"
     content: |

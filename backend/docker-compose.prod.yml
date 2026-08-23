@@ -11,7 +11,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # Данные БД — на ОТДЕЛЬНОМ постоянном диске (bind-mount /mnt/data), а не в
+      # named-volume на boot-диске: переживает пересоздание ВМ (диск autoDelete=false).
+      # cloud-init монтирует диск в /mnt/data ДО старта стека (иначе деплой падает).
+      - /mnt/data/pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -97,7 +100,6 @@ services:
       - web
 
 volumes:
-  pgdata:
   redisdata:
   media_uploads:
   static_files:
