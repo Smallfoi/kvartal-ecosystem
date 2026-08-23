@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 /// Конфигурация источника данных — по сервисам (walking skeleton).
 ///
 /// Экосистема подключается к общему backend инкрементально: сейчас реальные
@@ -8,9 +10,13 @@
 class ApiConfig {
   /// Базовый URL общего backend.
   /// Эмулятор Android: 'http://10.0.2.2:8000/v1'. Реальный телефон: IP ПК в LAN.
+  /// Release-сборки → боевой backend; debug → локальный dev.
+  /// Переопределить: --dart-define=SPORT_STORE_API_BASE_URL=https://.../v1
+  static const String _prodBaseUrl = 'https://api.mata-club.ru/v1';
+  static const String _devBaseUrl = 'http://127.0.0.1:8000/v1';
   static const String baseUrl = String.fromEnvironment(
     'SPORT_STORE_API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000/v1',
+    defaultValue: kReleaseMode ? _prodBaseUrl : _devBaseUrl,
   );
 
   /// Превью-режим (сборка для админ-превью: flutter build web --dart-define=PREVIEW=1).
