@@ -3,6 +3,36 @@
 То, что уже сломалось или не сработало, и как с этим жить. **Перед работой прочитать
 целиком.** Нашёл новое — допиши сюда, чтобы второй агент не наступил на те же грабли.
 
+## Yandex Cloud: OS Login по умолчанию ломает доступ по ssh-ключу к прод-ВМ
+В организации владельца **OS Login включён по умолчанию**. В этом режиме сервер игнорирует
+ssh-ключ из метаданных `ssh-keys` и пускает только по IAM-профилям OS Login. Симптомы:
+`yc compute ssh` → `Permission denied (publickey)` (или `OS login info not found for subject`
+при `--login yc-user`), хотя ключ верный и совпадает с публичным в метаданных.
+
+Ключевая ловушка: ssh-ключ применяется cloud-init'ом **только при ПЕРВОЙ загрузке**. Если на
+первой загрузке OS Login был включён — ключ пропущен, и «починить» уже созданную ВМ нельзя
+(перезагрузка/`add-metadata enable-oslogin=false` cloud-init заново не запускает; гостевой
+агент ключи из метаданных динамически не раскладывает). **Лечение — только пересоздать ВМ**
+с `enable-oslogin=false` в метаданных + публичным ключом в `ssh_authorized_keys` cloud-init
+(тогда ключ ложится на первой же загрузке). Готово: `backend/deploy/cloud-init-prod.yaml` +
+`backend/deploy/yc-recreate.sh` (одна команда `curl … | bash` в Cloud Shell).
+
+Смежное:
+- **SSH:22 к YC с домашней сети владельца режет провайдер (DPI)** — «kex_exchange_identification:
+  Connection closed / no banner». Управлять через **Cloud Shell** (yc CLI) или REST API.
+- **OAuth-токен владельца (после 2026-06-01) не меняется на IAM-токен**, а yc CLI игнорил
+  `YC_TOKEN` env. Рабочий путь: REST API с `Authorization: Bearer <IAM>` (IAM брать
+  `yc iam create-token` в Cloud Shell; живёт ~12 ч). IAM-токен с картинки/скрина копировать
+  НЕЛЬЗЯ — 400+ символов, OCR врёт (0/O, l/1) → лучше все действия делать в Cloud Shell.
+- **Авто-TLS на YC:** не звать `make` (нет в базовой Ubuntu) и не брать IP из AWS-метадаты
+  `169.254.169.254/latest/...` (у YC формат Google). Вызывать `./deploy/tls.sh issue` напрямую.
+- **Beget DNS:** правка записи применяется на их авторитетных NS не мгновенно (до ~15 мин);
+  при «изменении» легко случайно удалить поддомен (`api` → NXDOMAIN) — проверять
+  `Resolve-DnsName api.mata-club.ru -Server ns1.beget.ru`.
+- **Приватный ключ в Cloud Shell:** `chmod` в домашней папке Cloud Shell может быть запрещён
+  (`Operation not permitted`) — копировать ключ в `/tmp` (там chmod работает). Многострочная
+  вставка ключа бьётся (`error in libcrypto`) — переносить через base64 одной строкой.
+
 ## Своя тема поверх Unfold: два состояния расходятся и текст становится невидимым
 Страница входа в админку («Console Login») хранила свою сцену день/ночь в отдельном ключе
 `localStorage`. Unfold хранит тему в своём — `adminTheme` (Alpine `$persist`) — и **после
