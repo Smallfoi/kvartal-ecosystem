@@ -11,7 +11,7 @@ set -a; . ./.env; set +a
 
 DOMAIN="${TLS_DOMAIN:-}"
 EMAIL="${TLS_EMAIL:-}"
-[ -n "$DOMAIN" ] || { echo "ОШИБКА: задай TLS_DOMAIN в .env (напр. api.mata-store.ru)"; exit 1; }
+[ -n "$DOMAIN" ] || { echo "ОШИБКА: задай TLS_DOMAIN в .env (напр. api.mata-club.ru)"; exit 1; }
 [ -n "$EMAIL" ]  || { echo "ОШИБКА: задай TLS_EMAIL в .env (куда слать письма об истечении)"; exit 1; }
 
 COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env"

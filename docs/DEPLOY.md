@@ -6,8 +6,8 @@
 код менять не нужно (кроме одного домена в сайте, см. ниже).
 
 Единственное, что нужно завести при деплое, — **домен(ы)**:
-- API, напр. `https://api.mata-store.ru` (база API = `https://api.mata-store.ru/v1`);
-- сайт, напр. `https://mata-store.ru`.
+- API, напр. `https://api.mata-club.ru` (база API = `https://api.mata-club.ru/v1`);
+- сайт, напр. `https://mata-club.ru`.
 
 ---
 
@@ -37,8 +37,8 @@ web сам делает migrate → collectstatic → gunicorn (3 воркера
 | `DJANGO_DEBUG` | `0` | выключить отладку |
 | `DJANGO_SECRET_KEY` | длинный случайный секрет | подпись Django |
 | `JWT_SECRET` | ДРУГОЙ длинный случайный секрет | подпись токенов (иначе любой подделает токен!) |
-| `DJANGO_ALLOWED_HOSTS` | `api.mata-store.ru` | какие хосты принимаем |
-| `DJANGO_CORS_ORIGINS` | `https://mata-store.ru,https://www.mata-store.ru` | каким источникам сайта можно ходить в API (со схемой) |
+| `DJANGO_ALLOWED_HOSTS` | `api.mata-club.ru` | какие хосты принимаем |
+| `DJANGO_CORS_ORIGINS` | `https://mata-club.ru,https://www.mata-club.ru` | каким источникам сайта можно ходить в API (со схемой) |
 | `POSTGRES_*` | прод-БД + сильный пароль | подключение к БД |
 
 - ⚠️ **Fail-fast:** при `DJANGO_DEBUG=0` приложение НЕ стартует, если `JWT_SECRET`/`DJANGO_SECRET_KEY`/пароль БД дефолтные или `ALLOWED_HOSTS=*` (`common/prodcheck.py`) — защита от запуска с публичным dev-секретом.
@@ -55,11 +55,11 @@ web сам делает migrate → collectstatic → gunicorn (3 воркера
 ```bash
 # SportStore
 flutter build apk --release --target-platform android-arm64 \
-  --dart-define=SPORT_STORE_API_BASE_URL=https://api.mata-store.ru/v1
+  --dart-define=SPORT_STORE_API_BASE_URL=https://api.mata-club.ru/v1
 
 # Квартал
 flutter build apk --release --target-platform android-arm64 \
-  --dart-define=KVARTAL_API_BASE_URL=https://api.mata-store.ru/v1
+  --dart-define=KVARTAL_API_BASE_URL=https://api.mata-club.ru/v1
 # (опц.) источник полигонов кварталов, если поднят отдельный zones-сервис:
 #   --dart-define=KVARTAL_ZONES_URL=https://.../api/zones
 ```
@@ -71,17 +71,17 @@ flutter build apk --release --target-platform android-arm64 \
 
 Раздавать по HTTPS. База API в `САЙТ МАТА/ecosystem.js`:
 - на `localhost`/`127.0.0.1` сам берёт dev (`127.0.0.1:8000/v1`);
-- на проде берёт `PROD_API` — **заменить `https://api.mata-store.ru/v1` на реальный домен**
+- на проде берёт `PROD_API` — **заменить `https://api.mata-club.ru/v1` на реальный домен**
   (или задать `window.STAW_API_BASE = "https://..."` в `<head>` до подключения `ecosystem.js`).
 
 ## 4. После
 
 - **ЮKassa:** в личном кабинете (Интеграция → HTTP-уведомления) указать вебхук
-  `https://api.mata-store.ru/v1/payments/webhook`, события `payment.succeeded` и
+  `https://api.mata-club.ru/v1/payments/webhook`, события `payment.succeeded` и
   `payment.canceled`. Без него оплаченные заказы останутся в «ожидает оплаты», а баллы
   за покупку не начислятся (они привязаны к подтверждению платежа, не к оформлению).
   Проверка: тестовый заказ на 1 ₽ → оплата → заказ «Оплачен» + баллы в истории.
-- Проверить `GET https://api.mata-store.ru/v1/health` → `{"status":"ok"}`.
+- Проверить `GET https://api.mata-club.ru/v1/health` → `{"status":"ok"}`.
 - Залогиниться на сайте/в приложениях, убедиться, что баллы общие.
 - Секреты (SECRET_KEY, пароль БД) — только в окружении прод-сервера, НЕ в репозитории (он публичный).
 

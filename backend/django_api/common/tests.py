@@ -12,7 +12,7 @@ _SECURE = dict(
     secret_key="x" * 50,
     jwt_secret="y" * 50,
     db_password="strong-pass",
-    allowed_hosts=["api.mata-store.ru"],
+    allowed_hosts=["api.mata-club.ru"],
 )
 
 
@@ -52,7 +52,7 @@ class ProdCheckTests(SimpleTestCase):
         self.assertEqual(bad, ["JWT_SECRET"])
 
     def test_wildcard_allowed_hosts_flagged(self):
-        bad = insecure_prod_settings(**{**_SECURE, "allowed_hosts": ["mata-store.ru", "*"]})
+        bad = insecure_prod_settings(**{**_SECURE, "allowed_hosts": ["mata-club.ru", "*"]})
         self.assertEqual(bad, ["DJANGO_ALLOWED_HOSTS"])
 
 
@@ -147,10 +147,10 @@ class MediaStorageTests(SimpleTestCase):
 
         env = {
             "MEDIA_S3_BUCKET": "b", "MEDIA_S3_ACCESS_KEY": "a", "MEDIA_S3_SECRET_KEY": "s",
-            "MEDIA_S3_CUSTOM_DOMAIN": "cdn.mata-store.ru",
+            "MEDIA_S3_CUSTOM_DOMAIN": "cdn.mata-club.ru",
         }
         self.assertEqual(
-            media_storages(env)["default"]["OPTIONS"]["custom_domain"], "cdn.mata-store.ru"
+            media_storages(env)["default"]["OPTIONS"]["custom_domain"], "cdn.mata-club.ru"
         )
 
 
