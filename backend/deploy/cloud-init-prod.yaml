@@ -1,0 +1,72 @@
+#cloud-config
+# МАТА backend — прод-деплой на свежей Ubuntu (Yandex Cloud).
+# Этот файл ПУБЛИЧНЫЙ и не содержит секретов:
+#   - SSH-ключ ниже — ПУБЛИЧНЫЙ (не секрет), приватный только у владельца.
+#   - Секреты .env (SECRET_KEY/JWT/пароль БД) генерируются СЛУЧАЙНО на самом сервере.
+# Доступ по ключу гарантируется парой: ssh_authorized_keys (ниже) + метаданные enable-oslogin=false
+# (их выставляет скрипт создания ВМ), поэтому ключ применяется уже на первой загрузке.
+package_update: true
+package_upgrade: false
+packages:
+  - docker.io
+  - docker-compose-v2
+  - git
+ssh_authorized_keys:
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN38dWuBc/BDGjU6L1/dsGLD6L8CpAWaoZ/v/g4ex97p mata-prod
+write_files:
+  - path: /opt/mata-deploy.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      # Без set -x — чтобы секреты не попали в лог/serial.
+      set -euo pipefail
+      systemctl enable --now docker
+      usermod -aG docker yc-user || true
+      rm -rf /opt/mata && git clone --depth 1 https://github.com/Smallfoi/mata-ecosystem.git /opt/mata
+      cd /opt/mata/backend
+      gen() { openssl rand -hex 32; }
+      umask 077
+      cat > .env <<ENVEOF
+      DJANGO_DEBUG=0
+      DJANGO_SECRET_KEY=$(gen)$(gen)
+      JWT_SECRET=$(gen)$(gen)
+      DJANGO_ALLOWED_HOSTS=api.mata-club.ru
+      DJANGO_CORS_ORIGINS=https://mata-club.ru,https://www.mata-club.ru
+      POSTGRES_DB=mata
+      POSTGRES_USER=mata
+      POSTGRES_PASSWORD=$(gen)
+      POSTGRES_HOST=db
+      POSTGRES_PORT=5432
+      REDIS_URL=redis://redis:6379/0
+      DJANGO_MEDIA_ROOT=/srv/media
+      DJANGO_STATIC_ROOT=/app/staticfiles
+      SITE_PREVIEW_URL=https://mata-club.ru
+      TLS_DOMAIN=api.mata-club.ru
+      TLS_EMAIL=admin@mata-club.ru
+      ENVEOF
+      # nginx-конфиг под наш домен
+      cp nginx/mata.conf.example nginx/mata.conf
+      sed -i 's/api\.mata-store\.ru/api.mata-club.ru/g' nginx/mata.conf
+      # Ядро стека (nginx поднимется позже — после выпуска TLS, когда DNS укажет на этот IP).
+      docker compose -f docker-compose.prod.yml --env-file .env up -d --build db redis web worker beat
+      # Внутренний smoke (не зависит от nginx/TLS).
+      sleep 15
+      ./deploy/smoke.sh || true
+      docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py seed_catalog || true
+      echo "MATA deploy done" > /opt/mata-deploy.done
+  - path: /opt/mata-tls.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      # Повторяем выпуск TLS раз в 2 минуты, пока DNS api.mata-club.ru не начнёт
+      # указывать на этот сервер. Как только сертификат выпущен — выходим (файл-маркер).
+      set -uo pipefail
+      cd /opt/mata/backend 2>/dev/null || exit 0
+      [ -f nginx/certs/fullchain.pem ] && exit 0
+      [ -f /opt/mata-deploy.done ] || exit 0
+      ./deploy/tls.sh issue >> /var/log/mata-tls.log 2>&1
+runcmd:
+  - bash /opt/mata-deploy.sh 2>&1 | tee /var/log/mata-deploy.log
+  - (crontab -l 2>/dev/null; echo "*/2 * * * * /opt/mata-tls.sh") | crontab -
+  - (crontab -l 2>/dev/null; echo "0 3 * * 1 cd /opt/mata/backend && ./deploy/tls.sh renew >> /var/log/mata-tls.log 2>&1") | crontab -
+  - (crontab -l 2>/dev/null; echo "0 4 * * * cd /opt/mata/backend && ./deploy/backup.sh >> /var/log/mata-backup.log 2>&1") | crontab -
