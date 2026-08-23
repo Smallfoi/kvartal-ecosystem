@@ -13,12 +13,12 @@ import '../../auth/data/auth_provider.dart';
 /// последний метр, петля замыкается — вспышка по контуру, «КВАРТАЛ».
 /// Хореография — сам смысл игры: замкни маршрут, забери квартал.
 ///
-/// Против «склейки» (замечания владельца 2026-08-23):
-/// 1) системный сплэш — ЧИСТЫЙ графит без иконки: OEM-зум плитки лаунчера
-///    кроссфейдился с системной иконкой в другой позиции — был «двойник»
-///    знака; теперь плитка растворяется в графит, и знак рождается уже здесь;
-/// 2) анимация стартует только после первого отрисованного кадра — ничего не
-///    проигрывается вслепую под системным сплэшем. Уважает reduced motion.
+/// Цельный запуск без склеек (замечания владельца 2026-08-23, калибровка по
+/// записям экрана): OEM-зум плитки лаунчера заканчивается рамкой знака ~90dp
+/// ровно в центре экрана; сплэш-иконка (launch_logo) смещена внутри холста
+/// так, чтобы встать точно туда же; этот экран повторяет её 1:1 (знак 125dp
+/// строго в центре) — и продолжает движением бегуна. Анимация стартует только
+/// после первого отрисованного кадра. Уважает reduced motion.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -37,17 +37,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     duration: const Duration(milliseconds: 2400),
   );
 
-  // Знак рождается из графита: сначала ~360мс чистого фона (OEM-зум плитки
-  // лаунчера успевает раствориться — иначе видны два знака), затем рост.
-  late final Animation<double> _appear = CurvedAnimation(
-    parent: _c,
-    curve: const Interval(0.15, 0.29, curve: Curves.easeOutCubic),
-  );
-
   // Бегун срывается с места и добегает последний метр — петля замыкается.
   late final Animation<double> _close = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.33, 0.55, curve: Curves.easeInOutCubic),
+    curve: const Interval(0.20, 0.44, curve: Curves.easeInOutCubic),
   );
 
   // Короткая вспышка свечения по контуру знака в момент захвата
@@ -57,17 +50,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.35), weight: 70),
   ]).animate(CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.55, 0.80, curve: Curves.easeOut),
+    curve: const Interval(0.44, 0.72, curve: Curves.easeOut),
   ));
 
   late final Animation<double> _title = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.58, 0.74, curve: Curves.easeOutCubic),
+    curve: const Interval(0.50, 0.68, curve: Curves.easeOutCubic),
   );
 
   late final Animation<double> _tagline = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0.66, 0.84, curve: Curves.easeOutCubic),
+    curve: const Interval(0.58, 0.78, curve: Curves.easeOutCubic),
   );
 
   @override
@@ -97,7 +90,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.of(context).disableAnimations;
-    final markSize = MediaQuery.of(context).size.width * 0.44;
+    // 151.2dp: рамка знака 109dp = 316px на эталонном экране (dpr 2.9) —
+    // ровно размер системной сплэш-иконки и финала OEM-зума плитки.
+    const markSize = 151.2;
 
     return Scaffold(
       backgroundColor: _bg,
@@ -105,17 +100,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         child: AnimatedBuilder(
           animation: _c,
           builder: (context, _) {
-            final appear = reduceMotion ? 1.0 : _appear.value;
             final close = reduceMotion ? 1.0 : _close.value;
             final flash = reduceMotion ? 0.0 : _flash.value;
             final title = reduceMotion ? 1.0 : _title.value;
             final tagline = reduceMotion ? 1.0 : _tagline.value;
 
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            return Stack(
               children: [
-                // Знак рождается из графита и живёт: маршрут, вспышка захвата.
-                SizedBox(
+                // Знак строго в центре экрана — ровно там, где его оставила
+                // системная сплэш-иконка (и финал зума плитки лаунчера).
+                Center(
+                  child: SizedBox(
                   width: markSize,
                   height: markSize,
                   child: Stack(
@@ -145,24 +140,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             ),
                           ),
                         ),
-                      Opacity(
-                        opacity: appear,
-                        child: Transform.scale(
-                          scale: 0.72 + 0.28 * appear,
-                          child: CustomPaint(
-                            size: Size.square(markSize),
-                            painter: KvartalMarkPainter(
-                              outline: _light,
-                              fill: _limeBright,
-                              close: close,
-                            ),
-                          ),
+                      CustomPaint(
+                        size: Size.square(markSize),
+                        painter: KvartalMarkPainter(
+                          outline: _light,
+                          fill: _limeBright,
+                          close: close,
                         ),
                       ),
                     ],
                   ),
+                  ),
                 ),
-                const SizedBox(height: 34),
+
+                // Титры — ниже знака, позиционированы независимо (знак не
+                // смещается от их наличия).
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: MediaQuery.of(context).size.height / 2 +
+                      markSize / 2 +
+                      26,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
 
                 // «КВАРТАЛ» — собирается из разреженных букв в момент захвата
                 // (трекинг съезжается, как в утверждённом дизайне).
@@ -195,6 +196,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         letterSpacing: 0.8,
                       ),
                     ),
+                  ),
+                ),
+                    ],
                   ),
                 ),
               ],
