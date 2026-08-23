@@ -1,0 +1,58 @@
+#cloud-config
+# МАТА backend — самораскрывающийся деплой на свежей Ubuntu 24.04 VM (Yandex Cloud).
+#
+# НАЗНАЧЕНИЕ: поднять весь прод-стек БЕЗ SSH (обходит блокировку порта 22 у провайдера).
+# ПРИМЕНЕНИЕ: при создании ВМ вставить ЭТОТ файл (с заполненными секретами) в поле
+#            «Метаданные» → user-data. Сервер сам поставит Docker, склонирует репозиторий,
+#            создаст .env, поднимет db+redis+web+worker+beat и засеет каталог.
+#
+# ПЕРЕД ИСПОЛЬЗОВАНИЕМ заменить плейсхолдеры __SECRET_KEY__ / __JWT_SECRET__ / __DB_PASSWORD__
+# сильными значениями:  python -c "import secrets; print(secrets.token_urlsafe(64))"
+# ⚠️ Секреты в user-data видны в метаданных ВМ — после запуска ротировать.
+#
+# nginx стартует ПОСЛЕ выпуска TLS (нужен DNS: api.mata-club.ru → IP). До этого стек
+# работает, внешний доступ появляется после DNS + `make tls-issue`. Проверено локально
+# (docker-compose.prod.yml, smoke зелёный, seed_catalog: 7 кат / 16 товаров / 3 баннера).
+package_update: true
+package_upgrade: false
+packages:
+  - docker.io
+  - docker-compose-v2
+  - git
+write_files:
+  - path: /opt/mata-deploy.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euxo pipefail
+      systemctl enable --now docker
+      usermod -aG docker yc-user || true
+      rm -rf /opt/mata && git clone --depth 1 https://github.com/Smallfoi/mata-ecosystem.git /opt/mata
+      cd /opt/mata/backend
+      cat > .env <<'ENVEOF'
+      DJANGO_DEBUG=0
+      DJANGO_SECRET_KEY=__SECRET_KEY__
+      JWT_SECRET=__JWT_SECRET__
+      DJANGO_ALLOWED_HOSTS=api.mata-club.ru
+      DJANGO_CORS_ORIGINS=https://mata-club.ru,https://www.mata-club.ru
+      POSTGRES_DB=mata
+      POSTGRES_USER=mata
+      POSTGRES_PASSWORD=__DB_PASSWORD__
+      POSTGRES_HOST=db
+      POSTGRES_PORT=5432
+      REDIS_URL=redis://redis:6379/0
+      DJANGO_MEDIA_ROOT=/srv/media
+      DJANGO_STATIC_ROOT=/app/staticfiles
+      SITE_PREVIEW_URL=https://mata-club.ru
+      TLS_DOMAIN=api.mata-club.ru
+      TLS_EMAIL=admin@mata-club.ru
+      ENVEOF
+      cp nginx/mata.conf.example nginx/mata.conf
+      sed -i 's/api\.mata-store\.ru/api.mata-club.ru/g' nginx/mata.conf
+      docker compose -f docker-compose.prod.yml --env-file .env up -d --build db redis web worker beat
+      sleep 15
+      ./deploy/smoke.sh || true
+      docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py seed_catalog || true
+      echo "MATA deploy done" > /opt/mata-deploy.done
+runcmd:
+  - bash /opt/mata-deploy.sh 2>&1 | tee /var/log/mata-deploy.log
