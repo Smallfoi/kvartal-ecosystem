@@ -15,7 +15,13 @@ EMAIL="${TLS_EMAIL:-}"
 [ -n "$EMAIL" ]  || { echo "ОШИБКА: задай TLS_EMAIL в .env (куда слать письма об истечении)"; exit 1; }
 
 COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env"
-LE_DIR="$PWD/nginx/letsencrypt"    # состояние certbot (ключи аккаунта, архив сертификатов)
+# Состояние certbot — на ПОСТОЯННОМ диске (если смонтирован), чтобы сертификат пережил
+# пересоздание ВМ и НЕ перевыпускался каждый раз (иначе упираемся в лимиты ACME/LE).
+if mountpoint -q /mnt/data 2>/dev/null; then
+  LE_DIR="/mnt/data/letsencrypt"
+else
+  LE_DIR="$PWD/nginx/letsencrypt"
+fi
 WEBROOT="$PWD/nginx/certbot-www"   # сюда certbot кладёт файл ACME-проверки, его отдаёт nginx
 CERTS="$PWD/nginx/certs"           # отсюда nginx читает fullchain.pem/privkey.pem
 mkdir -p "$LE_DIR" "$WEBROOT" "$CERTS"
@@ -32,12 +38,25 @@ install_certs() {
 
 case "${1:-}" in
   issue)
+    # Сертификат уже есть (на постоянном диске от прошлого выпуска) — не перевыпускаем
+    # (бережём лимиты ACME), просто раскладываем и поднимаем nginx.
+    if [ -f "$LE_DIR/live/$DOMAIN/fullchain.pem" ]; then
+      echo "Сертификат уже есть в $LE_DIR — переиспользую без перевыпуска."
+      install_certs
+      $COMPOSE up -d nginx
+      exit 0
+    fi
     echo "Выпуск сертификата для $DOMAIN — nginx остановится на ~минуту…"
     # nginx не стартует без сертификата (ssl_certificate), поэтому первый выпуск —
     # standalone: certbot сам поднимает временный сервер на :80.
     $COMPOSE stop nginx 2>/dev/null || true
-    docker run --rm -p 80:80 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
-      certonly --standalone --non-interactive --agree-tos -m "$EMAIL" -d "$DOMAIN"
+    ACME1="${ACME_SERVER:-https://acme-v02.api.letsencrypt.org/directory}"   # LE по умолчанию
+    ACME2="https://api.buypass.com/acme/directory"                            # запасной CA (без лимитов LE)
+    issue_with() {
+      docker run --rm -p 80:80 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
+        certonly --standalone --non-interactive --agree-tos -m "$EMAIL" --server "$1" -d "$DOMAIN"
+    }
+    issue_with "$ACME1" || { echo "Основной CA не выдал сертификат (лимит?) — пробую BuyPass…"; issue_with "$ACME2"; }
     install_certs
     $COMPOSE up -d nginx
     echo "Готово. Проверь: curl -I https://$DOMAIN/v1/health"
