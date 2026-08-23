@@ -52,10 +52,12 @@ case "${1:-}" in
     $COMPOSE stop nginx 2>/dev/null || true
     ACME_LE="${ACME_SERVER:-https://acme-v02.api.letsencrypt.org/directory}"   # LE (по умолчанию)
     ACME_ZS="https://acme.zerossl.com/v2/DV90"                                  # запасной CA (без лимитов LE)
-    # --dns: форсируем публичные резолверы (у certbot-контейнера иногда не резолвится сторонний CA).
+    # --dns: форсируем публичные резолверы. EXTRA: доп. SAN (<IP>.nip.io) делает набор доменов
+    # уникальным → обходит лимит LE «5 одинаковых сертов/неделю» (возник из-за пересозданий).
+    EXTRA=""; [ -n "${TLS_EXTRA_SAN:-}" ] && EXTRA="-d ${TLS_EXTRA_SAN}"
     issue_le() {
       docker run --rm -p 80:80 --dns 8.8.8.8 --dns 1.1.1.1 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
-        certonly --standalone --non-interactive --agree-tos -m "$EMAIL" --server "$ACME_LE" -d "$DOMAIN"
+        certonly --standalone --non-interactive --agree-tos -m "$EMAIL" --server "$ACME_LE" -d "$DOMAIN" $EXTRA
     }
     issue_zerossl() {
       docker run --rm -p 80:80 --dns 8.8.8.8 --dns 1.1.1.1 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
