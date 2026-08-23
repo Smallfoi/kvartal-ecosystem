@@ -35,7 +35,7 @@
 - **ОКВЭД в ЕГРИП** — добавить коды под интернет-торговлю, ПО и спорт (заявление Р24001,
   0 ₽, ~5 рабочих дней). Без них возможен отказ на модерации ЮKassa и блокировка поступлений
   банком. Список кодов и порядок — `docs/STEP2_OPERATOR_AGE.md` §4a. ⏳ **В работе.**
-- **Домен** `mata-store.ru` у регистратора (Beget/RU-CENTER, по D-17 DNS может остаться там).
+- **Домен** `mata-club.ru` у регистратора (Beget/RU-CENTER, по D-17 DNS может остаться там).
   Проверить занятость до всего остального — от домена зависят все конфиги.
 
 ## Шаг 1. Yandex Cloud: аккаунт и платёжный аккаунт
@@ -53,11 +53,11 @@
 
 | Запись | Тип | Значение | Когда |
 |---|---|---|---|
-| `api.mata-store.ru` | A | публичный IP машины | после шага 3 |
-| `mata-store.ru`, `www` | A / CNAME | хостинг сайта | при выкладке сайта |
-| `cdn.mata-store.ru` | CNAME | `mata-media.website.yandexcloud.net` | опционально, шаг 4 |
+| `api.mata-club.ru` | A | публичный IP машины | после шага 3 |
+| `mata-club.ru`, `www` | A / CNAME | хостинг сайта | при выкладке сайта |
+| `cdn.mata-club.ru` | CNAME | `mata-media.website.yandexcloud.net` | опционально, шаг 4 |
 
-**Проверка:** `nslookup api.mata-store.ru` возвращает IP машины. DNS расходится до часа — делать
+**Проверка:** `nslookup api.mata-club.ru` возвращает IP машины. DNS расходится до часа — делать
 до выпуска сертификата, иначе Let's Encrypt не подтвердит владение доменом.
 
 ## Шаг 3. Виртуальная машина
@@ -100,7 +100,7 @@ sudo usermod -aG docker $USER && exit   # перезайти, чтобы гру�
 секрет (`YCP…`) → `MEDIA_S3_SECRET_KEY`. **Секрет показывается один раз.**
 
 **Проверка:** после шага 5 загрузить аватар в приложении — файл появится в бакете, а URL
-картинки будет вести на `storage.yandexcloud.net` (или на `cdn.mata-store.ru`).
+картинки будет вести на `storage.yandexcloud.net` (или на `cdn.mata-club.ru`).
 
 ## Шаг 5. Деплой бэкенда
 
@@ -117,8 +117,8 @@ make prod-deploy
 | Переменная | Значение |
 |---|---|
 | `DJANGO_SECRET_KEY`, `JWT_SECRET` | два **разных** случайных секрета |
-| `DJANGO_ALLOWED_HOSTS` | `api.mata-store.ru` |
-| `DJANGO_CORS_ORIGINS` | `https://mata-store.ru,https://www.mata-store.ru` |
+| `DJANGO_ALLOWED_HOSTS` | `api.mata-club.ru` |
+| `DJANGO_CORS_ORIGINS` | `https://mata-club.ru,https://www.mata-club.ru` |
 | `POSTGRES_PASSWORD` | сильный пароль |
 | `REDIS_URL` | `redis://redis:6379/0` |
 | `MEDIA_S3_BUCKET/ACCESS_KEY/SECRET_KEY` | из шага 4 |
@@ -145,7 +145,7 @@ make tls-issue     # первый выпуск, nginx встанет на ~ми�
 0 3 * * 1  cd /home/yc-user/mata-ecosystem/backend && ./deploy/tls.sh renew >> logs/tls.log 2>&1
 ```
 
-**Проверка:** `curl -I https://api.mata-store.ru/v1/health` → `200`, `http://` редиректит на `https://`.
+**Проверка:** `curl -I https://api.mata-club.ru/v1/health` → `200`, `http://` редиректит на `https://`.
 
 ## Шаг 7. Бэкапы и мониторинг
 
@@ -156,7 +156,7 @@ make tls-issue     # первый выпуск, nginx встанет на ~ми�
 `backup.sh` делает дамп, проверяет что он непустой, **выгружает в `mata-backups`** и чистит
 локальные копии старше 14 дней. Плюс снапшоты диска по расписанию в консоли облака.
 
-Внешний мониторинг: UptimeRobot на `https://api.mata-store.ru/v1/health` каждые 5 минут → алерт
+Внешний мониторинг: UptimeRobot на `https://api.mata-club.ru/v1/health` каждые 5 минут → алерт
 в Telegram/почту. Пинговать нужно **снаружи**: сервер не сообщит, что он упал.
 
 **Проверка (обязательно, до запуска):** восстановить свежий дамп на staging —
@@ -192,9 +192,9 @@ make tls-issue     # первый выпуск, nginx встанет на ~ми�
 
 ```bash
 flutter build apk --release --target-platform android-arm64 \
-  --dart-define=SPORT_STORE_API_BASE_URL=https://api.mata-store.ru/v1
+  --dart-define=SPORT_STORE_API_BASE_URL=https://api.mata-club.ru/v1
 flutter build apk --release --target-platform android-arm64 \
-  --dart-define=KVARTAL_API_BASE_URL=https://api.mata-store.ru/v1
+  --dart-define=KVARTAL_API_BASE_URL=https://api.mata-club.ru/v1
 ```
 
 Сайт: в `САЙТ МАТА/ecosystem.js` заменить `PROD_API` на реальный домен.
@@ -225,7 +225,7 @@ Certificate Manager. Всё это включается по триггеру р
 
 ## Чек-лист «прод готов»
 
-- [ ] `curl https://api.mata-store.ru/v1/health` → `{"status":"ok"}` снаружи, по HTTPS
+- [ ] `curl https://api.mata-club.ru/v1/health` → `{"status":"ok"}` снаружи, по HTTPS
 - [ ] `make smoke` зелёный, включая сервисы `worker` и `beat`
 - [ ] `check_launch_readiness` без критических пунктов
 - [ ] Дамп БД лежит в `mata-backups`, восстановление проверено

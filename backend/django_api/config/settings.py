@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-change-in-prod")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
-# Прод: DJANGO_ALLOWED_HOSTS="api.mata-store.ru,mata-store.ru". Dev (по умолчанию) — "*".
+# Прод: DJANGO_ALLOWED_HOSTS="api.mata-club.ru,mata-club.ru". Dev (по умолчанию) — "*".
 ALLOWED_HOSTS = [
     h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()
 ]
@@ -102,7 +102,7 @@ DATABASES = {
     }
 }
 
-# CORS. Прод: DJANGO_CORS_ORIGINS="https://mata-store.ru,https://www.mata-store.ru" — тогда
+# CORS. Прод: DJANGO_CORS_ORIGINS="https://mata-club.ru,https://www.mata-club.ru" — тогда
 # разрешаем только их. Dev (переменная пуста) — разрешаем всё (приложения и сайт
 # ходят с устройства/localhost).
 _cors_origins = [
