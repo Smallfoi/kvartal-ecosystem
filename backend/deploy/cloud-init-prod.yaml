@@ -12,7 +12,7 @@ packages:
   - docker-compose-v2
   - git
 ssh_authorized_keys:
-  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN38dWuBc/BDGjU6L1/dsGLD6L8CpAWaoZ/v/g4ex97p mata-prod
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3wCmvihkc9k36yP3k9Ld4uJ127FSu29mG5zjLkIMVx mata-prod2
 write_files:
   - path: /opt/mata-deploy.sh
     permissions: "0755"
