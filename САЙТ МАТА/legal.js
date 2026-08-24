@@ -79,9 +79,9 @@
       while (i < lines.length) {
         var l = lines[i].trim();
         if (l === "" || /^(#{1,6}\s|>|[-*]\s|\|)/.test(l) || /^(-{3,}|\*{3,}|_{3,})$/.test(l)) break;
-        para.push(inline(l)); i++;
+        para.push(l); i++; // сырые строки; inline — после склейки (иначе **жирный** через строку не ловится)
       }
-      out.push("<p>" + para.join("<br>") + "</p>");
+      out.push("<p>" + inline(para.join(" ")) + "</p>");
     }
     return out.join("");
   }
