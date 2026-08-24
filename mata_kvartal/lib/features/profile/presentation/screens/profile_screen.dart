@@ -81,7 +81,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             _ProfileAppBar(user: user),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                // extendBody:true + полупрозрачный таб-бар перекрывают низ контента.
+                // Нижний запас 96px, чтобы блок «Активность» (последний) не обрезался
+                // под баром (как в club_screen).
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

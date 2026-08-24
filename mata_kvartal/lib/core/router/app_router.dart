@@ -28,6 +28,21 @@ import '../../features/tools/presentation/screens/interval_timer_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
 
+/// Короткий fade при переключении вкладок таб-бара — вместо NoTransitionPage.
+/// Прокачивает несколько кадров, поэтому тяжёлый экран (карта и соседние) успевает
+/// скомпоноваться и НЕ показывается пустой первый кадр (баг «после карты любой
+/// экран пустой, лечится переходом туда-обратно»).
+CustomTransitionPage<void> _tabPage(LocalKey key, Widget child) {
+  return CustomTransitionPage<void>(
+    key: key,
+    transitionDuration: const Duration(milliseconds: 160),
+    reverseTransitionDuration: const Duration(milliseconds: 160),
+    child: child,
+    transitionsBuilder: (_, animation, __, page) =>
+        FadeTransition(opacity: animation, child: page),
+  );
+}
+
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(this._ref) {
     // redirect зависит только от auth.status (вход/выход). Рефрешим GoRouter
@@ -122,11 +137,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/map',
-            pageBuilder: (_, __) => const NoTransitionPage(child: MapScreen()),
+            pageBuilder: (_, state) => _tabPage(state.pageKey, const MapScreen()),
           ),
           GoRoute(
             path: '/run',
-            pageBuilder: (_, __) => const NoTransitionPage(child: RunScreen()),
+            pageBuilder: (_, state) => _tabPage(state.pageKey, const RunScreen()),
           ),
           // Настройка доступа к геолокации — маршрут внутри шелла, чтобы таб-бар
           // продолжал переключать экраны (а не модальный лист, который залипал).
@@ -136,12 +151,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/leaderboard',
-            pageBuilder: (_, __) =>
-                const NoTransitionPage(child: LeaderboardScreen()),
+            pageBuilder: (_, state) =>
+                _tabPage(state.pageKey, const LeaderboardScreen()),
           ),
           GoRoute(
             path: '/races',
-            pageBuilder: (_, __) => const NoTransitionPage(child: RacesScreen()),
+            pageBuilder: (_, state) => _tabPage(state.pageKey, const RacesScreen()),
           ),
           // Детали забега — маршрут внутри шелла (данные передаём через extra).
           GoRoute(
@@ -151,12 +166,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/club',
-            pageBuilder: (_, __) => const NoTransitionPage(child: ClubScreen()),
+            pageBuilder: (_, state) => _tabPage(state.pageKey, const ClubScreen()),
           ),
           GoRoute(
             path: '/profile',
-            pageBuilder: (_, __) =>
-                const NoTransitionPage(child: ProfileScreen()),
+            pageBuilder: (_, state) =>
+                _tabPage(state.pageKey, const ProfileScreen()),
           ),
           // Под-экраны профиля — маршруты внутри шелла, чтобы таб-бар их переключал
           // (раньше открывались Navigator.push и «залипали» поверх вкладок).
