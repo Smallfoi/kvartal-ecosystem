@@ -159,12 +159,13 @@ write_files:
       cp nginx/mata.conf.example nginx/mata.conf
       sed -i 's/api\.mata-store\.ru/api.mata-club.ru/g' nginx/mata.conf
       # Пересобрать код: web/worker/beat (migrate+collectstatic — в команде web).
-      docker compose -f docker-compose.prod.yml --env-file .env up -d --build web worker beat
+      # timeout на каждый шаг — чтобы зависание не держало flock и не блокировало след. прогоны.
+      timeout 360 docker compose -f docker-compose.prod.yml --env-file .env up -d --build web worker beat || true
       # Догнать публикацию юр-документов (идемпотентно; published_at меняет только при изменении текста).
-      docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py publish_legal || true
+      timeout 120 docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py publish_legal || true
       # nginx: только перечитать конфиг (статика читается на каждый запрос — синк уже виден).
-      docker compose -f docker-compose.prod.yml --env-file .env exec -T nginx nginx -s reload 2>/dev/null \
-        || docker compose -f docker-compose.prod.yml --env-file .env up -d nginx
+      timeout 60 docker compose -f docker-compose.prod.yml --env-file .env exec -T nginx nginx -s reload 2>/dev/null \
+        || timeout 120 docker compose -f docker-compose.prod.yml --env-file .env up -d nginx || true
       echo "=== $(date -u) autodeploy done ==="
   # ── Прямой SSH на порту 2222 (провайдер владельца режет 22) ────────────────────
   # Ubuntu 24.04 активирует sshd через ssh.socket — порт задаётся сокетом, а не
