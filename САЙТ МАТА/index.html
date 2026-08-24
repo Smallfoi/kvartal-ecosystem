@@ -569,6 +569,17 @@
           </div>
         </div>
 
+        <!-- Оплата: заказ уже принят сервером, ждём деньги по СБП. -->
+        <div class="co-view co-pay" data-co-view="payment" hidden>
+          <div class="co-pay-mark" aria-hidden="true">₽</div>
+          <h2 data-edit="co.pay.title">Оплата по СБП</h2>
+          <p class="co-sub" data-edit="co.pay.sub">Откроется страница оплаты — выберите свой банк и подтвердите платёж.</p>
+          <p class="co-sub"><strong data-co-pay-order>—</strong></p>
+          <button class="co-submit" type="button" data-co-pay-open data-edit="co.pay.open">Перейти к оплате</button>
+          <p class="co-pay-status" data-co-pay-status data-edit="co.pay.waiting">Ждём подтверждение оплаты…</p>
+          <button class="co-link" type="button" data-co-pay-check data-edit="co.pay.check">Я оплатил — проверить</button>
+        </div>
+
         <div class="co-view co-success" data-co-view="success" hidden>
           <div class="co-success-mark" aria-hidden="true">✓</div>
           <h2>Заказ оформлен!</h2>

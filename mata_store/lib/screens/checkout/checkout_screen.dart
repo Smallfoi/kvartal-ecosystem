@@ -253,7 +253,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     if (!mounted) return;
-    context.go('/order-success/${order.id}');
+    // Заказ принят — дальше деньги. Экран оплаты сам решит, что показать:
+    // без провайдера (dev) он сразу уводит на «заказ оформлен».
+    context.go('/order-payment/${order.id}');
   }
 
   double get _deliveryCost => OrderProvider.costFor(_delivery);

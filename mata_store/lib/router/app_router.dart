@@ -8,6 +8,7 @@ import '../screens/profile/profile_screen.dart';
 import '../screens/search/search_screen.dart';
 import '../screens/checkout/checkout_screen.dart';
 import '../screens/checkout/order_success_screen.dart';
+import '../screens/checkout/payment_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/loyalty/loyalty_screen.dart';
 
@@ -77,6 +78,12 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/checkout',
       builder: (context, state) => const CheckoutScreen(),
+    ),
+    GoRoute(
+      path: '/order-payment/:id',
+      builder: (context, state) => PaymentScreen(
+        orderId: state.pathParameters['id']!,
+      ),
     ),
     GoRoute(
       path: '/order-success/:id',

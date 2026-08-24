@@ -23,6 +23,13 @@ class OrderProvider extends ChangeNotifier {
   NotificationsProvider? _notifier;
   bool _lastLoggedIn = false;
 
+  /// Начать оплату заказа: backend создаёт платёж и отдаёт ссылку для покупателя.
+  Future<PaymentStart> startPayment(String orderId) => _repo.startPayment(orderId);
+
+  /// Статус оплаты. Backend перепроверяет его у провайдера, если уведомление
+  /// о платеже потерялось, — поэтому спрашивать можно спокойно.
+  Future<String> paymentStatus(String orderId) => _repo.paymentStatus(orderId);
+
   /// Результат последней отправки заказа на backend: true — заказ реально принят
   /// сервером (или mock-режим), false — отправка не удалась (сеть/сервер). Чекаут
   /// дожидается его: показывать «оформлен» и чистить корзину можно ТОЛЬКО при true.
