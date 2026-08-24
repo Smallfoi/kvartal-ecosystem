@@ -48,6 +48,10 @@ server {
         add_header X-Content-Type-Options "nosniff" always;
         # Открывать в браузере, но не позволять подменять тип через имя файла.
         add_header Content-Disposition "inline" always;
+        # CORS: web-превью приложения (origin S3-бакета) рисует кросс-origin картинки
+        # товаров через CanvasKit — без ACAO они не грузятся (tainted canvas). Медиа
+        # публичное, поэтому "*" безопасно.
+        add_header Access-Control-Allow-Origin "*" always;
     }
 
     # Конструктор (staff-only): загрузка видео-фона и медиа — большие файлы.

@@ -41,9 +41,13 @@ def merch_console(request):
     превью. Данные общие, порядок раздельный."""
     site = getattr(settings, "SITE_PREVIEW_URL", "http://localhost:5577").rstrip("/")
     app = getattr(settings, "APP_PREVIEW_URL", "http://localhost:5578").rstrip("/")
+    # APP_PREVIEW_URL на проде указывает ПРЯМО на index.html web-сборки в S3
+    # (объектное хранилище не отдаёт index.html по «каталогу» без website-hosting),
+    # тогда слэш в конце не добавляем. В dev это http://localhost:5578 → +"/".
+    app_url = app if app.endswith(".html") else app + "/"
     return render(request, "admin/merch_console.html", {
         "site_preview_url": site + "/?preview=1&platform=site",
-        "app_preview_url": app + "/",
+        "app_preview_url": app_url,
     })
 
 
