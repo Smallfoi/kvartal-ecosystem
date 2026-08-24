@@ -56,7 +56,7 @@ write_files:
       SITE_PREVIEW_URL=https://mata-club.ru
       TLS_DOMAIN=api.mata-club.ru
       TLS_EMAIL=admin@mata-club.ru
-      TLS_EXTRA_SAN=mata-club.ru,158-160-12-117.nip.io
+      TLS_EXTRA_SAN=mata-club.ru,www.mata-club.ru,158-160-12-117.nip.io
       ENVEOF
       # Секреты из Yandex Lockbox (S3, и др.) — через сервисный аккаунт этой ВМ.
       # Значения не хранятся ни в репозитории, ни в метаданных: только в Lockbox.
