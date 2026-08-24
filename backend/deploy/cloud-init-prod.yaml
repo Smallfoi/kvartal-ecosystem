@@ -71,7 +71,7 @@ write_files:
       IAM=$(curl -s -H "Metadata-Flavor: Google" "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)
       if [ -n "$IAM" ]; then
         curl -s -H "Authorization: Bearer $IAM" "https://payload.lockbox.api.cloud.yandex.net/lockbox/v1/secrets/$LB_SECRET_ID/payload" 2>/dev/null \
-          | python3 -c "import sys,json;[print(e['key']+'='+e.get('textValue','')) for e in json.load(sys.stdin).get('entries',[])]" >> .env 2>/dev/null || true
+          | python3 -c "import sys,json,shlex;[print(e['key']+'='+shlex.quote(e.get('textValue',''))) for e in json.load(sys.stdin).get('entries',[])]" >> .env 2>/dev/null || true
       fi
       # Критичные секреты обязаны прийти из Lockbox (иначе БД/токены сломаются) — иначе стоп.
       for k in POSTGRES_PASSWORD DJANGO_SECRET_KEY JWT_SECRET; do
