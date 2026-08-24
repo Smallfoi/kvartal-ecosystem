@@ -86,6 +86,8 @@ write_files:
       sleep 15
       ./deploy/smoke.sh || true
       docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py seed_catalog || true
+      # Прод-суперпользователь админки (DJANGO_SUPERUSER_* из Lockbox) — идемпотентно (|| true).
+      docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py createsuperuser --noinput 2>/dev/null || true
       echo "MATA deploy done" > /opt/mata-deploy.done
       # Первичный выпуск TLS прямо в деплое (DNS уже указывает на статический IP).
       # Вывод идёт в serial-лог — видно ошибку certbot, если что.
