@@ -117,12 +117,17 @@ def password_reset(request):
 @api_view(["POST"])
 @throttle_classes([AuthEndpointThrottle])
 def phone_request(request):
-    """Отправить код входа на телефон. В dev (без SMS-провайдера) реальная SMS не
-    шлётся — код входа всегда 1234. С SMS_PROVIDER=smsc уходит одноразовый код."""
+    """Отправить код входа на телефон. В dev (без провайдера) ничего не шлётся —
+    код входа всегда 1234. С провайдером уходит одноразовый код (звонок или SMS)."""
     phone = normalize_phone(request.data.get("phone") or "")
     if not phone:
         return Response({"detail": "Нет телефона"}, status=400)
-    request_code(phone)
+    if not request_code(phone):
+        # Провайдер не принял отправку. Молчаливое «ok» оставило бы человека ждать
+        # код, который никогда не придёт, — пусть лучше увидит ошибку и повторит.
+        return Response(
+            {"detail": "Не удалось отправить код. Попробуйте ещё раз."}, status=502
+        )
     return Response({"ok": True, "smsEnabled": sms_enabled()})
 
 

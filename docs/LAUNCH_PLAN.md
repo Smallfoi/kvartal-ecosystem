@@ -22,7 +22,7 @@ python manage.py check_launch_readiness
 > Сверх плана: **авто-деплой** (мерж в main → прод за ~2 мин, без пересоздания ВМ),
 > **превью приложения в Конструкторе**, **Redis/Celery уже в проде**. Домен —
 > `mata-club.ru` (не `mata-store.ru`). Вход по коду — перешли на **flashcall SIGMA/ProPush**
-> (не smsc). До старта Квартала осталось: юр-тексты (Фаза 0), Widget ID для входа по коду,
+> (не smsc). До старта Квартала осталось: юр-тексты (Фаза 0), токен SIGMA в прод-`.env`,
 > RuStore + финальная сборка, раздача тестерам.
 
 ---
@@ -55,8 +55,13 @@ python manage.py check_launch_readiness
 ## Фаза 2. Вход по коду (SMS / flashcall)
 Статус: memory `otp-integration-status`
 
-- [ ] 👤 **Widget ID от менеджера SIGMA/ProPush** — активировать flashcall→SMS (ждём ответа менеджера) ⏳
-- [x] 🤖 Flashcall SIGMA проверен **вживую** (звонок с кодом пришёл); интеграция в бэкенде готова
+- [x] 🤖 **Вход по коду через SIGMA — реализован** (`SMS_PROVIDER=sigma`, канал flashcall).
+      SDK и Widget ID для этого не нужны: обычный HTTP-запрос к `api/sendings`, код придумываем
+      и проверяем мы. Менеджер подтвердил: тестировать можно **до подписания договора**
+      (flashcall / OTPcall / VK / Telegram).
+- [ ] 👤 **Токен SIGMA в прод-`.env`** (кабинет user.sigmasms.ru → Настройки) + пополнить баланс
+- [ ] 👤 SimPush — только после договора; каскад настраивать не нужно, там SMS уже внутри канала
+- [x] 🤖 Flashcall SIGMA проверен **вживую** (звонок с кодом пришёл)
       _(перешли с smsc.ru на SIGMA/ProPush — дешевле/удобнее flashcall)_
 
 ## Фаза 3. Запуск Квартала (MVP, без продаж)

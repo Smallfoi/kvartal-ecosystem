@@ -22,10 +22,14 @@ def integrations():
     return [
         {
             "key": "sms",
-            "name": "SMS-вход (коды подтверждения)",
+            "name": "Вход по коду (звонок/SMS)",
             "provider": sms_p or "—",
-            "ready": bool(sms_p) and bool(_env("SMS_LOGIN") and _env("SMS_PASSWORD")),
-            "needs": "SMS_PROVIDER=smsc + SMS_LOGIN/SMS_PASSWORD",
+            # У каждого провайдера свои ключи: SIGMA — токен, smsc — логин и пароль.
+            "ready": (
+                bool(_env("SIGMA_TOKEN")) if sms_p.lower() == "sigma"
+                else bool(sms_p) and bool(_env("SMS_LOGIN") and _env("SMS_PASSWORD"))
+            ),
+            "needs": "SMS_PROVIDER=sigma + SIGMA_TOKEN (D-50)",
         },
         {
             "key": "payment",
