@@ -15,11 +15,21 @@
   `flashcall`: клиенту звонят, он вводит последние 4 цифры номера. Дешевле SMS и
   не требует зарегистрированного имени отправителя. Канал `sms` — резерв, ему имя
   отправителя нужно.
+- **SIGMA ProPush** (`SMS_PROVIDER=propush`, D-50) — сервис аутентификации поверх тех же
+  каналов. Отличается принципиально: код генерирует и проверяет ОН, а не мы, и часть
+  каналов «бескодовые» — пользователь подтверждает вход кнопкой на своём телефоне, вводить
+  нечего. Поэтому здесь мы храним не код, а `requestId` сессии.
 - **smsc.ru** (`SMS_PROVIDER=smsc`) — прежний вариант, оставлен запасным.
+
+SDK и веб-виджет провайдера нам не нужны: всё делается обычными HTTP-запросами с сервера.
+Это важно, потому что их SDK написан на TypeScript, а виджет рассчитан на сайт — в мобильные
+приложения его не вставить.
 """
 import json
 import os
 import secrets
+import urllib.error
+import urllib.parse
 import urllib.request
 
 from django.core.cache import cache
@@ -30,6 +40,7 @@ _MAX_ATTEMPTS = 5     # сверок на один код
 _TIMEOUT = 10         # сек на запрос к провайдеру
 
 _SIGMA_API = "https://online.sigmasms.ru/api/sendings"
+_PROPUSH_API = "https://user.sigmasms.ru/api/n/otp-handler"
 
 
 def sms_enabled() -> bool:
@@ -121,8 +132,83 @@ class _SigmaProvider:
             return False
 
 
+def _propush_call(method, path, body=None, params=""):
+    """Запрос к ProPush. Возвращает (код ответа, тело-словарь) или (0, {}) при обрыве."""
+    token = (os.environ.get("SIGMA_TOKEN") or "").strip()
+    if not token:
+        return 0, {}
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    headers = {"Authorization": token}
+    if data is not None:
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(
+        f"{_PROPUSH_API}{path}{params}", data=data, headers=headers, method=method
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+            raw = resp.read().decode("utf-8") or "{}"
+            return resp.status, json.loads(raw)
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.loads(e.read().decode("utf-8") or "{}")
+        except Exception:
+            return e.code, {}
+    except Exception:
+        return 0, {}
+
+
+class _ProPushProvider:
+    """SIGMA ProPush: провайдер сам генерирует, доставляет и проверяет код.
+
+    Наша роль — открыть сессию, отдать клиенту тип канала (нужно ли вводить код)
+    и в конце подтвердить результат. Последним шагом всегда идёт «атомарная
+    проверка и закрытие сессии»: она отрабатывает успешно ровно один раз, и это
+    то, что защищает от повторного использования одной и той же аутентификации.
+    """
+
+    def start(self, phone):
+        """Открыть сессию. Возвращает requestId или пустую строку."""
+        widget = (os.environ.get("SIGMA_WIDGET") or "").strip()
+        if not widget:
+            return ""
+        code, data = _propush_call(
+            "POST", "", {"widget": widget, "recipient": phone}
+        )
+        return str(data.get("requestId") or "") if 200 <= code < 300 else ""
+
+    def channel(self, request_id):
+        """Текущий канал доставки: нужно ли вводить код и сколько попыток осталось."""
+        code, data = _propush_call("GET", f"/{request_id}/channel")
+        if not (200 <= code < 300):
+            return {}
+        return {
+            "type": data.get("type") or "",
+            "status": data.get("status") or "",
+            "codeType": data.get("codeType") or "code",
+            "attemptsLeft": data.get("remainingCodeAttempts"),
+        }
+
+    def check(self, request_id, code):
+        """Проверить введённый код (кодовые каналы)."""
+        status, data = _propush_call(
+            "POST", f"/{request_id}/checkCode", {"code": str(code)}
+        )
+        return 200 <= status < 300 and bool(data.get("success"))
+
+    def complete(self, request_id, phone):
+        """Финальная проверка + закрытие сессии. Успешна только один раз."""
+        status, data = _propush_call(
+            "POST",
+            f"/{request_id}/checkStatusAndComplete",
+            params=f"?recipient={urllib.parse.quote(phone)}",
+        )
+        return 200 <= status < 300 and bool(data.get("success"))
+
+
 def _provider():
     name = (os.environ.get("SMS_PROVIDER") or "").strip().lower()
+    if name == "propush":
+        return _ProPushProvider()
     if name == "sigma":
         return _SigmaProvider()
     if name == "smsc":
@@ -130,33 +216,81 @@ def _provider():
     return _DevSmsProvider()
 
 
-def request_code(phone) -> bool:
-    """Сгенерировать и отправить одноразовый код. False — отправить не удалось.
+def _is_propush() -> bool:
+    return (os.environ.get("SMS_PROVIDER") or "").strip().lower() == "propush"
 
-    Код кладём в кэш ДО отправки: если провайдер ответил ошибкой, но звонок всё
-    же прошёл, пользователь сможет войти. Обратный порядок оставил бы человека
-    с кодом, которого сервер не знает.
+
+def request_code(phone) -> bool:
+    """Начать вход по коду. False — провайдер отправку не принял.
+
+    Два разных мира. У обычных провайдеров код придумываем мы и кладём его в кэш
+    ДО отправки: если провайдер ответил ошибкой, но звонок всё же прошёл, человек
+    сможет войти. У ProPush код придумывает провайдер, поэтому храним `requestId`
+    сессии — по нему потом и проверяем.
     """
+    if _is_propush():
+        request_id = _ProPushProvider().start(phone)
+        if not request_id:
+            return False
+        cache.set(f"otp:{phone}", {"requestId": request_id}, _OTP_TTL)
+        return True
+
     length = code_length()
     code = f"{secrets.randbelow(10 ** length):0{length}d}"
     cache.set(f"otp:{phone}", {"code": code, "attempts": 0}, _OTP_TTL)
     return _provider().send(phone, code)
 
 
-def check_code(phone, code) -> bool:
-    """Верна ли пара телефон+код.
+def channel_info(phone) -> dict:
+    """Чем сейчас подтверждается вход: кодом или кнопкой на телефоне.
 
-    Dev (без провайдера) — принимаем 1234. С провайдером — сверяем с отправленным.
+    Клиент спрашивает это, чтобы решить, показывать ли поле для кода. У обычных
+    провайдеров ответ всегда один и тот же — код; у ProPush канал может смениться
+    прямо посреди сессии, поэтому его надо переспрашивать.
+    """
+    if not _is_propush():
+        return {"codeType": "code", "type": "sms", "status": "sent"}
+    rec = cache.get(f"otp:{phone}") or {}
+    request_id = rec.get("requestId")
+    if not request_id:
+        return {}
+    return _ProPushProvider().channel(request_id)
+
+
+def check_code(phone, code) -> bool:
+    """Подтверждён ли вход для этого телефона.
+
+    Dev (без провайдера) — принимаем 1234. У обычных провайдеров сверяем код с
+    отправленным. У ProPush: если код введён — отдаём на проверку провайдеру,
+    а затем в любом случае закрываем сессию «атомарной проверкой». Пустой код —
+    это бескодовый канал: человек подтвердил вход на телефоне, и нам остаётся
+    только спросить результат.
     """
     code = (code or "").strip()
     if not sms_enabled():
         return code == _DEV_CODE
+
+    if _is_propush():
+        rec = cache.get(f"otp:{phone}") or {}
+        request_id = rec.get("requestId")
+        if not request_id:
+            return False
+        provider = _ProPushProvider()
+        if code and not provider.check(request_id, code):
+            return False
+        # Закрываем сессию сами: провайдер не делает этого автоматически, а
+        # незакрытая сессия — это вход, которым можно воспользоваться повторно.
+        if not provider.complete(request_id, phone):
+            return False
+        cache.delete(f"otp:{phone}")
+        return True
+
     rec = cache.get(f"otp:{phone}")
-    if not rec or rec["attempts"] >= _MAX_ATTEMPTS:
+    if not rec or rec.get("attempts", 0) >= _MAX_ATTEMPTS:
         return False
     rec["attempts"] += 1
     cache.set(f"otp:{phone}", rec, _OTP_TTL)
-    if code and code == rec["code"]:
+    if code and code == rec.get("code"):
         cache.delete(f"otp:{phone}")  # одноразовый
         return True
     return False
