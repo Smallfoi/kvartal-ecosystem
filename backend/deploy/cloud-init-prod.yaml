@@ -111,8 +111,56 @@ write_files:
       [ -f nginx/certs/fullchain.pem ] && exit 0
       [ -f /opt/mata-deploy.done ] || exit 0
       ./deploy/tls.sh issue >> /var/log/mata-tls.log 2>&1
+  # ── Авто-деплой: тянем main и катим изменения БЕЗ пересоздания ВМ ──────────────
+  # Крон (ниже) запускает это раз в 2 минуты. При новом коммите в main:
+  # git reset --hard → пересобрать статику сайта и nginx-конфиг → up -d --build
+  # (web-контейнер на старте сам делает migrate+collectstatic). db/redis не трогаем.
+  # .env/сертификаты — untracked, reset --hard их НЕ удаляет.
+  - path: /opt/mata-autodeploy.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -uo pipefail
+      exec 9>/var/lock/mata-autodeploy.lock
+      flock -n 9 || exit 0                      # прошлый прогон ещё идёт — выходим
+      [ -f /opt/mata-deploy.done ] || exit 0    # первичный деплой ещё не закончился
+      cd /opt/mata || exit 0
+      git fetch origin main --quiet || exit 0
+      LOCAL=$(git rev-parse HEAD)
+      REMOTE=$(git rev-parse origin/main)
+      [ "$LOCAL" = "$REMOTE" ] && exit 0         # нечего катить
+      echo "=== $(date -u) autodeploy $LOCAL -> $REMOTE ==="
+      git reset --hard origin/main
+      # Статика САЙТ МАТА → /opt/mata-site (без внутренних *.md/Референсы).
+      rm -rf /opt/mata-site && cp -r /opt/mata/"САЙТ МАТА" /opt/mata-site
+      rm -f /opt/mata-site/*.md /opt/mata-site/AGENTS.md 2>/dev/null || true
+      rm -rf /opt/mata-site/"Референсы" 2>/dev/null || true
+      cd /opt/mata/backend
+      cp nginx/mata.conf.example nginx/mata.conf
+      sed -i 's/api\.mata-store\.ru/api.mata-club.ru/g' nginx/mata.conf
+      docker compose -f docker-compose.prod.yml --env-file .env up -d --build web worker beat nginx
+      echo "=== $(date -u) autodeploy done ==="
+  # ── Прямой SSH на порту 2222 (провайдер владельца режет 22) ────────────────────
+  # Ubuntu 24.04 активирует sshd через ssh.socket — порт задаётся сокетом, а не
+  # sshd_config. Даём оба варианта: override сокета (основной) + Port в sshd_config
+  # (fallback, если сокет-активация выключена). 22 оставляем (Cloud Shell/внутр.).
+  - path: /etc/systemd/system/ssh.socket.d/mata-port.conf
+    content: |
+      [Socket]
+      ListenStream=
+      ListenStream=22
+      ListenStream=2222
+  - path: /etc/ssh/sshd_config.d/mata-port.conf
+    content: |
+      Port 22
+      Port 2222
 runcmd:
   - bash /opt/mata-deploy.sh 2>&1 | tee /var/log/mata-deploy.log
   - (crontab -l 2>/dev/null; echo "*/2 * * * * /opt/mata-tls.sh") | crontab -
   - (crontab -l 2>/dev/null; echo "0 3 * * 1 cd /opt/mata/backend && ./deploy/tls.sh renew >> /var/log/mata-tls.log 2>&1") | crontab -
   - (crontab -l 2>/dev/null; echo "0 4 * * * cd /opt/mata/backend && ./deploy/backup.sh >> /var/log/mata-backup.log 2>&1") | crontab -
+  - (crontab -l 2>/dev/null; echo "*/2 * * * * /opt/mata-autodeploy.sh >> /var/log/mata-autodeploy.log 2>&1") | crontab -
+  # SSH на 2222: применяем override сокета + fallback sshd_config.
+  - systemctl daemon-reload
+  - systemctl restart ssh.socket 2>/dev/null || true
+  - systemctl restart ssh 2>/dev/null || systemctl restart sshd 2>/dev/null || true
