@@ -15,6 +15,8 @@ class LegalDocument(models.Model):
     OFFER = "offer"            # Публичная оферта (Store)
     LOYALTY = "loyalty"        # Правила программы лояльности
     CLUB = "club"              # Правила сообщества/клубов
+    DELIVERY = "delivery"      # Доставка и получение заказа
+    RETURNS = "returns"        # Возврат и обмен
     TYPE_CHOICES = [
         (TERMS, "Пользовательское соглашение"),
         (PRIVACY, "Политика конфиденциальности"),
@@ -23,6 +25,10 @@ class LegalDocument(models.Model):
         (OFFER, "Оферта (Store)"),
         (LOYALTY, "Правила лояльности"),
         (CLUB, "Правила сообщества"),
+        # Требуются платёжными сервисами: покупатель обязан видеть до оплаты,
+        # как он получит товар и как вернёт деньги (ЮKassa проверяет это на модерации).
+        (DELIVERY, "Доставка и получение"),
+        (RETURNS, "Возврат и обмен"),
     ]
 
     doc_type = models.CharField(max_length=20, choices=TYPE_CHOICES, db_index=True, verbose_name="Тип документа")
