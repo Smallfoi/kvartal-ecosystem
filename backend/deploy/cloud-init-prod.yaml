@@ -60,6 +60,7 @@ write_files:
       DJANGO_STATIC_ROOT=/app/staticfiles
       SITE_PREVIEW_URL=https://mata-club.ru
       APP_PREVIEW_URL=https://mata-media.storage.yandexcloud.net/mata-app-preview/index.html
+      LEGAL_DOCS_DIR=/legal_docs
       TLS_DOMAIN=api.mata-club.ru
       TLS_EMAIL=admin@mata-club.ru
       TLS_EXTRA_SAN=mata-club.ru,www.mata-club.ru,158-160-12-117.nip.io
@@ -99,6 +100,9 @@ write_files:
       docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py seed_catalog || true
       # Прод-суперпользователь админки (DJANGO_SUPERUSER_* из Lockbox) — идемпотентно (|| true).
       docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py createsuperuser --noinput 2>/dev/null || true
+      # Публикация юр-документов из docs/legal/*.md (реквизиты LEGAL_* из Lockbox → .env).
+      # Идемпотентно; без реквизитов команда сама пропускает публикацию.
+      docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py publish_legal || true
       echo "MATA deploy done" > /opt/mata-deploy.done
       # Первичный выпуск TLS прямо в деплое (DNS уже указывает на статический IP).
       # Вывод идёт в serial-лог — видно ошибку certbot, если что.
@@ -156,6 +160,8 @@ write_files:
       sed -i 's/api\.mata-store\.ru/api.mata-club.ru/g' nginx/mata.conf
       # Пересобрать код: web/worker/beat (migrate+collectstatic — в команде web).
       docker compose -f docker-compose.prod.yml --env-file .env up -d --build web worker beat
+      # Догнать публикацию юр-документов (идемпотентно; published_at меняет только при изменении текста).
+      docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py publish_legal || true
       # nginx: только перечитать конфиг (статика читается на каждый запрос — синк уже виден).
       docker compose -f docker-compose.prod.yml --env-file .env exec -T nginx nginx -s reload 2>/dev/null \
         || docker compose -f docker-compose.prod.yml --env-file .env up -d nginx
