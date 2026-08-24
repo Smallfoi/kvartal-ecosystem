@@ -17,7 +17,7 @@ from common.security import (
 from loyalty.models import seed_runner_points
 
 from .models import Account
-from .sms import check_code, request_code, sms_enabled
+from .sms import channel_info, check_code, request_code, sms_enabled
 
 
 @api_view(["POST"])
@@ -128,7 +128,30 @@ def phone_request(request):
         return Response(
             {"detail": "Не удалось отправить код. Попробуйте ещё раз."}, status=502
         )
-    return Response({"ok": True, "smsEnabled": sms_enabled()})
+    # channel говорит клиенту, показывать ли поле кода: часть каналов подтверждается
+    # кнопкой на телефоне, и поле там просто некуда заполнять.
+    return Response(
+        {"ok": True, "smsEnabled": sms_enabled(), "channel": channel_info(phone)}
+    )
+
+
+@api_view(["POST"])
+@throttle_classes([AuthEndpointThrottle])
+def phone_channel(request):
+    """Чем сейчас подтверждается вход: кодом или кнопкой на телефоне.
+
+    Канал может смениться посреди сессии (провайдер сам переключается, если,
+    например, звонок не прошёл), поэтому клиент переспрашивает это, пока ждёт.
+    Намеренно НЕ используем long-polling провайдера: он держал бы наш рабочий
+    процесс занятым до минуты на каждого входящего.
+    """
+    phone = normalize_phone(request.data.get("phone") or "")
+    if not phone:
+        return Response({"detail": "Нет телефона"}, status=400)
+    info = channel_info(phone)
+    if not info:
+        return Response({"detail": "Сессия не найдена или истекла"}, status=404)
+    return Response(info)
 
 
 @api_view(["POST"])

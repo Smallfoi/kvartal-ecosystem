@@ -26,10 +26,12 @@ def integrations():
             "provider": sms_p or "—",
             # У каждого провайдера свои ключи: SIGMA — токен, smsc — логин и пароль.
             "ready": (
-                bool(_env("SIGMA_TOKEN")) if sms_p.lower() == "sigma"
+                bool(_env("SIGMA_TOKEN") and _env("SIGMA_WIDGET"))
+                if sms_p.lower() == "propush"
+                else bool(_env("SIGMA_TOKEN")) if sms_p.lower() == "sigma"
                 else bool(sms_p) and bool(_env("SMS_LOGIN") and _env("SMS_PASSWORD"))
             ),
-            "needs": "SMS_PROVIDER=sigma + SIGMA_TOKEN (D-50)",
+            "needs": "SMS_PROVIDER=sigma + SIGMA_TOKEN, либо propush + SIGMA_WIDGET (D-50)",
         },
         {
             "key": "payment",

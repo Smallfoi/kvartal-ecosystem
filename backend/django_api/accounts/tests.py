@@ -565,3 +565,112 @@ class OtpCodeLengthTests(TestCase):
 
         request_code("+79990001122")
         self.assertEqual(len(cache.get("otp:+79990001122")["code"]), 6)
+
+
+class ProPushTests(TestCase):
+    """ProPush: код генерирует и проверяет провайдер, часть каналов — бескодовые."""
+
+    ENV = {
+        "SMS_PROVIDER": "propush",
+        "SIGMA_TOKEN": "t0ken",
+        "SIGMA_WIDGET": "widget-uuid",
+    }
+
+    def _api(self, responses):
+        """Подменяет HTTP-слой ProPush; responses — очередь (код, тело) по вызовам."""
+        calls = []
+
+        def fake(method, path, body=None, params=""):
+            calls.append({"method": method, "path": path, "body": body, "params": params})
+            return responses[min(len(calls) - 1, len(responses) - 1)]
+
+        return calls, mock.patch("accounts.sms._propush_call", side_effect=fake)
+
+    def test_start_opens_session_and_stores_request_id(self):
+        calls, patched = self._api([(200, {"requestId": "req-1"})])
+        with mock.patch.dict(os.environ, self.ENV), patched:
+            from accounts.sms import request_code
+
+            self.assertTrue(request_code("+79148278470"))
+
+        self.assertEqual(calls[0]["body"], {"widget": "widget-uuid", "recipient": "+79148278470"})
+        self.assertEqual(cache.get("otp:+79148278470")["requestId"], "req-1")
+
+    def test_no_widget_is_a_configuration_error(self):
+        calls, patched = self._api([(200, {"requestId": "req-1"})])
+        with mock.patch.dict(os.environ, dict(self.ENV, SIGMA_WIDGET="")), patched:
+            from accounts.sms import request_code
+
+            self.assertFalse(request_code("+79148278470"))
+        self.assertEqual(calls, [])
+
+    def test_code_channel_checks_code_then_closes_session(self):
+        """Сессию обязательно закрываем сами — провайдер этого не делает."""
+        calls, patched = self._api([
+            (200, {"requestId": "req-2"}),
+            (201, {"success": True}),   # checkCode
+            (201, {"success": True}),   # checkStatusAndComplete
+        ])
+        with mock.patch.dict(os.environ, self.ENV), patched:
+            from accounts.sms import check_code, request_code
+
+            request_code("+79148278470")
+            self.assertTrue(check_code("+79148278470", "1234"))
+
+        self.assertIn("/checkCode", calls[1]["path"])
+        self.assertIn("/checkStatusAndComplete", calls[2]["path"])
+        self.assertIn("recipient=", calls[2]["params"])
+        self.assertIsNone(cache.get("otp:+79148278470"), "сессия должна быть забыта")
+
+    def test_wrong_code_does_not_close_session(self):
+        calls, patched = self._api([
+            (200, {"requestId": "req-3"}),
+            (400, {"success": False}),  # InvalidCodeException
+        ])
+        with mock.patch.dict(os.environ, self.ENV), patched:
+            from accounts.sms import check_code, request_code
+
+            request_code("+79148278470")
+            self.assertFalse(check_code("+79148278470", "0000"))
+
+        self.assertEqual(len(calls), 2, "закрывать сессию после неверного кода нельзя")
+
+    def test_codeless_channel_needs_no_code(self):
+        """Пользователь подтвердил вход кнопкой на телефоне — вводить нечего."""
+        calls, patched = self._api([
+            (200, {"requestId": "req-4"}),
+            (201, {"success": True}),   # сразу checkStatusAndComplete
+        ])
+        with mock.patch.dict(os.environ, self.ENV), patched:
+            from accounts.sms import check_code, request_code
+
+            request_code("+79148278470")
+            self.assertTrue(check_code("+79148278470", ""))
+
+        self.assertIn("/checkStatusAndComplete", calls[1]["path"])
+
+    def test_channel_info_tells_client_what_to_show(self):
+        calls, patched = self._api([
+            (200, {"requestId": "req-5"}),
+            (200, {
+                "type": "sim_push", "status": "sent",
+                "codeType": "codeless", "remainingCodeAttempts": 3,
+            }),
+        ])
+        with mock.patch.dict(os.environ, self.ENV), patched:
+            from accounts.sms import channel_info, request_code
+
+            request_code("+79148278470")
+            info = channel_info("+79148278470")
+
+        self.assertEqual(info["codeType"], "codeless")
+        self.assertEqual(info["type"], "sim_push")
+        self.assertEqual(info["attemptsLeft"], 3)
+
+    def test_expired_session_is_not_a_login(self):
+        with mock.patch.dict(os.environ, self.ENV):
+            from accounts.sms import channel_info, check_code
+
+            cache.delete("otp:+79148278470")
+            self.assertFalse(check_code("+79148278470", "1234"))
+            self.assertEqual(channel_info("+79148278470"), {})
