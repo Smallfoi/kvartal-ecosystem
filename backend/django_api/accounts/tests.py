@@ -459,3 +459,109 @@ class UploadValidationTests(ApiTestCase):
         from common.uploads import MAX_IMAGE_BYTES
         big = self.PNG_HEAD + bytes(MAX_IMAGE_BYTES + 1)
         self.assertEqual(self._upload("big.png", big, "image/png").status_code, 400)
+
+
+class SigmaOtpTests(TestCase):
+    """SIGMA messaging (D-50): звонок с кодом — основной канал входа."""
+
+    def _sent(self, env, phone="+79148278470"):
+        """Отправляет код и возвращает (список запросов к провайдеру, результат)."""
+        calls = []
+
+        class _Resp:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        def fake_urlopen(req, timeout=None):
+            calls.append({
+                "url": req.full_url,
+                "headers": dict(req.header_items()),
+                "body": json.loads(req.data.decode("utf-8")),
+            })
+            return _Resp()
+
+        with mock.patch.dict(os.environ, env),                 mock.patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            from accounts.sms import request_code
+
+            ok = request_code(phone)
+        return calls, ok
+
+    def test_flashcall_sends_code_as_text(self):
+        """У flashcall код — это и есть текст: последние цифры звонящего номера."""
+        calls, ok = self._sent({"SMS_PROVIDER": "sigma", "SIGMA_TOKEN": "t0ken"})
+
+        self.assertTrue(ok)
+        self.assertEqual(len(calls), 1)
+        body = calls[0]["body"]
+        self.assertEqual(body["type"], "flashcall")
+        self.assertEqual(body["recipient"], "+79148278470")
+        self.assertEqual(body["payload"]["text"], cache.get("otp:+79148278470")["code"])
+        self.assertEqual(len(body["payload"]["text"]), 4, "flashcall — ровно 4 цифры")
+
+    def test_token_goes_in_authorization_header(self):
+        calls, _ = self._sent({"SMS_PROVIDER": "sigma", "SIGMA_TOKEN": "t0ken"})
+        headers = {k.lower(): v for k, v in calls[0]["headers"].items()}
+        self.assertEqual(headers["Authorization".lower()], "t0ken")
+
+    def test_sms_channel_sends_readable_message(self):
+        calls, _ = self._sent({
+            "SMS_PROVIDER": "sigma", "SIGMA_TOKEN": "t0ken", "SIGMA_CHANNEL": "sms",
+        })
+        body = calls[0]["body"]
+        self.assertEqual(body["type"], "sms")
+        self.assertIn("Код входа", body["payload"]["text"])
+
+    def test_without_token_nothing_is_sent(self):
+        """Провайдер включён, а токена нет — это ошибка конфигурации, не «ok»."""
+        calls, ok = self._sent({"SMS_PROVIDER": "sigma", "SIGMA_TOKEN": ""})
+        self.assertFalse(ok)
+        self.assertEqual(calls, [])
+
+    def test_fallback_channel_is_tried_only_when_configured(self):
+        """Резервный канал стоит денег — без явной настройки его не трогаем."""
+        def fail(req, timeout=None):
+            raise OSError("оператор не пропустил")
+
+        with mock.patch.dict(os.environ, {"SMS_PROVIDER": "sigma", "SIGMA_TOKEN": "t"}),                 mock.patch("urllib.request.urlopen", side_effect=fail) as m:
+            from accounts.sms import request_code
+
+            self.assertFalse(request_code("+79148278470"))
+            self.assertEqual(m.call_count, 1)
+
+        with mock.patch.dict(os.environ, {
+            "SMS_PROVIDER": "sigma", "SIGMA_TOKEN": "t", "SIGMA_FALLBACK": "sms",
+        }), mock.patch("urllib.request.urlopen", side_effect=fail) as m:
+            from accounts.sms import request_code
+
+            self.assertFalse(request_code("+79148278470"))
+            self.assertEqual(m.call_count, 2, "второй канал должен быть опробован")
+
+
+class OtpCodeLengthTests(TestCase):
+    """Длина кода: поля ввода в приложениях и на сайте рассчитаны на 4 символа."""
+
+    @mock.patch.dict(os.environ, {"SMS_PROVIDER": "smsc"})
+    def test_code_is_four_digits_by_default(self):
+        from accounts.sms import request_code
+
+        request_code("+79990001120")
+        self.assertEqual(len(cache.get("otp:+79990001120")["code"]), 4)
+
+    @mock.patch.dict(os.environ, {"SMS_PROVIDER": "smsc", "OTP_CODE_LENGTH": "6"})
+    def test_length_is_configurable(self):
+        from accounts.sms import request_code
+
+        request_code("+79990001121")
+        self.assertEqual(len(cache.get("otp:+79990001121")["code"]), 6)
+
+    @mock.patch.dict(os.environ, {"SMS_PROVIDER": "smsc", "OTP_CODE_LENGTH": "99"})
+    def test_absurd_length_is_clamped_not_crashed(self):
+        from accounts.sms import request_code
+
+        request_code("+79990001122")
+        self.assertEqual(len(cache.get("otp:+79990001122")["code"]), 6)
