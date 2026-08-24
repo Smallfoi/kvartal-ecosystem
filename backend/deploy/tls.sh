@@ -38,34 +38,42 @@ install_certs() {
 
 case "${1:-}" in
   issue)
-    # Сертификат уже есть (на постоянном диске от прошлого выпуска) — не перевыпускаем
-    # (бережём лимиты ACME), просто раскладываем и поднимаем nginx.
+    # Домены серта: основной + список из TLS_EXTRA_SAN (через запятую).
+    EXTRA=""; for d in $(echo "${TLS_EXTRA_SAN:-}" | tr ',' ' '); do EXTRA="$EXTRA -d $d"; done
+    # Переиспускаем ТОЛЬКО если существующий серт покрывает ВСЕ нужные домены
+    # (иначе — расширяем: добавился сайт-домен). Так бережём лимиты ACME и не дёргаем nginx зря.
+    NEED_ISSUE=1
     if [ -f "$LE_DIR/live/$DOMAIN/fullchain.pem" ]; then
-      echo "Сертификат уже есть в $LE_DIR — переиспользую без перевыпуска."
-      install_certs
-      $COMPOSE up -d nginx
-      exit 0
+      MISSING=0
+      for d in "$DOMAIN" $(echo "${TLS_EXTRA_SAN:-}" | tr ',' ' '); do
+        openssl x509 -in "$LE_DIR/live/$DOMAIN/fullchain.pem" -noout -text 2>/dev/null | grep -q "DNS:$d" || MISSING=1
+      done
+      [ "$MISSING" = 0 ] && NEED_ISSUE=0
     fi
-    echo "Выпуск сертификата для $DOMAIN — nginx остановится на ~минуту…"
-    # nginx не стартует без сертификата (ssl_certificate), поэтому первый выпуск —
-    # standalone: certbot сам поднимает временный сервер на :80.
+    if [ "$NEED_ISSUE" = 0 ]; then
+      echo "Серт уже покрывает все домены — переиспользую без перевыпуска."
+      install_certs; $COMPOSE up -d nginx; exit 0
+    fi
+    echo "Выпуск/расширение сертификата ($DOMAIN${EXTRA}) — nginx остановится на ~минуту…"
     $COMPOSE stop nginx 2>/dev/null || true
     ACME_LE="${ACME_SERVER:-https://acme-v02.api.letsencrypt.org/directory}"   # LE (по умолчанию)
-    ACME_ZS="https://acme.zerossl.com/v2/DV90"                                  # запасной CA (без лимитов LE)
-    # --dns: форсируем публичные резолверы. EXTRA: доп. SAN (<IP>.nip.io) делает набор доменов
-    # уникальным → обходит лимит LE «5 одинаковых сертов/неделю» (возник из-за пересозданий).
-    EXTRA=""; [ -n "${TLS_EXTRA_SAN:-}" ] && EXTRA="-d ${TLS_EXTRA_SAN}"
+    ACME_ZS="https://acme.zerossl.com/v2/DV90"                                  # запасной CA
+    # --dns: форсируем публичные резолверы. --expand: добавить новые домены к серту.
     issue_le() {
       docker run --rm -p 80:80 --dns 8.8.8.8 --dns 1.1.1.1 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
-        certonly --standalone --non-interactive --agree-tos -m "$EMAIL" --server "$ACME_LE" -d "$DOMAIN" $EXTRA
+        certonly --standalone --non-interactive --agree-tos --expand -m "$EMAIL" --server "$ACME_LE" -d "$DOMAIN" $EXTRA
     }
     issue_zerossl() {
       docker run --rm -p 80:80 --dns 8.8.8.8 --dns 1.1.1.1 -v "$LE_DIR:/etc/letsencrypt" certbot/certbot \
-        certonly --standalone --non-interactive --agree-tos -m "$EMAIL" --server "$ACME_ZS" \
-        --eab-kid "${ZEROSSL_EAB_KID:-}" --eab-hmac-key "${ZEROSSL_EAB_HMAC:-}" -d "$DOMAIN"
+        certonly --standalone --non-interactive --agree-tos --expand -m "$EMAIL" --server "$ACME_ZS" \
+        --eab-kid "${ZEROSSL_EAB_KID:-}" --eab-hmac-key "${ZEROSSL_EAB_HMAC:-}" -d "$DOMAIN" $EXTRA
     }
-    issue_le || { echo "LE не выдал сертификат (лимит?) — пробую ZeroSSL…"; issue_zerossl; }
-    install_certs
+    if issue_le || { echo "LE не выдал (лимит?) — пробую ZeroSSL…"; issue_zerossl; }; then
+      install_certs
+    else
+      echo "Выпуск не удался — оставляю ПРЕЖНИЙ серт (API не должен падать)."
+      [ -f "$LE_DIR/live/$DOMAIN/fullchain.pem" ] && install_certs || echo "Серта нет — nginx не поднимется до успешного выпуска."
+    fi
     $COMPOSE up -d nginx
     echo "Готово. Проверь: curl -I https://$DOMAIN/v1/health"
     ;;

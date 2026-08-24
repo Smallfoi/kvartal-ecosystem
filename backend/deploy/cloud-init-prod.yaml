@@ -31,6 +31,11 @@ write_files:
       systemctl enable --now docker
       usermod -aG docker yc-user || true
       rm -rf /opt/mata && git clone --depth 1 https://github.com/Smallfoi/mata-ecosystem.git /opt/mata
+      # Статика САЙТ МАТА → чистый путь /opt/mata-site (имя папки с пробелом/кириллицей),
+      # без внутренних файлов (*.md, Референсы) — их публиковать нельзя.
+      rm -rf /opt/mata-site && cp -r /opt/mata/"САЙТ МАТА" /opt/mata-site
+      rm -f /opt/mata-site/*.md /opt/mata-site/AGENTS.md 2>/dev/null || true
+      rm -rf /opt/mata-site/"Референсы" 2>/dev/null || true
       cd /opt/mata/backend
       gen() { openssl rand -hex 32; }
       umask 077
@@ -51,7 +56,7 @@ write_files:
       SITE_PREVIEW_URL=https://mata-club.ru
       TLS_DOMAIN=api.mata-club.ru
       TLS_EMAIL=admin@mata-club.ru
-      TLS_EXTRA_SAN=158-160-12-117.nip.io
+      TLS_EXTRA_SAN=mata-club.ru,158-160-12-117.nip.io
       ENVEOF
       # Секреты из Yandex Lockbox (S3, и др.) — через сервисный аккаунт этой ВМ.
       # Значения не хранятся ни в репозитории, ни в метаданных: только в Lockbox.
