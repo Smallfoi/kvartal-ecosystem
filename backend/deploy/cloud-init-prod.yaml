@@ -46,7 +46,7 @@ write_files:
       cat > .env <<ENVEOF
       DJANGO_DEBUG=0
       DJANGO_ALLOWED_HOSTS=api.mata-club.ru
-      DJANGO_CORS_ORIGINS=https://mata-club.ru,https://www.mata-club.ru
+      DJANGO_CORS_ORIGINS=https://mata-club.ru,https://www.mata-club.ru,https://mata-media.storage.yandexcloud.net
       POSTGRES_DB=mata
       POSTGRES_USER=mata
       POSTGRES_HOST=db
@@ -55,6 +55,7 @@ write_files:
       DJANGO_MEDIA_ROOT=/srv/media
       DJANGO_STATIC_ROOT=/app/staticfiles
       SITE_PREVIEW_URL=https://mata-club.ru
+      APP_PREVIEW_URL=https://mata-media.storage.yandexcloud.net/mata-app-preview/index.html
       TLS_DOMAIN=api.mata-club.ru
       TLS_EMAIL=admin@mata-club.ru
       TLS_EXTRA_SAN=mata-club.ru,www.mata-club.ru,158-160-12-117.nip.io
