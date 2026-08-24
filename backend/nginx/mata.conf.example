@@ -50,6 +50,18 @@ server {
         add_header Content-Disposition "inline" always;
     }
 
+    # Конструктор (staff-only): загрузка видео-фона и медиа — большие файлы.
+    # Общий лимит 8m держим для публичных загрузок (аватар/фото ≤5 МБ), тут поднимаем.
+    location /admin/merch/ {
+        client_max_body_size 300m;      # видео-фон блока (короткое, без звука)
+        proxy_pass http://web:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;        # оптимизация видео может занять время
+    }
+
     location / {
         proxy_pass http://web:8000;
         proxy_set_header Host $host;
