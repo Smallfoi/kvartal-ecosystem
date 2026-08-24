@@ -260,10 +260,13 @@ class _LegalDocView extends StatelessWidget {
                 color: AppColors.black)),
       );
 
-  /// Убираем простую inline-разметку (**жирный**, `код`, таблицы |), чтобы
-  /// текст читался как обычный, без «звёздочек».
-  String _stripInline(String s) =>
-      s.replaceAll('**', '').replaceAll('`', '').replaceAll('|', '  ');
+  /// Убираем простую inline-разметку (**жирный**, `код`, таблицы |, ссылки),
+  /// чтобы текст читался как обычный, без «звёздочек» и «[текст](url)».
+  String _stripInline(String s) {
+    s = s.replaceAllMapped(
+        RegExp(r'\[([^\]]+)\]\([^)]*\)'), (m) => m[1] ?? '');
+    return s.replaceAll('**', '').replaceAll('`', '').replaceAll('|', '  ');
+  }
 }
 
 class _Message extends StatelessWidget {

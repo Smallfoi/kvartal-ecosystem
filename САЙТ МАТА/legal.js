@@ -23,10 +23,73 @@
     });
   }
 
+  // Тело документов хранится как Markdown. Рендерим в безопасный HTML: текст
+  // экранируется (esc), добавляются только «белые» теги. Иначе на сайте была бы
+  // видна сырая разметка (##, **, бэктики, |таблицы|) — как обычный текст.
+  function inline(s) {
+    s = esc(s);
+    s = s.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1"); // ссылки → просто текст
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/`([^`]+)`/g, "$1");             // бэктики убираем (реквизиты и т.п.)
+    s = s.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, "$1<em>$2</em>");
+    return s;
+  }
+  function isSep(r) { return /^[\s:|-]+$/.test(r) && r.indexOf("-") > -1; }
+  function cells(r) {
+    return r.replace(/^\||\|$/g, "").split("|").map(function (c) { return c.trim(); });
+  }
+  function renderTable(rows) {
+    var out = "<table>", start = 0, header = null;
+    if (rows.length >= 2 && isSep(rows[1])) { header = rows[0]; start = 2; }
+    if (header) {
+      out += "<thead><tr>" + cells(header).map(function (c) { return "<th>" + inline(c) + "</th>"; }).join("") + "</tr></thead>";
+    }
+    out += "<tbody>";
+    for (var j = start; j < rows.length; j++) {
+      if (isSep(rows[j])) continue;
+      out += "<tr>" + cells(rows[j]).map(function (c) { return "<td>" + inline(c) + "</td>"; }).join("") + "</tr>";
+    }
+    return out + "</tbody></table>";
+  }
+  function mdToHtml(md) {
+    var lines = String(md).replace(/\r\n/g, "\n").split("\n");
+    var out = [], i = 0;
+    while (i < lines.length) {
+      var t = lines[i].trim();
+      if (t === "") { i++; continue; }
+      if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) { out.push("<hr>"); i++; continue; }
+      var h = /^(#{1,6})\s+(.*)$/.exec(t);
+      if (h) { var lvl = Math.min(h[1].length + 1, 6); out.push("<h" + lvl + ">" + inline(h[2]) + "</h" + lvl + ">"); i++; continue; }
+      if (/^>\s?/.test(t)) { out.push("<blockquote>" + inline(t.replace(/^>\s?/, "")) + "</blockquote>"); i++; continue; }
+      if (t.indexOf("|") > -1) {
+        var rows = [];
+        while (i < lines.length && lines[i].trim().indexOf("|") > -1) { rows.push(lines[i].trim()); i++; }
+        out.push(renderTable(rows));
+        continue;
+      }
+      if (/^[-*]\s+/.test(t)) {
+        var items = [];
+        while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
+          items.push("<li>" + inline(lines[i].trim().replace(/^[-*]\s+/, "")) + "</li>"); i++;
+        }
+        out.push("<ul>" + items.join("") + "</ul>");
+        continue;
+      }
+      var para = [];
+      while (i < lines.length) {
+        var l = lines[i].trim();
+        if (l === "" || /^(#{1,6}\s|>|[-*]\s|\|)/.test(l) || /^(-{3,}|\*{3,}|_{3,})$/.test(l)) break;
+        para.push(inline(l)); i++;
+      }
+      out.push("<p>" + para.join("<br>") + "</p>");
+    }
+    return out.join("");
+  }
+
   function show(doc) {
     modal.querySelector("[data-lg-title]").textContent = doc.title || "Документ";
     modal.querySelector("[data-lg-meta]").textContent = doc.version ? "Версия " + doc.version : "";
-    modal.querySelector("[data-lg-body]").innerHTML = esc(String(doc.body || "")).replace(/\n/g, "<br>");
+    modal.querySelector("[data-lg-body]").innerHTML = mdToHtml(String(doc.body || ""));
   }
 
   function getDocs() {
