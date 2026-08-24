@@ -3,7 +3,7 @@ from unfold.admin import ModelAdmin
 
 from common.adminutils import ExportCsvMixin, UserRefMixin
 
-from .awards import refund_redeemed_points
+from .awards import refund_redeemed_points, revoke_purchase_points
 from .models import Order
 from .payment import PaymentError, create_refund
 
@@ -53,6 +53,7 @@ class OrderAdmin(ExportCsvMixin, UserRefMixin, ModelAdmin):
             order.status = "cancelled"
             order.save(update_fields=["payment_status", "status"])
             refund_redeemed_points(order)  # баллы, потраченные на этот заказ, — назад
+            revoke_purchase_points(order)  # и начисленные за покупку — снять
             done += 1
         if done:
             self.message_user(request, f"Возвращено заказов: {done}", messages.SUCCESS)

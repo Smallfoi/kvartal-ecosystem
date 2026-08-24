@@ -38,6 +38,24 @@ def accrue_purchase_points(order) -> None:
         add_txn(uid, _FIRST_ORDER_BONUS, "registration", "Бонус за первый заказ", oid)
 
 
+def revoke_purchase_points(order) -> None:
+    """Снять баллы, начисленные за покупку, если деньги вернули покупателю.
+
+    Иначе возврат превращается в дырку: товар и деньги у покупателя, а баллы
+    (то есть скидка на следующую покупку) остались начисленными. Бонус за первый
+    заказ не трогаем — он за факт знакомства с магазином, а не за конкретный товар.
+    """
+    uid, oid = order.user_id, order.order_id
+    if _has_txn(uid, oid, "purchase_revoke"):
+        return
+    earned = LoyaltyTransaction.objects.filter(
+        user_id=uid, order_id=oid, source="purchase"
+    ).first()
+    if not earned or earned.amount <= 0:
+        return
+    add_txn(uid, -earned.amount, "purchase_revoke", "Отмена начисления: возврат заказа", oid)
+
+
 def refund_redeemed_points(order) -> None:
     """Вернуть баллы, списанные при оформлении, если оплата не состоялась.
 

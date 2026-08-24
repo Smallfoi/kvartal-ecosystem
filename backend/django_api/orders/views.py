@@ -9,6 +9,7 @@ from .awards import accrue_purchase_points, refund_redeemed_points
 from .models import Order
 from .pricing import total_is_acceptable
 from .payment import PaymentError, create_payment, fetch_payment, payment_enabled
+from .receipt import build_receipt
 
 
 @api_view(["POST"])
@@ -22,6 +23,12 @@ def pay_order(request, order_id):
     if not order:
         return Response({"detail": "Заказ не найден"}, status=404)
     try:
+        receipt = build_receipt(order.payload, order.total)
+    except ValueError as e:
+        # Фискализация включена, а чек собрать не из чего. Платить без чека нельзя:
+        # это нарушение 54-ФЗ, и касса всё равно откажет.
+        return Response({"detail": f"Не удалось собрать чек: {e}"}, status=400)
+    try:
         result = create_payment(
             order_id,
             order.total,
@@ -30,6 +37,8 @@ def pay_order(request, order_id):
             # глобально уникальный — иначе два покупателя с одинаковым SS-… и равной
             # суммой получат один платёж на двоих (см. orders/payment.py).
             reference=f"{order.order_id}-{order.pk}",
+            method=request.data.get("method") or None,
+            receipt=receipt,
         )
     except PaymentError as e:
         # Провайдер отказал/недоступен — НЕ трогаем статус заказа. Отдать «оплачено»
@@ -42,6 +51,44 @@ def pay_order(request, order_id):
         order.refresh_from_db()
         _mark_paid(order)
     return Response(result)
+
+
+@api_view(["GET"])
+def payment_state(request, order_id):
+    """Статус оплаты заказа — с перепроверкой у провайдера.
+
+    Нужен по двум причинам. Первая: вебхук может не дойти (сеть, наш деплой,
+    5xx) — тогда без этого запроса заказ навсегда останется «ждёт оплаты», хотя
+    деньги списаны. Вторая: покупатель возвращается со страницы оплаты в
+    приложение и хочет видеть результат сразу, а не «когда-нибудь придёт».
+    """
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    order = Order.objects.filter(user_id=uid, order_id=order_id).first()
+    if not order:
+        return Response({"detail": "Заказ не найден"}, status=404)
+
+    # Спрашиваем провайдера, только пока исход неизвестен: у оплаченного и
+    # отменённого заказа статус уже окончательный.
+    if order.payment_id and order.payment_status == "pending":
+        try:
+            info = fetch_payment(order.payment_id)
+        except PaymentError:
+            # Провайдер недоступен — отдаём, что знаем; это не ошибка заказа.
+            info = None
+        if info and info["status"] == "paid":
+            _mark_paid(order)
+        elif info and info["status"] == "canceled":
+            order.payment_status = "canceled"
+            order.save(update_fields=["payment_status"])
+            refund_redeemed_points(order)
+    order.refresh_from_db()
+    return Response({
+        "orderId": order.order_id,
+        "status": order.payment_status,
+        "paymentId": order.payment_id,
+    })
 
 
 def _mark_paid(order) -> None:

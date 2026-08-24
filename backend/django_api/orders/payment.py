@@ -27,6 +27,12 @@ import urllib.error
 import urllib.request
 
 _API = "https://api.yookassa.ru/v3"
+
+# Способ оплаты по умолчанию (D-NN, решение владельца): СБП. Комиссия 0,4–0,7% и
+# без НДС, тогда как карта после отмены льготы (ФЗ 425-ФЗ) обходится примерно
+# в 4,6%. Пусто или "any" — показать покупателю все способы, включённые в кабинете.
+def _default_method() -> str:
+    return (os.environ.get("PAYMENT_METHOD") or "sbp").strip().lower()
 _TIMEOUT = 15  # сек: ЮKassa отвечает быстро, дольше держать воркер gunicorn незачем
 
 # Статусы ЮKassa → наши (модель Order.payment_status).
@@ -104,12 +110,16 @@ def _result(data) -> dict:
     }
 
 
-def create_payment(order_id, amount, return_url="", reference=None) -> dict:
-    """Создать платёж. Возвращает {status, paymentId, confirmationUrl}.
+def create_payment(order_id, amount, return_url="", reference=None,
+                   method=None, receipt=None) -> dict:
+    """Создать платёж. Возвращает {status, paymentId, confirmationUrl, method}.
 
     `reference` — глобально уникальный номер заказа для провайдера (см. модуль).
     Без него берём `order_id`, но это допустимо только там, где уникальность
     гарантирована иначе (например, в тестах с одним пользователем).
+
+    `method` — способ оплаты ("sbp", "bank_card"…); по умолчанию из `PAYMENT_METHOD`.
+    `receipt` — состав чека по 54-ФЗ (`orders/receipt.py`), если фискализация включена.
 
     Dev (без провайдера) — сразу 'paid': оплата не требуется.
     Прод — реальный платёж ЮKassa; ошибка провайдера поднимается как PaymentError,
@@ -134,8 +144,18 @@ def create_payment(order_id, amount, return_url="", reference=None) -> dict:
         # сопоставляется с записью заказа, если вдруг потеряем payment_id.
         "metadata": {"order_id": str(order_id), "reference": ref},
     }
+    chosen = (method or _default_method()).strip().lower()
+    if chosen and chosen != "any":
+        # Сразу ведём покупателя в нужный способ: для СБП ЮKassa возвращает
+        # ссылку qr.nspk.ru — на телефоне она открывает банковское приложение,
+        # на компьютере её показываем QR-кодом.
+        body["payment_method_data"] = {"type": chosen}
+    if receipt:
+        body["receipt"] = receipt
     data = _request("POST", "/payments", body, _idem_key("payment", ref, _money(amount)))
-    return _result(data)
+    result = _result(data)
+    result["method"] = chosen or "any"
+    return result
 
 
 def fetch_payment(payment_id) -> dict:
