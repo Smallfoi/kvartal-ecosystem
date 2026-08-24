@@ -1,0 +1,57 @@
+name: App Preview
+
+# Авто-сборка web-превью приложения (mata_store) и выкладка в S3.
+# Конструктор на проде (/admin/merch/, вкладка «Приложение») грузит это превью
+# в рамке телефона. Запускается ТОЛЬКО при пуше в main с изменениями приложения
+# (или самого воркфлоу) — правки кода приложения → превью обновляется само.
+# Правки КОНТЕНТА (тексты/товары) в пересборке не нуждаются: приложение тянет их
+# из API вживую.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mata_store/**'
+      - 'tools/upload_app_preview.py'
+      - '.github/workflows/app-preview.yml'
+
+concurrency:
+  group: app-preview
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    name: Build & deploy app preview to S3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.32.1
+          channel: stable
+          cache: true
+
+      # ВСЕ флаги важны: --no-web-resources-cdn (иначе белый экран, CanvasKit с CDN),
+      # --pwa-strategy=none (иначе service-worker кэширует старую сборку),
+      # CONSOLE_EDIT=1 (мост правки с Конструктором), PREVIEW=1 (черновики каталога),
+      # SPORT_STORE_API_BASE_URL (прод-API), --base-href /mata-app-preview/ (путь в S3).
+      - name: Build web preview
+        working-directory: mata_store
+        run: |
+          flutter pub get
+          flutter build web --release --pwa-strategy=none --no-web-resources-cdn \
+            --no-tree-shake-icons \
+            --base-href /mata-app-preview/ \
+            --dart-define=CONSOLE_EDIT=1 \
+            --dart-define=PREVIEW=1 \
+            --dart-define=SPORT_STORE_API_BASE_URL=https://api.mata-club.ru/v1
+
+      - name: Install boto3
+        run: pip install boto3
+
+      # Выкладка в S3 (Yandex Object Storage). Ключ — в secrets репозитория.
+      - name: Deploy to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.MEDIA_S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MEDIA_S3_SECRET_KEY }}
+        run: python tools/upload_app_preview.py
