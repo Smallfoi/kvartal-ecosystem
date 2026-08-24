@@ -4,6 +4,8 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from django.test import TestCase
+
 from common.testutils import ApiTestCase
 from legal.models import LegalDocument, UserConsent
 
@@ -92,3 +94,37 @@ class LegalTests(ApiTestCase):
     def test_requires_auth(self):
         self.assertEqual(self.client.post("/v1/legal/consent").status_code, 401)
         self.assertEqual(self.client.get("/v1/legal/consents").status_code, 401)
+
+
+class StorefrontDocumentsTests(TestCase):
+    """Документы, без которых платёжный сервис не включит приём платежей.
+
+    ЮKassa на модерации проверяет, что покупатель ДО оплаты видит, как получит
+    товар и как вернёт деньги. Значит «Доставка» и «Возврат» — не текст в подвале
+    для галочки, а обязательные документы витрины.
+    """
+
+    def test_delivery_and_returns_are_known_types(self):
+        types = dict(LegalDocument.TYPE_CHOICES)
+        self.assertIn("delivery", types)
+        self.assertIn("returns", types)
+
+    def test_published_documents_reach_the_storefront(self):
+        for kind in ("delivery", "returns", "offer"):
+            LegalDocument.objects.create(
+                doc_type=kind,
+                version="1.0",
+                title=kind,
+                body="текст",
+                published_at=timezone.now(),
+            )
+        got = {d["type"] for d in self.client.get("/v1/legal/documents").json()}
+        self.assertTrue({"delivery", "returns", "offer"} <= got, got)
+
+    def test_drafts_stay_invisible(self):
+        """Черновик не должен утечь на витрину: там текст без проверки юристом."""
+        LegalDocument.objects.create(
+            doc_type="delivery", version="draft", title="черновик", body="x"
+        )
+        got = {d["type"] for d in self.client.get("/v1/legal/documents").json()}
+        self.assertNotIn("delivery", got)

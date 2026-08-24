@@ -1851,6 +1851,33 @@ html.js.motion-off .hero .brand-wordmark span {
   text-align: center;
 }
 
+/* Реквизиты продавца в подвале: обязательная, но не главная информация —
+   даём мелко и приглушённо, отдельной строкой над копирайтом. */
+.footer-req {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.footer-req p {
+  margin: 0;
+}
+
+.footer-req a {
+  color: inherit;
+  margin-right: 14px;
+}
+
+.footer-req a:hover {
+  opacity: 0.8;
+}
+
 /* Оплата по СБП: тот же язык, что у экрана «заказ оформлен», но акцент
    не праздничный — покупатель ещё в процессе. */
 .co-pay-mark {
