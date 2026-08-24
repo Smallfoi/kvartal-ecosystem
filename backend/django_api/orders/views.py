@@ -23,7 +23,13 @@ def pay_order(request, order_id):
         return Response({"detail": "Заказ не найден"}, status=404)
     try:
         result = create_payment(
-            order_id, order.total, request.data.get("returnUrl") or ""
+            order_id,
+            order.total,
+            request.data.get("returnUrl") or "",
+            # Номер заказа уникален только в паре с пользователем, провайдеру нужен
+            # глобально уникальный — иначе два покупателя с одинаковым SS-… и равной
+            # суммой получат один платёж на двоих (см. orders/payment.py).
+            reference=f"{order.order_id}-{order.pk}",
         )
     except PaymentError as e:
         # Провайдер отказал/недоступен — НЕ трогаем статус заказа. Отдать «оплачено»

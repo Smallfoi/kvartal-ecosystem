@@ -308,3 +308,68 @@ class OrderTotalIntegrityTests(ApiTestCase):
         """Товара нет в каталоге — сверять не с чем, заказ не блокируем."""
         r = self._order("SS-T7", 100, [{"productId": "нет-такого", "quantity": 1}])
         self.assertEqual(r.status_code, 200)
+
+
+class PaymentReferenceTests(ApiTestCase):
+    """Номер заказа для провайдера должен быть уникален глобально.
+
+    `order_id` уникален только в паре с пользователем. Пока ключ идемпотентности
+    считался от него, двое покупателей с одинаковым «SS-…» и равной суммой получали
+    ОДИН платёж на двоих: второму возвращалась чужая ссылка на оплату.
+    """
+
+    phone = "+79990002011"
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    def test_same_order_id_from_two_users_gives_two_payments(self):
+        seen = []
+
+        def fake_http(method, url, payload=None, headers=None):
+            seen.append((headers or {}).get("Idempotence-Key"))
+            return _yk(pid=f"pay_{len(seen)}")
+
+        with mock.patch("orders.payment._http", side_effect=fake_http):
+            self.api_post("/v1/orders", {"id": "SS-SAME", "total": 1000, "items": []})
+            self.api_post("/v1/orders/SS-SAME/pay", {})
+
+            # Второй покупатель с тем же номером заказа и той же суммой.
+            other = self.new_user("+79990002012")
+            self.api_post(
+                "/v1/orders", {"id": "SS-SAME", "total": 1000, "items": []}, token=other
+            )
+            self.api_post("/v1/orders/SS-SAME/pay", {}, token=other)
+
+        self.assertEqual(len(seen), 2)
+        self.assertNotEqual(seen[0], seen[1], "ключ идемпотентности совпал у двух заказов")
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    def test_repeat_pay_of_same_order_keeps_one_payment(self):
+        """Обратная сторона: повтор «Оплатить» по СВОЕМУ заказу — тот же ключ."""
+        seen = []
+
+        def fake_http(method, url, payload=None, headers=None):
+            seen.append((headers or {}).get("Idempotence-Key"))
+            return _yk()
+
+        with mock.patch("orders.payment._http", side_effect=fake_http):
+            self.api_post("/v1/orders", {"id": "SS-REP", "total": 700, "items": []})
+            self.api_post("/v1/orders/SS-REP/pay", {})
+            self.api_post("/v1/orders/SS-REP/pay", {})
+
+        self.assertEqual(seen[0], seen[1])
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    def test_reference_goes_to_provider_metadata(self):
+        bodies = []
+
+        def fake_http(method, url, payload=None, headers=None):
+            bodies.append(payload)
+            return _yk()
+
+        with mock.patch("orders.payment._http", side_effect=fake_http):
+            self.api_post("/v1/orders", {"id": "SS-META", "total": 300, "items": []})
+            self.api_post("/v1/orders/SS-META/pay", {})
+
+        meta = bodies[0]["metadata"]
+        self.assertEqual(meta["order_id"], "SS-META")
+        self.assertTrue(meta["reference"].startswith("SS-META-"), meta["reference"])

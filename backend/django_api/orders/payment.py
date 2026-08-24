@@ -9,8 +9,15 @@
 (тот же приём, что в `accounts/sms.py`) — не тянем пакет ради трёх запросов.
 
 **Деньги — идемпотентно.** Ключ идемпотентности ЮKassa считается детерминированно
-от (заказ + сумма): повтор «Оплатить» по тому же заказу возвращает ТОТ ЖЕ платёж,
-а не создаёт второй. Это защита от двойного списания у покупателя.
+от (номер платежа + сумма): повтор «Оплатить» по тому же заказу возвращает ТОТ ЖЕ
+платёж, а не создаёт второй. Это защита от двойного списания у покупателя.
+
+**Номер заказа обязан быть уникальным ГЛОБАЛЬНО.** Клиентский `order_id` (SS-12345)
+уникален только в паре с пользователем — модель так и устроена. Если считать ключ
+идемпотентности от него, два разных покупателя с одинаковым номером и одинаковой
+суммой получат ОДИН платёж на двоих: второму вернётся чужая ссылка на оплату, а мы
+свяжем чужой платёж не с тем заказом. Поэтому наружу уходит `reference` — номер
+заказа плюс первичный ключ записи; его же передаём в metadata и описание.
 """
 import base64
 import hashlib
@@ -97,8 +104,12 @@ def _result(data) -> dict:
     }
 
 
-def create_payment(order_id, amount, return_url="") -> dict:
+def create_payment(order_id, amount, return_url="", reference=None) -> dict:
     """Создать платёж. Возвращает {status, paymentId, confirmationUrl}.
+
+    `reference` — глобально уникальный номер заказа для провайдера (см. модуль).
+    Без него берём `order_id`, но это допустимо только там, где уникальность
+    гарантирована иначе (например, в тестах с одним пользователем).
 
     Dev (без провайдера) — сразу 'paid': оплата не требуется.
     Прод — реальный платёж ЮKassa; ошибка провайдера поднимается как PaymentError,
@@ -113,16 +124,17 @@ def create_payment(order_id, amount, return_url="") -> dict:
         raise PaymentError(
             "Не задан returnUrl: передайте его в теле запроса или задайте YOOKASSA_RETURN_URL"
         )
+    ref = str(reference or order_id)
     body = {
         "amount": {"value": _money(amount), "currency": "RUB"},
         "capture": True,  # одностадийная оплата: списываем сразу после подтверждения
         "confirmation": {"type": "redirect", "return_url": back},
         "description": f"Заказ {order_id}",
-        "metadata": {"order_id": str(order_id)},
+        # order_id — для чтения человеком, reference — то, по чему платёж однозначно
+        # сопоставляется с записью заказа, если вдруг потеряем payment_id.
+        "metadata": {"order_id": str(order_id), "reference": ref},
     }
-    data = _request(
-        "POST", "/payments", body, _idem_key("payment", order_id, _money(amount))
-    )
+    data = _request("POST", "/payments", body, _idem_key("payment", ref, _money(amount)))
     return _result(data)
 
 
