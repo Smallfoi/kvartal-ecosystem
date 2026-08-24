@@ -13,6 +13,11 @@ class _FailingOrderRepo implements OrderRepository {
       throw Exception('network down');
   @override
   Future<List<Order>> fetchOrders() async => const [];
+  @override
+  Future<PaymentStart> startPayment(String orderId) async =>
+      const PaymentStart(status: 'paid', confirmationUrl: '', paymentId: '');
+  @override
+  Future<String> paymentStatus(String orderId) async => 'paid';
 }
 
 /// Репозиторий, у которого отправка заказа успешна.
@@ -21,6 +26,11 @@ class _OkOrderRepo implements OrderRepository {
   Future<Order> submitOrder(Order order) async => order;
   @override
   Future<List<Order>> fetchOrders() async => const [];
+  @override
+  Future<PaymentStart> startPayment(String orderId) async =>
+      const PaymentStart(status: 'paid', confirmationUrl: '', paymentId: '');
+  @override
+  Future<String> paymentStatus(String orderId) async => 'paid';
 }
 
 CheckoutData _data() => CheckoutData(

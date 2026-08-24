@@ -471,6 +471,86 @@ if (coModal) {
       submitBtn.textContent = "Подтвердить заказ";
     }
 
+    // ── Оплата ────────────────────────────────────────────────────────────
+    // Заказ уже принят сервером; здесь только деньги. Если оплата на бэкенде
+    // выключена (dev), сервер отвечает status: "paid" — тогда сразу «оформлен».
+    let payPoll = null;
+
+    function stopPoll() {
+      if (payPoll) {
+        clearInterval(payPoll);
+        payPoll = null;
+      }
+    }
+
+    function showPayView(finalId, url) {
+      coModal.querySelector("[data-co-pay-order]").textContent = "Заказ " + finalId;
+      coModal.querySelector('[data-co-view="form"]').hidden = true;
+      coModal.querySelector('[data-co-view="payment"]').hidden = false;
+      cart.length = 0;
+      renderCart();
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Подтвердить заказ";
+
+      const open = coModal.querySelector("[data-co-pay-open]");
+      const status = coModal.querySelector("[data-co-pay-status]");
+      const check = coModal.querySelector("[data-co-pay-check]");
+      const openPay = () => window.open(url, "_blank", "noopener");
+
+      open.onclick = openPay;
+      check.onclick = () => checkPay(finalId, status, true);
+      openPay(); // сразу ведём на оплату: клик по «Подтвердить» — это и был жест
+
+      stopPoll();
+      payPoll = setInterval(() => checkPay(finalId, status, false), 3000);
+      // Через 15 минут перестаём опрашивать: ссылка на оплату всё равно протухнет.
+      setTimeout(stopPoll, 15 * 60 * 1000);
+    }
+
+    function checkPay(finalId, status, manual) {
+      window.STAW
+        .api("/orders/" + encodeURIComponent(finalId) + "/payment")
+        .then((s) => {
+          const st = (s && s.status) || "pending";
+          if (st === "paid") {
+            stopPoll();
+            coModal.querySelector('[data-co-view="payment"]').hidden = true;
+            done(finalId);
+          } else if (st === "canceled") {
+            stopPoll();
+            status.textContent = "Оплата не прошла. Попробуйте ещё раз.";
+          } else if (manual) {
+            status.textContent = "Пока не видим оплату. Проверим ещё раз через минуту.";
+          }
+        })
+        .catch(() => {
+          if (manual) status.textContent = "Не удалось проверить. Попробуйте ещё раз.";
+        });
+    }
+
+    function startPayment(finalId) {
+      window.STAW
+        .api("/orders/" + encodeURIComponent(finalId) + "/pay", {
+          method: "POST",
+          body: {},
+        })
+        .then((r) => {
+          const url = (r && r.confirmationUrl) || "";
+          if ((r && r.status) === "paid" || !url) {
+            done(finalId); // оплата не требуется (dev) — сразу «оформлен»
+          } else {
+            showPayView(finalId, url);
+          }
+        })
+        .catch(() => {
+          // Заказ создан, а платёж не стартовал: не врём про успех — заказ можно
+          // оплатить позже из профиля.
+          err.textContent = "Заказ сохранён, но оплата недоступна. Попробуйте позже.";
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Подтвердить заказ";
+        });
+    }
+
     const loggedIn =
       window.STAW && typeof window.STAW.token === "function" && window.STAW.token();
     if (loggedIn && typeof window.STAW.api === "function") {
@@ -478,7 +558,7 @@ if (coModal) {
       submitBtn.textContent = "Оформляем…";
       window.STAW
         .api("/orders", { method: "POST", body: payload })
-        .then((o) => done((o && o.id) || orderId))
+        .then((o) => startPayment((o && o.id) || orderId))
         .catch(() => done(orderId)); // офлайн — показываем успех локально
     } else {
       done(orderId); // гость (без входа) — демо-успех

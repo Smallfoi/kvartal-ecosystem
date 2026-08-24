@@ -1851,6 +1851,44 @@ html.js.motion-off .hero .brand-wordmark span {
   text-align: center;
 }
 
+/* Оплата по СБП: тот же язык, что у экрана «заказ оформлен», но акцент
+   не праздничный — покупатель ещё в процессе. */
+.co-pay-mark {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-2);
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.co-pay-status {
+  margin-top: 16px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.co-link {
+  margin-top: 6px;
+  border: 0;
+  background: none;
+  padding: 8px 12px;
+  min-height: 44px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.co-link:hover {
+  opacity: 0.75;
+}
+
 .co-success-mark {
   width: 64px;
   height: 64px;
