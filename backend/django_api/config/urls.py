@@ -108,6 +108,8 @@ urlpatterns = [
     # Заказы Store (D-13)
     path("v1/orders", orders_views.orders),
     path("v1/orders/<str:order_id>/pay", orders_views.pay_order),  # инициировать оплату
+    # Статус оплаты с перепроверкой у провайдера: страховка от потерянного вебхука.
+    path("v1/orders/<str:order_id>/payment", orders_views.payment_state),
     # Вебхук ЮKassa: адрес прописывается в личном кабинете магазина. Без токена —
     # тело не подписано, подтверждение статуса идёт перезапросом к API (см. views).
     path("v1/payments/webhook", orders_views.payment_webhook),

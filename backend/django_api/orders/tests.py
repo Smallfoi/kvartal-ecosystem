@@ -373,3 +373,175 @@ class PaymentReferenceTests(ApiTestCase):
         meta = bodies[0]["metadata"]
         self.assertEqual(meta["order_id"], "SS-META")
         self.assertTrue(meta["reference"].startswith("SS-META-"), meta["reference"])
+
+
+class PaymentMethodTests(ApiTestCase):
+    """Способ оплаты: по умолчанию СБП (решение владельца — карты не подключаем)."""
+
+    phone = "+79990002015"
+
+    def _pay(self, oid="SS-M1", body=None):
+        bodies = []
+
+        def fake_http(method, url, payload=None, headers=None):
+            bodies.append(payload)
+            return _yk()
+
+        with mock.patch("orders.payment._http", side_effect=fake_http):
+            self.api_post("/v1/orders", {"id": oid, "total": 500, "items": []})
+            self.api_post(f"/v1/orders/{oid}/pay", body or {})
+        return bodies[0]
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    def test_sbp_by_default(self):
+        self.assertEqual(self._pay()["payment_method_data"], {"type": "sbp"})
+
+    @mock.patch.dict(os.environ, dict(_YK_ENV, PAYMENT_METHOD="any"))
+    def test_any_lets_provider_show_all_methods(self):
+        """«any» — показать все способы из кабинета: пригодится, когда включим карты."""
+        self.assertNotIn("payment_method_data", self._pay(oid="SS-M2"))
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    def test_request_can_override_method(self):
+        body = self._pay(oid="SS-M3", body={"method": "bank_card"})
+        self.assertEqual(body["payment_method_data"], {"type": "bank_card"})
+
+
+class ReceiptTests(ApiTestCase):
+    """Состав чека по 54-ФЗ. Чек обязателен и при оплате по СБП."""
+
+    phone = "+79990002016"
+
+    PAYLOAD = {
+        "items": [
+            {"productName": "Худи МАТА", "size": "L", "price": 4000.0, "quantity": 2},
+            {"productName": "Кепка", "price": 1500.0, "quantity": 1},
+        ],
+        "deliveryCost": 300.0,
+        "checkoutData": {"email": "buyer@example.test", "phone": "+79148278470"},
+    }
+
+    def test_disabled_by_default(self):
+        """Пока касса не подключена, чек не передаём — иначе платёж не создастся."""
+        from orders.receipt import build_receipt
+
+        self.assertIsNone(build_receipt(self.PAYLOAD, 9800))
+
+    @mock.patch.dict(os.environ, {"PAYMENT_RECEIPT": "1"})
+    def test_items_sum_equals_payment_amount(self):
+        """Главное требование кассы: позиции сходятся с суммой платежа до копейки."""
+        from orders.receipt import build_receipt
+
+        receipt = build_receipt(self.PAYLOAD, 9800)  # 4000×2 + 1500 + 300
+        total = sum(float(i["amount"]["value"]) for i in receipt["items"])
+        self.assertAlmostEqual(total, 9800.0, places=2)
+        self.assertEqual(receipt["items"][-1]["description"], "Доставка")
+
+    @mock.patch.dict(os.environ, {"PAYMENT_RECEIPT": "1"})
+    def test_points_discount_is_absorbed_by_last_item(self):
+        """Списали 800 баллов — сумма позиций всё равно обязана сойтись с платежом."""
+        from orders.receipt import build_receipt
+
+        receipt = build_receipt(self.PAYLOAD, 9000)
+        total = sum(float(i["amount"]["value"]) for i in receipt["items"])
+        self.assertAlmostEqual(total, 9000.0, places=2)
+
+    @mock.patch.dict(os.environ, {"PAYMENT_RECEIPT": "1"})
+    def test_sum_is_exact_on_ugly_numbers(self):
+        """Три одинаковые вещи и скидка, которая на три не делится."""
+        from orders.receipt import build_receipt
+
+        payload = {
+            "items": [{"productName": "Футболка", "price": 1000.0, "quantity": 3}],
+            "checkoutData": {"email": "b@example.test"},
+        }
+        receipt = build_receipt(payload, 2000.01)
+        kop = sum(round(float(i["amount"]["value"]) * 100) for i in receipt["items"])
+        self.assertEqual(kop, 200001)
+        self.assertEqual(len(receipt["items"]), 3, "каждая единица — своя позиция")
+
+    @mock.patch.dict(os.environ, {"PAYMENT_RECEIPT": "1"})
+    def test_no_contact_is_an_error_not_a_silent_skip(self):
+        from orders.receipt import build_receipt
+
+        payload = dict(self.PAYLOAD, checkoutData={})
+        with self.assertRaises(ValueError):
+            build_receipt(payload, 9800)
+
+    @mock.patch.dict(os.environ, {"PAYMENT_RECEIPT": "1"})
+    def test_marked_goods_carry_the_code(self):
+        """Одежда и обувь маркируются: код из заказа обязан уйти в позицию чека."""
+        from orders.receipt import build_receipt
+
+        payload = dict(self.PAYLOAD)
+        payload["items"] = [dict(self.PAYLOAD["items"][0], markCode="010463003...")]
+        payload["deliveryCost"] = 0
+        receipt = build_receipt(payload, 8000)
+        self.assertEqual(receipt["items"][0]["mark_code_info"]["gs_1m"], "010463003...")
+
+    @mock.patch.dict(os.environ, dict(_YK_ENV, PAYMENT_RECEIPT="1"))
+    def test_order_without_contact_fails_loudly_on_pay(self):
+        """Лучше 400 с понятным текстом, чем платёж, который отвергнет касса."""
+        self.api_post("/v1/orders", {"id": "SS-R1", "total": 500, "items": []})
+        r = self.api_post("/v1/orders/SS-R1/pay", {})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("чек", r.json()["detail"].lower())
+
+
+class PaymentStateTests(ApiTestCase):
+    """Статус оплаты с перепроверкой — страховка от потерянного вебхука."""
+
+    phone = "+79990002017"
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    def test_lost_webhook_is_recovered_on_status_request(self):
+        with mock.patch("orders.payment._http", return_value=_yk()):
+            self.api_post("/v1/orders", {"id": "SS-S1", "total": 1000, "items": []})
+            self.api_post("/v1/orders/SS-S1/pay", {})
+
+        # Вебхук не дошёл: заказ висит в «ждёт оплаты», хотя деньги списаны.
+        self.assertEqual(Order.objects.get(order_id="SS-S1").payment_status, "pending")
+
+        with mock.patch("orders.payment._http", return_value=_yk(status="succeeded")):
+            r = self.api_get("/v1/orders/SS-S1/payment")
+
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["status"], "paid")
+        self.assertGreater(self.balance(), 0, "баллы за покупку не начислены")
+
+    @mock.patch.dict(os.environ, _YK_ENV)
+    def test_provider_down_does_not_break_the_answer(self):
+        with mock.patch("orders.payment._http", return_value=_yk()):
+            self.api_post("/v1/orders", {"id": "SS-S2", "total": 100, "items": []})
+            self.api_post("/v1/orders/SS-S2/pay", {})
+
+        with mock.patch("orders.payment._http", side_effect=PaymentError("нет связи")):
+            r = self.api_get("/v1/orders/SS-S2/payment")
+
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["status"], "pending")
+
+    def test_unknown_order_404(self):
+        self.assertEqual(self.api_get("/v1/orders/NOPE/payment").status_code, 404)
+
+
+class RefundPointsTests(ApiTestCase):
+    """Вернули деньги — начисленные за покупку баллы обязаны уйти."""
+
+    phone = "+79990002018"
+
+    def test_purchase_points_are_revoked_once(self):
+        from orders.awards import accrue_purchase_points, revoke_purchase_points
+
+        self.api_post("/v1/orders", {"id": "SS-RF", "total": 1000, "items": []})
+        order = Order.objects.get(user_id=self.uid, order_id="SS-RF")
+        accrue_purchase_points(order)  # идемпотентно: заказ уже начислил при создании
+        earned = self.balance()
+        self.assertGreater(earned, 0)
+
+        revoke_purchase_points(order)
+        after = self.balance()
+        self.assertLess(after, earned)
+
+        revoke_purchase_points(order)  # повтор не должен снимать второй раз
+        self.assertEqual(self.balance(), after)

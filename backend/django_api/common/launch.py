@@ -35,6 +35,15 @@ def integrations():
             "needs": "PAYMENT_PROVIDER=yookassa + YOOKASSA_SHOP_ID/YOOKASSA_SECRET_KEY",
         },
         {
+            # Чек обязателен при любом способе расчёта, включая СБП. Без него
+            # оплату включать нельзя — это нарушение 54-ФЗ, а не «доделаем потом».
+            "key": "receipt",
+            "name": "Чек 54-ФЗ (онлайн-касса)",
+            "provider": "ЮKassa + касса" if _env("PAYMENT_RECEIPT") else "—",
+            "ready": _env("PAYMENT_RECEIPT") in ("1", "true", "yes"),
+            "needs": "подключить кассу с ФФД 1.2 к ЮKassa, затем PAYMENT_RECEIPT=1",
+        },
+        {
             "key": "push",
             "name": "Push-уведомления",
             "provider": push_p or "—",
