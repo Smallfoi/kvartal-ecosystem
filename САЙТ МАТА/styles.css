@@ -2469,10 +2469,17 @@ html.js.motion-off .hero .brand-wordmark span {
   width: min(680px, 100%);
   max-height: 88vh;
   overflow: auto;
+  /* Скролл рабочий, но без видимого «ползунка» (просьба владельца — убрать боковой
+     ползунок в документах). Контент прокручивается колесом/тачем/клавишами. */
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* старый Edge/IE */
   padding: clamp(24px, 3vw, 40px);
   background: var(--paper);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-lg);
+}
+.lg-card::-webkit-scrollbar {
+  display: none;                  /* WebKit/Blink */
 }
 
 .lg-close {
@@ -2934,6 +2941,7 @@ html:has(.pr-modal.is-open),
 html:has(.co-modal.is-open),
 html:has(.cart-panel.is-open),
 html:has(.mobile-nav.is-open),
+html:has(.lg-modal.is-open),
 html:has(.eco-modal.is-open) {
   overflow: hidden;
 }
