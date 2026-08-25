@@ -82,29 +82,24 @@
   isolation: isolate;
 }
 
-/* Слой фона ровно по границам экрана: раньше он выходил на 6% вверх, липкий
-   экран его обрезал, и кнопка «Фон» оказывалась в срезанной части, под шапкой.
-   Глубину при прокрутке даёт увеличение кадра (см. data-parallax-scale) —
-   края не оголяются даже при сдвиге. */
-.phil-manifest-bg {
+/* Фон стоит на самом липком экране, а не на отдельном слое под текстом: на слое
+   кнопка «Фон» оказывалась под содержимым и навести на неё было нельзя.
+   Глубину при прокрутке даёт сдвиг фоновой картинки (см. data-parallax-bg) —
+   transform тут применять нельзя, он ломает прилипание экрана. */
+.phil-manifest-sticky {
+  background: var(--graphite) center / cover no-repeat;
+}
+
+/* Затемнение поверх фона: без него текст на светлой фотографии не читается. */
+.phil-manifest-scrim {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: var(--graphite) center / cover no-repeat;
-  transform: scale(1.12);
-  transform-origin: center;
-  will-change: transform;
-}
-
-.phil-manifest-bg::after {
-  content: "";
-  position: absolute;
-  inset: 0;
   background: radial-gradient(120% 80% at 20% 40%, rgba(32, 37, 43, 0.4), rgba(32, 37, 43, 0.93) 70%);
 }
 
-.phil-manifest-bg video,
-.phil-manifest-bg img {
+.phil-manifest-sticky > .staw-bg-layer video,
+.phil-manifest-sticky > .staw-bg-layer img {
   width: 100%;
   height: 100%;
   object-fit: cover;

@@ -78,8 +78,12 @@
     "html.staw-edit .staw-bg-btn{position:absolute!important;top:6px!important;left:6px!important;right:auto!important;bottom:auto!important;" +
       "width:auto!important;height:auto!important;margin:0!important;transform:none!important;z-index:50!important;border:0;border-radius:6px;padding:4px 9px;" +
       "color:#fff;font:600 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer;background:rgba(16,122,87,.95);" +
-      "box-shadow:0 1px 5px rgba(0,0,0,.4);opacity:0;transition:opacity .12s}" +
+      "box-shadow:0 1px 5px rgba(0,0,0,.4);opacity:.55;transition:opacity .12s}" +
+    // Кнопка видна всегда (приглушённой): пока она всплывала только по наведению,
+    // на блоках, накрытых содержимым, до неё было не добраться вовсе.
     "html.staw-edit [data-edit-bg]:hover>.staw-bg-btn,html.staw-edit .staw-bg-btn:hover{opacity:1}" +
+    // Полноэкранные блоки: верх уходит под фиксированную шапку — опускаем кнопку.
+    "html.staw-edit [data-bg-btn='low']>.staw-bg-btn{opacity:1;top:78px!important;left:14px!important}" +
     // Экран входа/регистрации: кнопка «Фон» панели видна СРАЗУ (не только по наведению) —
     // панель перекрыта текстом-оверлеем, навести на неё сложно. Виден только активный слой.
     "html.staw-edit .eco-photo>.staw-bg-btn{opacity:1}" +

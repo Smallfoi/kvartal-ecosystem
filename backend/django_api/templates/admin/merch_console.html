@@ -124,7 +124,7 @@
       </div>
     </div>
     <div style="margin-top:12px">
-      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px">Выравнивание в рамке</div>
+      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px">Выравнивание текста</div>
       <div id="merch-txt-align" style="display:inline-flex;border:1px solid #d1d5db;border-radius:8px;overflow:hidden">
         <button type="button" class="merch-al" data-align="left" title="По левому краю"
                 style="padding:8px 12px;border:0;border-right:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:14px">⯇</button>
@@ -135,7 +135,7 @@
         <button type="button" class="merch-al" data-align="justify" title="По ширине — текст растягивается на всю рамку"
                 style="padding:8px 12px;border:0;background:#fff;cursor:pointer;font-size:14px">☰</button>
       </div>
-      <p style="font-size:11px;color:#9ca3af;margin:6px 0 0">Работает вместе с шириной рамки: растяните текст уголком, затем выберите, как он встанет внутри.</p>
+      <p style="font-size:11px;color:#9ca3af;margin:6px 0 0">Сначала растяните текст уголком, потом выберите, как он встанет внутри. Нажать ту же кнопку ещё раз — снять выравнивание.</p>
     </div>
     <label style="display:block;margin-top:12px;font-size:12px;font-weight:700;color:#374151">Тень текста: <span id="merch-txt-shadow-val" style="font-weight:600;color:#6b7280">нет</span>
       <input type="range" id="merch-txt-shadow" min="0" max="100" step="5" value="0" style="width:100%;margin-top:8px;cursor:pointer">
@@ -837,10 +837,13 @@
       tellFrame({ type: "setContent", key: "font." + txtKey, value: txtOrigFont });
       tellFrame({ type: "setContent", key: "fontsize." + txtKey, value: txtOrigSize });
       tellFrame({ type: "setContent", key: "shadow." + txtKey, value: txtOrigShadow });
+      tellFrame({ type: "setContent", key: "talign." + txtKey, value: txtOrigAlign });
     }
     txtModal.style.display = "none"; txtKey = null;
   }
-  // «Готово»: зафиксировать текст + цвет + шрифт/размер/тень в черновик.
+  // «Готово»: зафиксировать в черновик ВСЁ, что меняли в окне — текст, цвет,
+  // шрифт, размер, тень, выравнивание. Забытое здесь свойство ведёт себя как
+  // «не работает»: в превью видно, а после закрытия окна пропадает.
   function saveText() {
     if (!txtKey) return;
     var key = txtKey;
@@ -850,11 +853,13 @@
     pendingContent["font." + key] = txtFont;
     pendingContent["fontsize." + key] = txtSize;
     pendingContent["shadow." + key] = txtShadow;
+    pendingContent["talign." + key] = txtAlign;
     tellFrame({ type: "setContent", key: key, value: val });
     tellFrame({ type: "setContent", key: "color." + key, value: txtColor });
     tellFrame({ type: "setContent", key: "font." + key, value: txtFont });
     tellFrame({ type: "setContent", key: "fontsize." + key, value: txtSize });
     tellFrame({ type: "setContent", key: "shadow." + key, value: txtShadow });
+    tellFrame({ type: "setContent", key: "talign." + key, value: txtAlign });
     txtModal.style.display = "none"; txtKey = null;
     updatePending();
   }

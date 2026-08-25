@@ -67,6 +67,9 @@
   var header = document.querySelector("[data-header]");
   var hero = document.querySelector(".hero");
   var parallax = [].slice.call(document.querySelectorAll("[data-parallax]"));
+  // Липкому экрану transform противопоказан — он ломает прилипание. Поэтому его
+  // фон двигаем сдвигом самой картинки.
+  var parallaxBg = [].slice.call(document.querySelectorAll("[data-parallax-bg]"));
   var manifest = document.querySelector("[data-manifest]");
   var lines = [].slice.call(document.querySelectorAll("[data-line]"));
   var ticking = false;
@@ -87,10 +90,18 @@
         if (box.bottom < -200 || box.top > window.innerHeight + 200) return;
         var mid = box.top + box.height / 2 - window.innerHeight / 2;
         var k = parseFloat(el.getAttribute("data-parallax")) || 0.1;
-        // Увеличенный кадр — чтобы при сдвиге не показались края слоя.
-        var s = parseFloat(el.getAttribute("data-parallax-scale")) || 0;
-        el.style.transform = "translate3d(0," + (-mid * k).toFixed(2) + "px,0)"
-          + (s ? " scale(" + s + ")" : "");
+        el.style.transform = "translate3d(0," + (-mid * k).toFixed(2) + "px,0)";
+      });
+
+      parallaxBg.forEach(function (el) {
+        var box = el.getBoundingClientRect();
+        if (box.bottom < -200 || box.top > window.innerHeight + 200) return;
+        var k = parseFloat(el.getAttribute("data-parallax-bg")) || 0.06;
+        // Прокрутка секции 0..1 → сдвиг картинки в пределах нескольких процентов.
+        var host = el.parentElement || el;
+        var total = host.offsetHeight - window.innerHeight;
+        var p = total > 0 ? Math.min(1, Math.max(0, -host.getBoundingClientRect().top / total)) : 0;
+        el.style.backgroundPosition = "center " + (50 + (p - 0.5) * k * 100).toFixed(1) + "%";
       });
     }
 
