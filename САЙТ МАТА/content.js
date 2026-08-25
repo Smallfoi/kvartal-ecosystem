@@ -292,6 +292,16 @@
       if (val && /^[\w-]+$/.test(val) && val !== "none") el.classList.add("staw-anim-" + val);
     });
   }
+  function applyTextAlign(key, value) {
+    // Выравнивание текста внутри рамки: слева, по центру, справа, по ширине.
+    if (!safeId(key)) return;
+    var v = (value || "").trim();
+    if (v && ["left", "center", "right", "justify"].indexOf(v) === -1) return;
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.textAlign = v;
+    });
+  }
+
   function applySize(key, val) {
     if (!safeId(key)) return;
     document.querySelectorAll('[data-hideable="' + key + '"]').forEach(function (el) {
@@ -442,6 +452,7 @@
         if (key.indexOf("fontsize.") === 0) { applyFontSize(key.slice(9), c.value); return; }
         if (key.indexOf("font.") === 0) { applyFont(key.slice(5), c.value); return; }
         if (key.indexOf("shadow.") === 0) { applyShadow(key.slice(7), c.value); return; }
+        if (key.indexOf("talign.") === 0) { applyTextAlign(key.slice(7), c.value); return; }
         if (key.indexOf("width.") === 0) { applySize(key.slice(6), "width", c.value); return; }
         if (key.indexOf("minh.") === 0) { applySize(key.slice(5), "minHeight", c.value); return; }
         if (key.indexOf("bgfocal.") === 0) { setBgField(key.slice(8), "_bgFocal", c.value); return; }

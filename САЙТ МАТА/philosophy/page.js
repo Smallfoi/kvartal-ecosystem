@@ -87,7 +87,10 @@
         if (box.bottom < -200 || box.top > window.innerHeight + 200) return;
         var mid = box.top + box.height / 2 - window.innerHeight / 2;
         var k = parseFloat(el.getAttribute("data-parallax")) || 0.1;
-        el.style.transform = "translate3d(0," + (-mid * k).toFixed(2) + "px,0)";
+        // Увеличенный кадр — чтобы при сдвиге не показались края слоя.
+        var s = parseFloat(el.getAttribute("data-parallax-scale")) || 0;
+        el.style.transform = "translate3d(0," + (-mid * k).toFixed(2) + "px,0)"
+          + (s ? " scale(" + s + ")" : "");
       });
     }
 
