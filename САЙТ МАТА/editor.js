@@ -52,9 +52,9 @@
     "html.staw-edit [data-edit]:hover,html.staw-edit [data-edit-img]:hover,html.staw-edit [data-edit-ph]:hover{outline-color:#0a84ff}" +
     "html.staw-edit [data-hideable]{position:relative}" +
     // Уголок растягивания текста: виден по наведению на сам текст.
-    ".staw-size{position:absolute;z-index:2147483000;width:14px;height:14px;right:-7px;bottom:-7px;" +
-    "border:2px solid #0a84ff;border-radius:3px;background:#fff;cursor:nwse-resize;opacity:0;transition:opacity .12s}" +
-    "html.staw-edit [data-edit]:hover>.staw-size,html.staw-edit .staw-size:hover{opacity:1}" +
+    ".staw-size{position:fixed;z-index:2147483001;display:none;width:15px;height:15px;" +
+    "border:2px solid #0a84ff;border-radius:3px;background:#fff;cursor:nwse-resize;padding:0;" +
+    "box-shadow:0 2px 8px rgba(0,0,0,.28)}" +
     "html.staw-edit .staw-sizing{outline-color:#0a84ff!important;user-select:none}" +
     "html.staw-edit [data-extra]{outline:2px solid #22c55e !important;outline-offset:2px}" +
     "html.staw-edit .staw-cms-hidden{opacity:.32;filter:grayscale(1)}" +
@@ -500,66 +500,112 @@
   }
 
   // ── Размер текстовой рамки: тянем уголок, как в графическом редакторе ──
-  // Ширину пишем в процентах от родителя — заданные пиксели вылезли бы за
-  // экран телефона, а проценты сжимаются вместе с колонкой.
-  function initTextResize() {
-    [].forEach.call(document.querySelectorAll("[data-edit]"), function (el) {
-      var key = el.getAttribute("data-edit");
-      if (!safeId(key) || el.querySelector(":scope > .staw-size")) return;
-      if (getComputedStyle(el).position === "static") el.style.position = "relative";
+  // Уголок ОДИН на страницу и стоит поверх всего (position: fixed): вложенный
+  // внутрь текста, он пропадал при правке (она заменяет содержимое целиком) и
+  // срезался обрезкой у заголовков. Поэтому работает на любом тексте.
+  var _size = null, _sizeTarget = null, _sizeTimer = null, _sizeDrag = null;
 
-      var grip = document.createElement("span");
-      grip.className = "staw-ui staw-size";
-      grip.title = "Тянуть — ширина и высота. Двойной клик — вернуть как было";
-
-      var start = null;
-
-      grip.addEventListener("pointerdown", function (e) {
-        e.preventDefault(); e.stopPropagation();
-        grip.setPointerCapture(e.pointerId);
-        var parent = el.parentElement || document.body;
-        start = {
-          x: e.clientX, y: e.clientY,
-          w: el.getBoundingClientRect().width,
-          h: el.getBoundingClientRect().height,
-          pw: parent.getBoundingClientRect().width || 1,
-        };
-        el.classList.add("staw-sizing");
-      });
-
-      grip.addEventListener("pointermove", function (e) {
-        if (!start) return;
-        e.preventDefault();
-        var w = Math.max(60, start.w + (e.clientX - start.x));
-        var h = Math.max(24, start.h + (e.clientY - start.y));
-        el.style.width = Math.min(100, Math.round((w / start.pw) * 1000) / 10) + "%";
-        el.style.minHeight = Math.round(h) + "px";
-        if (getComputedStyle(el).display === "inline") el.style.display = "inline-block";
-      });
-
-      function finish(e) {
-        if (!start) return;
-        start = null;
-        el.classList.remove("staw-sizing");
-        try { grip.releasePointerCapture(e.pointerId); } catch (err) {}
-        // В черновик: на живой сайт уйдёт по «Опубликовать», как и всё остальное.
-        draft("width." + key, el.style.width || "");
-        draft("minh." + key, el.style.minHeight || "");
-      }
-      grip.addEventListener("pointerup", finish);
-      grip.addEventListener("pointercancel", finish);
-
-      grip.addEventListener("dblclick", function (e) {
-        e.preventDefault(); e.stopPropagation();
-        el.style.width = ""; el.style.minHeight = "";
-        if (el.style.display === "inline-block") el.style.display = "";
-        draft("width." + key, "");
-        draft("minh." + key, "");
-      });
-
-      el.appendChild(grip);
-    });
+  function hideSize() {
+    if (_sizeDrag) return;                       // во время перетаскивания не прячем
+    if (_size) _size.style.display = "none";
+    _sizeTarget = null;
   }
+
+  function placeSize(el) {
+    var r = el.getBoundingClientRect();
+    var b = sizeGrip();
+    b.style.display = "block";
+    b.style.left = Math.round(r.right - 7) + "px";
+    b.style.top = Math.round(r.bottom - 7) + "px";
+    _sizeTarget = el;
+  }
+
+  function sizeGrip() {
+    if (_size) return _size;
+    _size = document.createElement("button");
+    _size.type = "button";
+    _size.className = "staw-ui staw-size";
+    _size.title = "Тянуть — ширина и высота. Двойной клик — вернуть как было";
+    _size.addEventListener("mouseenter", function () { if (_sizeTimer) clearTimeout(_sizeTimer); });
+    _size.addEventListener("mouseleave", function () { _sizeTimer = setTimeout(hideSize, 220); });
+
+    _size.addEventListener("pointerdown", function (e) {
+      var el = _sizeTarget;
+      if (!el) return;
+      e.preventDefault(); e.stopPropagation();
+      _size.setPointerCapture(e.pointerId);
+      var parent = el.parentElement || document.body;
+      var r = el.getBoundingClientRect();
+      _sizeDrag = {
+        el: el, x: e.clientX, y: e.clientY, w: r.width, h: r.height,
+        pw: parent.getBoundingClientRect().width || 1,
+      };
+      el.classList.add("staw-sizing");
+    });
+
+    _size.addEventListener("pointermove", function (e) {
+      if (!_sizeDrag) return;
+      e.preventDefault();
+      var el = _sizeDrag.el;
+      var w = Math.max(60, _sizeDrag.w + (e.clientX - _sizeDrag.x));
+      var h = Math.max(20, _sizeDrag.h + (e.clientY - _sizeDrag.y));
+      el.style.width = Math.min(100, Math.round((w / _sizeDrag.pw) * 1000) / 10) + "%";
+      el.style.minHeight = Math.round(h) + "px";
+      // Строчным элементам ширина не применяется — иначе тянешь, а ничего не двигается.
+      if (getComputedStyle(el).display === "inline") el.style.display = "inline-block";
+      placeSize(el);                              // уголок едет вместе с углом рамки
+    });
+
+    function finish(e) {
+      if (!_sizeDrag) return;
+      var el = _sizeDrag.el;
+      _sizeDrag = null;
+      el.classList.remove("staw-sizing");
+      try { _size.releasePointerCapture(e.pointerId); } catch (err) {}
+      var key = el.getAttribute("data-edit");
+      if (!safeId(key)) return;
+      // В черновик: на живой сайт уйдёт по «Опубликовать», как и всё остальное.
+      draft("width." + key, el.style.width || "");
+      draft("minh." + key, el.style.minHeight || "");
+      justDragged = true;                         // не открывать правку текста от этого клика
+    }
+    _size.addEventListener("pointerup", finish);
+    _size.addEventListener("pointercancel", finish);
+
+    _size.addEventListener("dblclick", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var el = _sizeTarget;
+      if (!el) return;
+      el.style.width = ""; el.style.minHeight = "";
+      if (el.style.display === "inline-block") el.style.display = "";
+      var key = el.getAttribute("data-edit");
+      if (safeId(key)) { draft("width." + key, ""); draft("minh." + key, ""); }
+      placeSize(el);
+    });
+
+    if (document.body) document.body.appendChild(_size);
+    return _size;
+  }
+
+  document.addEventListener("mouseover", function (e) {
+    if (!document.documentElement.classList.contains("staw-edit")) return;
+    if (_sizeDrag) return;
+    if (e.target.closest(".staw-ui, .staw-tools, input, textarea, select")) return;
+    var el = e.target.closest("[data-edit]:not([data-edit-ph])");
+    if (el) { if (_sizeTimer) clearTimeout(_sizeTimer); placeSize(el); }
+  }, true);
+
+  document.addEventListener("mouseout", function (e) {
+    if (!_sizeTarget || _sizeDrag) return;
+    var to = e.relatedTarget;
+    if (to && to.closest && (to === _size || to.closest(".staw-size") || to.closest("[data-edit]") === _sizeTarget)) return;
+    if (_sizeTimer) clearTimeout(_sizeTimer);
+    _sizeTimer = setTimeout(hideSize, 220);
+  }, true);
+
+  // Страница едет — уголок должен ехать с ней, иначе повиснет в пустоте.
+  window.addEventListener("scroll", function () { if (_sizeTarget && !_sizeDrag) placeSize(_sizeTarget); }, true);
+  window.addEventListener("resize", function () { if (_sizeTarget && !_sizeDrag) placeSize(_sizeTarget); });
 
   // ── Панель блока (по наведению): Скрыть/Вернуть/Удалить + Анимация ──
   var hideBtns = {};
@@ -933,7 +979,7 @@
         window.MATA_AUTH.open(d.mode === "register" ? "register" : "login");
         // Модалка строится из JS уже после инициализации редактора — до-навешиваем
         // на её элементы кнопки «🖼 Фон» (панель Вход/Регистрация) и drag/фото.
-        setTimeout(function () { try { initBg(); markDraggable(); initTextResize(); } catch (e) {} }, 60);
+        setTimeout(function () { try { initBg(); markDraggable(); } catch (e) {} }, 60);
       } catch (e) {}
       return;
     }
@@ -944,17 +990,25 @@
       return;
     }
     if (d.type === "updateCard" && d.id && d.fields) { var card = cardById(d.id); if (card) applyCardFields(card, d.fields); return; }
-    if (d.type === "setImage" && d.key && d.url) {
-      if (d.key.indexOf("bg.") === 0) { setBgImg(d.key.slice(3), d.url); return; }
+    // ВАЖНО: пустой адрес — это «Удалить фон», а не «нечего делать». Пока условие
+    // требовало непустой d.url, команда очистки молча терялась и фон оставался.
+    if (d.type === "setImage" && d.key) {
+      var url = typeof d.url === "string" ? d.url : "";
+      if (d.key.indexOf("bg.") === 0) { setBgImg(d.key.slice(3), url); return; }
       document.querySelectorAll('[data-edit-img="' + d.key + '"]').forEach(function (el) {
-        if (el.tagName === "IMG") el.src = d.url; else el.style.backgroundImage = "url('" + d.url + "')";
+        if (el.tagName === "IMG") {
+          // Пустой src перезагрузил бы страницу как картинку — ставим прозрачную точку.
+          el.src = url || "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+        } else {
+          el.style.backgroundImage = url ? "url('" + url + "')" : "";
+        }
       });
     }
   });
 
   // initAlign() убран: стрелки выравнивания больше не нужны — расположение задаётся
   // перетаскиванием (drag). Опубликованные align.* если и есть — применяются пассивно.
-  markDraggable(); initHide(); initAdders(); initBg(); initTextResize();
+  markDraggable(); initHide(); initAdders(); initBg();
   var grid = document.querySelector("[data-product-grid]");
   if (grid && window.MutationObserver) new MutationObserver(markDraggable).observe(grid, { childList: true });
   // Промо-стрип рендерится promo.js асинхронно — перематить баннеры после наполнения.

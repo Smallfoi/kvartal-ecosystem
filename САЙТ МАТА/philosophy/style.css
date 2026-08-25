@@ -463,3 +463,33 @@
   .phil-reel { transform: none; transition: opacity 250ms linear; }
   .phil-reel.is-focus { transform: none; }
 }
+
+/* ── Фон у любого блока ───────────────────────────────────────────────────
+   Владелец может поставить фото или видео в каждую секцию. Слой фона
+   content.js кладёт первым ребёнком, поэтому содержимое поднимаем над ним,
+   а тёмный фон получает светлый текст. */
+.phil-author[data-edit-bg],
+.phil-works[data-edit-bg],
+.phil-project[data-edit-bg],
+.phil-author-grid[data-edit-bg],
+.phil-project-inner[data-edit-bg] {
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.phil-author.staw-bg-on > :not(.staw-bg-layer),
+.phil-works.staw-bg-on > :not(.staw-bg-layer),
+.phil-author-grid.staw-bg-on > :not(.staw-bg-layer),
+.phil-project-inner.staw-bg-on > :not(.staw-bg-layer) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Карточка автора со своим фоном получает поля и скругление — иначе текст
+   лёг бы прямо на фотографию. */
+.phil-author-grid.staw-bg-on {
+  padding: clamp(20px, 3vw, 44px);
+  border-radius: var(--r-xl);
+}
