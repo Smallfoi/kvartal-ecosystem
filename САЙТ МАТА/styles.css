@@ -2468,11 +2468,15 @@ html.js.motion-off .hero .brand-wordmark span {
   z-index: 1;
   width: min(680px, 100%);
   max-height: 88vh;
-  overflow: auto;
+  overflow-y: auto;
   /* Скролл рабочий, но без видимого «ползунка» (просьба владельца — убрать боковой
      ползунок в документах). Контент прокручивается колесом/тачем/клавишами. */
   scrollbar-width: none;          /* Firefox */
   -ms-overflow-style: none;       /* старый Edge/IE */
+  /* На телефоне скролл документа НЕ должен «прочихиваться» на фон-страницу. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: clamp(24px, 3vw, 40px);
   background: var(--paper);
   border-radius: var(--r-xl);
