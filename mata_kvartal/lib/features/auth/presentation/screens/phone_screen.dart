@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
 import '../../../../shared/widgets/phone_mask.dart';
 import '../../../profile/data/legal_provider.dart';
@@ -16,10 +17,11 @@ class PhoneScreen extends ConsumerStatefulWidget {
 }
 
 class _PhoneScreenState extends ConsumerState<PhoneScreen> {
-  final _phoneCtrl = PhoneMaskController(hintColor: AppColors.textDisabled);
+  final _phoneCtrl = PhoneMaskController(hintColor: AppColors.disabled);
   final _passCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   String _mode = 'login'; // login | register | reset
+  bool _obscure = true;
 
   @override
   void dispose() {
@@ -63,15 +65,32 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     if (mounted) context.go('/auth/otp');
   }
 
-  Widget _fieldBox({required Widget child}) => Container(
-        margin: const EdgeInsets.only(top: 12),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.bgElevated),
-        ),
-        child: child,
-      );
+  /// Оформление поля — язык сайта: белая заливка, тонкая рамка `line`, на фокусе
+  /// акцент. Без тяжёлых рамок и внутренних разделителей.
+  InputDecoration _dec(
+    String hint, {
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    OutlineInputBorder b(Color c, double w) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c, width: w),
+        );
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: AppColors.disabled),
+      filled: true,
+      fillColor: AppColors.panel,
+      prefixIcon: prefixIcon,
+      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+      suffixIcon: suffixIcon,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      enabledBorder: b(AppColors.line, 1),
+      border: b(AppColors.line, 1),
+      focusedBorder: b(AppColors.accentInk, 1.6),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,24 +101,53 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
         : (_phoneOk &&
             _passCtrl.text.length >= 4 &&
             (_mode != 'register' || _nameCtrl.text.trim().isNotEmpty));
+    final inputStyle = Theme.of(context)
+        .textTheme
+        .titleMedium
+        ?.copyWith(color: AppColors.ink);
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 24),
+              // Знак как иконка приложения: тёмный бейдж, лаймовая территория —
+              // видно на молочном фоне и читается ядовито-зелёным.
+              Container(
+                width: 76,
+                height: 76,
+                decoration: BoxDecoration(
+                  color: AppColors.graphite,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.graphite.withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: KvartalLogoMark(
+                    size: 46,
+                    outline: AppColors.onDark,
+                    fill: AppColors.lime,
+                    animated: false,
+                  ),
+                ),
+              ),
               const SizedBox(height: 20),
-              const KvartalLogoMark(size: 58, outline: Color(0xFFEDEFE8)),
-              const SizedBox(height: 18),
               Text(
                 'КВАРТАЛ',
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: AppColors.warning,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 4,
+                      fontFamily: AppTheme.fontDisplay,
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 2,
                     ),
               ),
               const SizedBox(height: 8),
@@ -109,73 +157,54 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                     : _mode == 'register'
                         ? 'Регистрация'
                         : 'Сброс пароля',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
               ),
               const SizedBox(height: 28),
-              if (_mode == 'register')
-                _fieldBox(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: TextField(
-                      controller: _nameCtrl,
-                      style: TextStyle(color: AppColors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Имя',
-                        hintStyle: TextStyle(color: AppColors.textDisabled),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
+              if (_mode == 'register') ...[
+                TextField(
+                  controller: _nameCtrl,
+                  style: inputStyle,
+                  decoration: _dec('Имя'),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+              ],
+              TextField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                inputFormatters: const [PhoneMaskFormatter()],
+                style: inputStyle?.copyWith(letterSpacing: 1.5),
+                decoration: _dec(
+                  '', // подсказку-маску рисует сам PhoneMaskController
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 10, 0),
+                    child: Text('+7', style: inputStyle?.copyWith(fontWeight: FontWeight.w600)),
                   ),
                 ),
-              _fieldBox(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      decoration: BoxDecoration(
-                        border: Border(right: BorderSide(color: AppColors.bgElevated)),
-                      ),
-                      child: Text('+7',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.textPrimary)),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _phoneCtrl,
-                        keyboardType: TextInputType.phone,
-                        inputFormatters: const [PhoneMaskFormatter()],
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.textPrimary, letterSpacing: 2),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                        ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                    ),
-                  ],
-                ),
+                onChanged: (_) => setState(() {}),
               ),
-              _fieldBox(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    controller: _passCtrl,
-                    obscureText: true,
-                    style: TextStyle(color: AppColors.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: _mode == 'reset' ? 'Новый пароль' : 'Пароль',
-                      hintStyle: TextStyle(color: AppColors.textDisabled),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _passCtrl,
+                obscureText: _obscure,
+                style: inputStyle,
+                decoration: _dec(
+                  _mode == 'reset' ? 'Новый пароль' : 'Пароль',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppColors.muted,
+                      size: 22,
                     ),
-                    onChanged: (_) => setState(() {}),
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                    tooltip: _obscure ? 'Показать пароль' : 'Скрыть пароль',
                   ),
                 ),
+                onChanged: (_) => setState(() {}),
               ),
               if (auth.error != null) ...[
                 const SizedBox(height: 12),
-                Text(auth.error!, style: const TextStyle(color: Color(0xFFF87171), fontSize: 13)),
+                Text(auth.error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
               ],
               const SizedBox(height: 22),
               SizedBox(
@@ -191,10 +220,10 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               ),
               const SizedBox(height: 12),
               if (_mode == 'login') ...[
-                Center(child: TextButton(onPressed: () => _setMode('register'), child: const Text('Нет аккаунта? Регистрация', style: TextStyle(color: AppColors.accentBlue)))),
-                Center(child: TextButton(onPressed: () => _setMode('reset'), child: const Text('Забыл пароль?', style: TextStyle(color: AppColors.textSecondary)))),
+                Center(child: TextButton(onPressed: () => _setMode('register'), child: const Text('Нет аккаунта? Регистрация', style: TextStyle(color: AppColors.accentInk)))),
+                Center(child: TextButton(onPressed: () => _setMode('reset'), child: const Text('Забыл пароль?', style: TextStyle(color: AppColors.muted)))),
               ] else
-                Center(child: TextButton(onPressed: () => _setMode('login'), child: const Text('Уже есть аккаунт? Войти', style: TextStyle(color: AppColors.accentBlue)))),
+                Center(child: TextButton(onPressed: () => _setMode('login'), child: const Text('Уже есть аккаунт? Войти', style: TextStyle(color: AppColors.accentInk)))),
               const SizedBox(height: 8),
               Center(
                 child: GestureDetector(
@@ -206,7 +235,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                     'Условия использования и документы',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textDisabled,
+                          color: AppColors.disabled,
                           decoration: TextDecoration.underline,
                         ),
                   ),
