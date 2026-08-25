@@ -4,19 +4,34 @@ import 'package:provider/provider.dart';
 import 'package:badges/badges.dart' as badges;
 import '../providers/cart_provider.dart';
 import '../providers/tab_notifier.dart';
+import '../services/update_checker.dart';
 import '../theme/app_theme.dart';
 import '../widgets/remote_labels.dart';
 
-class MainShell extends StatelessWidget {
+class MainShell extends StatefulWidget {
   final StatefulNavigationShell shell;
 
   const MainShell({super.key, required this.shell});
 
+  @override
+  State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> {
   /// Ключ экрана для добавленных подписей конструктора (по активной вкладке).
   static const _tabKeys = ['home', 'catalog', 'cart', 'profile'];
 
   @override
+  void initState() {
+    super.initState();
+    // Проверка обновления тест-сборки (Android): баннер, если в S3 версия новее.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => UpdateChecker.check(context));
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final shell = widget.shell;
     final screenKey = _tabKeys[shell.currentIndex.clamp(0, _tabKeys.length - 1)];
     return Scaffold(
       body: Stack(
