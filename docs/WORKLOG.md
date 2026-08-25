@@ -15,6 +15,33 @@
 
 ---
 
+## 2026-08-25 — Claude — Раздача тест-сборок: Android живой, iOS ждёт Apple
+
+**Сделано:** настроил раздачу приложений тест-группе (владелец: ~8 из 10 тестеров на iPhone,
+2 на Android). Android-ветка работает end-to-end и на проде:
+- **release-keystore** (2 ключа `mata_kvartal`/`mata_store`, до 2054); подпись release в
+  `build.gradle.kts` обоих (`key.properties` вне git, откат на debug без ключа). Бэкап ключа:
+  локально `~/.mata-keys`, GitHub Secrets (для CI), Yandex Lockbox `mata-android-keystore`. (#519)
+- **CI `android-release.yml`**: пуш в main с изменениями приложения → подписанный APK изменившейся
+  папки → S3 `mata-media/app/<app>/{<app>-<code>.apk, latest.apk, version.json}`. versionCode =
+  `git rev-list --count`. Скрипт `tools/upload_apk.py`. (#520)
+- **Страница тестера** `mata-club.ru/app.html`: карточки Квартал+Store, скачивание, версии из
+  `version.json` (CORS на бакете GET `*`), инструкция Android, блок iOS/TestFlight, QR. (#521)
+- **Баннер «Доступно обновление»** в обоих приложениях (сверка `version.json`, Android-only,
+  `package_info_plus`, «Позже» per-versionCode). (#522)
+
+**Пробовали — не вышло:** iOS никак не раздать файлом (см. PITFALLS) — только TestFlight.
+
+**Решения:** D-55 (способ раздачи: самхостинг для Android, TestFlight для iOS).
+
+**Состояние:** Android раздаётся вживую (mata-club.ru/app.html; Квартал 0.1.0/88МБ, Store 1.0.0/29МБ).
+iOS — база готова (ios/ проекты, bundle id `ru.mata.*`, гео-права в Info.plist), ждём Apple-аккаунт.
+
+**Дальше:** владелец оформляет Apple Developer (гайд-артефакт передан) → TestFlight-пайплайн
+(GitHub Actions macOS + fastlane + App Store Connect API key). На телефоне проверить баннер обновления.
+
+---
+
 ## 2026-08-25 — Claude — Конструктор: «Смотрим ⇄ Редактируем» для сайта
 
 **Сделано:** владелец не смог отредактировать «Философию» — и был прав, это не его ошибка.
