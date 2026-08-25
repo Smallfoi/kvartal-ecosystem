@@ -17,6 +17,18 @@
  */
 (function () {
   "use strict";
+
+  // Конструктор держит сайт в iframe и не может прочитать его адрес — другой
+  // origin. Поэтому страница сама сообщает, где она: это нужно, чтобы
+  // переключение «Смотрим ⇄ Редактируем» осталось на той же странице.
+  if (window.parent !== window) {
+    try {
+      window.parent.postMessage(
+        { source: "staw-site", type: "path", path: location.pathname },
+        "*"
+      );
+    } catch (e) {}
+  }
   var host = location.hostname;
   var isDev = host === "localhost" || host === "127.0.0.1" || host === "";
   var PROD_API = "https://api.mata-club.ru/v1";
