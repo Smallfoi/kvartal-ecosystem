@@ -51,6 +51,11 @@
     "html.staw-edit [data-edit],html.staw-edit [data-edit-img],html.staw-edit [data-edit-ph]{outline:2px dashed transparent;outline-offset:3px;cursor:pointer;transition:outline-color .12s}" +
     "html.staw-edit [data-edit]:hover,html.staw-edit [data-edit-img]:hover,html.staw-edit [data-edit-ph]:hover{outline-color:#0a84ff}" +
     "html.staw-edit [data-hideable]{position:relative}" +
+    // Уголок растягивания текста: виден по наведению на сам текст.
+    ".staw-size{position:absolute;z-index:2147483000;width:14px;height:14px;right:-7px;bottom:-7px;" +
+    "border:2px solid #0a84ff;border-radius:3px;background:#fff;cursor:nwse-resize;opacity:0;transition:opacity .12s}" +
+    "html.staw-edit [data-edit]:hover>.staw-size,html.staw-edit .staw-size:hover{opacity:1}" +
+    "html.staw-edit .staw-sizing{outline-color:#0a84ff!important;user-select:none}" +
     "html.staw-edit [data-extra]{outline:2px solid #22c55e !important;outline-offset:2px}" +
     "html.staw-edit .staw-cms-hidden{opacity:.32;filter:grayscale(1)}" +
     // В режиме правки ГЛУШИМ анимации появления: их transform создаёт новый stacking-контекст,
@@ -81,7 +86,9 @@
     // Герой (главный экран): фон-медиа накрыт контентом (hover не доходит) + верх под
     // фикс-навбаром. Кнопку «Фон» показываем ВСЕГДА и опускаем НИЖЕ навбара (слева-вверху —
     // стандартное место кнопки «Фон»).
-    "html.staw-edit [data-edit-bg='hero']>.staw-bg-btn{opacity:1;top:78px!important;left:14px!important;right:auto!important}" +
+    // Любой полноэкранный герой (главная, «Философия», будущие страницы): кнопка
+    // видна сразу и опущена ниже фикс-шапки, иначе она под ней и до неё не добраться.
+    "html.staw-edit [data-edit-bg='hero']>.staw-bg-btn,html.staw-edit .hero-media[data-edit-bg]>.staw-bg-btn{opacity:1;top:78px!important;left:14px!important;right:auto!important}" +
     "html.staw-edit .staw-size-btn{background:rgba(37,99,235,.95)}" +
     // «Добавить блок» — плитка ВНУТРИ сетки (не ломает раскладку секции).
     "html.staw-edit .staw-add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:64px;padding:14px;" +
@@ -492,6 +499,68 @@
     });
   }
 
+  // ── Размер текстовой рамки: тянем уголок, как в графическом редакторе ──
+  // Ширину пишем в процентах от родителя — заданные пиксели вылезли бы за
+  // экран телефона, а проценты сжимаются вместе с колонкой.
+  function initTextResize() {
+    [].forEach.call(document.querySelectorAll("[data-edit]"), function (el) {
+      var key = el.getAttribute("data-edit");
+      if (!safeId(key) || el.querySelector(":scope > .staw-size")) return;
+      if (getComputedStyle(el).position === "static") el.style.position = "relative";
+
+      var grip = document.createElement("span");
+      grip.className = "staw-ui staw-size";
+      grip.title = "Тянуть — ширина и высота. Двойной клик — вернуть как было";
+
+      var start = null;
+
+      grip.addEventListener("pointerdown", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        grip.setPointerCapture(e.pointerId);
+        var parent = el.parentElement || document.body;
+        start = {
+          x: e.clientX, y: e.clientY,
+          w: el.getBoundingClientRect().width,
+          h: el.getBoundingClientRect().height,
+          pw: parent.getBoundingClientRect().width || 1,
+        };
+        el.classList.add("staw-sizing");
+      });
+
+      grip.addEventListener("pointermove", function (e) {
+        if (!start) return;
+        e.preventDefault();
+        var w = Math.max(60, start.w + (e.clientX - start.x));
+        var h = Math.max(24, start.h + (e.clientY - start.y));
+        el.style.width = Math.min(100, Math.round((w / start.pw) * 1000) / 10) + "%";
+        el.style.minHeight = Math.round(h) + "px";
+        if (getComputedStyle(el).display === "inline") el.style.display = "inline-block";
+      });
+
+      function finish(e) {
+        if (!start) return;
+        start = null;
+        el.classList.remove("staw-sizing");
+        try { grip.releasePointerCapture(e.pointerId); } catch (err) {}
+        // В черновик: на живой сайт уйдёт по «Опубликовать», как и всё остальное.
+        draft("width." + key, el.style.width || "");
+        draft("minh." + key, el.style.minHeight || "");
+      }
+      grip.addEventListener("pointerup", finish);
+      grip.addEventListener("pointercancel", finish);
+
+      grip.addEventListener("dblclick", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        el.style.width = ""; el.style.minHeight = "";
+        if (el.style.display === "inline-block") el.style.display = "";
+        draft("width." + key, "");
+        draft("minh." + key, "");
+      });
+
+      el.appendChild(grip);
+    });
+  }
+
   // ── Панель блока (по наведению): Скрыть/Вернуть/Удалить + Анимация ──
   var hideBtns = {};
   function updateHideBtn(key) {
@@ -864,7 +933,7 @@
         window.MATA_AUTH.open(d.mode === "register" ? "register" : "login");
         // Модалка строится из JS уже после инициализации редактора — до-навешиваем
         // на её элементы кнопки «🖼 Фон» (панель Вход/Регистрация) и drag/фото.
-        setTimeout(function () { try { initBg(); markDraggable(); } catch (e) {} }, 60);
+        setTimeout(function () { try { initBg(); markDraggable(); initTextResize(); } catch (e) {} }, 60);
       } catch (e) {}
       return;
     }
@@ -885,7 +954,7 @@
 
   // initAlign() убран: стрелки выравнивания больше не нужны — расположение задаётся
   // перетаскиванием (drag). Опубликованные align.* если и есть — применяются пассивно.
-  markDraggable(); initHide(); initAdders(); initBg();
+  markDraggable(); initHide(); initAdders(); initBg(); initTextResize();
   var grid = document.querySelector("[data-product-grid]");
   if (grid && window.MutationObserver) new MutationObserver(markDraggable).observe(grid, { childList: true });
   // Промо-стрип рендерится promo.js асинхронно — перематить баннеры после наполнения.
