@@ -663,7 +663,7 @@
     } else if (d.type === "editProduct") {
       openEdit(d.id);
     } else if (d.type === "editContent") {
-      openTextEdit(d.key, d.value || "", d.color || "", !!d.hasColor, d.font || "", d.fontsize || "", d.shadow || "");
+      openTextEdit(d.key, d.value || "", d.color || "", !!d.hasColor, d.font || "", d.fontsize || "", d.shadow || "", d.talign || "");
     } else if (d.type === "editImage") {
       openImageEdit(d.key, d.url || "", d.focal || "", d.fit || "cover", d.aspect, d.anim || "");
     } else if (d.type === "editBg") {
@@ -760,7 +760,7 @@
   function txtPrefill(key, k, fallback) {
     return (k + "." + key) in pendingContent ? (pendingContent[k + "." + key] || "") : (fallback || "");
   }
-  function openTextEdit(key, value, color, hasColor, font, fontsize, shadow) {
+  function openTextEdit(key, value, color, hasColor, font, fontsize, shadow, talign) {
     txtKey = key;
     txtOrigText = value;
     // «до»: если по этому ключу уже был черновик цвета — берём его; иначе текущий видимый цвет.
@@ -770,7 +770,9 @@
     txtOrigFont = txtPrefill(key, "font", font); txtFont = txtOrigFont;
     txtOrigSize = txtPrefill(key, "fontsize", fontsize ? String(fontsize) : ""); txtSize = txtOrigSize;
     txtOrigShadow = txtPrefill(key, "shadow", shadow ? String(shadow) : ""); txtShadow = txtOrigShadow;
-    txtOrigAlign = txtPrefill(key, "talign", ""); txtAlign = txtOrigAlign;
+    // Запасное значение — то, что сейчас стоит на сайте: иначе кнопка «снять
+    // выравнивание» (повторное нажатие) после публикации недостижима.
+    txtOrigAlign = txtPrefill(key, "talign", talign || ""); txtAlign = txtOrigAlign;
     document.getElementById("merch-txt-title").textContent = "Текст: " + key;
     document.getElementById("merch-txt-val").value = value;
     if (color && /^#[0-9a-fA-F]{6}$/.test(color)) document.getElementById("merch-txt-color").value = color;
