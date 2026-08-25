@@ -48,6 +48,7 @@ DOCS = [
     ("delivery", "Доставка и получение заказа", False, "09-delivery.md"),
     ("returns", "Возврат и обмен", False, "10-returns.md"),
     ("distribution", "Согласие на распространение персональных данных (ст. 10.1)", False, "11-distribution-consent.md"),
+    ("contacts", "Контакты", False, "12-contacts.md"),
 ]
 
 # Обязательные реквизиты — без них не публикуем.
@@ -104,7 +105,7 @@ class Command(BaseCommand):
         docs_dir = _docs_dir()
         publish = not options["drafts"]
         now = timezone.now()
-        published, leftovers = 0, {}
+        published, skipped, leftovers = 0, 0, {}
 
         for doc_type, title, required, fname in DOCS:
             path = docs_dir / fname
@@ -119,28 +120,23 @@ class Command(BaseCommand):
                 leftovers[fname] = left
 
             existing = LegalDocument.objects.filter(doc_type=doc_type, version=ver).first()
-            changed = (
-                existing is None
-                or existing.body != body
-                or existing.title != title
-                or existing.is_required != required
+            if existing is not None:
+                # Эта версия уже есть — НЕ трогаем: после первичной публикации источник
+                # правды — АДМИНКА (владелец правит текст там; авто-деплой не должен
+                # затирать правки). Чтобы выкатить новый текст из .md — поднять LEGAL_VERSION.
+                skipped += 1
+                continue
+            LegalDocument.objects.create(
+                doc_type=doc_type, version=ver, title=title,
+                is_required=required, body=body,
+                published_at=now if publish else None,
             )
-            if existing is None:
-                existing = LegalDocument(doc_type=doc_type, version=ver)
-            existing.title = title
-            existing.is_required = required
-            existing.body = body
-            if publish and (changed or existing.published_at is None):
-                # published_at трогаем только при реальном изменении/первой публикации,
-                # чтобы авто-деплой не «дёргал» дату на каждом прогоне.
-                existing.published_at = now
-            existing.save()
             if publish:
                 published += 1
 
         self.stdout.write(self.style.SUCCESS(
-            "Юр-документы: %s %d шт. (версия %s)." % (
-                "опубликовано" if publish else "черновики", published,
+            "Юр-документы: %s %d шт., пропущено (уже есть, правится в админке) %d (версия %s)." % (
+                "опубликовано" if publish else "черновики", published, skipped,
                 os.environ.get("LEGAL_VERSION", "1.0"),
             )
         ))
