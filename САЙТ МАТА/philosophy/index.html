@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Философия бренда — МАТА</title>
+    <meta
+      name="description"
+      content="Философия МАТА: движение ради жизни. Манифест бренда и автор айдентики — Валентина / mudreza."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2320252b'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='18' font-weight='700' fill='%23ffffff' text-anchor='middle'%3E%D0%9C%3C/text%3E%3C/svg%3E"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap"
+    />
+
+    <!-- Общие стили сайта: цвета, шрифты, шапка, кнопки, механика появления.
+         Правка на главной автоматически меняет и эту страницу — она не копия
+         оформления, а тот же самый файл. -->
+    <link rel="stylesheet" href="../styles.css" />
+    <!-- Только то, чего нет на главной: манифест, автор, лента работ. -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <header class="site-header" data-header>
+      <div class="brand-group">
+        <a class="brand" href="../" aria-label="МАТА — на главную" data-edit="header.brand">МАТА</a>
+        <a class="back-link" href="../" aria-label="Вернуться на главную страницу">
+          <span class="chev" aria-hidden="true">←</span>
+          <span data-edit="phil.back">На главную</span>
+        </a>
+      </div>
+      <nav class="main-nav" aria-label="Основная навигация">
+        <a href="#manifest" data-edit="phil.nav.manifest">Манифест</a>
+        <a href="#author" data-edit="phil.nav.author">Автор</a>
+        <a href="#project" data-edit="phil.nav.project">Наш проект</a>
+      </nav>
+      <div class="header-actions">
+        <!-- Корзина живёт на главной: здесь кнопка уводит в каталог, а не
+             притворяется работающей. -->
+        <a class="cart-button" href="../#catalog" aria-label="Каталог и корзина">
+          <svg class="cart-ico" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 4h2l2.3 11.3a1 1 0 0 0 1 .8h8a1 1 0 0 0 1-.8L20 7H6"
+            />
+            <circle cx="9.5" cy="20" r="1.4" fill="currentColor" />
+            <circle cx="17.5" cy="20" r="1.4" fill="currentColor" />
+          </svg>
+          <span class="cart-label">Каталог</span>
+        </a>
+        <button
+          class="nav-toggle"
+          type="button"
+          data-nav-toggle
+          aria-label="Меню"
+          aria-expanded="false"
+          aria-controls="mobile-nav"
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobile-nav" data-mobile-nav aria-label="Мобильное меню">
+      <a href="#manifest" data-mobile-link data-edit="phil.nav.manifest">Манифест</a>
+      <a href="#author" data-mobile-link data-edit="phil.nav.author">Автор</a>
+      <a href="#project" data-mobile-link data-edit="phil.nav.project">Наш проект</a>
+      <a href="../" data-mobile-link data-edit="phil.back">На главную</a>
+    </nav>
+
+    <main>
+      <!-- ── Первый экран ─────────────────────────────────────────────────
+           Фон ставится кнопкой «Фон» в Конструкторе (фото или видео).
+           Пока не задан — чистый графит, как у героя главной. -->
+      <section class="hero scene" id="hero" aria-labelledby="phil-title">
+        <div class="hero-media" data-edit-bg="phil.hero" data-parallax="0.14" aria-hidden="true">
+          <span class="hero-scrim" aria-hidden="true"></span>
+        </div>
+
+        <div class="hero-content">
+          <p class="eyebrow" data-edit="phil.hero.eyebrow">Философия бренда</p>
+          <h1 id="phil-title" class="phil-title">
+            <span class="row"><span data-edit="phil.hero.line1">Движение</span></span>
+            <span class="row"><span data-edit="phil.hero.line2">ради жизни</span></span>
+          </h1>
+          <p class="hero-copy" data-edit="phil.hero.copy">
+            МАТА — не про спорт ради рекордов. Про настоящую жизнь: со взлётами и падениями,
+            паузами и сложными моментами.
+          </p>
+        </div>
+
+        <a class="hero-scroll" href="#manifest" aria-label="Листать вниз">
+          <span data-edit="phil.hero.scroll">Scroll</span>
+          <i class="hero-scroll-line" aria-hidden="true"></i>
+        </a>
+      </section>
+
+      <!-- ── Манифест: закреплённый экран, строки зажигаются по прокрутке ── -->
+      <section
+        class="phil-manifest"
+        id="manifest"
+        data-manifest
+        data-sid="phil-manifest"
+        data-hideable="phil.sec.manifest"
+      >
+        <div class="phil-manifest-sticky">
+          <div class="phil-manifest-bg" data-edit-bg="phil.manifest" data-parallax="0.07" aria-hidden="true"></div>
+          <div class="phil-manifest-lines" data-sortable="philManifest">
+            <p class="eyebrow" data-edit="phil.manifest.eyebrow">Манифест</p>
+            <p class="phil-line" data-line data-sid="m1" data-hideable="phil.mline1" data-edit="phil.manifest.line1">
+              МАТА — это про настоящую жизнь.
+            </p>
+            <p class="phil-line" data-line data-sid="m2" data-hideable="phil.mline2" data-edit="phil.manifest.line2">
+              Со взлётами и падениями, с паузами и сложными моментами.
+            </p>
+            <p class="phil-line" data-line data-sid="m3" data-hideable="phil.mline3" data-edit="phil.manifest.line3">
+              Этот бренд создан бегунами — для всех, кто бегает.
+            </p>
+            <p class="phil-line" data-line data-sid="m4" data-hideable="phil.mline4" data-edit="phil.manifest.line4">
+              Не про рекорды. Про движение ради жизни.
+            </p>
+            <!-- Шаблон новой строки: «➕ Добавить блок» в Конструкторе. -->
+            <template data-block-template="philManifest">
+              <p class="phil-line" data-line data-sid="{sid}" data-hideable="{sid}" data-edit="phil.manifest.{sid}">
+                Новая строка манифеста
+              </p>
+            </template>
+          </div>
+          <p class="phil-source" data-edit="phil.manifest.source">
+            Тексты — из бренд-платформы МАТА
+          </p>
+        </div>
+      </section>
+
+      <!-- ── Автор айдентики ──────────────────────────────────────────────── -->
+      <section
+        class="scene phil-author"
+        id="author"
+        data-sid="phil-author"
+        data-hideable="phil.sec.author"
+      >
+        <div class="phil-author-grid">
+          <div class="phil-author-copy reveal">
+            <p class="eyebrow" data-edit="phil.author.eyebrow">Автор айдентики</p>
+            <h2 data-edit="phil.author.title">Валентина / mudreza</h2>
+            <p class="phil-lead" data-edit="phil.author.lead">
+              Дизайнер, создавшая визуальный язык МАТА: знак, элементы, паттерны, шрифты и упаковку.
+            </p>
+            <p data-edit="phil.author.text">
+              Здесь — рассказ о Валентине: чем занимается, как подходит к работе, какие бренды
+              и проекты сделала.
+            </p>
+            <div class="phil-stats" data-sortable="philStats">
+              <div class="phil-stat" data-sid="s1" data-hideable="phil.stat1">
+                <div class="num" data-edit="phil.stat1.num">—</div>
+                <div class="cap" data-edit="phil.stat1.cap">проектов</div>
+              </div>
+              <div class="phil-stat" data-sid="s2" data-hideable="phil.stat2">
+                <div class="num" data-edit="phil.stat2.num">—</div>
+                <div class="cap" data-edit="phil.stat2.cap">лет в дизайне</div>
+              </div>
+              <div class="phil-stat" data-sid="s3" data-hideable="phil.stat3">
+                <div class="num" data-edit="phil.stat3.num">mudreza</div>
+                <div class="cap" data-edit="phil.stat3.cap">студия</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="phil-shots">
+            <figure class="phil-shot tall reveal" data-sid="sh1" data-hideable="phil.shot1">
+              <div class="phil-slot" data-edit-bg="phil.shot1.media" data-parallax="0.04">
+                <span class="phil-slot-label"><b>Портрет</b><span>фото 4:5</span></span>
+              </div>
+              <figcaption data-edit="phil.shot1.cap">Портрет</figcaption>
+            </figure>
+
+            <div class="phil-shot-pair">
+              <figure class="phil-shot tall reveal" data-sid="sh2" data-hideable="phil.shot2">
+                <div class="phil-slot" data-edit-bg="phil.shot2.media">
+                  <span class="phil-slot-label"><b>Фото</b><span>4:5</span></span>
+                </div>
+                <figcaption data-edit="phil.shot2.cap">Детали</figcaption>
+              </figure>
+              <figure class="phil-shot tall reveal" data-sid="sh3" data-hideable="phil.shot3">
+                <div class="phil-slot" data-edit-bg="phil.shot3.media">
+                  <span class="phil-slot-label"><b>Фото</b><span>4:5</span></span>
+                </div>
+                <figcaption data-edit="phil.shot3.cap">Движение</figcaption>
+              </figure>
+            </div>
+
+            <figure class="phil-shot wide reveal" data-sid="sh4" data-hideable="phil.shot4">
+              <div class="phil-slot" data-edit-bg="phil.shot4.media" data-parallax="0.04">
+                <span class="phil-slot-label"><b>Широкий кадр</b><span>фото или видео</span></span>
+              </div>
+              <figcaption data-edit="phil.shot4.cap">Команда</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Работы: лента с инерцией ─────────────────────────────────────── -->
+      <section class="scene phil-works" data-sid="phil-works" data-hideable="phil.sec.works">
+        <div class="phil-works-head reveal">
+          <div>
+            <p class="eyebrow" data-edit="phil.works.eyebrow">Работы</p>
+            <h2 data-edit="phil.works.title">Как это выглядит в жизни</h2>
+          </div>
+          <p class="phil-works-hint" data-edit="phil.works.hint">
+            Тяните вбок · на телефоне листается как истории
+          </p>
+        </div>
+
+        <div class="phil-rail" data-rail data-sortable="philReels">
+          <article class="phil-reel" data-sid="r1" data-hideable="phil.reel1">
+            <div class="phil-slot" data-edit-bg="phil.reel1.media">
+              <span class="phil-slot-label"><b>Видео 9:16</b><span>или фото</span></span>
+            </div>
+            <div class="phil-reel-cap">
+              <b data-edit="phil.reel1.title">Проект 1</b><span data-edit="phil.reel1.sub">видео 9:16</span>
+            </div>
+          </article>
+          <article class="phil-reel" data-sid="r2" data-hideable="phil.reel2">
+            <div class="phil-slot" data-edit-bg="phil.reel2.media">
+              <span class="phil-slot-label"><b>Видео 9:16</b><span>или фото</span></span>
+            </div>
+            <div class="phil-reel-cap">
+              <b data-edit="phil.reel2.title">Проект 2</b><span data-edit="phil.reel2.sub">видео 9:16</span>
+            </div>
+          </article>
+          <article class="phil-reel" data-sid="r3" data-hideable="phil.reel3">
+            <div class="phil-slot" data-edit-bg="phil.reel3.media">
+              <span class="phil-slot-label"><b>Фото 9:16</b><span>или видео</span></span>
+            </div>
+            <div class="phil-reel-cap">
+              <b data-edit="phil.reel3.title">В студии</b><span data-edit="phil.reel3.sub">фото 9:16</span>
+            </div>
+          </article>
+          <article class="phil-reel" data-sid="r4" data-hideable="phil.reel4">
+            <div class="phil-slot" data-edit-bg="phil.reel4.media">
+              <span class="phil-slot-label"><b>Видео 9:16</b><span>или фото</span></span>
+            </div>
+            <div class="phil-reel-cap">
+              <b data-edit="phil.reel4.title">Айдентика</b><span data-edit="phil.reel4.sub">видео 9:16</span>
+            </div>
+          </article>
+          <article class="phil-reel" data-sid="r5" data-hideable="phil.reel5">
+            <div class="phil-slot" data-edit-bg="phil.reel5.media">
+              <span class="phil-slot-label"><b>Видео 9:16</b><span>или фото</span></span>
+            </div>
+            <div class="phil-reel-cap">
+              <b data-edit="phil.reel5.title">Квартал</b><span data-edit="phil.reel5.sub">видео 9:16</span>
+            </div>
+          </article>
+          <!-- Шаблон нового кадра: «➕ Добавить блок» в Конструкторе. -->
+          <template data-block-template="philReels">
+            <article class="phil-reel" data-sid="{sid}" data-hideable="{sid}">
+              <div class="phil-slot" data-edit-bg="phil.{sid}.media">
+                <span class="phil-slot-label"><b>Видео 9:16</b><span>или фото</span></span>
+              </div>
+              <div class="phil-reel-cap">
+                <b data-edit="phil.{sid}.title">Новый кадр</b><span data-edit="phil.{sid}.sub">видео 9:16</span>
+              </div>
+            </article>
+          </template>
+        </div>
+      </section>
+
+      <!-- ── Наш проект ───────────────────────────────────────────────────── -->
+      <section class="scene phil-project" id="project" data-sid="phil-project" data-hideable="phil.sec.project">
+        <div class="phil-project-inner reveal">
+          <p class="eyebrow" data-edit="phil.project.eyebrow">Коллаборация</p>
+          <h2 data-edit="phil.project.title">Она создала язык. Мы говорим на нём каждый день.</h2>
+          <p class="phil-lead" data-edit="phil.project.lead">
+            Валентина собрала айдентику МАТА целиком — и она работает во всей экосистеме:
+            приложение «Квартал», магазин, сайт.
+          </p>
+
+          <div class="phil-kit" data-sortable="philKit">
+            <div class="phil-kit-item" data-sid="k1" data-hideable="phil.kit1">
+              <div class="k" data-edit="phil.kit1.title">Знак</div>
+              <div class="v" data-edit="phil.kit1.sub">логотип и монограмма</div>
+            </div>
+            <div class="phil-kit-item" data-sid="k2" data-hideable="phil.kit2">
+              <div class="k" data-edit="phil.kit2.title">Элементы</div>
+              <div class="v" data-edit="phil.kit2.sub">графические модули</div>
+            </div>
+            <div class="phil-kit-item" data-sid="k3" data-hideable="phil.kit3">
+              <div class="k" data-edit="phil.kit3.title">Паттерны</div>
+              <div class="v" data-edit="phil.kit3.sub">фирменная графика</div>
+            </div>
+            <div class="phil-kit-item" data-sid="k4" data-hideable="phil.kit4">
+              <div class="k" data-edit="phil.kit4.title">Шрифты</div>
+              <div class="v" data-edit="phil.kit4.sub">типографика бренда</div>
+            </div>
+            <div class="phil-kit-item" data-sid="k5" data-hideable="phil.kit5">
+              <div class="k" data-edit="phil.kit5.title">Цвета</div>
+              <div class="v" data-edit="phil.kit5.sub">палитра МАТА</div>
+            </div>
+            <div class="phil-kit-item" data-sid="k6" data-hideable="phil.kit6">
+              <div class="k" data-edit="phil.kit6.title">Упаковка</div>
+              <div class="v" data-edit="phil.kit6.sub">и носители</div>
+            </div>
+            <template data-block-template="philKit">
+              <div class="phil-kit-item" data-sid="{sid}" data-hideable="{sid}">
+                <div class="k" data-edit="phil.{sid}.title">Новый блок</div>
+                <div class="v" data-edit="phil.{sid}.sub">описание</div>
+              </div>
+            </template>
+          </div>
+
+          <div class="phil-closing">
+            <p data-edit="phil.project.closing">Она создала язык. Мы двигаемся на нём — каждый день.</p>
+            <span class="phil-mark" data-edit="phil.project.mark">МАТА × mudreza</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-bottom">
+        <p data-edit="footer.copyright">© 2026 МАТА. Run, train, move daily.</p>
+        <nav class="footer-legal" aria-label="Правовая информация">
+          <a href="#" data-legal="privacy" data-edit="footer.legal.privacy">Политика конфиденциальности</a>
+          <a href="#" data-legal="offer" data-edit="footer.legal.offer">Публичная оферта</a>
+          <a href="../" data-edit="phil.foot.back">На главную</a>
+        </nav>
+      </div>
+    </footer>
+
+    <!-- Единый журнал ошибок экосистемы (D-32) — подключаем первым. -->
+    <script src="../observability.js?v=20260813"></script>
+    <!-- Контент из Конструктора: тексты, фоны, порядок, скрытые блоки, анимации. -->
+    <script src="../content.js?v=20260825"></script>
+    <!-- Юр-документы в модалке (ссылки в подвале). -->
+    <script src="../legal.js?v=20260813"></script>
+    <!-- Режим правки: включается только внутри Конструктора. -->
+    <script src="../editor.js?v=20260825"></script>
+    <!-- Логика этой страницы: шапка, параллакс, манифест, лента работ. -->
+    <script src="page.js?v=20260825"></script>
+  </body>
+</html>

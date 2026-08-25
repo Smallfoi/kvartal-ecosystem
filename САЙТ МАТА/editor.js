@@ -22,6 +22,27 @@
   // поле source внутри сообщения подделывается тривиально, e.origin — нет.
   var CONSOLE_ORIGIN = params.get("console") || location.origin;
 
+  // Сайт стал многостраничным: переходы внутри него (например, на «Философию»)
+  // не должны терять режим правки — иначе в Конструкторе вторая страница
+  // открывается обычной, и редактировать её нечем. Дописываем текущие параметры
+  // ко всем внутренним ссылкам, кроме якорей.
+  (function keepEditParams() {
+    function patch() {
+      var q = location.search;
+      [].forEach.call(document.querySelectorAll("a[href]"), function (a) {
+        var href = a.getAttribute("href") || "";
+        if (!href || href.charAt(0) === "#" || /^(https?:|mailto:|tel:)/i.test(href)) return;
+        if (href.indexOf("edit=1") !== -1) return;
+        a.setAttribute("href", href + (href.indexOf("?") === -1 ? q : q.replace("?", "&")));
+      });
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", patch);
+    } else {
+      patch();
+    }
+  })();
+
   var css = document.createElement("style");
   css.textContent =
     "html.staw-edit [data-sid],html.staw-edit .product-card{cursor:grab;outline:2px dashed transparent;outline-offset:3px;transition:outline-color .12s}" +
