@@ -297,6 +297,10 @@
   var publishBtn = document.getElementById("merch-publish");
   var platform = "site";
   var appEditMode = true;  // режим приложения: true=правка (перехват тапов), false=просмотр
+  var siteEditMode = true; // режим сайта: true=правим страницу, false=ходим по сайту
+  // Какая страница сайта открыта во фрейме. Прочитать его адрес нельзя — другой
+  // origin, поэтому страница сообщает путь сама (см. content.js).
+  var sitePath = "/";
   var authOpen = false, authMode = "login";  // экран входа/регистрации сайта в превью
   var products = [];
   var editId = null;
@@ -326,7 +330,25 @@
     // Анти-кэш: каждая загрузка фрейма тянет СВЕЖУЮ версию (сайт — сразу, приложение —
     // после пересборки web-бандла). Иначе браузер показывает старую сборку из кэша.
     var v = "&_=" + Date.now();
-    return platform === "app" ? (APP_URL + "?edit=1" + c + v) : (SITE_URL + "&edit=1" + c + v);
+    if (platform === "app") return APP_URL + "?edit=1" + c + v;
+    // Сайт: держим текущую страницу и включаем правку только в режиме «Редактируем».
+    try {
+      var u = new URL(SITE_URL, location.href);
+      u.pathname = sitePath && sitePath.charAt(0) === "/" ? sitePath : "/";
+      u.searchParams.set("preview", "1");
+      u.searchParams.set("platform", "site");
+      if (siteEditMode) {
+        u.searchParams.set("edit", "1");
+        u.searchParams.set("console", location.origin);
+      } else {
+        u.searchParams.delete("edit");
+        u.searchParams.delete("console");
+      }
+      u.searchParams.set("_", String(Date.now()));
+      return u.toString();
+    } catch (e) {
+      return SITE_URL + (siteEditMode ? "&edit=1" + c : "") + v;
+    }
   }
   function setFrame() {
     frame.src = frameSrc();
@@ -348,9 +370,16 @@
       stage.style.alignItems = "flex-start";
       stage.style.padding = "0";
     }
-    note.textContent = platform === "app"
-      ? "ЧЕРНОВИК приложения (как на телефоне): в разделе «Каталог» зажмите товар и перетащите. На витрину — по «Опубликовать»."
-      : "Это ЧЕРНОВИК: правки видны в превью, но на реальный сайт попадут только после «Опубликовать».";
+    setNote();
+  }
+  function setNote() {
+    if (platform === "app") {
+      note.textContent = "ЧЕРНОВИК приложения (как на телефоне): в разделе «Каталог» зажмите товар и перетащите. На витрину — по «Опубликовать».";
+      return;
+    }
+    note.textContent = siteEditMode
+      ? "Режим правки: кликайте по текстам и фото. Чтобы перейти на другую страницу — нажмите «👁 Смотрим». На сайт правки уйдут по «Опубликовать»."
+      : "Режим просмотра: ходите по сайту как посетитель. Нашли страницу для правки — нажмите «✏️ Редактируем».";
   }
   function reloadFrame() { authOpen = false; updateAuthCtrls(); frame.src = frameSrc(); }
   function tellFrame(msg) {
@@ -607,6 +636,12 @@
     var d = e.data || {};
     // Приложение (Flutter) шлёт JSON-строкой; сайт — объектом.
     if (typeof d === "string") { try { d = JSON.parse(d); } catch (err) { return; } }
+    // Страница сайта сообщает, где она сейчас — иначе при переключении режима
+    // фрейм вернулся бы на главную и найденная страница потерялась.
+    if (d && d.source === "staw-site" && d.type === "path" && e.origin === FRAME_ORIGIN.site) {
+      if (typeof d.path === "string" && d.path.charAt(0) === "/") sitePath = d.path;
+      return;
+    }
     if (!d || d.source !== "staw-editor") return;
     if (d.type === "reorder") {
       pendingOrder[d.platform === "app" ? "app" : "site"] = d.order; // в черновик, НЕ на сайт
@@ -1170,19 +1205,34 @@
       b.style.color = on ? "#fff" : "#374151";
     });
   }
-  // Переключатель «Просмотр ⇄ Правка» — ТОЛЬКО на вкладке приложения (на сайте не нужен).
+  // Переключатель «Смотрим ⇄ Редактируем» — и у приложения, и у сайта.
+  // Сайту он нужен с появлением второй страницы: в режиме правки клик по ссылке
+  // открывает редактор текста, а не переход, и до другой страницы не добраться.
   function updateEditModeBtn() {
     var btn = document.getElementById("merch-editmode");
     if (!btn) return;
-    if (platform !== "app") { btn.style.display = "none"; return; }
     btn.style.display = "";
-    btn.textContent = appEditMode ? "👁 Просмотр" : "✏️ Правка";
-    btn.style.background = appEditMode ? "#fff" : "#dff45f";
+    var editing = platform === "app" ? appEditMode : siteEditMode;
+    // На кнопке — то, что происходит сейчас; нажатие переключает на другое.
+    btn.textContent = editing ? "✏️ Редактируем" : "👁 Смотрим";
+    btn.style.background = editing ? "#dff45f" : "#fff";
+    btn.title = platform === "app"
+      ? "Листать экраны приложения ⇄ править их"
+      : "Ходить по сайту ⇄ править открытую страницу";
   }
   document.getElementById("merch-editmode").addEventListener("click", function () {
-    appEditMode = !appEditMode;
-    tellFrame({ type: "setEditMode", value: appEditMode }); // приложению: перехват тапов вкл/выкл
+    if (platform === "app") {
+      appEditMode = !appEditMode;
+      tellFrame({ type: "setEditMode", value: appEditMode }); // приложению: перехват тапов вкл/выкл
+      updateEditModeBtn();
+      return;
+    }
+    // Сайту режим не переключить на лету: правка включается параметром в адресе.
+    // Перезагружаем фрейм на той же странице — переход между режимами незаметен.
+    siteEditMode = !siteEditMode;
     updateEditModeBtn();
+    setNote();
+    frame.src = frameSrc();
   });
   // Экран входа: открыть/скрыть его в превью сайта (на месте, по центру).
   document.getElementById("merch-auth-toggle").addEventListener("click", function () {
