@@ -292,13 +292,40 @@
       if (val && /^[\w-]+$/.test(val) && val !== "none") el.classList.add("staw-anim-" + val);
     });
   }
-  function applyTextAlign(key, value) {
-    // Выравнивание текста внутри рамки: слева, по центру, справа, по ширине.
+  function applyTextAlign(key, value, hasOwnWidth) {
+    // Выравнивание текста: слева, по центру, справа, по ширине.
+    //
+    // Тонкость, из-за которой это выглядело как «не работает»: у заголовка рамка
+    // обтягивает сам текст (он ребёнок flex-контейнера или просто короткий), и
+    // центрировать внутри неё нечего — визуально ничего не меняется. Поэтому,
+    // если владелец сам не задал ширину, при выравнивании раздвигаем рамку на
+    // всю ширину родителя: тогда «по центру» действительно ставит текст в центр.
     if (!safeId(key)) return;
     var v = (value || "").trim();
     if (v && ["left", "center", "right", "justify"].indexOf(v) === -1) return;
     document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
       el.style.textAlign = v;
+      if (!v) {
+        if (el.dataset.stawAlignWidth) { el.style.width = ""; delete el.dataset.stawAlignWidth; }
+        var box0 = el.parentElement;
+        if (box0 && box0.dataset.stawAlignFlex) { box0.style.flex = ""; delete box0.dataset.stawAlignFlex; }
+        return;
+      }
+      if (hasOwnWidth) return;                 // ширину задал владелец — не трогаем
+      if (!el.style.width) {
+        el.style.width = "100%";
+        el.dataset.stawAlignWidth = "1";       // пометка: ширина наша, снимем вместе с выравниванием
+      }
+      if (getComputedStyle(el).display === "inline") el.style.display = "block";
+      // Рамка может обтягивать текст не только сама: её родитель бывает сжатым
+      // элементом гибкой раскладки (заголовок рядом с подписью). Тогда ширина
+      // «100%» ничего не даёт — растягиваем и родителя, но не трогаем соседей.
+      var box = el.parentElement;
+      var row = box && box.parentElement;
+      if (box && row && getComputedStyle(row).display.indexOf("flex") === 0) {
+        box.style.flex = "1 1 auto";
+        box.dataset.stawAlignFlex = "1";
+      }
     });
   }
 
@@ -357,7 +384,7 @@
     return "0 " + (1 + 3 * k).toFixed(1) + "px " + (2 + 10 * k).toFixed(1) +
       "px rgba(0,0,0," + (0.25 + 0.5 * k).toFixed(2) + ")";
   }
-  function applySize(key, prop, value) {
+  function applyBoxSize(key, prop, value) {
     // Размер рамки текста: ширина в процентах родителя, высота в пикселях.
     // Пустое значение — вернуться к вёрстке.
     if (!safeId(key)) return;
@@ -452,9 +479,14 @@
         if (key.indexOf("fontsize.") === 0) { applyFontSize(key.slice(9), c.value); return; }
         if (key.indexOf("font.") === 0) { applyFont(key.slice(5), c.value); return; }
         if (key.indexOf("shadow.") === 0) { applyShadow(key.slice(7), c.value); return; }
-        if (key.indexOf("talign.") === 0) { applyTextAlign(key.slice(7), c.value); return; }
-        if (key.indexOf("width.") === 0) { applySize(key.slice(6), "width", c.value); return; }
-        if (key.indexOf("minh.") === 0) { applySize(key.slice(5), "minHeight", c.value); return; }
+        if (key.indexOf("talign.") === 0) {
+          var tk = key.slice(7);
+          // Если ширина этого текста задана владельцем — выравнивание её не переопределяет.
+          applyTextAlign(tk, c.value, !!(content["width." + tk] && content["width." + tk].value));
+          return;
+        }
+        if (key.indexOf("width.") === 0) { applyBoxSize(key.slice(6), "width", c.value); return; }
+        if (key.indexOf("minh.") === 0) { applyBoxSize(key.slice(5), "minHeight", c.value); return; }
         if (key.indexOf("bgfocal.") === 0) { setBgField(key.slice(8), "_bgFocal", c.value); return; }
         if (key.indexOf("bgzoom.") === 0) { setBgField(key.slice(7), "_bgZoom", c.value); return; }
         if (key.indexOf("bgfit.") === 0) { setBgField(key.slice(6), "_bgFit", c.value); return; }
