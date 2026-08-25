@@ -29,6 +29,7 @@ dependencies:
   video_player: ^2.10.1
   qr_flutter: ^4.1.0
   url_launcher: ^6.3.1  # открыть банковское приложение по ссылке СБП
+  package_info_plus: ^8.1.1  # текущий versionCode для проверки обновлений
 
 dev_dependencies:
   flutter_test:

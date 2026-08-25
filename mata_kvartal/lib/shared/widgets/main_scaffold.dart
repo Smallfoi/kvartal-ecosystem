@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/router/app_router.dart';
+import '../../core/services/update_checker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/shoes/data/shoes_provider.dart';
 import '../../features/shoes/presentation/shoe_prompt.dart';
@@ -59,6 +60,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskPending());
+    // Проверка обновления тест-сборки (Android): баннер, если в S3 версия новее.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => UpdateChecker.check(context));
   }
 
   @override

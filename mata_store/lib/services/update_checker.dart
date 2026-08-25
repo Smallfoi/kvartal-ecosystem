@@ -1,0 +1,93 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// Проверка обновлений тест-сборки (Android).
+///
+/// Сравнивает versionCode приложения с version.json в S3 (его пишет CI при
+/// каждом релизе). Если на сервере версия новее — показывает баннер со ссылкой
+/// на скачивание нового APK. Не критичная фича: любая ошибка/офлайн — тихо
+/// пропускаем. iOS обновляется через TestFlight, поэтому проверка только Android.
+class UpdateChecker {
+  static const _versionUrl =
+      'https://storage.yandexcloud.net/mata-media/app/store/version.json';
+  static const _prefsDismissedCode = 'update_dismissed_code';
+  static bool _checkedThisSession = false;
+
+  static Future<void> check(BuildContext context) async {
+    if (_checkedThisSession) return;
+    _checkedThisSession = true;
+    // Only Android: iOS — через TestFlight, самхостинг-APK там не ставится.
+    if (Theme.of(context).platform != TargetPlatform.android) return;
+
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final current = int.tryParse(info.buildNumber) ?? 0;
+
+      final resp = await http
+          .get(Uri.parse(
+              '$_versionUrl?t=${DateTime.now().millisecondsSinceEpoch}'))
+          .timeout(const Duration(seconds: 6));
+      if (resp.statusCode != 200) return;
+
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final serverCode = (data['versionCode'] as num?)?.toInt() ?? 0;
+      final apkUrl =
+          (data['latestUrl'] ?? data['apkUrl']) as String?;
+      final versionName = (data['versionName'] as String?) ?? '';
+      if (serverCode <= current || apkUrl == null) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getInt(_prefsDismissedCode) == serverCode) return;
+
+      if (!context.mounted) return;
+      _showBanner(context, versionName, apkUrl, serverCode, prefs);
+    } catch (_) {
+      // тихо — обновление не должно ломать запуск
+    }
+  }
+
+  static void _showBanner(
+    BuildContext context,
+    String versionName,
+    String apkUrl,
+    int code,
+    SharedPreferences prefs,
+  ) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        leading: const Icon(Icons.system_update),
+        // staw-static — служебное уведомление об обновлении, не контент витрины
+        content: Text(
+          versionName.isNotEmpty
+              ? 'Доступна новая версия $versionName. Обновить приложение?'
+              : 'Доступно обновление приложения. Обновить?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              prefs.setInt(_prefsDismissedCode, code);
+              messenger.hideCurrentMaterialBanner();
+            },
+            child: const Text('Позже'), // staw-static
+          ),
+          TextButton(
+            onPressed: () async {
+              messenger.hideCurrentMaterialBanner();
+              await launchUrl(
+                Uri.parse(apkUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            child: const Text('Обновить'), // staw-static
+          ),
+        ],
+      ),
+    );
+  }
+}

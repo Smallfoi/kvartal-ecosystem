@@ -51,6 +51,7 @@ dependencies:
 
   # Открытие внешних ссылок (напр. страница регистрации на забег).
   url_launcher: ^6.3.1
+  package_info_plus: ^8.1.1  # текущий versionCode для проверки обновлений
 
   # Utils
   intl: ^0.20.2
