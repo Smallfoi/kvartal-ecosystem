@@ -147,6 +147,28 @@
     if (v && ["left", "center", "right", "justify"].indexOf(v) === -1) return;
     document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
       el.style.textAlign = v;
+      // Рамка заголовка обтягивает текст — центрировать внутри неё нечего.
+      // Раздвигаем на всю ширину родителя, если владелец не задал свою.
+      if (!v) {
+        if (el.dataset.stawAlignWidth) { el.style.width = ""; delete el.dataset.stawAlignWidth; }
+        var box0 = el.parentElement;
+        if (box0 && box0.dataset.stawAlignFlex) { box0.style.flex = ""; delete box0.dataset.stawAlignFlex; }
+        return;
+      }
+      if (!el.style.width) {
+        el.style.width = "100%";
+        el.dataset.stawAlignWidth = "1";
+      }
+      if (getComputedStyle(el).display === "inline") el.style.display = "block";
+      // Рамка может обтягивать текст не только сама: её родитель бывает сжатым
+      // элементом гибкой раскладки (заголовок рядом с подписью). Тогда ширина
+      // «100%» ничего не даёт — растягиваем и родителя, но не трогаем соседей.
+      var box = el.parentElement;
+      var row = box && box.parentElement;
+      if (box && row && getComputedStyle(row).display.indexOf("flex") === 0) {
+        box.style.flex = "1 1 auto";
+        box.dataset.stawAlignFlex = "1";
+      }
     });
   }
   function applyFontLocal(key, val) {
