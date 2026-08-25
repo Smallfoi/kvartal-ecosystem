@@ -78,6 +78,7 @@
   if (lenis) {
     var MODALS = [
       "pv-modal", "pr-modal", "co-modal", "cart-panel", "mobile-nav", "eco-modal",
+      "lg-modal",
     ];
     // Помечаем существующие окна/панели, чтобы их колесо не перехватывал Lenis.
     document
