@@ -3,6 +3,27 @@
 То, что уже сломалось или не сработало, и как с этим жить. **Перед работой прочитать
 целиком.** Нашёл новое — допиши сюда, чтобы второй агент не наступил на те же грабли.
 
+## Раздача приложений тестерам (Android/iOS)
+- **iOS нельзя раздать файлом.** На iPhone НЕТ sideload — `.ipa` на чужой телефон просто так не
+  поставить. Единственный путь для тест-группы — **TestFlight** (Apple), а он требует Apple
+  Developer Program ($99/год) + сборку на **macOS** (у нас Windows → GitHub Actions macOS-раннер,
+  бесплатен для публичного репо) + подпись. Не искать «простой» обходной способ — его нет.
+- **Оплата Apple $99 из РФ** — российские карты (Visa/MC/Mir) обычно НЕ проходят (санкции 2022).
+  Нужна зарубежная карта. Заложить это как риск на входе.
+- **Постоянный release-keystore обязателен и его нельзя терять.** Обновление «поверх» на Android
+  работает только при одинаковой подписи. Ключ вне git (`~/.mata-keys`, `.gitignore` на `*.jks`/
+  `key.properties`), забэкаплен в GitHub Secrets (`ANDROID_KEYSTORE_BASE64`) и Lockbox
+  (`mata-android-keystore`). GitHub Secrets — write-only, как бэкап для восстановления НЕ годится.
+- **CORS для fetch с сайта.** Бакет `mata-media` не отдавал `Access-Control-Allow-Origin` → fetch
+  `version.json` с `mata-club.ru` падал. Поставлен bucket CORS `GET/HEAD *` (put_bucket_cors через
+  ВРЕМЕННЫЙ статический ключ SA — создать/поставить/удалить). Публичным медиа `*` безопасно.
+
+## YC: у SA claude-ops нет прав resource-manager (folder-id через API не достать)
+Запрос `GET resource-manager/v1/clouds` этим SA возвращает `{}` (нет роли на список облаков) —
+folder-id и cloud-id через API НЕ получить. Брать folder-id из памяти `project-prod-deployment`
+(`b1g5ee4904hk3g398cuf`). IAM-токен (`python ~/.yc/yc_iam.py`) и доступ к Lockbox/Object Storage
+при этом работают.
+
 ## Пересоздание прод-ВМ: лимит Let's Encrypt + постоянная БД + apt (durability)
 При выносе БД на постоянный диск и durability-тестах ВМ пересоздавалась много раз за вечер.
 Три грабли:
