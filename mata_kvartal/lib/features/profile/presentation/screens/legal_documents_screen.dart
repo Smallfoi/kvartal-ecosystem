@@ -139,8 +139,12 @@ class _LegalDocView extends StatelessWidget {
   }
 
   List<Widget> _renderMarkdown(String md) {
+    // Убираем первый заголовок (# Название) — он дублирует заголовок экрана (AppBar).
+    md = md
+        .replaceAll('\r\n', '\n')
+        .replaceFirst(RegExp(r'^\s*#{1,6}[^\n]*\n?'), '');
     final widgets = <Widget>[];
-    for (final rawLine in md.replaceAll('\r\n', '\n').split('\n')) {
+    for (final rawLine in md.split('\n')) {
       final line = rawLine.trimRight();
       if (line.trim().isEmpty) {
         widgets.add(const SizedBox(height: 10));

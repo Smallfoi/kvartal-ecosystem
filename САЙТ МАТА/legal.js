@@ -89,7 +89,9 @@
   function show(doc) {
     modal.querySelector("[data-lg-title]").textContent = doc.title || "Документ";
     modal.querySelector("[data-lg-meta]").textContent = doc.version ? "Версия " + doc.version : "";
-    modal.querySelector("[data-lg-body]").innerHTML = mdToHtml(String(doc.body || ""));
+    // Убираем первый заголовок из тела (# Название) — он дублирует заголовок окна.
+    var body = String(doc.body || "").replace(/^﻿?\s*#{1,6}[^\n]*\r?\n?/, "");
+    modal.querySelector("[data-lg-body]").innerHTML = mdToHtml(body);
   }
 
   function getDocs() {
