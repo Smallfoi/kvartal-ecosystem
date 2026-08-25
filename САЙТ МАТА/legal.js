@@ -99,8 +99,33 @@
       .then(function (d) { cache = d; return d; });
   }
 
+  // Жёсткая блокировка прокрутки страницы, пока открыт документ. На телефоне
+  // overflow:hidden не всегда держит тач-скролл (фон продолжает ползти), поэтому
+  // фиксируем body (position:fixed) и запоминаем позицию; при закрытии — возвращаем.
+  // Скроллится ТОЛЬКО сам документ (.lg-card).
+  var savedScrollY = 0;
+  function lockScroll() {
+    savedScrollY = window.scrollY || window.pageYOffset || 0;
+    var b = document.body.style;
+    b.position = "fixed";
+    b.top = -savedScrollY + "px";
+    b.left = "0";
+    b.right = "0";
+    b.width = "100%";
+  }
+  function unlockScroll() {
+    var b = document.body.style;
+    b.position = "";
+    b.top = "";
+    b.left = "";
+    b.right = "";
+    b.width = "";
+    window.scrollTo(0, savedScrollY);
+  }
+
   function open(type) {
     show({ title: "Загрузка…", body: "", version: "" });
+    lockScroll();
     modal.classList.add("is-open");
     modal.setAttribute("aria-hidden", "false");
     getDocs()
@@ -122,6 +147,7 @@
   function close() {
     modal.classList.remove("is-open");
     modal.setAttribute("aria-hidden", "true");
+    unlockScroll();
   }
 
   document.addEventListener("click", function (e) {
