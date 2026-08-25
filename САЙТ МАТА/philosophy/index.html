@@ -43,9 +43,9 @@
         <a href="#project" data-edit="phil.nav.project">Наш проект</a>
       </nav>
       <div class="header-actions">
-        <!-- Корзина живёт на главной: здесь кнопка уводит в каталог, а не
-             притворяется работающей. -->
-        <a class="cart-button" href="../#catalog" aria-label="Каталог и корзина">
+        <!-- Корзина живёт на главной: отсюда уводим туда и сразу открываем её,
+             чтобы с философии можно было перейти к своим покупкам. -->
+        <a class="cart-button" href="../?cart=1" aria-label="Корзина">
           <svg class="cart-ico" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
             <path
               fill="none"
@@ -58,7 +58,8 @@
             <circle cx="9.5" cy="20" r="1.4" fill="currentColor" />
             <circle cx="17.5" cy="20" r="1.4" fill="currentColor" />
           </svg>
-          <span class="cart-label">Каталог</span>
+          <span class="cart-count" data-cart-count>0</span>
+          <span class="cart-label">Корзина</span>
         </a>
         <button
           class="nav-toggle"
@@ -91,9 +92,8 @@
 
         <div class="hero-content">
           <p class="eyebrow" data-edit="phil.hero.eyebrow">Философия бренда</p>
-          <h1 id="phil-title" class="phil-title">
-            <span class="row"><span data-edit="phil.hero.line1">Движение</span></span>
-            <span class="row"><span data-edit="phil.hero.line2">ради жизни</span></span>
+          <h1 id="phil-title" class="phil-title" data-edit="phil.hero.title">
+            Движение ради жизни
           </h1>
           <p class="hero-copy" data-edit="phil.hero.copy">
             МАТА — не про спорт ради рекордов. Про настоящую жизнь: со взлётами и падениями,

@@ -570,6 +570,16 @@ if (coModal) {
   });
 }
 
+// Приход со второй страницы («Философия» → корзина): открываем панель сразу,
+// иначе человек попадает на главную и ищет корзину заново.
+if (new URLSearchParams(location.search).get("cart") === "1") {
+  window.addEventListener("load", function () {
+    if (cartPanel && !cartPanel.classList.contains("is-open")) toggleCart();
+    // Убираем параметр из адреса: обновление страницы не должно снова открывать корзину.
+    try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
+  });
+}
+
 if (checkoutBtn) {
   checkoutBtn.addEventListener("click", () => {
     if (cartPanel.classList.contains("is-open")) toggleCart();

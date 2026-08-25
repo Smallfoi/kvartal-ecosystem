@@ -48,18 +48,21 @@
 }
 
 /* ── Первый экран ──────────────────────────────────────────────────────── */
+/* Заголовок героя. Размер подобран так, чтобы длинное слово помещалось в
+   строку на любом экране: у контейнера героя ширина 820px, и при прежних 168px
+   «Движение» вылезало за неё и срезалось (у секции overflow: hidden). */
+.hero .hero-content { width: min(1100px, 100%); }
+
 .phil-title {
   margin: 16px 0 0;
   font-family: var(--font-display);
-  font-size: clamp(54px, 11.5vw, 168px);
+  font-size: clamp(40px, 8.4vw, 112px);
   font-weight: 800;
-  line-height: 0.9;
-  letter-spacing: -0.035em;
+  line-height: 0.94;
+  letter-spacing: -0.03em;
   color: #fff;
+  text-wrap: balance;
 }
-
-.phil-title .row { display: block; overflow: hidden; }
-.phil-title .row span { display: block; }
 
 /* ── Манифест: экран «прилипает», строки зажигаются по очереди ─────────── */
 .phil-manifest {
