@@ -1,0 +1,104 @@
+name: Android release
+
+# Авто-сборка ПОДПИСАННОГО release-APK и выкладка в S3 для тестеров.
+# Триггер — пуш в main с изменениями кода приложения. Собирается только то
+# приложение, чья папка изменилась (чтобы не гнать тестерам «обновление»
+# неизменного приложения). Ручной запуск — workflow_dispatch (собирает оба).
+#
+# Ключ подписи и S3-креды — из secrets репозитория:
+#   ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_PASSWORD
+#   MEDIA_S3_ACCESS_KEY / MEDIA_S3_SECRET_KEY
+# versionCode = число коммитов (git rev-list --count) — монотонно растёт, одинаков
+# в сборке (--build-number) и в version.json, по нему приложение видит обновление.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mata_kvartal/**'
+      - 'mata_store/**'
+      - 'tools/upload_apk.py'
+      - '.github/workflows/android-release.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & publish · ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: kvartal
+            dir: mata_kvartal
+            alias: mata_kvartal
+          - app: store
+            dir: mata_store
+            alias: mata_store
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # нужно для git rev-list --count и diff
+
+      - name: Detect change
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" \
+               | grep -qE "^(${{ matrix.dir }}/|tools/upload_apk\.py|\.github/workflows/android-release\.yml)"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Папка ${{ matrix.dir }} не менялась — пропуск."
+          fi
+
+      - uses: subosito/flutter-action@v2
+        if: steps.detect.outputs.changed == 'true'
+        with:
+          flutter-version: 3.32.1
+          channel: stable
+          cache: true
+
+      - name: Restore keystore + key.properties
+        if: steps.detect.outputs.changed == 'true'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/mata-release.jks"
+          cat > "${{ matrix.dir }}/android/key.properties" <<EOF
+          storeFile=$RUNNER_TEMP/mata-release.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ matrix.alias }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Build signed APK
+        if: steps.detect.outputs.changed == 'true'
+        working-directory: ${{ matrix.dir }}
+        run: |
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          VERSION_NAME=$(grep -m1 '^version:' pubspec.yaml | sed -E 's/version:\s*//' | cut -d+ -f1 | tr -d '[:space:]')
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          flutter pub get
+          flutter build apk --release --build-number="$BUILD_NUMBER"
+
+      - name: Publish to S3
+        if: steps.detect.outputs.changed == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.MEDIA_S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MEDIA_S3_SECRET_KEY }}
+          APP: ${{ matrix.app }}
+          APK_PATH: ${{ matrix.dir }}/build/app/outputs/flutter-apk/app-release.apk
+          BUILD_NUMBER: ${{ env.BUILD_NUMBER }}
+          VERSION_NAME: ${{ env.VERSION_NAME }}
+          GIT_SHA: ${{ github.sha }}
+          NOTES: ${{ github.event.head_commit.message }}
+          BUILT_AT: ${{ github.event.head_commit.timestamp }}
+        run: |
+          pip install boto3
+          python tools/upload_apk.py
