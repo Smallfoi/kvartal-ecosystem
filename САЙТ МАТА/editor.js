@@ -138,6 +138,13 @@
     return "0 " + (1 + 3 * k).toFixed(1) + "px " + (2 + 10 * k).toFixed(1) +
       "px rgba(0,0,0," + (0.25 + 0.5 * k).toFixed(2) + ")";
   }
+  function applyAlignLocal(key, val) {
+    var v = (val || "").trim();
+    if (v && ["left", "center", "right", "justify"].indexOf(v) === -1) return;
+    document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
+      el.style.textAlign = v;
+    });
+  }
   function applyFontLocal(key, val) {
     document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
       el.style.fontFamily = stawFontFamily(val);
@@ -943,6 +950,7 @@
     if (key.indexOf("fontsize.") === 0) { var zk2 = key.slice(9); if (safeId(zk2)) applyFontSizeLocal(zk2, value); return; }
     if (key.indexOf("font.") === 0) { var fk = key.slice(5); if (safeId(fk)) applyFontLocal(fk, value); return; }
     if (key.indexOf("shadow.") === 0) { var shk = key.slice(7); if (safeId(shk)) applyShadowLocal(shk, value); return; }
+    if (key.indexOf("talign.") === 0) { var ak = key.slice(7); if (safeId(ak)) applyAlignLocal(ak, value); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") {
       document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });

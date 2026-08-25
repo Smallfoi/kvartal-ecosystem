@@ -123,6 +123,20 @@
                 style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:12px;color:#374151">Авто</button>
       </div>
     </div>
+    <div style="margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px">Выравнивание в рамке</div>
+      <div id="merch-txt-align" style="display:inline-flex;border:1px solid #d1d5db;border-radius:8px;overflow:hidden">
+        <button type="button" class="merch-al" data-align="left" title="По левому краю"
+                style="padding:8px 12px;border:0;border-right:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:14px">⯇</button>
+        <button type="button" class="merch-al" data-align="center" title="По центру"
+                style="padding:8px 12px;border:0;border-right:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:14px">≡</button>
+        <button type="button" class="merch-al" data-align="right" title="По правому краю"
+                style="padding:8px 12px;border:0;border-right:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:14px">⯈</button>
+        <button type="button" class="merch-al" data-align="justify" title="По ширине — текст растягивается на всю рамку"
+                style="padding:8px 12px;border:0;background:#fff;cursor:pointer;font-size:14px">☰</button>
+      </div>
+      <p style="font-size:11px;color:#9ca3af;margin:6px 0 0">Работает вместе с шириной рамки: растяните текст уголком, затем выберите, как он встанет внутри.</p>
+    </div>
     <label style="display:block;margin-top:12px;font-size:12px;font-weight:700;color:#374151">Тень текста: <span id="merch-txt-shadow-val" style="font-weight:600;color:#6b7280">нет</span>
       <input type="range" id="merch-txt-shadow" min="0" max="100" step="5" value="0" style="width:100%;margin-top:8px;cursor:pointer">
     </label>
@@ -742,6 +756,7 @@
   var txtOrigColor = "";   // цвет до открытия (для отмены)
   var txtFont = "", txtSize = "", txtShadow = "";           // рабочие шрифт/размер/тень
   var txtOrigFont = "", txtOrigSize = "", txtOrigShadow = ""; // до открытия (для отмены)
+  var txtAlign = "", txtOrigAlign = "";                      // выравнивание текста в рамке
   function txtPrefill(key, k, fallback) {
     return (k + "." + key) in pendingContent ? (pendingContent[k + "." + key] || "") : (fallback || "");
   }
@@ -755,12 +770,14 @@
     txtOrigFont = txtPrefill(key, "font", font); txtFont = txtOrigFont;
     txtOrigSize = txtPrefill(key, "fontsize", fontsize ? String(fontsize) : ""); txtSize = txtOrigSize;
     txtOrigShadow = txtPrefill(key, "shadow", shadow ? String(shadow) : ""); txtShadow = txtOrigShadow;
+    txtOrigAlign = txtPrefill(key, "talign", ""); txtAlign = txtOrigAlign;
     document.getElementById("merch-txt-title").textContent = "Текст: " + key;
     document.getElementById("merch-txt-val").value = value;
     if (color && /^#[0-9a-fA-F]{6}$/.test(color)) document.getElementById("merch-txt-color").value = color;
     document.getElementById("merch-txt-font").value = txtFont;
     document.getElementById("merch-txt-size").value = (parseInt(txtSize, 10) > 0) ? parseInt(txtSize, 10) : "";
     document.getElementById("merch-txt-shadow").value = parseInt(txtShadow, 10) || 0;
+    updateTxtAlignUI();
     updateTxtColorUI();
     updateTxtStyleUI();
     txtModal.style.display = "flex";
@@ -775,6 +792,24 @@
   function txtSetFont(v) { if (!txtKey) return; txtFont = v || ""; tellFrame({ type: "setContent", key: "font." + txtKey, value: txtFont }); }
   function txtSetSize(v) { if (!txtKey) return; txtSize = (parseInt(v, 10) > 0) ? String(parseInt(v, 10)) : ""; tellFrame({ type: "setContent", key: "fontsize." + txtKey, value: txtSize }); updateTxtStyleUI(); }
   function txtSetShadow(v) { if (!txtKey) return; txtShadow = (parseInt(v, 10) > 0) ? String(parseInt(v, 10)) : ""; tellFrame({ type: "setContent", key: "shadow." + txtKey, value: txtShadow }); updateTxtStyleUI(); }
+  function updateTxtAlignUI() {
+    [].forEach.call(document.querySelectorAll("#merch-txt-align .merch-al"), function (b) {
+      var on = b.getAttribute("data-align") === txtAlign;
+      b.style.background = on ? "#dff45f" : "#fff";
+      b.style.fontWeight = on ? "800" : "400";
+    });
+  }
+  function txtSetAlign(v) {
+    if (!txtKey) return;
+    // Повторное нажатие снимает выравнивание — вернуться к вёрстке без лишней кнопки.
+    txtAlign = (txtAlign === v) ? "" : v;
+    tellFrame({ type: "setContent", key: "talign." + txtKey, value: txtAlign }); // ТОЛЬКО предпросмотр
+    updateTxtAlignUI();
+  }
+  document.getElementById("merch-txt-align").addEventListener("click", function (e) {
+    var b = e.target.closest(".merch-al");
+    if (b) txtSetAlign(b.getAttribute("data-align"));
+  });
   function updateTxtColorUI() {
     var cur = (txtColor || "").toLowerCase();
     [].forEach.call(document.querySelectorAll("#merch-txt-colors .merch-sw"), function (b) {
