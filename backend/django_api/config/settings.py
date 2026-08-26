@@ -209,14 +209,21 @@ STORAGES = media_storages(os.environ)
 SITE_PREVIEW_URL = os.environ.get("SITE_PREVIEW_URL", "http://localhost:5581")
 
 # URL web-сборки приложения (SportStore) для пиксель-точного превью.
+# ВАЖНО: локальная сборка идёт в ОТДЕЛЬНУЮ папку build/web-local. В build/web
+# лежит прод-сборка для S3 (собирается с --base-href /mata-app-preview/ и с
+# боевым API) — раньше они затирали друг друга, и превью в Конструкторе гасло:
+# белый экран (файлы 404 мимо base href) либо пустые экраны (боевой API режет
+# CORS с localhost).
 # Сборка (ВСЕ флаги важны):
-#   flutter build web --release --pwa-strategy=none --no-web-resources-cdn \
-#     --dart-define=CONSOLE_EDIT=1 --dart-define=PREVIEW=1 \
-#     --dart-define=SPORT_STORE_API_BASE_URL=http://localhost:8000/v1 --no-tree-shake-icons
+#   cd mata_store && flutter build web --release --pwa-strategy=none
+#     --no-web-resources-cdn --dart-define=CONSOLE_EDIT=1 --dart-define=PREVIEW=1
+#     --dart-define=SPORT_STORE_API_BASE_URL=http://localhost:8000/v1
+#     --no-tree-shake-icons --output=build/web-local
 #   • CONSOLE_EDIT=1 — включает мост правки (без него «править нельзя»);
 #   • PREVIEW=1 — показывает черновики каталога;
-#   • --no-web-resources-cdn — CanvasKit локально (CDN gstatic недоступен → белый экран).
-# затем: cd build/web && python <preview-сервер no-store> 5579
+#   • --no-web-resources-cdn — CanvasKit локально (CDN gstatic недоступен → белый экран);
+#   • --output=build/web-local — не трогать прод-сборку в build/web.
+# затем: python tools/preview_server.py "<repo>/mata_store/build/web-local" 5579
 APP_PREVIEW_URL = os.environ.get("APP_PREVIEW_URL", "http://localhost:5579")
 
 # Куда ведёт кнопка «Открыть сайт» в меню админки. По умолчанию Django считает,
