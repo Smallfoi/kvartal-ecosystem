@@ -18,6 +18,15 @@
   `version.json` с `mata-club.ru` падал. Поставлен bucket CORS `GET/HEAD *` (put_bucket_cors через
   ВРЕМЕННЫЙ статический ключ SA — создать/поставить/удалить). Публичным медиа `*` безопасно.
 
+## iOS deployment target ≥ 13 (иначе pod install падает)
+Проверка сборки под iOS (`ios-build.yml`, unsigned, macOS-раннер, БЕЗ Apple-аккаунта)
+поймала: Квартал не собирался — `audioplayers_darwin` требует iOS ≥ 13.0, а проект
+таргетил 12.0 → `pod install` падал за ~2 мин. Подняли `IPHONEOS_DEPLOYMENT_TARGET`
+(pbxproj, 3 конфига) + `MinimumOSVersion` (`ios/Flutter/AppFrameworkInfo.plist`) до 13.0.
+Store не затронут (audioplayers нет). Вывод: **гонять `ios-build.yml` при добавлении
+плагинов** — ловит iOS-специфику бесплатно, до трат на Apple. Podfile в репо не коммичен
+(Flutter генерирует; платформа берётся из deployment target проекта).
+
 ## YC: у SA claude-ops нет прав resource-manager (folder-id через API не достать)
 Запрос `GET resource-manager/v1/clouds` этим SA возвращает `{}` (нет роли на список облаков) —
 folder-id и cloud-id через API НЕ получить. Брать folder-id из памяти `project-prod-deployment`
