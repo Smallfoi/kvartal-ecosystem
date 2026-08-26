@@ -25,23 +25,9 @@ import '../../features/tools/presentation/screens/hr_zones_screen.dart';
 import '../../features/tools/presentation/screens/shoe_size_screen.dart';
 import '../../features/tools/presentation/screens/cadence_metronome_screen.dart';
 import '../../features/tools/presentation/screens/interval_timer_screen.dart';
+import '../../features/profile/presentation/screens/about_app_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
-
-/// Короткий fade при переключении вкладок таб-бара — вместо NoTransitionPage.
-/// Прокачивает несколько кадров, поэтому тяжёлый экран (карта и соседние) успевает
-/// скомпоноваться и НЕ показывается пустой первый кадр (баг «после карты любой
-/// экран пустой, лечится переходом туда-обратно»).
-CustomTransitionPage<void> _tabPage(LocalKey key, Widget child) {
-  return CustomTransitionPage<void>(
-    key: key,
-    transitionDuration: const Duration(milliseconds: 160),
-    reverseTransitionDuration: const Duration(milliseconds: 160),
-    child: child,
-    transitionsBuilder: (_, animation, __, page) =>
-        FadeTransition(opacity: animation, child: page),
-  );
-}
 
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(this._ref) {
@@ -71,10 +57,16 @@ class _RouterNotifier extends ChangeNotifier {
   }
 }
 
-// Ключ навигатора шелла (под таб-баром). Нужен, чтобы при переключении вкладок
-// закрывать открытые модальные листы (погода, выбор кроссовок и т.п.) — иначе они
-// висят поверх новой вкладки (см. [[feedback-no-repeat-fixed-bugs]]).
-final shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
+// У каждой вкладки — свой навигатор (ветка). Ключи нужны, чтобы при уходе с
+// вкладки закрыть открытый на ней модальный лист (погода, выбор кроссовок) —
+// иначе он висит поверх новой вкладки (см. [[feedback-no-repeat-fixed-bugs]]).
+final tabNavigatorKeys = <GlobalKey<NavigatorState>>[
+  GlobalKey<NavigatorState>(debugLabel: 'tab-map'),
+  GlobalKey<NavigatorState>(debugLabel: 'tab-run'),
+  GlobalKey<NavigatorState>(debugLabel: 'tab-leaderboard'),
+  GlobalKey<NavigatorState>(debugLabel: 'tab-club'),
+  GlobalKey<NavigatorState>(debugLabel: 'tab-profile'),
+];
 
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier(ref);
@@ -107,19 +99,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/club/scan',
         builder: (_, __) => const ClubScanScreen(),
       ),
-      ShellRoute(
-        navigatorKey: shellNavigatorKey,
-        // Вход со сплэша (?from=splash) — приложение поднимается снизу поверх
-        // графита, пока знак сплэша улетает в чип шапки (финал дизайн-проекта
-        // 24d1c230). Любой другой вход/переключение табов — без анимации.
-        pageBuilder: (context, state, child) {
+      // Вкладки — ветки с собственными навигаторами: экран вкладки НЕ
+      // пересоздаётся при переключении, а сохраняется (индексированный стек).
+      // Из-за пересоздания и возникал баг «после карты соседний экран пустой»:
+      // тяжёлая карта сносилась, а новый экран строился в том же кадре.
+      // Побочно чинится и «вкладка забывает, куда ты в ней зашёл».
+      StatefulShellRoute.indexedStack(
+        pageBuilder: (context, state, navigationShell) {
+          final scaffold = MainScaffold(navigationShell: navigationShell);
           final reduceMotion =
               MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+          // Вход со сплэша (?from=splash) — приложение поднимается снизу поверх
+          // графита, пока знак сплэша улетает в чип шапки (финал дизайн-проекта
+          // 24d1c230). Любой другой вход/переключение вкладок — без анимации.
           if (state.uri.queryParameters['from'] == 'splash' && !reduceMotion) {
-            return CustomTransitionPage(
+            return CustomTransitionPage<void>(
               key: state.pageKey,
               transitionDuration: const Duration(milliseconds: 520),
-              child: MainScaffold(child: child),
+              child: scaffold,
               transitionsBuilder: (_, animation, __, page) => SlideTransition(
                 position: animation.drive(
                   Tween(begin: const Offset(0, 1), end: Offset.zero)
@@ -129,108 +126,120 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             );
           }
-          return NoTransitionPage(
-            key: state.pageKey,
-            child: MainScaffold(child: child),
-          );
+          return NoTransitionPage<void>(key: state.pageKey, child: scaffold);
         },
-        routes: [
-          GoRoute(
-            path: '/map',
-            pageBuilder: (_, state) => _tabPage(state.pageKey, const MapScreen()),
+        branches: [
+          // 0 — Карта
+          StatefulShellBranch(
+            navigatorKey: tabNavigatorKeys[0],
+            routes: [
+              GoRoute(path: '/map', builder: (_, __) => const MapScreen()),
+            ],
           ),
-          GoRoute(
-            path: '/run',
-            pageBuilder: (_, state) => _tabPage(state.pageKey, const RunScreen()),
+          // 1 — Бег
+          StatefulShellBranch(
+            navigatorKey: tabNavigatorKeys[1],
+            routes: [
+              GoRoute(path: '/run', builder: (_, __) => const RunScreen()),
+              // Настройка доступа к геолокации — внутри вкладки, чтобы таб-бар
+              // продолжал переключать экраны (а не модальный лист, он залипал).
+              GoRoute(
+                path: '/run/location-access',
+                builder: (_, __) => const LocationSetupScreen(),
+              ),
+            ],
           ),
-          // Настройка доступа к геолокации — маршрут внутри шелла, чтобы таб-бар
-          // продолжал переключать экраны (а не модальный лист, который залипал).
-          GoRoute(
-            path: '/run/location-access',
-            builder: (_, __) => const LocationSetupScreen(),
+          // 2 — Рейтинг
+          StatefulShellBranch(
+            navigatorKey: tabNavigatorKeys[2],
+            routes: [
+              GoRoute(
+                path: '/leaderboard',
+                builder: (_, __) => const LeaderboardScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/leaderboard',
-            pageBuilder: (_, state) =>
-                _tabPage(state.pageKey, const LeaderboardScreen()),
+          // 3 — Клуб (внутри него живут «Старты»)
+          StatefulShellBranch(
+            navigatorKey: tabNavigatorKeys[3],
+            routes: [
+              GoRoute(path: '/club', builder: (_, __) => const ClubScreen()),
+              GoRoute(path: '/races', builder: (_, __) => const RacesScreen()),
+              // Детали забега — данные передаём через extra.
+              GoRoute(
+                path: '/races/detail',
+                builder: (_, state) =>
+                    RaceDetailScreen(race: state.extra as RaceEvent),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/races',
-            pageBuilder: (_, state) => _tabPage(state.pageKey, const RacesScreen()),
-          ),
-          // Детали забега — маршрут внутри шелла (данные передаём через extra).
-          GoRoute(
-            path: '/races/detail',
-            builder: (_, state) =>
-                RaceDetailScreen(race: state.extra as RaceEvent),
-          ),
-          GoRoute(
-            path: '/club',
-            pageBuilder: (_, state) => _tabPage(state.pageKey, const ClubScreen()),
-          ),
-          GoRoute(
-            path: '/profile',
-            pageBuilder: (_, state) =>
-                _tabPage(state.pageKey, const ProfileScreen()),
-          ),
-          // Под-экраны профиля — маршруты внутри шелла, чтобы таб-бар их переключал
-          // (раньше открывались Navigator.push и «залипали» поверх вкладок).
-          GoRoute(
-            path: '/profile/points',
-            builder: (_, __) => const PointsHistoryScreen(),
-          ),
-          GoRoute(
-            path: '/profile/stats',
-            builder: (_, __) => const StatsScreen(),
-          ),
-          GoRoute(
-            path: '/profile/shoes',
-            builder: (_, __) => const ShoesScreen(),
-          ),
-          GoRoute(
-            path: '/profile/edit',
-            builder: (_, __) => const EditProfileScreen(),
-          ),
-          GoRoute(
-            path: '/profile/settings',
-            builder: (_, __) => const SettingsScreen(),
-          ),
-          GoRoute(
-            path: '/profile/notifications',
-            builder: (_, __) => const NotificationsScreen(),
-          ),
-          GoRoute(
-            path: '/profile/privacy',
-            builder: (_, __) => const PrivacyScreen(),
-          ),
-          GoRoute(
-            path: '/profile/legal',
-            builder: (_, __) => const LegalDocumentsScreen(),
-          ),
-          // Инструменты бегуна — отдельная вкладка (хаб) + под-экраны /tools/*.
-          GoRoute(
-            path: '/tools',
-            pageBuilder: (_, __) => const NoTransitionPage(child: ToolsScreen()),
-          ),
-          GoRoute(
-            path: '/tools/pace',
-            builder: (_, __) => const PaceConverterScreen(),
-          ),
-          GoRoute(
-            path: '/tools/hr-zones',
-            builder: (_, __) => const HrZonesScreen(),
-          ),
-          GoRoute(
-            path: '/tools/shoe-size',
-            builder: (_, __) => const ShoeSizeScreen(),
-          ),
-          GoRoute(
-            path: '/tools/metronome',
-            builder: (_, __) => const CadenceMetronomeScreen(),
-          ),
-          GoRoute(
-            path: '/tools/interval',
-            builder: (_, __) => const IntervalTimerScreen(),
+          // 4 — Профиль (внутри него живёт «Сервис»)
+          StatefulShellBranch(
+            navigatorKey: tabNavigatorKeys[4],
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (_, __) => const ProfileScreen(),
+              ),
+              GoRoute(
+                path: '/profile/points',
+                builder: (_, __) => const PointsHistoryScreen(),
+              ),
+              GoRoute(
+                path: '/profile/stats',
+                builder: (_, __) => const StatsScreen(),
+              ),
+              GoRoute(
+                path: '/profile/shoes',
+                builder: (_, __) => const ShoesScreen(),
+              ),
+              GoRoute(
+                path: '/profile/edit',
+                builder: (_, __) => const EditProfileScreen(),
+              ),
+              GoRoute(
+                path: '/profile/settings',
+                builder: (_, __) => const SettingsScreen(),
+              ),
+              GoRoute(
+                path: '/profile/about',
+                builder: (_, __) => const AboutAppScreen(),
+              ),
+              GoRoute(
+                path: '/profile/notifications',
+                builder: (_, __) => const NotificationsScreen(),
+              ),
+              GoRoute(
+                path: '/profile/privacy',
+                builder: (_, __) => const PrivacyScreen(),
+              ),
+              GoRoute(
+                path: '/profile/legal',
+                builder: (_, __) => const LegalDocumentsScreen(),
+              ),
+              // Инструменты бегуна — хаб + под-экраны /tools/*.
+              GoRoute(path: '/tools', builder: (_, __) => const ToolsScreen()),
+              GoRoute(
+                path: '/tools/pace',
+                builder: (_, __) => const PaceConverterScreen(),
+              ),
+              GoRoute(
+                path: '/tools/hr-zones',
+                builder: (_, __) => const HrZonesScreen(),
+              ),
+              GoRoute(
+                path: '/tools/shoe-size',
+                builder: (_, __) => const ShoeSizeScreen(),
+              ),
+              GoRoute(
+                path: '/tools/metronome',
+                builder: (_, __) => const CadenceMetronomeScreen(),
+              ),
+              GoRoute(
+                path: '/tools/interval',
+                builder: (_, __) => const IntervalTimerScreen(),
+              ),
+            ],
           ),
         ],
       ),

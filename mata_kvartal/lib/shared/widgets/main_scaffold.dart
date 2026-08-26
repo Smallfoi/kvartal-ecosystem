@@ -12,8 +12,9 @@ import '../../features/shoes/presentation/shoe_prompt.dart';
 import 'kvartal_logo.dart';
 
 class MainScaffold extends ConsumerStatefulWidget {
-  final Widget child;
-  const MainScaffold({super.key, required this.child});
+  /// Ветки вкладок: экраны сохраняются между переключениями (см. app_router).
+  final StatefulNavigationShell navigationShell;
+  const MainScaffold({super.key, required this.navigationShell});
 
   @override
   ConsumerState<MainScaffold> createState() => _MainScaffoldState();
@@ -24,24 +25,16 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   bool _askedPending = false;
   bool _asking = false;
 
-  int _locationToIndex(String location) {
-    if (location.startsWith('/map')) return 0;
-    if (location.startsWith('/run')) return 1;
-    if (location.startsWith('/leaderboard')) return 2;
-    // «Старты» живут внутри Клуба, «Сервис» — внутри Профиля: подсвечиваем
-    // владельца раздела, чтобы вкладка не «гасла» при переходе вглубь.
-    if (location.startsWith('/club') || location.startsWith('/races')) return 3;
-    if (location.startsWith('/profile') || location.startsWith('/tools')) return 4;
-    return 0;
-  }
-
-  void _onTap(BuildContext context, int index) {
-    const routes = ['/map', '/run', '/leaderboard', '/club', '/profile', '/races', '/tools'];
-    // Закрываем открытый модальный лист (погода, выбор кроссовок и т.п.) на текущей
-    // вкладке — иначе он висит поверх новой вкладки при переключении.
-    final shellNav = shellNavigatorKey.currentState;
-    if (shellNav != null && shellNav.canPop()) shellNav.pop();
-    context.go(routes[index]);
+  void _onTap(int index) {
+    // Закрываем модальный лист/диалог, открытый на покидаемой вкладке (погода,
+    // выбор кроссовок): страничные маршруты вкладки не трогаем — их ведёт роутер.
+    final nav = tabNavigatorKeys[widget.navigationShell.currentIndex].currentState;
+    nav?.popUntil((route) => route is! PopupRoute);
+    // Повторное нажатие активной вкладки — возврат в её начало.
+    widget.navigationShell.goBranch(
+      index,
+      initialLocation: index == widget.navigationShell.currentIndex,
+    );
   }
 
   /// При открытии приложения, как только подгрузились купленные кроссовки,
@@ -70,15 +63,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Новые покупки могли подгрузиться позже первого кадра — реагируем на это.
     ref.listen<ShoesState>(shoesProvider, (_, __) => _maybeAskPending());
 
-    final location = GoRouterState.of(context).uri.toString();
-    final currentIndex = _locationToIndex(location);
-
     return Scaffold(
       extendBody: true,
-      body: widget.child,
+      body: widget.navigationShell,
       bottomNavigationBar: _KvartalNavBar(
-        currentIndex: currentIndex,
-        onTap: (i) => _onTap(context, i),
+        currentIndex: widget.navigationShell.currentIndex,
+        onTap: _onTap,
       ),
     );
   }

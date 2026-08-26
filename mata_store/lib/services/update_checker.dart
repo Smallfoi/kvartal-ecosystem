@@ -12,11 +12,43 @@ import 'package:url_launcher/url_launcher.dart';
 /// каждом релизе). Если на сервере версия новее — показывает баннер со ссылкой
 /// на скачивание нового APK. Не критичная фича: любая ошибка/офлайн — тихо
 /// пропускаем. iOS обновляется через TestFlight, поэтому проверка только Android.
+/// Что лежит на раздаче: версия, номер сборки и ссылка на APK.
+class UpdateInfo {
+  final String versionName;
+  final int versionCode;
+  final String? apkUrl;
+  const UpdateInfo({
+    required this.versionName,
+    required this.versionCode,
+    this.apkUrl,
+  });
+}
+
 class UpdateChecker {
   static const _versionUrl =
       'https://storage.yandexcloud.net/mata-media/app/store/version.json';
   static const _prefsDismissedCode = 'update_dismissed_code';
   static bool _checkedThisSession = false;
+
+  /// Читает version.json с раздачи. null — нет связи/ответ не разобран.
+  /// Используют и баннер обновления, и экран «О приложении».
+  static Future<UpdateInfo?> fetchLatest() async {
+    try {
+      final resp = await http
+          .get(Uri.parse(
+              '$_versionUrl?t=${DateTime.now().millisecondsSinceEpoch}'))
+          .timeout(const Duration(seconds: 6));
+      if (resp.statusCode != 200) return null;
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return UpdateInfo(
+        versionName: (data['versionName'] as String?) ?? '',
+        versionCode: (data['versionCode'] as num?)?.toInt() ?? 0,
+        apkUrl: (data['latestUrl'] ?? data['apkUrl']) as String?,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   static Future<void> check(BuildContext context) async {
     if (_checkedThisSession) return;
@@ -28,24 +60,16 @@ class UpdateChecker {
       final info = await PackageInfo.fromPlatform();
       final current = int.tryParse(info.buildNumber) ?? 0;
 
-      final resp = await http
-          .get(Uri.parse(
-              '$_versionUrl?t=${DateTime.now().millisecondsSinceEpoch}'))
-          .timeout(const Duration(seconds: 6));
-      if (resp.statusCode != 200) return;
-
-      final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      final serverCode = (data['versionCode'] as num?)?.toInt() ?? 0;
-      final apkUrl =
-          (data['latestUrl'] ?? data['apkUrl']) as String?;
-      final versionName = (data['versionName'] as String?) ?? '';
-      if (serverCode <= current || apkUrl == null) return;
+      final latest = await fetchLatest();
+      if (latest == null) return;
+      final apkUrl = latest.apkUrl;
+      if (latest.versionCode <= current || apkUrl == null) return;
 
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getInt(_prefsDismissedCode) == serverCode) return;
+      if (prefs.getInt(_prefsDismissedCode) == latest.versionCode) return;
 
       if (!context.mounted) return;
-      _showBanner(context, versionName, apkUrl, serverCode, prefs);
+      _showBanner(context, latest.versionName, apkUrl, latest.versionCode, prefs);
     } catch (_) {
       // тихо — обновление не должно ломать запуск
     }

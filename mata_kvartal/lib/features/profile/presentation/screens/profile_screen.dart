@@ -1,3 +1,4 @@
+import '../../../../shared/widgets/tab_visibility.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,18 +23,17 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TabVisibility {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // При показе профиля тянем баланс/обувь И свежий профиль (единый аватар).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(loyaltyProvider.notifier).refresh();
-      ref.read(shoesProvider.notifier).refresh();
-      ref.read(authProvider.notifier).restoreSession();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
   }
+
+  @override
+  void onTabShown() => _refresh();   // вернулись на вкладку — тянем свежее
 
   @override
   void dispose() {
@@ -754,7 +754,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: CupertinoIcons.info_circle_fill,
               label:
                   '\u041e \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0438',
-              onTap: () {},
+              onTap: () => context.push('/profile/about'),
             ),
             const SizedBox(height: 16),
             _SettingsTile(

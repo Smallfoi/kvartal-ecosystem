@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/remote_text.dart';
+import 'about_app_screen.dart';
 import 'account_data_screen.dart';
 import 'edit_profile_screen.dart';
 import 'legal_documents_screen.dart';
@@ -88,6 +89,12 @@ class SettingsScreen extends StatelessWidget {
             contentKey: 'app.settings.legal',
             label: 'Документы',
             onTap: () => _push(context, const LegalDocumentsScreen()),
+          ),
+          _SettingsTile(
+            icon: Icons.info_outline,
+            contentKey: 'app.settings.about',
+            label: 'О приложении',
+            onTap: () => _push(context, const AboutAppScreen()),
           ),
           const SizedBox(height: 12),
           _SettingsTile(
