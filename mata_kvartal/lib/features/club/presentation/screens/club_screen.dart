@@ -1,3 +1,4 @@
+import '../../../../shared/widgets/tab_visibility.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,7 +18,7 @@ class ClubScreen extends ConsumerStatefulWidget {
   ConsumerState<ClubScreen> createState() => _ClubScreenState();
 }
 
-class _ClubScreenState extends ConsumerState<ClubScreen> {
+class _ClubScreenState extends ConsumerState<ClubScreen> with TabVisibility {
   final _scrollCtrl = ScrollController(keepScrollOffset: false);
 
   @override
@@ -27,6 +28,9 @@ class _ClubScreenState extends ConsumerState<ClubScreen> {
       (_) => ref.read(clubProvider.notifier).refresh(),
     );
   }
+
+  @override
+  void onTabShown() => ref.read(clubProvider.notifier).refresh();
 
   @override
   void dispose() {

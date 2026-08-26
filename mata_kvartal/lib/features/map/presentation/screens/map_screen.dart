@@ -1,3 +1,4 @@
+import '../../../../shared/widgets/tab_visibility.dart';
 import 'dart:async' show Timer;
 import 'dart:math' show max;
 import 'dart:ui' show ImageFilter;
@@ -23,7 +24,7 @@ class MapScreen extends ConsumerStatefulWidget {
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends ConsumerState<MapScreen> {
+class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
   final _mapController = MapController();
   final _flashing = <String>{};
 
@@ -93,6 +94,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     super.initState();
     _territories = ref.read(territoryProvider.notifier);
     _territoryRefreshTimer = Timer.periodic(_territoryRefreshInterval, (_) {
+      // Карта живёт между переключениями вкладок (см. app_router), поэтому на
+      // скрытой вкладке сеть не дёргаем — иначе опрос шёл бы фоном всегда.
+      if (!isTabVisible) return;
       _loadTerritories();
       // Досылаем отложенные офлайн-захваты, когда вернулась связь (S-07).
       _territories.flushQueue();
@@ -104,9 +108,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   @override
+  void onTabShown() {
+    // Вернулись на карту — сразу подтягиваем захваты за время отсутствия.
+    _scheduleTerritoryLoad();
+    _territories.flushQueue();
+  }
+
+  @override
   void dispose() {
     _territoryDebounce?.cancel();
     _territoryRefreshTimer?.cancel();
+    _mapController.dispose();
     super.dispose();
   }
 

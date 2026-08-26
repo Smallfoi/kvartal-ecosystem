@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/tab_visibility.dart';
 import '../../data/leaderboard_provider.dart';
 
 class LeaderboardScreen extends ConsumerStatefulWidget {
@@ -12,8 +13,17 @@ class LeaderboardScreen extends ConsumerStatefulWidget {
   ConsumerState<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
+class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
+    with TabVisibility {
   int _tab = 0;
+
+  @override
+  void onTabShown() {
+    // Вернулись на вкладку — перечитываем рейтинг (экран живёт, сам не обновится).
+    ref.invalidate(leaderboardUsersProvider);
+    ref.invalidate(leaderboardClubsProvider);
+    ref.invalidate(leaderboardDistrictsProvider);
+  }
 
   @override
   Widget build(BuildContext context) {

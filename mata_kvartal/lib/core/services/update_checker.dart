@@ -12,21 +12,28 @@ import '../theme/app_colors.dart';
 /// каждом релизе). Если на сервере версия новее — показывает баннер со ссылкой
 /// на скачивание нового APK. Не критичная фича: любая ошибка/офлайн — тихо
 /// пропускаем. iOS обновляется через TestFlight, поэтому проверка только Android.
+/// Что лежит на раздаче: версия, номер сборки и ссылка на APK.
+class UpdateInfo {
+  final String versionName;
+  final int versionCode;
+  final String? apkUrl;
+  const UpdateInfo({
+    required this.versionName,
+    required this.versionCode,
+    this.apkUrl,
+  });
+}
+
 class UpdateChecker {
   static const _versionUrl =
       'https://storage.yandexcloud.net/mata-media/app/kvartal/version.json';
   static const _prefsDismissedCode = 'update_dismissed_code';
   static bool _checkedThisSession = false;
 
-  static Future<void> check(BuildContext context) async {
-    if (_checkedThisSession) return;
-    _checkedThisSession = true;
-    if (Theme.of(context).platform != TargetPlatform.android) return;
-
+  /// Читает version.json с раздачи. null — нет связи/ответ не разобран.
+  /// Используют и баннер обновления, и экран «О приложении».
+  static Future<UpdateInfo?> fetchLatest() async {
     try {
-      final info = await PackageInfo.fromPlatform();
-      final current = int.tryParse(info.buildNumber) ?? 0;
-
       final resp = await Dio().get<Map<String, dynamic>>(
         _versionUrl,
         queryParameters: {'t': DateTime.now().millisecondsSinceEpoch},
@@ -37,18 +44,36 @@ class UpdateChecker {
         ),
       );
       final data = resp.data;
-      if (resp.statusCode != 200 || data == null) return;
+      if (resp.statusCode != 200 || data == null) return null;
+      return UpdateInfo(
+        versionName: (data['versionName'] as String?) ?? '',
+        versionCode: (data['versionCode'] as num?)?.toInt() ?? 0,
+        apkUrl: (data['latestUrl'] ?? data['apkUrl']) as String?,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
-      final serverCode = (data['versionCode'] as num?)?.toInt() ?? 0;
-      final apkUrl = (data['latestUrl'] ?? data['apkUrl']) as String?;
-      final versionName = (data['versionName'] as String?) ?? '';
-      if (serverCode <= current || apkUrl == null) return;
+  static Future<void> check(BuildContext context) async {
+    if (_checkedThisSession) return;
+    _checkedThisSession = true;
+    if (Theme.of(context).platform != TargetPlatform.android) return;
+
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final current = int.tryParse(info.buildNumber) ?? 0;
+
+      final latest = await fetchLatest();
+      if (latest == null) return;
+      final apkUrl = latest.apkUrl;
+      if (latest.versionCode <= current || apkUrl == null) return;
 
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getInt(_prefsDismissedCode) == serverCode) return;
+      if (prefs.getInt(_prefsDismissedCode) == latest.versionCode) return;
 
       if (!context.mounted) return;
-      _showBanner(context, versionName, apkUrl, serverCode, prefs);
+      _showBanner(context, latest.versionName, apkUrl, latest.versionCode, prefs);
     } catch (_) {
       // тихо — обновление не должно ломать запуск
     }
