@@ -1,0 +1,53 @@
+name: iOS build (unsigned)
+
+# Проверка, что приложения СОБИРАЮТСЯ под iOS — без подписи и без Apple-аккаунта.
+# Ловит iOS-специфику (поды/плагины/Info.plist/фоновый GPS) заранее, до TestFlight.
+# Не гейт: справочная проверка. Реальная подпись/заливка в TestFlight — отдельно,
+# после Apple Developer владельца.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mata_kvartal/**'
+      - 'mata_store/**'
+      - '.github/workflows/ios-build.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mata_kvartal/**'
+      - 'mata_store/**'
+      - '.github/workflows/ios-build.yml'
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: iOS build · ${{ matrix.app }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { app: kvartal, dir: mata_kvartal }
+          - { app: store, dir: mata_store }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.32.1
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        working-directory: ${{ matrix.dir }}
+        run: flutter pub get
+
+      # --no-codesign: собираем .app без подписи (Apple-аккаунт не нужен). Падение
+      # здесь = реальная iOS-проблема сборки (поды/плагины), а не отсутствие ключей.
+      - name: Build iOS (no codesign)
+        working-directory: ${{ matrix.dir }}
+        run: flutter build ios --release --no-codesign
