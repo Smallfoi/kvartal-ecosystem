@@ -102,35 +102,6 @@ server {
     root /usr/share/nginx/site;
     index index.html;
 
-    # Web-версия «Квартала» — https://mata-club.ru/kvartal/
-    # Нужна владельцам айфонов: поставить приложение файлом Apple не даёт, а
-    # TestFlight требует платного аккаунта. Ссылку открывают в Safari и кладут
-    # на экран «Домой». Сборка живёт в S3 (её обновляет воркфлоу Kvartal web),
-    # но отдаём её МЫ — со своего домена, иначе браузер заблокирует запросы к
-    # API по CORS. Маршрутизация внутри приложения хэшевая (#/map), поэтому
-    # SPA-фолбэк не нужен.
-    location = /kvartal { return 301 https://$host/kvartal/; }
-    # Корень раздела: S3 не отдаёт index.html по «папке» — просим его явно.
-    location = /kvartal/ {
-        proxy_pass https://storage.yandexcloud.net/mata-media/kvartal-web/index.html;
-        proxy_set_header Host storage.yandexcloud.net;
-        proxy_ssl_server_name on;
-        proxy_hide_header x-amz-request-id;
-        proxy_hide_header x-amz-id-2;
-        proxy_hide_header Set-Cookie;
-        add_header X-Content-Type-Options "nosniff" always;
-    }
-    location /kvartal/ {
-        proxy_pass https://storage.yandexcloud.net/mata-media/kvartal-web/;
-        proxy_set_header Host storage.yandexcloud.net;
-        proxy_ssl_server_name on;
-        proxy_hide_header x-amz-request-id;
-        proxy_hide_header x-amz-id-2;
-        proxy_hide_header Set-Cookie;
-        proxy_intercept_errors off;
-        add_header X-Content-Type-Options "nosniff" always;
-    }
-
     location / {
         try_files $uri $uri/ /index.html;
         add_header X-Content-Type-Options "nosniff" always;
