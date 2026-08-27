@@ -1,0 +1,151 @@
+name: iOS TestFlight
+
+# Сборка, подпись и заливка приложения в TestFlight.
+#
+# Запускается ВРУЧНУЮ (кнопка Run workflow) — заливка в Apple не должна происходить
+# на каждый пуш: у неё свои квоты и своя цена ошибки.
+#
+# Что нужно от владельца (см. docs/TESTFLIGHT.md) — секреты репозитория:
+#   APPSTORE_ISSUER_ID   — Issuer ID из App Store Connect → Users and Access → Integrations
+#   APPSTORE_KEY_ID      — Key ID того же ключа
+#   APPSTORE_PRIVATE_KEY — содержимое файла AuthKey_XXXX.p8 целиком (вместе с BEGIN/END)
+#   APPLE_TEAM_ID        — Team ID (10 символов) из Membership
+#
+# Подпись — автоматическая (-allowProvisioningUpdates): Xcode сам создаёт сертификат
+# и профиль по ключу API. Ручной возни с сертификатами и профилями не требуется.
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Какое приложение заливаем
+        required: true
+        type: choice
+        options: [kvartal, store]
+        default: kvartal
+      notes:
+        description: Что нового в этой сборке (увидят тестеры)
+        required: false
+        type: string
+
+concurrency:
+  group: ios-testflight-${{ inputs.app }}
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: TestFlight · ${{ inputs.app }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # номер сборки = число коммитов, нужна вся история
+
+      - name: Проверить секреты Apple
+        env:
+          ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          missing=""
+          [ -z "$ISSUER" ] && missing="$missing APPSTORE_ISSUER_ID"
+          [ -z "$KEY_ID" ] && missing="$missing APPSTORE_KEY_ID"
+          [ -z "$KEY" ]    && missing="$missing APPSTORE_PRIVATE_KEY"
+          [ -z "$TEAM" ]   && missing="$missing APPLE_TEAM_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Не заданы секреты:$missing — см. docs/TESTFLIGHT.md"
+            exit 1
+          fi
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.32.1
+          channel: stable
+          cache: true
+
+      - name: Подготовить ключ App Store Connect
+        env:
+          KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s' "$KEY" > ~/private_keys/AuthKey_${KEY_ID}.p8
+          chmod 600 ~/private_keys/AuthKey_${KEY_ID}.p8
+
+      # Номер сборки должен строго расти — Apple отклоняет повтор. Берём число
+      # коммитов, как в android-release.yml: одна и та же система нумерации на обеих
+      # платформах, и номер совпадает с тем, что видно на странице тест-сборок.
+      - name: Собрать (без подписи Flutter, подпишет xcodebuild)
+        id: build
+        working-directory: ${{ inputs.app == 'kvartal' && 'mata_kvartal' || 'mata_store' }}
+        run: |
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          flutter pub get
+          flutter build ios --release --no-codesign --build-number "$BUILD_NUMBER"
+
+      - name: Архив и экспорт .ipa
+        working-directory: ${{ inputs.app == 'kvartal' && 'mata_kvartal' || 'mata_store' }}/ios
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: |
+          cat > ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${TEAM}</string>
+            <key>uploadSymbols</key><true/>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner \
+            -configuration Release -archivePath build/Runner.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${KEY_ID}.p8 \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER" \
+            archive
+
+          xcodebuild -exportArchive -archivePath build/Runner.xcarchive \
+            -exportOptionsPlist ExportOptions.plist -exportPath build/ipa \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${KEY_ID}.p8 \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER"
+
+      - name: Залить в TestFlight
+        working-directory: ${{ inputs.app == 'kvartal' && 'mata_kvartal' || 'mata_store' }}/ios
+        env:
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: |
+          IPA=$(ls build/ipa/*.ipa | head -1)
+          echo "Заливаю $IPA"
+          xcrun altool --upload-app -f "$IPA" -t ios \
+            --apiKey "$KEY_ID" --apiIssuer "$ISSUER"
+
+      # .ipa кладём в артефакты: если заливка упадёт на стороне Apple, файл уже собран
+      # и его можно залить вручную через Transporter, не гоняя сборку заново.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ inputs.app }}-ios-${{ steps.build.outputs.build_number }}
+          path: ${{ inputs.app == 'kvartal' && 'mata_kvartal' || 'mata_store' }}/ios/build/ipa/*.ipa
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Итог
+        run: |
+          echo "### TestFlight · ${{ inputs.app }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Сборка **${{ steps.build.outputs.build_number }}** отправлена в App Store Connect." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Обработка на стороне Apple занимает 5–30 минут. После неё сборка появится" >> "$GITHUB_STEP_SUMMARY"
+          echo "в TestFlight и уйдёт тестерам из группы." >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${{ inputs.notes }}" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Что нового: ${{ inputs.notes }}" >> "$GITHUB_STEP_SUMMARY"
+          fi

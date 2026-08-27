@@ -47,6 +47,16 @@
 	<string>КВАРТАЛ использует GPS в фоновом режиме, чтобы продолжать трекинг при заблокированном экране.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>КВАРТАЛ использует GPS в фоновом режиме для трекинга пробежки.</string>
+	<!-- Без этого режима iOS усыпляет приложение при погашенном экране и трекинг
+	     пробежки обрывается: тексты разрешений «в фоне» сами по себе ничего не дают. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
+	<!-- Мы используем только стандартный HTTPS — это освобождённое шифрование.
+	     Без ответа заранее каждая сборка висит в TestFlight как «Missing Compliance». -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
