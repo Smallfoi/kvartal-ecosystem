@@ -109,12 +109,16 @@
       var box2 = manifest.getBoundingClientRect();
       var total = manifest.offsetHeight - window.innerHeight;
       var progress = total > 0 ? Math.min(1, Math.max(0, -box2.top / total)) : 0;
-      // Первая строка проявляется, когда секция ВОШЛА в экран — это и есть её
-      // анимация. Раньше она горела всегда (казалось, анимации нет), а привязка
-      // к прогрессу прокрутки делала её невидимой там, где не скроллят (Конструктор).
-      var seen = box2.top < window.innerHeight * 0.85 && box2.bottom > 0;
-      var active = seen ? Math.floor(progress * (lines.length + 0.4)) : -1;
-      lines.forEach(function (line, i) { line.classList.toggle("is-on", i <= active); });
+      // У каждой строки свой порог прокрутки — включая первую. Раньше она зажигалась
+      // сразу, как только секция появлялась на экране: пока человек до неё доезжал,
+      // она уже стояла открытой, и анимация «начиналась со второй строки».
+      // Порог первой намеренно небольшой: секция как раз прилипла и её читают.
+      // Пороги подобраны замером: первая зажигается вскоре после прилипания секции
+      // (её появление видно), последняя успевает до конца прокрутки секции.
+      lines.forEach(function (line, i) {
+        line.classList.toggle("is-on", progress >= 0.1 + i * 0.18);
+      });
+
     }
   }
 
