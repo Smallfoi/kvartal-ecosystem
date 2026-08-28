@@ -480,7 +480,10 @@
     s.id = "staw-xl-css";
     s.textContent = "@media (max-width:" + (POS_MIN_W - 1) + "px){" +
       ".staw-newlabel{position:static!important;max-width:100%!important;" +
-      "margin:18px 0 0!important;translate:none!important}}";
+      // Поля как у остальных секций: в потоке надпись — прямой ребёнок секции и
+      // иначе прилипает к самому краю экрана, мимо колонки текста.
+      "margin:18px 0 0!important;padding:0 var(--pad-x,20px)!important;" +
+      "box-sizing:border-box!important;translate:none!important}}";
     (document.head || document.documentElement).appendChild(s);
   }
   var _posVals = {};     // key → "dx,dy[,refW]", чтобы пересчитать при resize
