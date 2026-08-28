@@ -68,11 +68,20 @@ write_files:
       # Секреты из Yandex Lockbox (S3, и др.) — через сервисный аккаунт этой ВМ.
       # Значения не хранятся ни в репозитории, ни в метаданных: только в Lockbox.
       LB_SECRET_ID="e6q1ias432ne7vtogghv"
-      IAM=$(curl -s -H "Metadata-Flavor: Google" "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)
-      if [ -n "$IAM" ]; then
-        curl -s -H "Authorization: Bearer $IAM" "https://payload.lockbox.api.cloud.yandex.net/lockbox/v1/secrets/$LB_SECRET_ID/payload" 2>/dev/null \
-          | python3 -c "import sys,json,shlex;[print(e['key']+'='+shlex.quote(e.get('textValue',''))) for e in json.load(sys.stdin).get('entries',[])]" >> .env 2>/dev/null || true
-      fi
+      # ГРАБЛИ (гонка): на свежей ВМ сервисный аккаунт «прогревается» в метаданных не сразу —
+      # первые ~10-60с токен ещё не выдаётся, и ОДНОРАЗОВЫЙ запрос ловил пустоту → секреты
+      # не приходили → FATAL abort (падало и с mata-vm, и с claude-ops — права ни при чём).
+      # Поэтому РЕТРАИМ получение секретов, пока в .env не появится POSTGRES_PASSWORD.
+      for lb_try in $(seq 1 30); do
+        IAM=$(curl -s -H "Metadata-Flavor: Google" "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)
+        if [ -n "$IAM" ]; then
+          curl -s -H "Authorization: Bearer $IAM" "https://payload.lockbox.api.cloud.yandex.net/lockbox/v1/secrets/$LB_SECRET_ID/payload" 2>/dev/null \
+            | python3 -c "import sys,json,shlex;[print(e['key']+'='+shlex.quote(e.get('textValue',''))) for e in json.load(sys.stdin).get('entries',[])]" >> .env 2>/dev/null || true
+        fi
+        grep -q "^POSTGRES_PASSWORD=" .env && { echo "Lockbox: секреты получены (попытка $lb_try)"; break; }
+        echo "Lockbox: токен/секреты ещё не готовы (попытка $lb_try/30) — жду 10с..."
+        sleep 10
+      done
       # Критичные секреты обязаны прийти из Lockbox (иначе БД/токены сломаются) — иначе стоп.
       for k in POSTGRES_PASSWORD DJANGO_SECRET_KEY JWT_SECRET; do
         grep -q "^$k=" .env || { echo "FATAL: $k отсутствует (Lockbox не отдал) — abort"; exit 1; }
