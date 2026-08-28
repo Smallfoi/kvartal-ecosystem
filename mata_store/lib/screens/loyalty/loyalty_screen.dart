@@ -129,20 +129,6 @@ class _Header extends StatelessWidget {
                 ),
               ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.06),
               const SizedBox(height: 14),
-              // Постоянный код лояльности (для кассы вручную, если нет сканера).
-              if (loyalty.code.isNotEmpty)
-                Center(
-                  child: Text(
-                    'Код лояльности: ${loyalty.code}', // staw-static
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                      color: Color(0xFF444444),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 8),
               Center(
                 child: const RemoteText(
                   'app.loyalty.rule',
