@@ -14,7 +14,6 @@
     (isDev ? "http://127.0.0.1:8000/v1" : PROD_API);
 
   var modal = document.querySelector("[data-lg-modal]");
-  if (!modal) return;
   var cache = null;
 
   function esc(s) {
@@ -85,6 +84,12 @@
     }
     return out.join("");
   }
+
+  // Загрузка и разбор — общие для модалки и для отдельной страницы документа
+  // (/legal/privacy и т.п.). Одна реализация markdown на оба места.
+  window.STAW_LEGAL = { md: mdToHtml, docs: getDocs };
+
+  if (!modal) return;   // страница документа рисует себя сама, модалка ей не нужна
 
   function show(doc) {
     modal.querySelector("[data-lg-title]").textContent = doc.title || "Документ";
