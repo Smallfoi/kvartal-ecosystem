@@ -28,6 +28,10 @@ jobs:
             dir: mata_kvartal
           - app: sport_store
             dir: mata_store
+          # «Лига» — отдельное приложение под перестройку геймификации (D-59):
+          # «Квартал» остаётся стабильным для тестировщиков, лига едет своим темпом.
+          - app: liga-app
+            dir: mata_liga
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
