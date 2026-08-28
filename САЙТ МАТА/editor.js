@@ -696,22 +696,12 @@
     var p = POS[key];
     if (p) applyPosByKey(key, p.x + "," + p.y + (p.refW ? "," + p.refW : ""));
   }
-  // Допустимый ход надписи: она не должна выходить за свою секцию.
+  // Ширина контейнера на момент перетаскивания — её запоминаем вместе со сдвигом,
+  // чтобы на другой ширине окна он пересчитался пропорционально.
   function posLimits(el) {
     var S = window.__stawPos;
     if (!S) return null;
-    var box = S.container(el);
-    var prev = el.style.translate;
-    el.style.translate = "";
-    var r = el.getBoundingClientRect(), pr = box.getBoundingClientRect();
-    el.style.translate = prev;
-    var loX = pr.left - r.left, hiX = pr.right - r.right;
-    var loY = pr.top - r.top, hiY = pr.bottom - r.bottom;
-    return {
-      w: box.clientWidth,
-      cx: function (v) { return S.clamp(v, loX, hiX); },
-      cy: function (v) { return S.clamp(v, loY, hiY); },
-    };
+    return { w: S.container(el).clientWidth };
   }
   function applyPosByKey(key, value) {
     var parts = String(value == null ? "0,0" : value).split(",");
@@ -791,17 +781,12 @@
       mv.targets = collectTargets(mv.el, mv.container);
     }
     var nx = mv.bx + ddx, ny = mv.by + ddy;
-    // Не даём утащить надпись за пределы её секции: именно так она уезжала под
-    // фиксированную шапку, и верхние строки пропадали.
-    var lim = posLimits(mv.el);
-    if (lim) { nx = lim.cx(nx); ny = lim.cy(ny); }
     mv.el.style.translate = nx + "px " + ny + "px";
     var r = mv.el.getBoundingClientRect();
     var bx = bestSnap([r.left, (r.left + r.right) / 2, r.right], mv.targets.xs);
     var by = bestSnap([r.top, (r.top + r.bottom) / 2, r.bottom], mv.targets.ys);
     if (bx) nx += bx.delta;
     if (by) ny += by.delta;
-    if (lim) { nx = lim.cx(nx); ny = lim.cy(ny); }
     mv.el.style.translate = nx + "px " + ny + "px";
     mv.cx = nx; mv.cy = ny;
     clearGuides();
