@@ -28,7 +28,7 @@ echo "== 2/2 Создаю ВМ $NAME (диск БД + статический IP 
 yc compute instance create \
   --name "$NAME" \
   --zone ru-central1-b \
-  --service-account-id ajeqekgcl5qjghk2rlju \
+  --service-account-id ajec2veglfigshb9ca6n \
   --platform standard-v3 \
   --cores 2 \
   --memory 4G \
