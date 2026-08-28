@@ -608,9 +608,42 @@
   function done() { try { if (EDIT) window.dispatchEvent(new Event("staw-content-applied")); } catch (e) {} }
 
   injectAnimCss(); // на случай пустого ответа — пресеты уже есть
-  fetch(API + "/site/content")
-    .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-    .then(apply)
+
+  // Снять прятание, которое поставил boot.js (см. его заголовок): элементы с
+  // правками скрыты, пока правки не применены — иначе видно исходную вёрстку.
+  function unveil() {
+    try {
+      clearTimeout(window.__stawFoucTimer);
+      var s = document.getElementById("staw-fouc");
+      if (s) s.remove();
+    } catch (e) {}
+  }
+
+  // Запомнить ответ, чтобы в следующий раз применить его до сети.
+  function remember(data) {
+    try { localStorage.setItem("staw-content-cache", JSON.stringify(data)); } catch (e) {}
+    return data;
+  }
+
+  // 1) Сначала — прошлый ответ из памяти браузера: страница сразу получает вид,
+  //    который владелец опубликовал, без ожидания сети.
+  try {
+    if (window.__stawCache) { apply(window.__stawCache); unveil(); }
+  } catch (e) {}
+
+  // 2) Затем — свежий ответ. Запрос стартовал ещё в <head> (boot.js), поэтому
+  //    ждать конца страницы не нужно.
+  var early = window.__stawEarly ||
+    fetch(API + "/site/content").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+
+  early
+    .then(function (data) {
+      if (!data) return null;
+      remember(data);
+      apply(data);
+      return data;
+    })
     .then(done)
-    .catch(function () { done(); });
+    .catch(function () { done(); })
+    .then(unveil, unveil);
 })();
