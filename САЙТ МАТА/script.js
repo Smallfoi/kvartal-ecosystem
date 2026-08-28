@@ -125,6 +125,7 @@ const revealObserver = new IntersectionObserver(
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.classList.add("is-visible");
+        settleReveal(entry.target);
         revealObserver.unobserve(entry.target);
       }
     });
@@ -134,6 +135,24 @@ const revealObserver = new IntersectionObserver(
     threshold: 0.18,
   },
 );
+
+// Снять фильтр появления, когда переход доиграл. `filter: blur(0)` — это не
+// «фильтра нет»: он остаётся на блоке и сплющивает 3D внутри него (у карт
+// лояльности из-за этого просвечивала лицевая сторона сквозь перевёрнутую).
+// Ждём именно переход фильтра; таймер — страховка на случай, когда события нет
+// (блок уже виден при загрузке, вкладка в фоне, prefers-reduced-motion).
+function settleReveal(el) {
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    el.classList.add("is-settled");
+    el.removeEventListener("transitionend", onEnd);
+  };
+  const onEnd = (e) => { if (e.target === el && e.propertyName === "filter") finish(); };
+  el.addEventListener("transitionend", onEnd);
+  setTimeout(finish, 1600);
+}
 
 // Привязки, переживающие пере-рендер каталога (помечаем элементы, чтобы не дублировать).
 function observeReveals() {
