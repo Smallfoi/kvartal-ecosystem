@@ -760,3 +760,34 @@ Ubuntu 24.04 поднимает sshd через **socket-активацию** (`
 `network_interfaces[0].primary_v4_address.one_to_one_nat.address`, передавать в create
 `--attach-disk disk-id=…,auto-delete=false` и `--network-interface …,nat-address=<static-ip>`.
 С предохранителем: если диск БД не найден — `exit 1` (не создавать ВМ без данных).
+
+## `yc --metadata-from-file` ВЫРЕЗАЕТ простые $-переменные из cloud-init (главные грабли деплоя)
+
+`yc compute instance create --metadata-from-file user-data=<файл>` прогоняет содержимое
+через подстановку переменных окружения: **простые `$VAR` (`$IAM`, `$LB_SECRET_ID`, `$DBDEV`,
+`$DBUUID`, `$k`…) заменяются ПУСТОТОЙ**, а `$(...)` (подстановка команд) — сохраняются.
+Для запекаемого в cloud-init shell-скрипта это катастрофа: `Authorization: Bearer ` вместо
+`Bearer $IAM` (Lockbox не читается → секреты не приходят → FATAL), `blkid ""` / `mkfs -F ""`
+(диск БД не монтируется). Раскопки заняли ~7 пересозданий — маскировалось под «нет прав у
+SA», «гонку прогрева SA», «сломанный sshd».
+
+**Как диагностировать:** repo-файл и `curl raw.githubusercontent…` — ЦЕЛЫЕ, а в метаданных
+ВМ переменные уже пустые. Проверка: `GET compute…/instances/<id>?view=FULL` →
+`metadata.user-data`, грепнуть `Bearer` / `blkid` — если там `Bearer ` / `blkid ""`, значит
+yc порезал. На ВМ: `sudo sed -n '...' /opt/mata-deploy.sh` покажет `[ -n "" ]`.
+
+**Лечение:** деплой НЕ запекать в cloud-init через write_files, а держать ОТДЕЛЬНЫМ скриптом
+`backend/deploy/prod-deploy.sh`, качать на ВМ через `curl` (переменные целостны) и запускать
+`sudo bash`. Всё, что всё же запекается в user-data, не должно зависеть от простых `$VAR` —
+только литералы или `$(...)`. NB: `/opt/mata-autodeploy.sh` в старом cloud-init тоже запечён
+и порезан — авто-деплой на текущей ВМ сломан, чинить тем же способом (вынести в repo + curl).
+
+## SSH к прод-ВМ: пользователь `ubuntu`, порт 2222, классический sshd
+
+Рабочее подключение: `ssh -p 2222 -i C:\Users\crypt\.ssh\mata_prod2 ubuntu@158.160.12.117`.
+Грабли, которые сожгли время: (1) дефолтный юзер образа Яндекса — **`ubuntu`**, НЕ `yc-user`
+(cloud-init `ssh_authorized_keys` кладёт ключ дефолтному юзеру; `usermod -aG docker yc-user`
+в скрипте был мимо — надо `ubuntu`); (2) провайдер владельца режет **22** (DPI) → прямой SSH
+только на **2222**; (3) в security-group порт 2222 надо открыть отдельно (по умолчанию только
+22/80/443); (4) socket-активацию sshd на Ubuntu 24.04 отключаем, порты — в sshd_config (см.
+грабли выше про ssh.socket).
