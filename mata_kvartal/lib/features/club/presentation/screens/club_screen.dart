@@ -1257,98 +1257,145 @@ class _InviteCodeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(clubProvider);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.separator),
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.line),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.graphite.withValues(alpha: 0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // \u0428\u0430\u043f\u043a\u0430: \u0438\u043a\u043e\u043d\u043a\u0430-\u0447\u0438\u043f + \u0437\u0430\u0433\u043e\u043b\u043e\u0432\u043e\u043a-\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 + \u043f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0430.
           Row(
             children: [
-              const Icon(
-                CupertinoIcons.qrcode_viewfinder,
-                size: 20,
-                color: AppColors.electricBlue,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '\u041a\u043e\u0434 \u0438\u043b\u0438 \u0441\u0441\u044b\u043b\u043a\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppColors.soft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  CupertinoIcons.person_2,
+                  color: AppColors.accentInk,
+                  size: 22,
                 ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '\u0412\u0441\u0442\u0443\u043f\u0438\u0442\u044c \u0432 \u043a\u043b\u0443\u0431',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.ink,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\u041e\u0442\u0441\u043a\u0430\u043d\u0438\u0440\u0443\u0439\u0442\u0435 QR \u0434\u0440\u0443\u0433\u0430 \u0438\u043b\u0438 \u0432\u0432\u0435\u0434\u0438\u0442\u0435 \u043a\u043e\u0434',
+                      style: TextStyle(color: AppColors.muted, fontSize: 12, height: 1.3),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // \u041e\u0441\u043d\u043e\u0432\u043d\u043e\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u2014 \u0441\u043a\u0430\u043d QR (\u043a\u0430\u043a \u0432 \u0422\u0438\u043d\u044c\u043a\u043e\u0444\u0444/Taobao): \u0433\u0440\u0430\u0444\u0438\u0442\u043e\u0432\u0430\u044f \u043a\u043d\u043e\u043f\u043a\u0430.
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: () => context.push('/club/scan'),
+              icon: const Icon(CupertinoIcons.qrcode_viewfinder, size: 20),
+              label: const Text(
+                '\u0421\u043a\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u0442\u044c QR',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.graphite,
+                foregroundColor: AppColors.onDark,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // \u0420\u0430\u0437\u0434\u0435\u043b\u0438\u0442\u0435\u043b\u044c \u00ab\u0438\u043b\u0438 \u043a\u043e\u0434 \u0432\u0440\u0443\u0447\u043d\u0443\u044e\u00bb.
+          Row(
+            children: [
+              const Expanded(child: Divider(color: AppColors.line)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  '\u0438\u043b\u0438 \u043a\u043e\u0434 \u0432\u0440\u0443\u0447\u043d\u0443\u044e',
+                  style: TextStyle(color: AppColors.faint, fontSize: 11),
+                ),
+              ),
+              const Expanded(child: Divider(color: AppColors.line)),
             ],
           ),
           const SizedBox(height: 12),
           TextField(
             controller: controller,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: const TextStyle(color: AppColors.ink),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _submit(context, ref),
             decoration: InputDecoration(
-              hintText:
-                  'KQ-123 \u0438\u043b\u0438 https://kvartal.app/club/...',
-              hintStyle: const TextStyle(color: AppColors.textTertiary),
-              prefixIcon: const Icon(CupertinoIcons.link, size: 18),
+              hintText: '\u041a\u043e\u0434 \u0438\u043b\u0438 \u0441\u0441\u044b\u043b\u043a\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f',
+              hintStyle: const TextStyle(color: AppColors.faint),
+              prefixIcon: const Icon(
+                CupertinoIcons.ticket,
+                size: 18,
+                color: AppColors.muted,
+              ),
               filled: true,
-              fillColor: AppColors.bgElevated,
+              fillColor: AppColors.soft,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.separator),
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.separator),
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppColors.accentInk, width: 1.5),
               ),
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 46,
-                  child: FilledButton.icon(
-                    onPressed: state.isMutating
-                        ? null
-                        : () => _submit(context, ref),
-                    icon: const Icon(
-                      CupertinoIcons.person_badge_plus,
-                      size: 18,
-                    ),
-                    label: Text(
-                      state.isMutating
-                          ? '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c...'
-                          : '\u0412\u0441\u0442\u0443\u043f\u0438\u0442\u044c',
-                    ),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton(
+              onPressed: state.isMutating ? null : () => _submit(context, ref),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.soft,
+                foregroundColor: AppColors.accentInk,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SizedBox(
-                  height: 46,
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.push('/club/scan'),
-                    icon: const Icon(
-                      CupertinoIcons.qrcode_viewfinder,
-                      size: 18,
-                    ),
-                    label: const Text('\u0421\u043a\u0430\u043d QR'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.electricBlue,
-                      side: const BorderSide(color: AppColors.electricBlue),
-                    ),
-                  ),
-                ),
+              child: Text(
+                state.isMutating ? '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c\u2026' : '\u0412\u0441\u0442\u0443\u043f\u0438\u0442\u044c',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
-            ],
+            ),
           ),
         ],
       ),
