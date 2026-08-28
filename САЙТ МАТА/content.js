@@ -447,30 +447,17 @@
 
   function clamp(v, lo, hi) { return lo > hi ? 0 : Math.min(hi, Math.max(lo, v)); }
 
-  // Ставит сдвиг одному элементу: масштаб по ширине контейнера + рамки контейнера.
+  // Ставит сдвиг одному элементу. Где стоять надписи — решает владелец: он видит
+  // страницу и двигает её сам. Никаких «поправок» здесь нет, иначе его правки
+  // молча откатываются при каждой загрузке.
+  //
+  // От перекоса на других экранах защищает масштаб: сдвиг хранится вместе с
+  // шириной контейнера, при которой его задали («388,-431,1905»), и здесь
+  // пересчитывается пропорционально. На узком экране он уменьшается сам.
   function posPlace(el, x, y, refW) {
-    if (window.innerWidth <= POS_MIN_W) { el.style.translate = ""; return; }
     var box = posContainer(el);
     var k = (refW && box.clientWidth) ? box.clientWidth / refW : 1;
     var nx = x * k, ny = y * k;
-    // Меряем элемент БЕЗ сдвига — от этого положения и считаем допустимый ход.
-    var prev = el.style.translate;
-    el.style.translate = "";
-    var r = el.getBoundingClientRect(), pr = box.getBoundingClientRect();
-    el.style.translate = prev;
-    // Верхняя граница — не только край секции, но и низ прилипшей шапки: первая
-    // секция уходит ПОД шапку, и надпись, поднятая наверх, пряталась за ней.
-    var top = pr.top;
-    var hdr = document.querySelector("header");
-    if (hdr) {
-      var hp = getComputedStyle(hdr).position;
-      if (hp === "fixed" || hp === "sticky") {
-        var hb = hdr.getBoundingClientRect().bottom;
-        if (hb > top) top = hb + 4;
-      }
-    }
-    nx = clamp(nx, pr.left - r.left, pr.right - r.right);
-    ny = clamp(ny, top - r.top, pr.bottom - r.bottom);
     el.style.translate = (nx ? nx.toFixed(1) + "px" : "0px") + " " +
                          (ny ? ny.toFixed(1) + "px" : "0px");
   }
