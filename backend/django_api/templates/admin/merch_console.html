@@ -316,6 +316,13 @@
   // сайте нет».
   var ENV_HOST = location.host;
   var IS_PROD = !/^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])(:|$)/.test(ENV_HOST);
+  // Публикация из локальной копии выключена намеренно: контент правится только на
+  // боевом Конструкторе. Локальная среда нужна разработке — проверять правки кода
+  // до выката, — и не должна выглядеть как второе рабочее место владельца.
+  // Обходной ключ для разработки: ?dev-publish=1.
+  var PROD_CONSOLE = "https://api.mata-club.ru/admin/merch/";
+  var DEV_PUBLISH = /[?&]dev-publish=1(&|$)/.test(location.search);
+  var CAN_PUBLISH = IS_PROD || DEV_PUBLISH;
   (function () {
     var el = document.getElementById("merch-env");
     if (!el) return;
@@ -323,11 +330,21 @@
       el.textContent = "БОЕВОЙ САЙТ";
       el.title = "Публикация уйдёт на " + ENV_HOST + " — правки увидят посетители";
       el.style.background = "#dcfce7"; el.style.color = "#166534";
-    } else {
-      el.textContent = "ЛОКАЛЬНАЯ КОПИЯ — на сайт не уйдёт";
-      el.title = "Это " + ENV_HOST + ". Чтобы правки увидели посетители, откройте Конструктор на боевом сервере";
-      el.style.background = "#fee2e2"; el.style.color = "#991b1b";
+      return;
     }
+    el.textContent = DEV_PUBLISH ? "ЛОКАЛЬНАЯ КОПИЯ · публикация разрешена ключом"
+                                 : "ЛОКАЛЬНАЯ КОПИЯ — правки сюда, а не на сайт";
+    el.title = "Это " + ENV_HOST + " — среда разработки";
+    el.style.background = "#fee2e2"; el.style.color = "#991b1b";
+    if (DEV_PUBLISH) return;
+    // Ссылка на боевой Конструктор — чтобы не искать адрес.
+    var a = document.createElement("a");
+    a.href = PROD_CONSOLE;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = "Открыть боевой Конструктор →";
+    a.style.cssText = "font-size:12px;font-weight:700;color:#111;background:#dff45f;padding:6px 12px;border-radius:8px;text-decoration:none";
+    el.insertAdjacentElement("afterend", a);
   })();
   var publishBtn = document.getElementById("merch-publish");
   var platform = "site";
@@ -440,9 +457,11 @@
     var n = pendingCount();
     document.getElementById("merch-pending-n").textContent = n;
     document.getElementById("merch-pending").style.display = n ? "inline-block" : "none";
-    publishBtn.disabled = !n;
-    publishBtn.style.background = n ? "#111" : "#9ca3af";
-    publishBtn.style.cursor = n ? "pointer" : "not-allowed";
+    var can = n && CAN_PUBLISH;
+    publishBtn.disabled = !can;
+    publishBtn.style.background = can ? "#111" : "#9ca3af";
+    publishBtn.style.cursor = can ? "pointer" : "not-allowed";
+    if (!CAN_PUBLISH) publishBtn.title = "Локальная копия: правки отсюда на сайт не уходят. Публиковать — в боевом Конструкторе";
     histRecord();   // любое изменение черновика → точка в истории (дебаунс+дедуп внутри)
   }
 
@@ -1206,6 +1225,11 @@
   // ── Публикация на реальный сайт (с подтверждением) ──
   function publish() {
     if (!pendingCount()) return;
+    if (!CAN_PUBLISH) {
+      alert("Это локальная копия (" + ENV_HOST + ").\n\nОтсюда правки на сайт не уходят — " +
+            "контент публикуется в боевом Конструкторе:\n" + PROD_CONSOLE);
+      return;
+    }
     if (!confirm(IS_PROD
       ? "Опубликовать изменения на БОЕВОЙ сайт " + ENV_HOST + "?\nИх сразу увидят посетители.\n\nВы всё проверили в превью?"
       : "Это ЛОКАЛЬНАЯ копия (" + ENV_HOST + ").\nПравки НЕ появятся на боевом сайте mata-club.ru —\nони сохранятся только на этом компьютере.\n\nВсё равно опубликовать?")) return;
