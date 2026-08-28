@@ -983,18 +983,6 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                 ),
               ),
             ),
-            if (loyalty.code.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  'Код лояльности: ${loyalty.code}',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ),
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Text(
