@@ -1438,7 +1438,48 @@ html.js.motion-off .hero .brand-wordmark span {
 .ml-platinum .ml-bcap { color:#C6D2E0; }
 
 @media (max-width: 900px) {
-  .ml-stage { max-width: 460px; margin-inline: auto; }
+  /* width обязателен: у грид-элемента `margin-inline: auto` отменяет растягивание,
+     и сцена получала ширину по содержимому — а содержимое абсолютное, то есть ноль.
+     Из-за этого на телефоне пропадали окно, подпись уровня и точки, а карта
+     висела криво. */
+  .ml-stage { width: 100%; max-width: 460px; margin-inline: auto; }
+}
+
+/* Сцена уже ширины карты с веером (ниже ~500px экрана): пересобираем раскладку.
+   Веер влево-вправо рассчитан на широкое окно — на телефоне герой вылезал за
+   левый край, а колода торчала справа рваным куском поверх перевёрнутой карты. */
+@media (max-width: 560px) {
+  .ml-stage { height: clamp(320px, 88vw, 380px); }
+
+  .ml-card,
+  .ml-hero { width: clamp(236px, 76%, 300px); }
+
+  /* Герой — ровно по центру. Глубина меньше десктопной: перспектива увеличивает
+     карту тем сильнее, чем ближе она к зрителю, и на 160px она шире окна. */
+  .ml-hero { transform: translate(-50%,-50%) translateZ(80px) rotateY(-6deg) rotateX(2deg); }
+  .ml-hero.pop { animation-name: mlHeroPopSm; }
+  @keyframes mlHeroPopSm {
+    0%   { transform: translate(-50%,-50%) translateZ(10px) rotateY(-6deg) rotateX(2deg) scale(.86); opacity: .3; }
+    100% { transform: translate(-50%,-50%) translateZ(80px) rotateY(-6deg) rotateX(2deg) scale(1); opacity: 1; }
+  }
+
+  /* Колода уходит назад и вверх: из-под героя видны корешки карт, и ни одна не
+     выходит за окно по бокам. */
+  .ml-card.pos-1 { transform: translate(-50%,-62%) translateZ(-20px)  rotateX(2deg) scale(.94); }
+  .ml-card.pos-2 { transform: translate(-50%,-72%) translateZ(-90px)  rotateX(3deg) scale(.9); }
+  .ml-card.pos-3 { transform: translate(-50%,-81%) translateZ(-160px) rotateX(4deg) scale(.86); }
+
+  .ml-cap { top: 16px; }
+  .ml-cap-t { font-size: 17px; }
+
+  /* Точка остаётся точкой, но нажимается пальцем: 44×44 — минимум для касания. */
+  .ml-dots { bottom: 6px; gap: 0; }
+  .ml-dots button { width: 44px; height: 44px; border: 0; background: transparent; position: relative; }
+  .ml-dots button::before { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px;
+    margin: -5.25px 0 0 -5.25px; border-radius: 99px; border: 1.5px solid rgba(255,255,255,.55);
+    transition: transform .3s var(--ease-out), background .3s, border-color .3s; }
+  .ml-dots button.on { transform: none; background: transparent; border-color: transparent; }
+  .ml-dots button.on::before { background: var(--ml-lime); border-color: var(--ml-lime); transform: scale(1.5); }
 }
 @media (prefers-reduced-motion: reduce) {
   .ml-card, .ml-flip, .ml-hero { transition-duration: .01ms; } .ml-hero.pop { animation: none; }
@@ -2813,9 +2854,14 @@ html.lenis body {
 
 @media (max-width: 1080px) {
   .cinema-grid,
-  .product-story,
-  .product-grid {
+  .product-story {
     grid-template-columns: 1fr;
+  }
+
+  /* Каталог остаётся сеткой: в одну колонку карточка занимала почти весь экран,
+     и до следующих секций приходилось листать десяток экранов. */
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .footer-top {
@@ -2851,6 +2897,77 @@ html.lenis body {
 }
 
 @media (max-width: 720px) {
+  /* «О бренде»: колонка не должна быть шире своей доли — иначе неразрывное
+     EVERYDAY распирает сетку и карточки уезжают за правый край экрана. */
+  .modes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .mode-card {
+    min-height: 168px;
+    padding: 18px 16px;
+  }
+
+  .mode-card h3 {
+    font-size: clamp(17px, 4.6vw, 22px);
+    margin-bottom: 8px;
+  }
+
+  .mode-card p {
+    font-size: 13px;
+  }
+
+  /* Каталог на телефоне: две колонки и компактная карточка — на экран попадает
+     четыре товара вместо одного. Мельче отступы, короче подписи, ниже кнопка. */
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product-card {
+    border-radius: 14px;
+  }
+
+  .product-info {
+    padding: 10px 10px 12px;
+    gap: 6px;
+  }
+
+  /* Расстояния держит gap: собственные margin подписей складывались с ним и
+     добавляли карточке лишние 40px — четыре товара переставали влезать в экран. */
+  .product-info > * {
+    margin: 0;
+  }
+
+  .product-info h3 {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .product-cat,
+  .product-rating,
+  .product-stock {
+    font-size: 11px;
+  }
+
+  /* Размеры и цвета в мелкой карточке только шумят — оставляем фото, название,
+     цену и кнопку. */
+  .product-sizes,
+  .product-colors {
+    display: none;
+  }
+
+  .product-price {
+    font-size: 15px;
+  }
+
+  .product-add {
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
   .site-header {
     grid-template-columns: 1fr auto;
   }

@@ -1288,7 +1288,7 @@ window.STAW.openProfile = openProfile;
     heroEl.className = "ml-hero " + c.cls;
     heroEl.innerHTML = '<div class="ml-tilt"><div class="ml-flip">' + faces(c) + "</div></div>";
     if (!reduce) { heroEl.classList.remove("pop"); void heroEl.offsetWidth; heroEl.classList.add("pop"); }
-    heroEl.onclick = function () { heroEl.classList.toggle("flipped"); stop(); };
+    heroEl.onclick = function () { if (swallowClick()) return; heroEl.classList.toggle("flipped"); stop(); };
   }
   function render() {
     cards.forEach(function (el, i) {
@@ -1308,8 +1308,29 @@ window.STAW.openProfile = openProfile;
   function restart() { stop(); start(); }
 
   cards.forEach(function (el) {
-    el.addEventListener("click", function (e) { setFront(+el.dataset.i); e.stopPropagation(); });
+    el.addEventListener("click", function (e) { if (swallowClick()) return; setFront(+el.dataset.i); e.stopPropagation(); });
   });
+
+  // Свайп по сцене листает уровни. После свайпа браузер всё равно шлёт click —
+  // его надо съесть, иначе палец заодно перевернёт карту.
+  var swiped = false;
+  function swallowClick() { if (!swiped) return false; swiped = false; return true; }
+
+  var tx = 0, ty = 0, tracking = false;
+  stage.addEventListener("touchstart", function (e) {
+    if (e.touches.length !== 1) { tracking = false; return; }
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY; tracking = true; swiped = false;
+  }, { passive: true });
+  stage.addEventListener("touchend", function (e) {
+    if (!tracking) return;
+    tracking = false;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - tx, dy = t.clientY - ty;
+    // Вертикальный жест оставляем прокрутке страницы.
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    swiped = true;
+    setFront(front + (dx < 0 ? 1 : -1));
+  }, { passive: true });
 
   // Параллакс — только на вышедшей карте (герой); колода за окном неподвижна.
   stage.addEventListener("mousemove", function (e) {
