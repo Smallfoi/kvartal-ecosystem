@@ -734,3 +734,29 @@ transform тоже требует своей мобильной версии —
 появления, удаление. Чего нет: участия в сортировке блоков (`order.` работает
 внутри `data-sortable`, а надпись вне потока) и своего фона (`data-edit-bg`
 задаётся блоку).
+
+## SSH на прод-ВМ (Ubuntu 24.04): порт нельзя задавать и в ssh.socket, и в sshd_config
+
+Ubuntu 24.04 поднимает sshd через **socket-активацию** (`ssh.socket`). Если задать
+кастомный порт ОДНОВРЕМЕННО в override сокета (`ListenStream=`) И в `sshd_config`
+(`Port …`), они конфликтуют за порт — и sshd **падает при каждом коннекте**. Клиент
+видит `kex_exchange_identification: Connection closed by remote host` — обрыв ДО
+проверки ключа/логина, одинаково на всех портах. Ключ/логин/firewall тут ни при чём
+(диагностируется как раз тем, что и 22, и 2222 рвутся идентично на первом рукопожатии).
+
+**Лечение (в cloud-init):** socket-активацию отключить
+(`systemctl disable --now ssh.socket`), порты задать ТОЛЬКО в
+`/etc/ssh/sshd_config.d/*.conf` (`Port 22` / `Port 2222`), поднять классический демон
+(`systemctl enable --now ssh`). Правка живёт на диске → применяется только при
+**пересоздании ВМ**, не при перезагрузке (перезагрузка кривой конфиг не чинит).
+
+## Пересоздание прод-ВМ: переподключать диск БД и статический IP
+
+`yc-recreate.sh` удаляет ВМ и создаёт новую. Но диск с БД — это **отдельный** вторичный
+диск (`autoDelete=false`, переживает удаление ВМ), а внешний IP — **reserved (static)**.
+Ранняя версия скрипта их не переносила: новая ВМ поднималась без `/dev/vdb`
+(cloud-init → `FATAL: /mnt/data not mounted`, деплой падает) и с НОВЫМ IP (ломается DNS
+`api.mata-club.ru`). **Лечение:** читать у текущей ВМ `secondary_disks[0].disk_id` и
+`network_interfaces[0].primary_v4_address.one_to_one_nat.address`, передавать в create
+`--attach-disk disk-id=…,auto-delete=false` и `--network-interface …,nat-address=<static-ip>`.
+С предохранителем: если диск БД не найден — `exit 1` (не создавать ВМ без данных).
