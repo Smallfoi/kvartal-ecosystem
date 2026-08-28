@@ -1449,31 +1449,33 @@ html.js.motion-off .hero .brand-wordmark span {
    Веер влево-вправо рассчитан на широкое окно — на телефоне герой вылезал за
    левый край, а колода торчала справа рваным куском поверх перевёрнутой карты. */
 @media (max-width: 560px) {
-  .ml-stage { height: clamp(320px, 88vw, 380px); }
+  .ml-stage { height: clamp(342px, 94vw, 400px); }
 
   .ml-card,
   .ml-hero { width: clamp(236px, 76%, 300px); }
 
   /* Герой — ровно по центру. Глубина меньше десктопной: перспектива увеличивает
      карту тем сильнее, чем ближе она к зрителю, и на 160px она шире окна. */
-  .ml-hero { transform: translate(-50%,-50%) translateZ(80px) rotateY(-6deg) rotateX(2deg); }
+  /* Чуть ниже середины окна: сверху карту поджимает подпись уровня, снизу —
+     только точки, и по центру пустоты выходили разными. */
+  .ml-hero { transform: translate(-50%,-44%) translateZ(80px) rotateY(-6deg) rotateX(2deg); }
   .ml-hero.pop { animation-name: mlHeroPopSm; }
   @keyframes mlHeroPopSm {
-    0%   { transform: translate(-50%,-50%) translateZ(10px) rotateY(-6deg) rotateX(2deg) scale(.86); opacity: .3; }
-    100% { transform: translate(-50%,-50%) translateZ(80px) rotateY(-6deg) rotateX(2deg) scale(1); opacity: 1; }
+    0%   { transform: translate(-50%,-44%) translateZ(10px) rotateY(-6deg) rotateX(2deg) scale(.86); opacity: .3; }
+    100% { transform: translate(-50%,-44%) translateZ(80px) rotateY(-6deg) rotateX(2deg) scale(1); opacity: 1; }
   }
 
   /* Колода уходит назад и вверх: из-под героя видны корешки карт, и ни одна не
      выходит за окно по бокам. */
-  .ml-card.pos-1 { transform: translate(-50%,-62%) translateZ(-20px)  rotateX(2deg) scale(.94); }
-  .ml-card.pos-2 { transform: translate(-50%,-72%) translateZ(-90px)  rotateX(3deg) scale(.9); }
-  .ml-card.pos-3 { transform: translate(-50%,-81%) translateZ(-160px) rotateX(4deg) scale(.86); }
+  .ml-card.pos-1 { transform: translate(-50%,-56%) translateZ(-20px)  rotateX(2deg) scale(.94); }
+  .ml-card.pos-2 { transform: translate(-50%,-66%) translateZ(-90px)  rotateX(3deg) scale(.9); }
+  .ml-card.pos-3 { transform: translate(-50%,-75%) translateZ(-160px) rotateX(4deg) scale(.86); }
 
-  .ml-cap { top: 16px; }
+  .ml-cap { top: 12px; }
   .ml-cap-t { font-size: 17px; }
 
   /* Точка остаётся точкой, но нажимается пальцем: 44×44 — минимум для касания. */
-  .ml-dots { bottom: 6px; gap: 0; }
+  .ml-dots { bottom: 4px; gap: 0; }
   .ml-dots button { width: 44px; height: 44px; border: 0; background: transparent; position: relative; }
   .ml-dots button::before { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px;
     margin: -5.25px 0 0 -5.25px; border-radius: 99px; border: 1.5px solid rgba(255,255,255,.55);
@@ -2788,6 +2790,14 @@ html.js.motion-off .hero .brand-wordmark span {
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: blur(0);
+}
+
+/* Анимация доиграла — фильтр снимаем совсем. `blur(0)` это всё ещё фильтр: он
+   «сплющивает» 3D внутри блока, и у карт лояльности переставал работать
+   backface-visibility — сквозь перевёрнутую карту просвечивала лицевая сторона.
+   Класс ставит script.js по окончании перехода. */
+.reveal.is-settled {
+  filter: none;
 }
 
 @keyframes scrollSwipe {
