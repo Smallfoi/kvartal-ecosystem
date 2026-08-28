@@ -1,9 +1,11 @@
 name: Android release
 
-# Авто-сборка ПОДПИСАННОГО release-APK и выкладка в S3 для тестеров.
-# Триггер — пуш в main с изменениями кода приложения. Собирается только то
-# приложение, чья папка изменилась (чтобы не гнать тестерам «обновление»
-# неизменного приложения). Ручной запуск — workflow_dispatch (собирает оба).
+# Сборка ПОДПИСАННОГО release-APK и выкладка в S3 для тестеров.
+# РЕЛИЗ-ПОЕЗД (D-58): выпуск НЕ на каждый мерж, а вручную — обычно раз в конце дня,
+# чтобы накопленные за день правки уехали тестерам ОДНИМ обновлением (меньше
+# скачиваний; человеческая версия растёт раз в релиз). Мержи в main в течение дня
+# только проверяются через CI (ci.yml/ios-build.yml), тестерам не уходят.
+# Запуск: вкладка Actions → «Android release» → Run workflow → выбрать приложения.
 #
 # Ключ подписи и S3-креды — из secrets репозитория:
 #   ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_PASSWORD
@@ -11,14 +13,13 @@ name: Android release
 # versionCode = число коммитов (git rev-list --count) — монотонно растёт, одинаков
 # в сборке (--build-number) и в version.json, по нему приложение видит обновление.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'mata_kvartal/**'
-      - 'mata_store/**'
-      - 'tools/upload_apk.py'
-      - '.github/workflows/android-release.yml'
   workflow_dispatch:
+    inputs:
+      apps:
+        description: 'Какие приложения релизить'
+        type: choice
+        options: [both, kvartal, store]
+        default: both
 
 concurrency:
   group: android-release
@@ -43,19 +44,15 @@ jobs:
         with:
           fetch-depth: 0  # нужно для git rev-list --count и diff
 
-      - name: Detect change
+      - name: Select apps
         id: detect
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" \
-               | grep -qE "^(${{ matrix.dir }}/|tools/upload_apk\.py|\.github/workflows/android-release\.yml)"; then
+          # Релизим приложение, если выбрано «both» или именно оно.
+          if [ "${{ inputs.apps }}" = "both" ] || [ "${{ inputs.apps }}" = "${{ matrix.app }}" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Папка ${{ matrix.dir }} не менялась — пропуск."
+            echo "${{ matrix.app }} не выбран — пропуск."
           fi
 
       - uses: subosito/flutter-action@v2
