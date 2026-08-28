@@ -422,16 +422,95 @@
     });
   }
 
-  // Позиция надписи (перемещение в «Конструкторе»): val = "dx,dy" (px). CSS translate
-  // композится с трансформами элемента (напр. центрирование watermark).
+  // Позиция надписи (перемещение в «Конструкторе»).
+  // Значение: "dx,dy" или "dx,dy,refW" — третье число это ширина контейнера, при
+  // которой сдвиг задавали. CSS translate композится с трансформами элемента
+  // (напр. центрированием watermark).
+  //
+  // Почему не просто пиксели. Шрифты у нас резиновые (clamp), ширины в процентах —
+  // поэтому один и тот же сдвиг в пикселях на другой ширине окна ставит надпись
+  // в другое место. Плюс сдвиг вверх утаскивал её за пределы секции, под шапку,
+  // и верхние строки пропадали. Ниже: масштабируем по ширине контейнера,
+  // ограничиваем рамками контейнера и вовсе не применяем на узких экранах.
+  var POS_MIN_W = 900;   // ниже этой ширины окна сдвиги игнорируем (телефон)
+  var _posVals = {};     // key → "dx,dy[,refW]", чтобы пересчитать при resize
+
+  // Границы хода — по секции, а не по ближайшему родителю: родитель часто
+  // обтягивает саму надпись, и тогда двигать было бы некуда. Тот же набор
+  // селекторов, что у перетаскивания в редакторе (moveContainer).
+  function posContainer(el) {
+    var box = el.closest("section,[data-sid],[data-hideable],[data-edit-bg],.eco-cover,.eco-card,main,footer,header");
+    if (!box || box === el) box = el.parentElement || document.body;
+    while (box && box !== document.body && box.clientWidth === 0) box = box.parentElement;
+    return box || document.body;
+  }
+
+  function clamp(v, lo, hi) { return lo > hi ? 0 : Math.min(hi, Math.max(lo, v)); }
+
+  // Ставит сдвиг одному элементу: масштаб по ширине контейнера + рамки контейнера.
+  function posPlace(el, x, y, refW) {
+    if (window.innerWidth <= POS_MIN_W) { el.style.translate = ""; return; }
+    var box = posContainer(el);
+    var k = (refW && box.clientWidth) ? box.clientWidth / refW : 1;
+    var nx = x * k, ny = y * k;
+    // Меряем элемент БЕЗ сдвига — от этого положения и считаем допустимый ход.
+    var prev = el.style.translate;
+    el.style.translate = "";
+    var r = el.getBoundingClientRect(), pr = box.getBoundingClientRect();
+    el.style.translate = prev;
+    // Верхняя граница — не только край секции, но и низ прилипшей шапки: первая
+    // секция уходит ПОД шапку, и надпись, поднятая наверх, пряталась за ней.
+    var top = pr.top;
+    var hdr = document.querySelector("header");
+    if (hdr) {
+      var hp = getComputedStyle(hdr).position;
+      if (hp === "fixed" || hp === "sticky") {
+        var hb = hdr.getBoundingClientRect().bottom;
+        if (hb > top) top = hb + 4;
+      }
+    }
+    nx = clamp(nx, pr.left - r.left, pr.right - r.right);
+    ny = clamp(ny, top - r.top, pr.bottom - r.bottom);
+    el.style.translate = (nx ? nx.toFixed(1) + "px" : "0px") + " " +
+                         (ny ? ny.toFixed(1) + "px" : "0px");
+  }
+
   function applyPos(key, val) {
     if (!safeId(key)) return;
+    _posVals[key] = val;
     var parts = String(val == null ? "0,0" : val).split(",");
     var x = parseFloat(parts[0]) || 0, y = parseFloat(parts[1]) || 0;
+    var refW = parseFloat(parts[2]) || 0;
     document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
-      el.style.translate = x + "px " + y + "px";
+      posPlace(el, x, y, refW);
     });
   }
+
+  // Пересчёт после подгрузки шрифтов и при изменении размера окна: до загрузки
+  // шрифта метрики текста другие, и без пересчёта надпись «прыгает» после
+  // перезагрузки страницы.
+  function reapplyPositions() {
+    Object.keys(_posVals).forEach(function (k) { applyPos(k, _posVals[k]); });
+  }
+  // Пересчитываем не только после шрифтов, но и после полной загрузки страницы:
+  // в момент первого применения шапка и картинки ещё не разложены, и границы
+  // считаются по неготовой раскладке — надпись оставалась под шапкой.
+  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(reapplyPositions); } catch (e) {}
+  window.addEventListener("load", function () {
+    reapplyPositions();
+    requestAnimationFrame(function () { requestAnimationFrame(reapplyPositions); });
+  });
+  (function () {
+    var t = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(t);
+      t = setTimeout(reapplyPositions, 120);
+    });
+  })();
+
+  // Режим правки переиспользует ЭТУ логику — вторая копия уже однажды разъехалась
+  // с первой (см. PITFALLS про функции-двойники).
+  window.__stawPos = { place: posPlace, container: posContainer, clamp: clamp, minWidth: POS_MIN_W };
 
   // Добавленные в «Конструкторе» надписи: воссоздаём пустые элементы в их секциях,
   // текст (xl.<sid>) и позицию (pos.xl.<sid>) заполнит основной проход apply().
