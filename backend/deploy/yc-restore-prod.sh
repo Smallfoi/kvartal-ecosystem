@@ -12,10 +12,12 @@ set -euo pipefail
 NAME=mata-prod
 CI_URL="https://raw.githubusercontent.com/Smallfoi/mata-ecosystem/main/backend/deploy/cloud-init-prod.yaml"
 
-# Защита от повторного запуска: если ВМ уже создана — ничего не делаем.
+# Если ВМ уже есть (например, поднялась без сервисного аккаунта и деплой упал на Lockbox) —
+# удаляем и пересоздаём с сервисным аккаунтом. Диск БД (autoDelete=false) и статический IP
+# (reserved) при удалении сохраняются и переподключаются ниже.
 if yc compute instance get --name "$NAME" >/dev/null 2>&1; then
-  echo "ВМ $NAME уже существует — ничего не делаю (проверь статус в консоли)."
-  exit 0
+  echo "== ВМ $NAME существует — удаляю, чтобы пересоздать с сервисным аккаунтом =="
+  yc compute instance delete --name "$NAME"
 fi
 
 echo "== 1/2 Скачиваю cloud-init (с исправленным SSH) =="
@@ -26,6 +28,7 @@ echo "== 2/2 Создаю ВМ $NAME (диск БД + статический IP 
 yc compute instance create \
   --name "$NAME" \
   --zone ru-central1-b \
+  --service-account-id ajeqekgcl5qjghk2rlju \
   --platform standard-v3 \
   --cores 2 \
   --memory 4G \
