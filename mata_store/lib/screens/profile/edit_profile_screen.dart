@@ -804,18 +804,21 @@ class _Header extends StatelessWidget {
                 'app.editprofile.title',
                 'РЕДАКТИРОВАТЬ ПРОФИЛЬ',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
-                  letterSpacing: 2,
+                  letterSpacing: 1.5,
                 ),
               ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
               const Spacer(),
+              // Крупный хит-эрия + opaque, чтобы крестик уверенно тапался и не
+              // жался к самому краю (замечание владельца).
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: onClose,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  child: const Icon(Icons.close, color: Colors.white, size: 22),
+                child: const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Icon(Icons.close, color: Colors.white, size: 22),
                 ),
               ),
             ],

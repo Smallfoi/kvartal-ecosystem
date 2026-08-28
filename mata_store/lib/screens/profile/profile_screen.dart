@@ -374,7 +374,6 @@ class _LoggedInBody extends StatelessWidget {
       children: [
         _UserHeader(user: user),
         const _LoyaltyCard(),
-        const Divider(height: 1),
         _TabBar(selected: tab, onChanged: onTabChanged),
         const Divider(height: 1),
         Expanded(child: tab == 0 ? const _OrdersTab() : const _WishlistTab()),
@@ -482,6 +481,12 @@ class _UserHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Синтетическую почту телефонных аккаунтов (…@kvartal.local / …@mata.local) не
+    // показываем — вместо неё приглашаем добавить настоящую (замечание владельца).
+    final em = user.email;
+    final noRealEmail =
+        em.isEmpty || em.endsWith('@kvartal.local') || em.endsWith('@mata.local');
+    final emailLine = noRealEmail ? 'Добавьте почту' : em;
     return Container(
       color: AppColors.black,
       width: double.infinity,
@@ -541,7 +546,7 @@ class _UserHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    user.email,
+                    emailLine,
                     style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF888888),
