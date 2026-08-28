@@ -689,6 +689,13 @@
   // (snap) + розовая направляющая. Alt+клик — сброс позиции. Позиция → pos.<key>.
   var justDragged = false;
   var POS = {};
+  // Пересчитать всё, что зависит от геометрии текста (позиция и выравнивание).
+  // Вызывается после правок ширины/высоты/шрифта — и после смены самого текста.
+  function regeometry(key) {
+    if (!safeId(key)) return;
+    var p = POS[key];
+    if (p) applyPosByKey(key, p.x + "," + p.y + (p.refW ? "," + p.refW : ""));
+  }
   // Допустимый ход надписи: она не должна выходить за свою секцию.
   function posLimits(el) {
     var S = window.__stawPos;
@@ -977,6 +984,15 @@
   }
 
   function applyContent(key, value) {
+    // Любая правка, меняющая геометрию текста (сам текст, шрифт, тень, размеры),
+    // требует пересчёта позиции — иначе в правке видно одно, а после перезагрузки
+    // другое. Пересчёт ставим в начало: ветки ниже завершаются return'ом.
+    if (/^(width|minh|fontsize|font|shadow)\./.test(key)) {
+      var _gk = key.slice(key.indexOf(".") + 1);
+      setTimeout(function () { regeometry(_gk); }, 0);
+    } else if (key.indexOf(".") === -1 || /^[\w.]+$/.test(key)) {
+      setTimeout(function () { regeometry(key); }, 0);   // сменился сам текст
+    }
     // Отражаем черновик и в STAW_CONTENT — чтобы компоненты, которые строятся из JS
     // позже (экран входа/регистрации), показывали правку/удаление при пересборке.
     try { if (window.STAW_CONTENT && typeof value === "string") window.STAW_CONTENT[key] = { value: value }; } catch (e) {}
@@ -1011,6 +1027,9 @@
     if (key.indexOf("font.") === 0) { var fk = key.slice(5); if (safeId(fk)) applyFontLocal(fk, value); return; }
     if (key.indexOf("shadow.") === 0) { var shk = key.slice(7); if (safeId(shk)) applyShadowLocal(shk, value); return; }
     if (key.indexOf("talign.") === 0) { var ak = key.slice(7); if (safeId(ak)) applyTextAlignLocal(ak, value); return; }
+    // Ширина и высота рамки — той же функцией, что и на сайте.
+    if (key.indexOf("width.") === 0) { var wk = key.slice(6); if (safeId(wk) && window.__stawBox) window.__stawBox(wk, "width", value); return; }
+    if (key.indexOf("minh.") === 0) { var hk = key.slice(5); if (safeId(hk) && window.__stawBox) window.__stawBox(hk, "minHeight", value); return; }
     if (!safeId(key)) return;
     if (typeof value === "string") {
       document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = value; });
