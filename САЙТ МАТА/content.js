@@ -395,12 +395,18 @@
     return "0 " + (1 + 3 * k).toFixed(1) + "px " + (2 + 10 * k).toFixed(1) +
       "px rgba(0,0,0," + (0.25 + 0.5 * k).toFixed(2) + ")";
   }
+  var _boxVals = {};   // "key|prop" → значение, чтобы вернуть его при расширении окна
+
   function applyBoxSize(key, prop, value) {
     // Размер рамки текста: ширина в процентах родителя, высота в пикселях.
     // Пустое значение — вернуться к вёрстке.
     if (!safeId(key)) return;
     var v = (value || "").trim();
     if (v && !/^\d{1,3}(\.\d+)?(%|px)$/.test(v)) return;
+    _boxVals[key + "|" + prop] = v;
+    // На телефоне рамку не навязываем: 17% ширины — это нормальная надпись на
+    // десктопе и колонка в 60px на экране 390px. См. narrowScreen().
+    if (narrowScreen()) v = "";
     document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
       el.style[prop] = v;
       // Строчным элементам ширина не применяется — переводим в строчно-блочный,
@@ -443,7 +449,12 @@
   // в другое место. Плюс сдвиг вверх утаскивал её за пределы секции, под шапку,
   // и верхние строки пропадали. Ниже: масштабируем по ширине контейнера,
   // ограничиваем рамками контейнера и вовсе не применяем на узких экранах.
-  var POS_MIN_W = 900;   // ниже этой ширины окна сдвиги игнорируем (телефон)
+  var POS_MIN_W = 900;   // ниже этой ширины окна правки геометрии игнорируем (телефон)
+  // Одно место, которое решает «экран узкий». Правило из PITFALLS «Абсолютные
+  // пиксели в правках вёрстки»: телефон переживёт отсутствие сдвига, но не
+  // сломанную вёрстку. Редактор зовёт ту же функцию — в предпросмотре на узкой
+  // ширине видно ровно то же, что на телефоне.
+  function narrowScreen() { return window.innerWidth < POS_MIN_W; }
   var _posVals = {};     // key → "dx,dy[,refW]", чтобы пересчитать при resize
 
   // Границы хода — по секции, а не по ближайшему родителю: родитель часто
@@ -466,6 +477,10 @@
   // шириной контейнера, при которой его задали («388,-431,1905»), и здесь
   // пересчитывается пропорционально. На узком экране он уменьшается сам.
   function posPlace(el, x, y, refW) {
+    // Сдвиг задан на широкой раскладке, где текст занимал другое число строк.
+    // Пересчёт по ширине спасает от перекоса, но не от того, что заголовок из
+    // двух строк стал пятистрочным: сдвиг вверх утаскивает его под шапку.
+    if (narrowScreen()) { el.style.translate = ""; return; }
     var box = posContainer(el);
     var k = (refW && box.clientWidth) ? box.clientWidth / refW : 1;
     var nx = x * k, ny = y * k;
@@ -487,28 +502,32 @@
   // Пересчёт после подгрузки шрифтов и при изменении размера окна: до загрузки
   // шрифта метрики текста другие, и без пересчёта надпись «прыгает» после
   // перезагрузки страницы.
-  function reapplyPositions() {
+  function reapplyGeometry() {
     Object.keys(_posVals).forEach(function (k) { applyPos(k, _posVals[k]); });
+    Object.keys(_boxVals).forEach(function (k) {
+      var i = k.lastIndexOf("|");
+      applyBoxSize(k.slice(0, i), k.slice(i + 1), _boxVals[k]);
+    });
   }
   // Пересчитываем не только после шрифтов, но и после полной загрузки страницы:
   // в момент первого применения шапка и картинки ещё не разложены, и границы
   // считаются по неготовой раскладке — надпись оставалась под шапкой.
-  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(reapplyPositions); } catch (e) {}
+  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(reapplyGeometry); } catch (e) {}
   window.addEventListener("load", function () {
-    reapplyPositions();
-    requestAnimationFrame(function () { requestAnimationFrame(reapplyPositions); });
+    reapplyGeometry();
+    requestAnimationFrame(function () { requestAnimationFrame(reapplyGeometry); });
   });
   (function () {
     var t = null;
     window.addEventListener("resize", function () {
       clearTimeout(t);
-      t = setTimeout(reapplyPositions, 120);
+      t = setTimeout(reapplyGeometry, 120);
     });
   })();
 
   // Режим правки переиспользует ЭТУ логику — вторая копия уже однажды разъехалась
   // с первой (см. PITFALLS про функции-двойники).
-  window.__stawPos = { place: posPlace, container: posContainer, clamp: clamp, minWidth: POS_MIN_W };
+  window.__stawPos = { place: posPlace, container: posContainer, clamp: clamp, minWidth: POS_MIN_W, narrow: narrowScreen };
   // Размеры рамки текста — тоже одна реализация на сайт и на редактор.
   window.__stawBox = applyBoxSize;
   // И выравнивание: в редакторе была своя копия без проверки «ширину задал

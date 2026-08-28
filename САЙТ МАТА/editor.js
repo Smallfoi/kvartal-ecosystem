@@ -728,6 +728,26 @@
       else el.style.translate = x + "px " + y + "px";
     });
   }
+  // Короткое сообщение поверх страницы — почему надпись не двигается.
+  var _hintT = null;
+  function narrowHint() {
+    var el = document.getElementById("staw-narrow-hint");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "staw-narrow-hint";
+      el.className = "staw-ui";
+      el.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483000;" +
+        "max-width:min(420px,86vw);padding:12px 16px;border-radius:12px;background:#14171c;color:#EEF1F5;" +
+        "font:500 13px/1.45 system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.35);text-align:center";
+      el.textContent = "На узкой ширине сдвиги не применяются — так же и на телефоне. " +
+        "Двигайте надписи на широкой ширине.";
+      document.body.appendChild(el);
+    }
+    el.style.display = "block";
+    clearTimeout(_hintT);
+    _hintT = setTimeout(function () { el.style.display = "none"; }, 3200);
+  }
+
   var _guides = null;
   function guideLayer() {
     if (!_guides) { _guides = document.createElement("div"); _guides.className = "staw-ui staw-guides"; document.body.appendChild(_guides); }
@@ -778,6 +798,14 @@
     if (e.altKey) { // Alt+клик — сброс позиции
       if (POS[key] && (POS[key].x || POS[key].y)) { applyPosByKey(key, "0,0"); draft("pos." + key, "0,0"); }
       justDragged = true; e.preventDefault(); return;
+    }
+    // На узкой ширине сдвиги не применяются — ни в предпросмотре, ни на телефоне.
+    // Тащить молча нельзя: владелец подвинет надпись, опубликует, а на сайте
+    // ничего не изменится.
+    if (window.__stawPos && window.__stawPos.narrow && window.__stawPos.narrow()) {
+      narrowHint();
+      e.preventDefault();
+      return;
     }
     var cur = POS[key] || { x: 0, y: 0 };
     mv = { el: el, key: key, sx: e.clientX, sy: e.clientY, bx: cur.x, by: cur.y,
