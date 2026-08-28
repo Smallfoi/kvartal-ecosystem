@@ -78,6 +78,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         return Scaffold(
           backgroundColor: AppColors.white,
           appBar: AppBar(
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            surfaceTintColor: Colors.transparent,
             title: const RemoteText(
               'app.profile.title',
               'ПРОФИЛЬ',
@@ -372,8 +375,17 @@ class _LoggedInBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _UserHeader(user: user),
-        const _LoyaltyCard(),
+        // Аккаунт + баллы — единый графитовый слой, чтобы между двумя чёрными
+        // блоками нигде не просвечивал белый фон тонкой линией (замечание владельца).
+        ColoredBox(
+          color: AppColors.black,
+          child: Column(
+            children: [
+              _UserHeader(user: user),
+              const _LoyaltyCard(),
+            ],
+          ),
+        ),
         _TabBar(selected: tab, onChanged: onTabChanged),
         const Divider(height: 1),
         Expanded(child: tab == 0 ? const _OrdersTab() : const _WishlistTab()),
