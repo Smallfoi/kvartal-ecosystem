@@ -85,7 +85,8 @@ jobs:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
           flutter pub get
-          flutter build apk --release --build-number="$BUILD_NUMBER"
+          # Только arm64 (все современные телефоны) — APK ~вдвое легче универсального.
+          flutter build apk --release --target-platform android-arm64 --build-number="$BUILD_NUMBER"
 
       - name: Publish to S3
         if: steps.detect.outputs.changed == 'true'
