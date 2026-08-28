@@ -2,7 +2,7 @@ name: sport_store
 description: "SportStore — спортивная одежда и экипировка"
 publish_to: 'none'
 
-version: 0.1.3+1
+version: 0.1.4+1
 
 environment:
   sdk: ^3.8.1
