@@ -145,6 +145,19 @@
   // ВНИМАНИЕ: имя не должно совпадать с applyAlignLocal ниже (выравнивание блоков) —
   // в JavaScript побеждает последнее объявление, и правка молча перестаёт работать.
   function applyTextAlignLocal(key, val) {
+    // Ширину, заданную владельцем (уголком), выравнивание переопределять не должно:
+    // иначе оно растягивает родителя, и проценты начинают считаться от него —
+    // в редакторе текст в две строки, а на сайте в три.
+    if (window.__stawAlign) {
+      var probe = document.querySelector('[data-edit="' + key + '"]');
+      var own = !!(probe && probe.style.width && !probe.dataset.stawAlignWidth);
+      window.__stawAlign(key, val, own);
+      return;
+    }
+    return applyTextAlignFallback(key, val);
+  }
+
+  function applyTextAlignFallback(key, val) {
     var v = (val || "").trim();
     if (v && ["left", "center", "right", "justify"].indexOf(v) === -1) return;
     document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
