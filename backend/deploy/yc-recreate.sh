@@ -23,11 +23,15 @@ DISK="$(printf '%s' "$J" | "$PY" -c "import sys,json;print(json.load(sys.stdin)[
 SECDISK="$(printf '%s' "$J" | "$PY" -c "import sys,json;d=json.load(sys.stdin).get('secondary_disks') or [];print(d[0]['disk_id'] if d else '')")"
 # Статический (reserved) внешний IP — сохраняем через nat-address, чтобы НЕ менять DNS.
 NATIP="$(printf '%s' "$J" | "$PY" -c "import sys,json;print(json.load(sys.stdin)['network_interfaces'][0].get('primary_v4_address',{}).get('one_to_one_nat',{}).get('address',''))")"
+# Сервисный аккаунт ВМ — ОБЯЗАТЕЛЕН: через него cloud-init читает секреты из Lockbox
+# (POSTGRES_PASSWORD/DJANGO_SECRET_KEY/JWT_SECRET). Без него деплой падает (FATAL abort).
+SA_ID="$(printf '%s' "$J" | "$PY" -c "import sys,json;print(json.load(sys.stdin).get('service_account_id',''))")"
 IMAGE="$(yc compute disk get --id "$DISK" --format json | "$PY" -c "import sys,json;print(json.load(sys.stdin).get('source_image_id',''))")"
 echo "   subnet=$SUBNET sg=$SG image=$IMAGE"
-echo "   диск-БД=$SECDISK  статический-IP=$NATIP"
+echo "   диск-БД=$SECDISK  статический-IP=$NATIP  сервис-аккаунт=$SA_ID"
 [ -n "$IMAGE" ] || { echo "Не удалось определить образ — прерываю."; exit 1; }
 [ -n "$SECDISK" ] || { echo "FATAL: не найден вторичный диск с БД — прерываю (иначе потеря данных)."; exit 1; }
+[ -n "$SA_ID" ] || { echo "FATAL: у текущей ВМ нет сервисного аккаунта — прерываю (без него Lockbox не отдаст секреты, деплой упадёт)."; exit 1; }
 [ -n "$NATIP" ] || echo "   ВНИМАНИЕ: статический IP не определён — новая ВМ получит НОВЫЙ IP, потребуется обновить DNS api.mata-club.ru."
 
 echo "== 2/5 Скачиваю cloud-init =="
@@ -45,6 +49,7 @@ NIC="subnet-id=$SUBNET,$NATPART"
 yc compute instance create \
   --name "$NAME" \
   --zone ru-central1-b \
+  --service-account-id "$SA_ID" \
   --platform standard-v3 \
   --cores 2 \
   --memory 4G \
