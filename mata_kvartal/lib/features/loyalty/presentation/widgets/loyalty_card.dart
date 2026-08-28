@@ -667,7 +667,29 @@ class LoyaltyQrFullscreen extends StatelessWidget {
                   size: side,
                   padding: EdgeInsets.zero,
                 ),
-                const SizedBox(height: 26),
+                const SizedBox(height: 22),
+                // Код для кассы (совпадает с QR): можно продиктовать, если нет сканера.
+                const Text( // staw-static — служебная подпись, не контент
+                  'КОД',
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF9AA0A8),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  qrData,
+                  style: const TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 6,
+                    color: Color(0xFF20252B),
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(height: 22),
                 const Text(
                   'ПОКАЖИТЕ КАССИРУ',
                   style: TextStyle(
