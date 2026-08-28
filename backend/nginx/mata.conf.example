@@ -105,5 +105,11 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
         add_header X-Content-Type-Options "nosniff" always;
+        # Страницу всегда перепроверяем у сервера. В ней метки версий остальных
+        # файлов (styles.css?v=…): если браузер оставит у себя старую страницу,
+        # он и файлы возьмёт старые — владелец увидит вёрстку, которую мы уже
+        # заменили. Сами файлы кэшировать можно: меняется содержимое → меняется
+        # метка → меняется адрес (страж tools/check_site_cache_bust.py следит).
+        add_header Cache-Control "no-cache" always;
     }
 }
