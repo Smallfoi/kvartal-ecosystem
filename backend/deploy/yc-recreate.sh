@@ -50,7 +50,7 @@ yc compute instance create \
   --memory 4G \
   --core-fraction 100 \
   --create-boot-disk "image-id=$IMAGE,size=30G,type=network-ssd" \
-  --attach-disk "disk-id=$SECDISK,auto-delete=false,mode=read-write" \
+  --attach-disk "disk-id=$SECDISK,auto-delete=false,mode=rw" \
   --network-interface "$NIC" \
   --metadata-from-file "user-data=/tmp/mata-ci.yaml" \
   --metadata "enable-oslogin=false"
