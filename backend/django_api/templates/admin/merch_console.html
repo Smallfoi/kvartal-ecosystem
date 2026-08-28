@@ -43,6 +43,9 @@
     </div>
     <span id="merch-pending" style="display:none;font-size:12px;font-weight:600;color:#b45309;background:#fef3c7;padding:5px 10px;border-radius:8px">Черновик: <span id="merch-pending-n">0</span></span>
     <button type="button" id="merch-publish" disabled style="padding:8px 16px;border:0;border-radius:8px;background:#9ca3af;color:#fff;cursor:not-allowed;font-size:13px;font-weight:700">Опубликовать на сайт</button>
+    <!-- Метка среды: локальная копия и боевой сайт выглядят одинаково, и правки,
+         сделанные не там, просто не появляются «на сайте». -->
+    <span id="merch-env" style="font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px"></span>
   </div>
 </div>
 
@@ -308,6 +311,24 @@
   var frameWrap = document.getElementById("merch-frame-wrap");
   var note = document.getElementById("merch-note");
   var modal = document.getElementById("merch-modal");
+  // Где мы: локальная копия для разработки или боевой сайт. Отличить их на глаз
+  // невозможно, а публикация уходит в РАЗНЫЕ базы — отсюда «опубликовал, а на
+  // сайте нет».
+  var ENV_HOST = location.host;
+  var IS_PROD = !/^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])(:|$)/.test(ENV_HOST);
+  (function () {
+    var el = document.getElementById("merch-env");
+    if (!el) return;
+    if (IS_PROD) {
+      el.textContent = "БОЕВОЙ САЙТ";
+      el.title = "Публикация уйдёт на " + ENV_HOST + " — правки увидят посетители";
+      el.style.background = "#dcfce7"; el.style.color = "#166534";
+    } else {
+      el.textContent = "ЛОКАЛЬНАЯ КОПИЯ — на сайт не уйдёт";
+      el.title = "Это " + ENV_HOST + ". Чтобы правки увидели посетители, откройте Конструктор на боевом сервере";
+      el.style.background = "#fee2e2"; el.style.color = "#991b1b";
+    }
+  })();
   var publishBtn = document.getElementById("merch-publish");
   var platform = "site";
   var appEditMode = true;  // режим приложения: true=правка (перехват тапов), false=просмотр
@@ -1185,7 +1206,9 @@
   // ── Публикация на реальный сайт (с подтверждением) ──
   function publish() {
     if (!pendingCount()) return;
-    if (!confirm("Опубликовать изменения на РЕАЛЬНЫЙ сайт? Их сразу увидят посетители.\n\nВы всё проверили в превью?")) return;
+    if (!confirm(IS_PROD
+      ? "Опубликовать изменения на БОЕВОЙ сайт " + ENV_HOST + "?\nИх сразу увидят посетители.\n\nВы всё проверили в превью?"
+      : "Это ЛОКАЛЬНАЯ копия (" + ENV_HOST + ").\nПравки НЕ появятся на боевом сайте mata-club.ru —\nони сохранятся только на этом компьютере.\n\nВсё равно опубликовать?")) return;
     var calls = [];
     ["site", "app"].forEach(function (pl) {
       if (pendingOrder[pl]) calls.push(api("./reorder", { method: "POST", body: JSON.stringify({ platform: pl, order: pendingOrder[pl] }) }));

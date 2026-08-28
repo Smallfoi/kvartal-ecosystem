@@ -689,12 +689,33 @@
   // (snap) + розовая направляющая. Alt+клик — сброс позиции. Позиция → pos.<key>.
   var justDragged = false;
   var POS = {};
+  // Допустимый ход надписи: она не должна выходить за свою секцию.
+  function posLimits(el) {
+    var S = window.__stawPos;
+    if (!S) return null;
+    var box = S.container(el);
+    var prev = el.style.translate;
+    el.style.translate = "";
+    var r = el.getBoundingClientRect(), pr = box.getBoundingClientRect();
+    el.style.translate = prev;
+    var loX = pr.left - r.left, hiX = pr.right - r.right;
+    var loY = pr.top - r.top, hiY = pr.bottom - r.bottom;
+    return {
+      w: box.clientWidth,
+      cx: function (v) { return S.clamp(v, loX, hiX); },
+      cy: function (v) { return S.clamp(v, loY, hiY); },
+    };
+  }
   function applyPosByKey(key, value) {
     var parts = String(value == null ? "0,0" : value).split(",");
     var x = parseFloat(parts[0]) || 0, y = parseFloat(parts[1]) || 0;
-    POS[key] = { x: x, y: y };
+    var refW = parseFloat(parts[2]) || 0;
+    POS[key] = { x: x, y: y, refW: refW };
     document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
-      el.style.translate = x + "px " + y + "px";
+      // Та же функция, что и на сайте: одинаковый результат в «Смотрим» и
+      // «Редактируем» — раньше две копии логики расходились.
+      if (window.__stawPos) window.__stawPos.place(el, x, y, refW);
+      else el.style.translate = x + "px " + y + "px";
     });
   }
   var _guides = null;
@@ -763,12 +784,17 @@
       mv.targets = collectTargets(mv.el, mv.container);
     }
     var nx = mv.bx + ddx, ny = mv.by + ddy;
+    // Не даём утащить надпись за пределы её секции: именно так она уезжала под
+    // фиксированную шапку, и верхние строки пропадали.
+    var lim = posLimits(mv.el);
+    if (lim) { nx = lim.cx(nx); ny = lim.cy(ny); }
     mv.el.style.translate = nx + "px " + ny + "px";
     var r = mv.el.getBoundingClientRect();
     var bx = bestSnap([r.left, (r.left + r.right) / 2, r.right], mv.targets.xs);
     var by = bestSnap([r.top, (r.top + r.bottom) / 2, r.bottom], mv.targets.ys);
     if (bx) nx += bx.delta;
     if (by) ny += by.delta;
+    if (lim) { nx = lim.cx(nx); ny = lim.cy(ny); }
     mv.el.style.translate = nx + "px " + ny + "px";
     mv.cx = nx; mv.cy = ny;
     clearGuides();
@@ -782,8 +808,12 @@
     clearGuides();
     document.documentElement.classList.remove("staw-moving");
     if (m.moved) {
-      POS[m.key] = { x: Math.round(m.cx), y: Math.round(m.cy) };
-      draft("pos." + m.key, POS[m.key].x + "," + POS[m.key].y);
+      // Запоминаем ширину контейнера: на другой ширине окна сдвиг пересчитается
+      // пропорционально, а не уедет в сторону.
+      var lim = posLimits(m.el);
+      var refW = lim ? Math.round(lim.w) : 0;
+      POS[m.key] = { x: Math.round(m.cx), y: Math.round(m.cy), refW: refW };
+      draft("pos." + m.key, POS[m.key].x + "," + POS[m.key].y + (refW ? "," + refW : ""));
       justDragged = true; // подавить последующий click-правку
     }
   }, true);
