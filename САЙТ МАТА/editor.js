@@ -748,6 +748,36 @@
     _hintT = setTimeout(function () { el.style.display = "none"; }, 3200);
   }
 
+  // Добавленная надпись стоит абсолютно внутри своей секции, и её место задаёт
+  // ТОЛЬКО сдвиг от угла этой секции. Утащили в другую секцию — сдвиг становится
+  // огромным (у владельца вышло -6300px), а расстояние между секциями на каждой
+  // ширине окна своё: на другом экране надпись промахивается на сотни пикселей.
+  // Поэтому при отпускании перевешиваем её в ту секцию, над которой она
+  // оказалась, и пересчитываем сдвиг относительно неё — он остаётся маленьким.
+  // Возвращает новый сдвиг или null, если перевешивать не понадобилось.
+  function rehomeLabel(el) {
+    var r = el.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var host = null;
+    [].forEach.call(document.querySelectorAll("section[id]"), function (s) {
+      var b = s.getBoundingClientRect();
+      if (cy >= b.top && cy <= b.bottom && cx >= b.left && cx <= b.right) host = s;
+    });
+    if (!host || host === el.parentElement) return null;
+    var keepL = r.left, keepT = r.top;   // куда владелец её поставил — там и оставим
+    if (getComputedStyle(host).position === "static") host.style.position = "relative";
+    el.style.translate = "";
+    host.appendChild(el);
+    el.style.left = "24px";
+    el.style.top = "24px";               // так же, как при загрузке страницы
+    var base = el.getBoundingClientRect();
+    return {
+      x: Math.round(keepL - base.left),
+      y: Math.round(keepT - base.top),
+      refW: Math.round(host.clientWidth),
+    };
+  }
+
   var _guides = null;
   function guideLayer() {
     if (!_guides) { _guides = document.createElement("div"); _guides.className = "staw-ui staw-guides"; document.body.appendChild(_guides); }
@@ -845,8 +875,18 @@
       // пропорционально, а не уедет в сторону.
       var lim = posLimits(m.el);
       var refW = lim ? Math.round(lim.w) : 0;
-      POS[m.key] = { x: Math.round(m.cx), y: Math.round(m.cy), refW: refW };
-      draft("pos." + m.key, POS[m.key].x + "," + POS[m.key].y + (refW ? "," + refW : ""));
+      var x = Math.round(m.cx), y = Math.round(m.cy);
+      // Добавленную надпись перевешиваем в ту секцию, над которой её отпустили.
+      if (m.el.classList.contains("staw-newlabel")) {
+        var re = rehomeLabel(m.el);
+        if (re) {
+          x = re.x; y = re.y; refW = re.refW;
+          m.el.style.translate = x + "px " + y + "px";
+          draft("xlabels", JSON.stringify(allLabels()));
+        }
+      }
+      POS[m.key] = { x: x, y: y, refW: refW };
+      draft("pos." + m.key, x + "," + y + (refW ? "," + refW : ""));
       justDragged = true; // подавить последующий click-правку
     }
   }, true);

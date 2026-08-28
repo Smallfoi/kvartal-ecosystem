@@ -55,6 +55,7 @@
 
   function injectAnimCss() {
     injectErasedCss();
+    injectLabelCss();
     if (document.getElementById("staw-anim-css")) return;
     var st = document.createElement("style");
     st.id = "staw-anim-css";
@@ -384,8 +385,20 @@
   function applyFontSize(key, val) {
     if (!safeId(key)) return;
     var n = parseInt(val, 10);
+    // Размер из Конструктора — жёсткие пиксели, а вёрстка сайта резиновая
+    // (clamp по ширине). Заголовок в 105px, поставленный на мониторе, на телефоне
+    // занимал бы экран целиком. Крупные кегли на узком экране пересчитываем по
+    // ширине окна, мелкие оставляем как есть — их уменьшать некуда.
+    var css = "";
+    if (n && n > 0) {
+      css = n + "px";
+      if (n > 30 && narrowScreen()) {
+        css = "clamp(" + Math.round(n * 0.3) + "px, " + (n / 9).toFixed(2) + "vw, " + n + "px)";
+      }
+    }
+    _fontVals[key] = val;
     document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) {
-      el.style.fontSize = (n && n > 0) ? n + "px" : "";
+      el.style.fontSize = css;
     });
   }
   function stawShadowCss(v) {
@@ -395,6 +408,7 @@
     return "0 " + (1 + 3 * k).toFixed(1) + "px " + (2 + 10 * k).toFixed(1) +
       "px rgba(0,0,0," + (0.25 + 0.5 * k).toFixed(2) + ")";
   }
+  var _fontVals = {};  // key → кегль, чтобы пересчитать при смене ширины окна
   var _boxVals = {};   // "key|prop" → значение, чтобы вернуть его при расширении окна
 
   function applyBoxSize(key, prop, value) {
@@ -455,6 +469,20 @@
   // сломанную вёрстку. Редактор зовёт ту же функцию — в предпросмотре на узкой
   // ширине видно ровно то же, что на телефоне.
   function narrowScreen() { return window.innerWidth < POS_MIN_W; }
+
+  // Добавленная в Конструкторе надпись стоит абсолютно и держится ТОЛЬКО на
+  // сдвиге, а сдвиги на узком экране мы не применяем — надпись прилипала к углу
+  // своей секции поверх другого текста. На телефоне ставим её в поток: она
+  // окажется в конце своей секции — читаемая и никому не мешающая.
+  function injectLabelCss() {
+    if (document.getElementById("staw-xl-css")) return;
+    var s = document.createElement("style");
+    s.id = "staw-xl-css";
+    s.textContent = "@media (max-width:" + (POS_MIN_W - 1) + "px){" +
+      ".staw-newlabel{position:static!important;max-width:100%!important;" +
+      "margin:18px 0 0!important;translate:none!important}}";
+    (document.head || document.documentElement).appendChild(s);
+  }
   var _posVals = {};     // key → "dx,dy[,refW]", чтобы пересчитать при resize
 
   // Границы хода — по секции, а не по ближайшему родителю: родитель часто
@@ -482,8 +510,12 @@
     // двух строк стал пятистрочным: сдвиг вверх утаскивает его под шапку.
     if (narrowScreen()) { el.style.translate = ""; return; }
     var box = posContainer(el);
+    // По ширине пересчитываем только ГОРИЗОНТАЛЬНЫЙ сдвиг. Высота блоков ширине
+    // окна не пропорциональна — текст переносится иначе, картинки другой высоты;
+    // умножать вертикальный сдвиг на отношение ширин значит промахиваться тем
+    // сильнее, чем он больше (на сдвиге в 6300px это сотни пикселей мимо).
     var k = (refW && box.clientWidth) ? box.clientWidth / refW : 1;
-    var nx = x * k, ny = y * k;
+    var nx = x * k, ny = y;
     el.style.translate = (nx ? nx.toFixed(1) + "px" : "0px") + " " +
                          (ny ? ny.toFixed(1) + "px" : "0px");
   }
@@ -503,6 +535,7 @@
   // шрифта метрики текста другие, и без пересчёта надпись «прыгает» после
   // перезагрузки страницы.
   function reapplyGeometry() {
+    Object.keys(_fontVals).forEach(function (k) { applyFontSize(k, _fontVals[k]); });
     Object.keys(_posVals).forEach(function (k) { applyPos(k, _posVals[k]); });
     Object.keys(_boxVals).forEach(function (k) {
       var i = k.lastIndexOf("|");
