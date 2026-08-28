@@ -189,13 +189,13 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
               },
             ),
             children: [
-              // Подложка: растровые тайлы CARTO Voyager (надёжно онлайн). Векторный
-              // OpenFreeMap убран — он отрисовывался серым и перекрывал рабочий растр (D-26).
+              // Подложка: растровые тайлы OpenStreetMap (без ключа). CARTO Voyager
+              // убран — CARTO закрыл бесплатный доступ без API-ключа и стал рисовать
+              // водяной знак «API key required». Векторный OpenFreeMap убран ранее —
+              // отрисовывался серым (D-26). Для запуска — свой ключ провайдера.
               TileLayer(
                 key: ValueKey(_tileLayerReloadId),
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'ru.mata.kvartal',
                 maxNativeZoom: 19,
                 errorTileCallback: (_, __, ___) => _handleTileError(),
@@ -205,7 +205,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
               const RichAttributionWidget(
                 alignment: AttributionAlignment.bottomLeft,
                 attributions: [
-                  TextSourceAttribution('CARTO'),
                   TextSourceAttribution('© OpenStreetMap'),
                 ],
               ),
