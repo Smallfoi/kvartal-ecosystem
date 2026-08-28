@@ -43,7 +43,18 @@
   function parseArr(v) { try { var a = JSON.parse(v); return Array.isArray(a) ? a : null; } catch (e) { return null; } }
 
   // ── Анимации: CSS-пресеты (инъекция один раз; на живом сайте эффекта нет, пока не задан anim.<key>) ──
+  // Удалённая владельцем надпись убирается из потока целиком: иначе на её месте
+  // остаётся пустая строка с отступами.
+  function injectErasedCss() {
+    if (document.getElementById("staw-erased-css")) return;
+    var s = document.createElement("style");
+    s.id = "staw-erased-css";
+    s.textContent = ".staw-erased{display:none!important}";
+    (document.head || document.documentElement).appendChild(s);
+  }
+
   function injectAnimCss() {
+    injectErasedCss();
     if (document.getElementById("staw-anim-css")) return;
     var st = document.createElement("style");
     st.id = "staw-anim-css";
@@ -592,8 +603,21 @@
         if (key.indexOf("bg.") === 0) { setBgImg(key.slice(3), c.imageUrl); return; }
         if (key.indexOf("extra.") === 0) { return; } // уже применили выше
         if (key === "xlabels") { return; } // список надписей — материализован выше
-        if (c.value && safeId(key)) {
-          document.querySelectorAll('[data-edit="' + key + '"]').forEach(function (el) { el.textContent = c.value; });
+        if (safeId(key)) {
+          var texts = document.querySelectorAll('[data-edit="' + key + '"]');
+          if (c.value) {
+            texts.forEach(function (el) { el.textContent = c.value; el.classList.remove("staw-erased"); });
+          } else if (!c.imageUrl) {
+            // Пустое значение — это «владелец удалил надпись», а не «правки нет».
+            // Раньше пустое просто игнорировалось, и текст из вёрстки возвращался
+            // после публикации: удалить надпись было невозможно.
+            // В режиме правки не скрываем — там на её месте плейсхолдер «+ надпись»,
+            // чтобы текст можно было вернуть.
+            texts.forEach(function (el) {
+              el.textContent = "";
+              if (!EDIT) el.classList.add("staw-erased");
+            });
+          }
         }
         if (c.imageUrl && safeId(key)) {
           var url = mediaUrl(c.imageUrl);
