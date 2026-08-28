@@ -511,6 +511,8 @@
   // Режим правки переиспользует ЭТУ логику — вторая копия уже однажды разъехалась
   // с первой (см. PITFALLS про функции-двойники).
   window.__stawPos = { place: posPlace, container: posContainer, clamp: clamp, minWidth: POS_MIN_W };
+  // Размеры рамки текста — тоже одна реализация на сайт и на редактор.
+  window.__stawBox = applyBoxSize;
 
   // Добавленные в «Конструкторе» надписи: воссоздаём пустые элементы в их секциях,
   // текст (xl.<sid>) и позицию (pos.xl.<sid>) заполнит основной проход apply().
@@ -530,6 +532,26 @@
     });
   }
 
+  // Порядок применения ключей. Меньше — раньше. Правило простое: сначала то, от чего
+  // зависит геометрия (текст, картинки, шрифт, размеры), и только потом то, что по этой
+  // геометрии считается (выравнивание, позиция).
+  function applyRank(key) {
+    if (key.indexOf("pos.") === 0) return 60;        // позиция — самой последней
+    if (key.indexOf("talign.") === 0) return 50;     // выравнивание — после ширины
+    if (key.indexOf("width.") === 0) return 40;
+    if (key.indexOf("minh.") === 0) return 40;
+    if (key.indexOf("fontsize.") === 0) return 30;   // типографика меняет размеры блока
+    if (key.indexOf("font.") === 0) return 30;
+    if (key.indexOf("shadow.") === 0) return 30;
+    if (key.indexOf("color.") === 0) return 30;
+    if (key.indexOf("order.") === 0) return 20;      // перестановки и скрытия — до замеров
+    if (key.indexOf("hidden.") === 0) return 20;
+    if (key.indexOf("size.") === 0) return 20;
+    if (key.indexOf("align.") === 0) return 20;
+    if (key.indexOf("anim.") === 0) return 20;
+    return 10;                                        // текст, картинки, фоны — первыми
+  }
+
   function apply(content) {
     if (!content) return;
     // Публикуем контент глобально: модалки/элементы, которые строятся из JS позже
@@ -542,8 +564,12 @@
       if (k.indexOf("extra.") === 0) { try { materialize(k.slice(6), (content[k] || {}).value); } catch (e) {} }
     });
     try { if (content["xlabels"]) materializeLabels(JSON.parse((content["xlabels"] || {}).value || "[]")); } catch (e) {}
-    // 2) основной проход
-    Object.keys(content).forEach(function (key) {
+    // 2) основной проход — СТРОГО по зависимостям (см. applyRank): позиция считается
+    // последней, когда текст, шрифт и размеры уже встали. Иначе границы считаются по
+    // чужой геометрии, и на разных загрузках страница выглядит по-разному.
+    Object.keys(content).sort(function (a, b) {
+      return applyRank(a) - applyRank(b);
+    }).forEach(function (key) {
       try {
         var c = content[key] || {};
         if (key.indexOf("order.") === 0) { applyOrder(key.slice(6), c.value); return; }
