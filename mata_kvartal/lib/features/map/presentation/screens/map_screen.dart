@@ -28,6 +28,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
   final _mapController = MapController();
   final _flashing = <String>{};
 
+  // Ключ CARTO приходит из сборки (--dart-define=CARTO_API_KEY, секрет — не в репо).
+  // Есть ключ → чистые тайлы CARTO Voyager; нет ключа (локальная сборка без секрета)
+  // → OpenStreetMap, чтобы карта всё равно работала.
+  static const _cartoKey = String.fromEnvironment('CARTO_API_KEY');
+  bool get _hasCarto => _cartoKey.isNotEmpty;
+
   bool _followUser = true;
   bool _baseMapFailed = false;
   int _tileErrorCount = 0;
@@ -189,23 +195,27 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
               },
             ),
             children: [
-              // Подложка: растровые тайлы OpenStreetMap (без ключа). CARTO Voyager
-              // убран — CARTO закрыл бесплатный доступ без API-ключа и стал рисовать
-              // водяной знак «API key required». Векторный OpenFreeMap убран ранее —
-              // отрисовывался серым (D-26). Для запуска — свой ключ провайдера.
+              // Подложка: CARTO Voyager (растровые тайлы) с ключом из сборки. Без
+              // ключа — OpenStreetMap (локальная сборка работает). Векторный
+              // OpenFreeMap убран ранее — отрисовывался серым (D-26). CARTO сворачивает
+              // растр → на запуске апгрейд на вектор (MapLibre).
               TileLayer(
                 key: ValueKey(_tileLayerReloadId),
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: _hasCarto
+                    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=$_cartoKey'
+                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: _hasCarto ? const ['a', 'b', 'c', 'd'] : const [],
                 userAgentPackageName: 'ru.mata.kvartal',
                 maxNativeZoom: 19,
                 errorTileCallback: (_, __, ___) => _handleTileError(),
               ),
 
-              // Атрибуция обязательна.
-              const RichAttributionWidget(
+              // Атрибуция обязательна (условие бесплатного тарифа CARTO): CARTO + OSM.
+              RichAttributionWidget(
                 alignment: AttributionAlignment.bottomLeft,
                 attributions: [
-                  TextSourceAttribution('© OpenStreetMap'),
+                  if (_hasCarto) const TextSourceAttribution('CARTO'),
+                  const TextSourceAttribution('© OpenStreetMap'),
                 ],
               ),
               if (capturedAreas.isNotEmpty)
