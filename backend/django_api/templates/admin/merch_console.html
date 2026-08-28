@@ -362,6 +362,17 @@
     a.style.cssText = "font-size:12px;font-weight:700;color:#111;background:#dff45f;padding:6px 12px;border-radius:8px;text-decoration:none";
     el.insertAdjacentElement("afterend", a);
   })();
+  // Порядок применения правок — тот же, что на сайте (content.js, applyRank).
+  // Меньше — раньше: сначала то, от чего зависит геометрия, потом то, что по ней считается.
+  function draftRank(key) {
+    if (key.indexOf("pos.") === 0) return 60;
+    if (key.indexOf("talign.") === 0) return 50;
+    if (key.indexOf("width.") === 0 || key.indexOf("minh.") === 0) return 40;
+    if (/^(fontsize|font|shadow|color)\./.test(key)) return 30;
+    if (/^(order|hidden|size|align|anim)\./.test(key)) return 20;
+    return 10;
+  }
+
   var publishBtn = document.getElementById("merch-publish");
   var platform = "site";
   var appEditMode = true;  // режим приложения: true=правка (перехват тапов), false=просмотр
@@ -794,7 +805,13 @@
       Object.keys(pendingProducts).forEach(function (id) {
         tellFrame({ type: "updateCard", id: id, fields: cardFields(pendingProducts[id]) });
       });
-      Object.keys(pendingContent).forEach(function (k) {
+      // Досылаем в том же порядке, в каком сайт применяет правки при загрузке
+      // (см. applyRank в content.js): позиция считается по геометрии, а геометрия
+      // зависит от текста, шрифта и ширины. Прислать позицию первой — значит
+      // посчитать её по чужой раскладке, и текст «искажается».
+      Object.keys(pendingContent).sort(function (a, b) {
+        return draftRank(a) - draftRank(b);
+      }).forEach(function (k) {
         tellFrame({ type: "setContent", key: k, value: pendingContent[k] });
       });
       Object.keys(pendingImages).forEach(function (k) {
