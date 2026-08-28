@@ -82,6 +82,13 @@ docker compose -f docker-compose.prod.yml --env-file .env exec -T web python man
 docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py createsuperuser --noinput 2>/dev/null || true
 docker compose -f docker-compose.prod.yml --env-file .env exec -T web python manage.py publish_legal || true
 echo "MATA deploy done" > /opt/mata-deploy.done
+# Авто-деплой + краны. Скрипт берём из склонированного репо (переменные целостны, в отличие
+# от запечённого cloud-init). grep -v чистит старые/битые кроны (mata-autodeploy/mata-tls) и дубли.
+cp /opt/mata/backend/deploy/prod-autodeploy.sh /opt/prod-autodeploy.sh && chmod +x /opt/prod-autodeploy.sh
+( crontab -l 2>/dev/null | grep -v 'prod-autodeploy\|mata-autodeploy\|mata-tls\|tls.sh renew\|backup.sh' ; \
+  echo "*/2 * * * * /opt/prod-autodeploy.sh >> /var/log/mata-autodeploy.log 2>&1" ; \
+  echo "0 3 * * 1 cd /opt/mata/backend && ./deploy/tls.sh renew >> /var/log/mata-tls.log 2>&1" ; \
+  echo "0 4 * * * cd /opt/mata/backend && ./deploy/backup.sh >> /var/log/mata-backup.log 2>&1" ) | crontab -
 echo "=== TLS issue (inline) ==="
 ./deploy/tls.sh issue 2>&1 || echo "=== TLS issue FAILED (см. вывод выше) ==="
 ./deploy/backup.sh >> /var/log/mata-backup.log 2>&1 || true
