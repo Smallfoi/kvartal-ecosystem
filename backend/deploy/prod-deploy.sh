@@ -19,10 +19,18 @@ systemctl enable --now docker
 usermod -aG docker ubuntu || true
 
 rm -rf /opt/mata && git clone --depth 1 https://github.com/Smallfoi/mata-ecosystem.git /opt/mata
-# Статика САЙТ МАТА → чистый путь /opt/mata-site (без внутренних *.md/Референсы).
-rm -rf /opt/mata-site && cp -r /opt/mata/"САЙТ МАТА" /opt/mata-site
-rm -f /opt/mata-site/*.md /opt/mata-site/AGENTS.md 2>/dev/null || true
-rm -rf /opt/mata-site/"Референсы" 2>/dev/null || true
+# Статика САЙТ МАТА → /opt/mata-site (bind-mount в nginx). Синхронизируем ПО МЕСТУ (rsync,
+# тот же inode) — НЕ rm -rf: на живом проде rm -rf сорвал бы mount у работающего nginx (403).
+mkdir -p /opt/mata-site
+if command -v rsync >/dev/null 2>&1; then
+  rsync -a --delete --exclude='*.md' --exclude='AGENTS.md' --exclude='Референсы' \
+    /opt/mata/"САЙТ МАТА"/ /opt/mata-site/
+else
+  cp -rT /opt/mata/"САЙТ МАТА" /opt/mata-site
+  find /opt/mata-site -maxdepth 1 -name '*.md' -delete 2>/dev/null || true
+  rm -f /opt/mata-site/AGENTS.md 2>/dev/null || true
+  rm -rf /opt/mata-site/"Референсы" 2>/dev/null || true
+fi
 cd /opt/mata/backend
 umask 077
 
