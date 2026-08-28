@@ -99,10 +99,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # нужен main целиком: сравниваем метку версии с базовой
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       # Синтакс-гейт клиентского JS сайта (content.js/editor.js/promo.js и др.):
       # node --check ловит рецидивные синтакс-ошибки, ломавшие витрину/конструктор,
@@ -118,6 +124,15 @@ jobs:
           done < <(find "САЙТ МАТА" -maxdepth 1 -name '*.js' | sort)
           echo "checked $count file(s)"
           test "$count" -gt 0   # страховка: путь с кириллицей нашёлся, файлы проверены
+
+      # Браузер запоминает styles.css?v=20260702 и при следующем заходе берёт его
+      # из своей памяти: адрес не изменился. Меняем файл, не сдвинув метку —
+      # владелец на своём телефоне видит СТАРУЮ вёрстку, сколько ни выкатывай
+      # (так и вышло с мобильными правками). Подробности: tools/check_site_cache_bust.py.
+      - name: Cache-bust guard (одна метка ?v= на все страницы)
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          python tools/check_site_cache_bust.py --base origin/main
 
   editable-guard:
     name: CMS · Editable text
