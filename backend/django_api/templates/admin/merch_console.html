@@ -42,6 +42,20 @@
       <button type="button" id="merch-redo" disabled title="Вернуть (Ctrl+Shift+Z)" style="padding:8px 12px;border:0;cursor:not-allowed;font-weight:700;font-size:16px;line-height:1;background:#fff;color:#9ca3af">↷</button>
     </div>
     <span id="merch-pending" style="display:none;font-size:12px;font-weight:600;color:#b45309;background:#fef3c7;padding:5px 10px;border-radius:8px">Черновик: <span id="merch-pending-n">0</span></span>
+    <!-- Ширина, в которой рендерится превью. «Как у меня» = ширина окна владельца:
+         именно так он и увидит сайт, когда откроет его в браузере. -->
+    <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#374151;font-weight:600">
+      Ширина
+      <select id="merch-width" style="padding:6px 8px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;background:#fff">
+        <option value="0">Как у меня</option>
+        <option value="1920">Большой экран · 1920</option>
+        <option value="1440">Ноутбук · 1440</option>
+        <option value="1280">Ноутбук · 1280</option>
+        <option value="820">Планшет · 820</option>
+        <option value="390">Телефон · 390</option>
+      </select>
+    </label>
+    <span id="merch-scale" style="font-size:11px;color:#9ca3af"></span>
     <button type="button" id="merch-publish" disabled style="padding:8px 16px;border:0;border-radius:8px;background:#9ca3af;color:#fff;cursor:not-allowed;font-size:13px;font-weight:700">Опубликовать на сайт</button>
     <!-- Метка среды: локальная копия и боевой сайт выглядят одинаково, и правки,
          сделанные не там, просто не появляются «на сайте». -->
@@ -51,8 +65,10 @@
 
 <!-- Сцена превью: сайт — во всю ширину; приложение — в рамке реального телефона. -->
 <div id="merch-stage" style="height:80vh;display:flex;justify-content:center;align-items:flex-start;background:#f3f4f6;border-radius:10px;padding:0">
-  <div id="merch-frame-wrap" style="width:100%;height:100%;overflow:hidden;border-radius:10px;border:1px solid #e5e7eb;background:#fff">
-    <iframe id="merch-frame" title="Конструктор" style="width:100%;height:100%;border:0;background:#fff"></iframe>
+  <div id="merch-frame-wrap" style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:10px;border:1px solid #e5e7eb;background:#fff">
+    <!-- Рамка рендерит сайт в НАСТОЯЩЕЙ ширине и уменьшается масштабом: иначе
+         переносы строк в превью не совпадают с боевым сайтом. -->
+    <iframe id="merch-frame" title="Конструктор" style="position:absolute;left:0;top:0;width:100%;height:100%;border:0;background:#fff;transform-origin:0 0"></iframe>
   </div>
 </div>
 <p id="merch-note" style="font-size:12px;color:#9ca3af;margin:8px 0 0"></p>
@@ -402,6 +418,55 @@
       return SITE_URL + (siteEditMode ? "&edit=1" + c : "") + v;
     }
   }
+  // Ширина, в которой показываем сайт. 0 = «как у меня» — ширина окна владельца.
+  var siteWidth = 0;
+  function refWidth() {
+    return siteWidth || Math.max(360, window.innerWidth);
+  }
+  // Рамка рендерит сайт в настоящей ширине и уменьшается масштабом. Так превью
+  // совпадает с боевым сайтом по переносам строк и размеру шрифта — раньше рамка
+  // была шириной с панель, и всё разъезжалось после публикации.
+  function fitFrame() {
+    var scaleNote = document.getElementById("merch-scale");
+    if (platform === "app") {                 // телефон рисуем как есть, 1:1
+      frame.style.transform = "";
+      frame.style.width = "100%";
+      frame.style.height = "100%";
+      if (scaleNote) scaleNote.textContent = "";
+      return;
+    }
+    var w = refWidth();
+    var availW = frameWrap.clientWidth || w;
+    var availH = frameWrap.clientHeight || 600;
+    var k = Math.min(1, availW / w);
+    frame.style.width = w + "px";
+    frame.style.height = Math.round(availH / k) + "px";
+    frame.style.transform = k < 1 ? "scale(" + k.toFixed(4) + ")" : "";
+    if (scaleNote) {
+      scaleNote.textContent = k < 1
+        ? w + " px, показано в " + Math.round(k * 100) + "%"
+        : w + " px, 1:1";
+    }
+  }
+  (function () {
+    var sel = document.getElementById("merch-width");
+    if (sel) sel.addEventListener("change", function () {
+      siteWidth = parseInt(sel.value, 10) || 0;
+      fitFrame();
+    });
+    var t = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(t); t = setTimeout(fitFrame, 120);
+    });
+    // Первый расчёт делаем ещё и после раскладки страницы: на момент setFrame
+    // панель может быть не измерена, и масштаб получался 1:1.
+    window.addEventListener("load", function () {
+      fitFrame();
+      requestAnimationFrame(function () { requestAnimationFrame(fitFrame); });
+    });
+    frame.addEventListener("load", fitFrame);
+  })();
+
   function setFrame() {
     frame.src = frameSrc();
     if (platform === "app") {
@@ -422,6 +487,7 @@
       stage.style.alignItems = "flex-start";
       stage.style.padding = "0";
     }
+    fitFrame();
     setNote();
   }
   function setNote() {

@@ -109,8 +109,9 @@
       var box2 = manifest.getBoundingClientRect();
       var total = manifest.offsetHeight - window.innerHeight;
       var progress = total > 0 ? Math.min(1, Math.max(0, -box2.top / total)) : 0;
-      // Первая строка горит сразу, дальше — по мере прокрутки.
-      var active = Math.floor(progress * (lines.length + 0.4));
+      // Строки зажигаются по мере прокрутки — включая первую. Раньше она горела
+      // сразу, и выглядело так, будто анимации у неё нет.
+      var active = progress > 0.012 ? Math.floor(progress * (lines.length + 0.4)) : -1;
       lines.forEach(function (line, i) { line.classList.toggle("is-on", i <= active); });
     }
   }
@@ -184,9 +185,29 @@
   var startX = 0;
   var startScroll = 0;
   var history = [];
+  var glide = null;   // текущая доводка (чтобы прервать её новым касанием)
+
+  // Своя доводка вместо браузерного «smooth»: тот едет одинаково медленно на любое
+  // расстояние. Здесь длительность зависит от пути, а замедление резкое в конце —
+  // лента отзывается сразу и встаёт чётко.
+  function glideTo(left) {
+    if (glide) cancelAnimationFrame(glide);
+    var from = rail.scrollLeft;
+    var dist = left - from;
+    if (Math.abs(dist) < 1 || reduce) { rail.scrollLeft = left; return; }
+    var dur = Math.min(520, Math.max(220, Math.abs(dist) * 0.55));
+    var t0 = performance.now();
+    (function step(now) {
+      var p = Math.min(1, (now - t0) / dur);
+      var e = 1 - Math.pow(1 - p, 3);          // быстрый старт, мягкая остановка
+      rail.scrollLeft = from + dist * e;
+      glide = p < 1 ? requestAnimationFrame(step) : null;
+    })(t0);
+  }
 
   rail.addEventListener("pointerdown", function (e) {
     if (e.pointerType === "touch") return; // на тач-экранах хватает родной прокрутки
+    if (glide) { cancelAnimationFrame(glide); glide = null; }   // поймали на лету
     dragging = true;
     rail.setPointerCapture(e.pointerId);
     rail.classList.add("is-dragging");
@@ -208,21 +229,28 @@
     rail.classList.remove("is-dragging");
     try { rail.releasePointerCapture(e.pointerId); } catch (err) {}
 
-    var first = history[0];
+    // Скорость считаем по последним точкам движения — так бросок ловится честно,
+    // даже если рука перед отпусканием замедлилась.
     var last = history[history.length - 1];
+    var first = history[0];
+    for (var i = history.length - 1; i >= 0; i--) {
+      if (last.t - history[i].t > 90) break;
+      first = history[i];
+    }
     var dt = first && last ? last.t - first.t : 0;
     var velocity = dt > 0 ? ((last.x - first.x) / dt) * 1000 : 0; // px/с
 
-    // Проекция инерции: куда лента доехала бы при обычном замедлении.
-    var decel = 0.998;
+    // Проекция инерции: куда лента доехала бы при обычном замедлении. Чем резче
+    // бросок, тем дальше — можно перелистнуть сразу несколько карточек.
+    var decel = 0.996;
     var projected = rail.scrollLeft - (velocity / 1000) * decel / (1 - decel);
+    var maxLeft = rail.scrollWidth - rail.clientWidth;
+    projected = Math.min(maxLeft, Math.max(0, projected));
     var target = nearest(projected + rail.clientWidth / 2);
     if (!target) return;
 
-    rail.scrollTo({
-      left: target.offsetLeft + target.offsetWidth / 2 - rail.clientWidth / 2,
-      behavior: reduce ? "auto" : "smooth"
-    });
+    glideTo(Math.min(maxLeft, Math.max(0,
+      target.offsetLeft + target.offsetWidth / 2 - rail.clientWidth / 2)));
   }
 
   rail.addEventListener("pointerup", release);
