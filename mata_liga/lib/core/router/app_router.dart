@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/map/presentation/screens/map_screen.dart';
 import '../../features/run/presentation/screens/run_screen.dart';
 import '../../features/permissions/presentation/location_setup_sheet.dart';
+import '../../features/league/presentation/screens/league_screen.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
 import '../../features/races/data/races_provider.dart';
 import '../../features/races/presentation/screens/races_screen.dart';
@@ -149,13 +150,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // 2 — Рейтинг
+          // 2 — Рейтинг (внутри него живёт «Лига»: то же место в голове —
+          //     «как я выгляжу на фоне других», но зачётов несколько)
           StatefulShellBranch(
             navigatorKey: tabNavigatorKeys[2],
             routes: [
               GoRoute(
                 path: '/leaderboard',
                 builder: (_, __) => const LeaderboardScreen(),
+              ),
+              GoRoute(
+                path: '/league',
+                builder: (_, __) => const LeagueScreen(),
               ),
             ],
           ),
