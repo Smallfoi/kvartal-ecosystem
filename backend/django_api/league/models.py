@@ -21,6 +21,17 @@ class RunnerProfile(models.Model):
         ("amateur", "Любитель"),
         ("advanced", "Опытный"),
     ]
+    # Ответ на вопрос «зачем ты бегаешь» при первом запуске. Под него собирается
+    # главный экран: гибкость без этого вопроса превращается в кашу — пять зачётов,
+    # территории, тропы и клубы разом новичок не осилит.
+    FOCUS_CHOICES = [
+        ("health", "Для здоровья"),
+        ("compete", "Соревноваться"),
+        ("social", "С людьми"),
+        ("calm", "Разгрузить голову"),
+        # «Пропустил» — тоже ответ: вопрос задан, повторять его не нужно.
+        ("skip", "Пропустил вопрос"),
+    ]
 
     user_id = models.CharField(primary_key=True, max_length=40, verbose_name="Пользователь (ID)")
     birth_year = models.IntegerField(null=True, blank=True, verbose_name="Год рождения")
@@ -31,6 +42,12 @@ class RunnerProfile(models.Model):
         max_length=12, blank=True, default="", choices=LEVEL_CHOICES, verbose_name="Уровень"
     )
     weekly_goal_km = models.FloatField(null=True, blank=True, verbose_name="Цель на неделю, км")
+    focus = models.CharField(
+        max_length=10, blank=True, default="", choices=FOCUS_CHOICES, verbose_name="Зачем бегает"
+    )
+    # Участие в тропах: выключено — трек забега не уходит на сервер вовсе (D-60).
+    # По умолчанию включено, иначе функция мертва; выключатель виден в настройках.
+    trails_enabled = models.BooleanField(default=True, verbose_name="Участвовать в тропах")
     updated_at = models.DateTimeField(default=timezone.now, verbose_name="Обновлён")
 
     class Meta:
@@ -43,5 +60,7 @@ class RunnerProfile(models.Model):
             "birthYear": self.birth_year,
             "gender": self.gender or None,
             "level": self.level or None,
+            "focus": self.focus or None,
             "weeklyGoalKm": self.weekly_goal_km,
+            "trailsEnabled": self.trails_enabled,
         }

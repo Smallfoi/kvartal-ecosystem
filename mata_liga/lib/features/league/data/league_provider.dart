@@ -139,13 +139,21 @@ class RunnerProfile {
   final double? weeklyGoalKm;
   final String? groupLabel;
 
+  /// Ответ на «зачем ты бегаешь»: health | compete | social | calm.
+  /// 'skip' — вопрос показали, человек пропустил: больше не спрашиваем.
+  final String? focus;
+
   const RunnerProfile({
     this.birthYear,
     this.gender,
     this.level,
     this.weeklyGoalKm,
     this.groupLabel,
+    this.focus,
   });
+
+  /// Спрашивать ли о цели: только если человек ещё не отвечал и не пропускал.
+  bool get needsFocus => (focus ?? '').isEmpty;
 
   bool get isReadyForOwnLane => birthYear != null && (gender ?? '').isNotEmpty;
 
@@ -155,6 +163,7 @@ class RunnerProfile {
     level: j['level']?.toString(),
     weeklyGoalKm: (j['weeklyGoalKm'] as num?)?.toDouble(),
     groupLabel: (j['group'] as Map<String, dynamic>?)?['label']?.toString(),
+    focus: j['focus']?.toString(),
   );
 }
 
@@ -225,6 +234,7 @@ Future<RunnerProfile> saveRunnerProfile(
   String? gender,
   String? level,
   double? weeklyGoalKm,
+  String? focus,
 }) async {
   final token = ref.read(authProvider).token;
   if (token == null || token.isEmpty) return const RunnerProfile();
@@ -233,6 +243,7 @@ Future<RunnerProfile> saveRunnerProfile(
   if (gender != null) body['gender'] = gender;
   if (level != null) body['level'] = level;
   if (weeklyGoalKm != null) body['weeklyGoalKm'] = weeklyGoalKm;
+  if (focus != null) body['focus'] = focus;
 
   final res = await _leagueDio.post<Map<String, dynamic>>(
     '/runner/profile',

@@ -7,6 +7,7 @@ import '../../core/constants/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../core/services/update_checker.dart';
 import '../../core/theme/app_colors.dart';
+import '../../features/league/data/league_provider.dart';
 import '../../features/shoes/data/shoes_provider.dart';
 import '../../features/shoes/presentation/shoe_prompt.dart';
 import 'kvartal_logo.dart';
@@ -24,6 +25,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   // Спрашиваем про новые покупки один раз за запуск приложения.
   bool _askedPending = false;
   bool _asking = false;
+  bool _askedFocus = false;
 
   void _onTap(int index) {
     // Закрываем модальный лист/диалог, открытый на покидаемой вкладке (погода,
@@ -49,9 +51,29 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     _asking = false;
   }
 
+  /// Первый вход — спрашиваем, зачем человек бегает, и отправляем его на
+  /// подходящий экран. Гибкость без этого вопроса превращается в кашу: пять
+  /// зачётов, территории, тропы и клубы разом новичок не осилит.
+  ///
+  /// Спрашиваем один раз: ответ (в том числе «пропустить») хранится в профиле
+  /// на сервере, а не локально — иначе вопрос всплывёт на втором устройстве.
+  Future<void> _maybeAskFocus() async {
+    if (_askedFocus) return;
+    _askedFocus = true;
+    try {
+      final profile = await ref.read(runnerProfileProvider.future);
+      if (!mounted || !profile.needsFocus) return;
+      context.push('/focus');
+    } catch (_) {
+      // Нет сети — спросим в следующий раз, это не повод задерживать человека.
+      _askedFocus = false;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskFocus());
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskPending());
     // Проверка обновления тест-сборки (Android): баннер, если в S3 версия новее.
     WidgetsBinding.instance
