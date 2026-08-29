@@ -29,6 +29,11 @@ const _locationServiceChannel = MethodChannel('kvartal/location_service');
 class RunState {
   final RunStatus status;
   final List<LatLng> route;
+
+  /// Время каждой точки маршрута (мс). Идёт рядом с route, а не внутри неё,
+  /// чтобы не переписывать всё, что рисует линию по `List<LatLng>`.
+  /// Нужно тропам: их время считается от входа до выхода (D-60).
+  final List<int> routeTimes;
   final Duration elapsed;
   final double distanceMeters;
   final bool mockDetected; // в забеге был подделанный GPS (Android mock) — анти-чит S-04
@@ -36,6 +41,7 @@ class RunState {
   const RunState({
     this.status = RunStatus.idle,
     this.route = const [],
+    this.routeTimes = const [],
     this.elapsed = Duration.zero,
     this.distanceMeters = 0,
     this.mockDetected = false,
@@ -68,6 +74,7 @@ class RunState {
   RunState copyWith({
     RunStatus? status,
     List<LatLng>? route,
+    List<int>? routeTimes,
     Duration? elapsed,
     double? distanceMeters,
     bool? mockDetected,
@@ -75,6 +82,7 @@ class RunState {
     return RunState(
       status: status ?? this.status,
       route: route ?? this.route,
+      routeTimes: routeTimes ?? this.routeTimes,
       elapsed: elapsed ?? this.elapsed,
       distanceMeters: distanceMeters ?? this.distanceMeters,
       mockDetected: mockDetected ?? this.mockDetected,
@@ -222,6 +230,7 @@ class RunNotifier extends StateNotifier<RunState> {
       timestampMs: DateTime.now().millisecondsSinceEpoch,
     );
     final route = [...state.route];
+    final routeTimes = [...state.routeTimes];
     var distanceMeters = state.distanceMeters;
 
     if (route.isNotEmpty) {
@@ -243,7 +252,12 @@ class RunNotifier extends StateNotifier<RunState> {
     }
 
     route.add(next);
-    state = state.copyWith(route: route, distanceMeters: distanceMeters);
+    routeTimes.add(DateTime.now().millisecondsSinceEpoch);
+    state = state.copyWith(
+      route: route,
+      routeTimes: routeTimes,
+      distanceMeters: distanceMeters,
+    );
     await _persistRun();
   }
 
@@ -305,6 +319,7 @@ class RunNotifier extends StateNotifier<RunState> {
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       finishedAt: DateTime.now(),
       route: completed.route,
+      routeTimes: completed.routeTimes,
       elapsed: completed.elapsed,
       distanceMeters: completed.distanceMeters,
       capturedZones: capturedZones,

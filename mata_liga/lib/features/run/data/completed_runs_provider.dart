@@ -18,6 +18,10 @@ class CompletedRun {
   final String id;
   final DateTime finishedAt;
   final List<LatLng> route;
+
+  /// Время точек маршрута (мс) — нужно тропам, чтобы посчитать время
+  /// прохождения от входа до выхода (D-60). У старых сохранённых забегов пусто.
+  final List<int> routeTimes;
   final Duration elapsed;
   final double distanceMeters;
   final int capturedZones;
@@ -28,6 +32,7 @@ class CompletedRun {
     required this.id,
     required this.finishedAt,
     required this.route,
+    this.routeTimes = const [],
     required this.elapsed,
     required this.distanceMeters,
     required this.capturedZones,
@@ -77,6 +82,7 @@ class CompletedRun {
     'capturedZones': capturedZones,
     'capturedTerritory': capturedTerritory,
     'mockDetected': mockDetected,
+    'routeTimes': routeTimes,
     'route': [
       for (final p in route) [p.latitude, p.longitude],
     ],
@@ -99,6 +105,10 @@ class CompletedRun {
             .toInt(),
       ),
       route: route,
+      routeTimes: ((json['routeTimes'] as List?) ?? const [])
+          .whereType<num>()
+          .map((v) => v.toInt())
+          .toList(),
       elapsed: Duration(seconds: (json['elapsedSeconds'] as num? ?? 0).toInt()),
       distanceMeters: (json['distanceMeters'] as num? ?? 0).toDouble(),
       capturedZones: (json['capturedZones'] as num? ?? 0).toInt(),
@@ -190,8 +200,33 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
       await prefs.setStringList(_runsSyncedKey, _synced.toList());
       // Сервер сам начислил очки за бег (анти-чит S-04) — обновляем баланс.
       unawaited(ref.read(loyaltyProvider.notifier).refresh());
+      unawaited(_sendTrack(run, token));
     } catch (_) {
       // офлайн/ошибка — синхронизируем позже (старт/вход)
+    }
+  }
+
+  /// Отправить трек тропам: сервер найдёт в нём прохождения и УДАЛИТ трек через
+  /// 14 дней (D-60). Отдельным запросом от сводки забега — сводка нужна всегда,
+  /// а трек только для троп, и человек может их выключить.
+  Future<void> _sendTrack(CompletedRun run, String token) async {
+    // Без времени точек тропу не засчитать: у забегов, записанных до появления
+    // троп, его нет — такие пропускаем молча.
+    if (run.route.length < 2 || run.routeTimes.length != run.route.length) return;
+    try {
+      await _dio.post<dynamic>(
+        '/runs/track',
+        data: {
+          'runId': run.id,
+          'points': [
+            for (var i = 0; i < run.route.length; i++)
+              [run.route[i].latitude, run.route[i].longitude, run.routeTimes[i]],
+          ],
+        },
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+    } catch (_) {
+      // Тропы — не то, ради чего стоит держать забег неотправленным.
     }
   }
 
