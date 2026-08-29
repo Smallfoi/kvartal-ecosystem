@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/map/presentation/screens/map_screen.dart';
 import '../../features/run/presentation/screens/run_screen.dart';
 import '../../features/permissions/presentation/location_setup_sheet.dart';
+import '../../features/league/presentation/screens/focus_screen.dart';
 import '../../features/league/presentation/screens/league_screen.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
 import '../../features/races/data/races_provider.dart';
@@ -96,6 +97,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             const NoTransitionPage(child: ConsentGateScreen()),
       ),
       // Скан QR приглашения — полноэкранный (вне шелла), как камера в Тинькофф.
+      // «Зачем ты бегаешь» — поверх вкладок: это разговор, а не раздел приложения.
+      GoRoute(
+        path: '/focus',
+        builder: (_, __) => const FocusScreen(),
+      ),
       GoRoute(
         path: '/club/scan',
         builder: (_, __) => const ClubScanScreen(),
