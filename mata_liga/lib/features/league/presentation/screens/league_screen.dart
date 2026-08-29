@@ -72,29 +72,27 @@ class _Header extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Лига',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.w800, height: 1.1),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      board.hint,
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: AppColors.textTertiary),
-                    ),
-                  ],
+                child: Text(
+                  'Лига',
+                  style: Theme.of(context).textTheme.headlineMedium
+                      ?.copyWith(fontWeight: FontWeight.w800, height: 1.1),
                 ),
               ),
               _PeriodToggle(period: period),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
+          // Подсказка идёт отдельной строкой во всю ширину: рядом с переключателем
+          // периода она ломалась на четыре строки и выглядела зажатой.
+          Text(
+            board.hint,
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: AppColors.textTertiary),
+          ),
+          const SizedBox(height: 12),
           const _BoardPicker(),
         ],
       ),
@@ -160,6 +158,8 @@ class _BoardPicker extends ConsumerWidget {
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.only(right: 4),
         itemCount: LeagueBoard.values.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
@@ -286,7 +286,7 @@ class _MyPlaceCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             hasPlace
-                ? '${me.place} место · ${_fmt(me.value)} $unit'
+                ? '${me.place} место · ${_amount(me.value, unit)}'
                 : 'Пробеги — и появишься в таблице',
             style: Theme.of(context).textTheme.bodySmall
                 ?.copyWith(color: AppColors.muted),
@@ -294,7 +294,7 @@ class _MyPlaceCard extends StatelessWidget {
           if (me.behindNext != null && me.behindNext! > 0) ...[
             const SizedBox(height: 6),
             Text(
-              'До следующего места ${_fmt(me.behindNext!)} $unit',
+              'До следующего места ${_amount(me.behindNext!, unit)}',
               style: const TextStyle(fontSize: 12, color: AppColors.accentInk),
             ),
           ],
@@ -418,7 +418,7 @@ class _Row extends StatelessWidget {
             ),
           ),
           Text(
-            '${_fmt(row.value)} $unit',
+            _amount(row.value, unit),
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
           ),
         ],
@@ -636,6 +636,16 @@ Future<void> showRunnerProfileSheet(BuildContext context, WidgetRef ref) async {
 
 String _fmt(double v) =>
     v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
+
+/// «3 пробежек» — так не говорят. Число и единицу показываем вместе, чтобы
+/// склонение было по числу, а не по строке с сервера.
+String _amount(double value, String unit) {
+  final text = _fmt(value);
+  if (unit == 'пробежек') {
+    return '$text ${_plural(value.round(), 'пробежка', 'пробежки', 'пробежек')}';
+  }
+  return '$text $unit';
+}
 
 String _plural(int n, String one, String few, String many) {
   final mod100 = n % 100;
