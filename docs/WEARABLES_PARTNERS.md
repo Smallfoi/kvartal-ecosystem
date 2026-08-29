@@ -7,13 +7,14 @@
 
 ---
 
-## 1. Коротко: три источника — три разных истории
+## 1. Коротко: четыре источника — четыре разных истории
 
-| Источник | Нужна заявка? | Кто решает | Срок | Что даёт |
+| Источник | Нужна заявка? | Статус | Срок ответа | Что даёт |
 |---|---|---|---|---|
-| **Apple Health / Apple Watch** | **нет** | никто | — | тренировки, пульс, шаги с iPhone и Apple Watch |
-| **Garmin Connect** | да, партнёрская | Garmin | ответ за 2 рабочих дня | активности (30+ видов), пульс, сон, нагрузка |
-| **Suunto Cloud API** | да, партнёрская | Suunto | до 2 недель | тренировки с GPS-треком, пульс, круги |
+| **COROS** | да | **готовим** (основной по решению владельца) | не обещают | тренировки, дневные показатели, маршруты, планы |
+| **Garmin Connect** | да, партнёрская | **подана 29.08.2026** | 2 рабочих дня | активности (30+ видов), пульс, сон, нагрузка |
+| **Suunto Cloud API** | да, партнёрская | **подана 29.08.2026** | до 2 недель | тренировки с GPS-треком, пульс, круги |
+| **Apple Health / Apple Watch** | **нет** | ждёт аккаунта разработчика | — | тренировки, пульс, шаги с iPhone и Apple Watch |
 
 Важное различие, которое надо понимать до подачи:
 
@@ -34,8 +35,8 @@
 |---|---|---|
 | Публичная страница политики конфиденциальности по постоянному адресу | обе формы просят ссылку; раньше `mata-club.ru/legal/privacy` открывал главную | **готово:** `mata-club.ru/legal/?doc=privacy` |
 | Публичная страница пользовательского соглашения | там же | **готово:** `mata-club.ru/legal/?doc=terms` |
-| Короткое описание приложения на английском | форма Garmin и Suunto — на английском | готово, §4 |
-| Почта для партнёров | на неё придут ключи доступа; личная почта в спаме теряется | нужна от владельца, §6 |
+| Короткое описание приложения на английском | все формы — на английском | готово, §4 |
+| Почта для партнёров | на неё придут ключи доступа; личная почта в спаме теряется. COROS просит ДВЕ почты (пункты 3 и 4 анкеты) | нужна от владельца |
 
 ## 3. Данные организации для форм
 
@@ -53,7 +54,7 @@ Email:        bmairussia@gmail.com
 Приложение:   МАТА Квартал (MATA Kvartal), Android — в тестировании, iOS — готовится
 ```
 
-## 4. Описание приложения на английском (для обеих форм)
+## 4. Описание приложения на английском (для всех форм)
 
 **Short (одна строка):**
 
@@ -216,6 +217,95 @@ Movesense, SuuntoPlus Sport apps) — не наша история, лишние
 
 **Шаг 6** — отправка.
 
+## 6б. Заявка в COROS — что именно заполнять
+
+**Куда:** анкета <https://coros-teams.feishu.cn/share/base/form/shrcnLqSduZsaNhbvDJTO2x0Vlf>
+(ссылка со страницы поддержки «Submit an API Application»). Параллельно COROS просит
+написать на **api@coros.com** — короткое письмо с теми же данными.
+
+**Чем COROS отличается от Garmin и Suunto.** Здесь не просто «дайте доступ»: анкета
+из 24 пунктов, к ней **обязательно прикладываются логотипы**, и часть вопросов —
+про адреса на нашем сервере, которые должны существовать заранее. Плюс два условия,
+которые надо принять осознанно:
+
+- **партнёр обязан завести у себя страницу входа в интеграцию и страницу поддержки**,
+  чтобы человек мог подключить часы и написать, если сломалось. У нас этого пока нет —
+  сделаем к моменту, когда выдадут ключи;
+- **COROS отбирает заявки**: смотрят размер аудитории и то, как будут использованы
+  данные. Отказ возможен, и это не формальность. Денег за интеграцию не берут.
+
+### Логотипы (без них не одобрят)
+
+Готовы, лежат в `Презентации/COROS-заявка/`:
+
+| Файл | Когда нужен |
+|---|---|
+| `MATA-logo-144x144.png` | всегда |
+| `MATA-logo-102x102.png` | всегда |
+| `MATA-logo-120x120.png` | если просим синхронизацию тренировок — а мы просим |
+| `MATA-logo-300x300.png` | то же |
+
+### Адреса на нашем сервере (уже работают)
+
+| Пункт анкеты | Что вписать |
+|---|---|
+| 12. Authorized Callback Domain | `https://api.mata-club.ru/v1/integrations/coros/callback` |
+| 13. Workout data receiving endpoint | `https://api.mata-club.ru/v1/integrations/coros/push` |
+| 14. Service status check URL | `https://api.mata-club.ru/v1/integrations/coros/status` |
+
+Эти три адреса отвечают прямо сейчас — COROS проверяет их до выдачи ключей, поэтому
+они сделаны заранее. Разбор данных появится вместе с Client ID и Secret: пока подпись
+запроса проверить нечем.
+
+### Ответы по пунктам анкеты
+
+| № | Вопрос | Ответ |
+|---|---|---|
+| 1 | Platform / Application Name | `MATA` |
+| 2 | Company Name | `Individual Entrepreneur Mikhail Tatarinov (MATA)` |
+| 3 | Primary Contact Email | `bmairussia@gmail.com` |
+| 4 | Secondary Contact Email | вторая почта владельца (нужна отдельная — см. §2) |
+| 5 | Privacy Officer Email | `bmairussia@gmail.com` |
+| 6 | Company Owner Name and Title | `Mikhail Tatarinov, Founder` |
+| 7 | Platform / Application URL | `https://mata-club.ru` |
+| 8 | Description (**до 100 знаков**, покажут на их сайте) | `Running app where every run counts in several leaderboards, so any runner has a league.` |
+| 9 | Total Active Users | `0-150` — честно: приложение в закрытом тестировании |
+| 10 | Primary Region | `Russia` |
+| 11 | Какие функции API нужны | **только** `Activity / Workout Data Sync (one way, COROS to your platform)` |
+| 12 | Authorized Callback Domain | адрес из таблицы выше |
+| 13 | Workout data receiving endpoint | адрес из таблицы выше |
+| 14 | Service status check URL | адрес из таблицы выше |
+| 15 | Bluetooth / ANT+ протокол | `N/A` |
+| 16 | Personal или Public | `Public` |
+| 17 | Commercial или Non-Commercial | `Commercial` |
+| 18 | Intended use of data | текст ниже |
+| 19 | Expected Integration Launch Date | ориентир — через 2–3 месяца после выдачи ключей |
+| 20 | Согласие с Application Terms | `Yes` |
+| 21 | Согласие с COROS API Agreement | прочитать PDF по ссылке в анкете, затем `Yes` |
+| 22 | Ваше имя | `Mikhail Tatarinov` |
+| 23 | Submit Date | дата подачи |
+| 24 | Логотипы | четыре файла из `Презентации/COROS-заявка/` |
+
+**Пункт 18 — Intended use of data:**
+
+```
+Users connect their COROS account so that workouts recorded on their watch are
+counted in our app. For each completed workout we read start time, duration,
+distance, sport type, heart rate and GPS track where available. We use this to
+award activity points and to place the workout in our leaderboards: total
+distance, personal bests, consistency over 90 days, and an age- and
+gender-adjusted league.
+
+Data is stored on our own servers in Russia, is never resold, never used for
+advertising and never shared with third parties. When a user disconnects the
+integration, imported workouts are deleted. GPS tracks are kept only long enough
+to match a run against our route segments and are deleted after 14 days.
+```
+
+**Про пункт 11.** Просим одну функцию — тренировки из COROS к нам. Обратная
+синхронизация, планы тренировок, маршруты и дневные показатели нам сейчас не нужны,
+а каждая лишняя галочка — повод разбираться дольше и вопрос «зачем вам это».
+
 ## 7. Что делаем мы, не дожидаясь ответов
 
 Ни одна из заявок не блокирует работу. Порядок реализации:
@@ -246,3 +336,5 @@ Movesense, SuuntoPlus Sport apps) — не наша история, лишние
 - [Suunto APIzone — FAQ (как получить доступ, что отдаёт API)](https://apizone.suunto.com/faq)
 - [Suunto — партнёрская программа](https://www.suunto.com/partners/welcome-partners/)
 - [Apple — Health and Fitness для разработчиков](https://developer.apple.com/health-fitness/)
+- [COROS — Submit an API Application](https://support.coros.com/hc/en-us/articles/17085887816340-Submit-an-API-Application)
+- [COROS — анкета заявки](https://coros-teams.feishu.cn/share/base/form/shrcnLqSduZsaNhbvDJTO2x0Vlf)

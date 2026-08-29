@@ -94,6 +94,8 @@ urlpatterns = [
     # Тропы: приём трека, список, доски (D-60).
     path("v1/runs/track", trails_views.submit_track),
     path("v1/trails/", include("trails.urls")),
+    # Подключение часов: адреса нужны в заявке к COROS до выдачи ключей.
+    path("v1/integrations/", include("integrations.urls")),
     # Территории (PostGIS, D-09)
     path("v1/territories/capture", territories_views.capture),
     path("v1/territories", territories_views.list_territories),
