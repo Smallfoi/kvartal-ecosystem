@@ -145,13 +145,16 @@ POST /v1/runner/profile         → { birthYear?, gender?, level?, weeklyGoal? }
 
 | Источник | Когда можем | От кого зависит |
 |---|---|---|
+| Health Connect (Android) | сразу | ни от кого |
 | Файлы GPX / TCX / FIT | сразу | ни от кого |
 | Apple Health (iPhone, Apple Watch) | как появится аккаунт Apple Developer | владелец |
 | Garmin Connect | после одобрения заявки | Garmin, ~2 рабочих дня на ответ |
 | Suunto Cloud API | после одобрения заявки | Suunto, до 2 недель |
-| Health Connect (Android) | сразу после файлов | ни от кого |
+| COROS | после одобрения заявки | COROS: очередь раз в месяц, отвечают только выбранным |
 
-Порядок внутри этапа: **файлы → Health Connect → Apple Health → Garmin/Suunto по мере ответов.**
+Порядок внутри этапа: **Health Connect → файлы → Apple Health → партнёрские API по мере ответов.**
+Health Connect первым, потому что через него приходят тренировки с часов COROS, Samsung,
+Amazfit, Polar и прочих — без чьего-либо одобрения (`docs/WEARABLES_PARTNERS.md` §1).
 Начинаем с импорта файлов: он не зависит ни от кого, сразу закрывает «перенос истории из
 ушедших сервисов» (Strava, Nike, adidas отдают архив в GPX/TCX) и даёт готовый механизм,
 в который потом воткнутся все остальные источники.
