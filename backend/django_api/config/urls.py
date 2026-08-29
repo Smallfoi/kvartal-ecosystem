@@ -29,6 +29,7 @@ from config.admin_views import (
     merch_site_video,
 )
 from notifications import views as notif_views
+from league import views as league_views
 from legal import views as legal_views
 from runs import views as runs_views
 from clubs import views as clubs_views
@@ -86,6 +87,9 @@ urlpatterns = [
     path("v1/clubs/<str:club_id>/challenge", clubs_views.club_challenge),
     path("v1/clubs/<str:club_id>/requests", clubs_views.club_requests),
     path("v1/leaderboard/", include("leaderboard.urls")),
+    # Лига: зачёты и профиль бегуна (docs/LEAGUE_PLAN.md).
+    path("v1/league/", include("league.urls")),
+    path("v1/runner/profile", league_views.profile),
     # Территории (PostGIS, D-09)
     path("v1/territories/capture", territories_views.capture),
     path("v1/territories", territories_views.list_territories),

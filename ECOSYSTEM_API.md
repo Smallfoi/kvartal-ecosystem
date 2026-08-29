@@ -238,6 +238,32 @@ POST /runs  { id, distanceMeters, elapsedSeconds, finishedAtMs, capturedTerritor
 (`runnerRun` = км×10), идемпотентно по `id`. Неправдоподобный забег → `flagged`, 0 очков.
 Клиент очки за бег больше НЕ присылает.
 
+### League (зачёты лиги и профиль бегуна — docs/LEAGUE_PLAN.md)
+```
+GET  /league/boards?board=<absolute|consistency|mylane|personal|club>&period=<week|month|q90>
+                                        → { board, period, unit, top[], me{...}, group? }
+     absolute     сумма километров за период — для быстрых и выносливых
+     consistency  число пробежек за период — скорость не решает, решает регулярность
+     mylane       «своя лига»: только ровесники своего пола (нужен профиль,
+                  иначе { needsProfile: true } и пустая таблица)
+     personal     я против себя же в прошлом периоде: { value, prevValue, delta, improved }
+     club         сумма километров участников клуба (top[] по клубам)
+
+     me: { place, of, value, aheadOf, behindNext? }
+         aheadOf — сколько человек позади. Показываем всегда: «ты обошёл 47 из 63»
+         держит в игре тех, кто никогда не будет первым.
+
+GET  /runner/profile                    → { birthYear, gender, level, weeklyGoalKm, group }
+POST /runner/profile  { birthYear?, gender?, level?, weeklyGoalKm? }  → тот же объект
+     Все поля необязательные; пришло null или "" — поле стирается.
+     gender: m|f|"" · level: novice|amateur|advanced|""
+     group  — группа сравнения { age, gender, label }, считается на лету из года
+              рождения (в базе устарела бы в ближайший день рождения); null, если
+              год или пол не заданы.
+```
+Зачёты считаются по `runs` (сводки забегов), помеченные античитом не участвуют.
+Возраст спрашиваем необязательно: без профиля человек видит все зачёты, кроме «своей лиги».
+
 ### Shoes (трекер износа)
 ```
 GET  /shoes                             → ShoeAsset[]            (Квартал показывает ресурс)
