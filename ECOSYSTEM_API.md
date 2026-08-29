@@ -264,6 +264,30 @@ POST /runner/profile  { birthYear?, gender?, level?, weeklyGoalKm? }  → тот
 Зачёты считаются по `runs` (сводки забегов), помеченные античитом не участвуют.
 Возраст спрашиваем необязательно: без профиля человек видит все зачёты, кроме «своей лиги».
 
+### Trails (тропы — docs/LEAGUE_PLAN.md §6, решение D-60)
+```
+POST /runs/track  { runId, points: [[lat, lon, ms], ...] }
+                                        → { attempts: [ {trailId, trailName, durationS, ...} ] }
+     Телефон шлёт прорежённый трек (≈точка в 5 с). Сервер сверяет его с тропами
+     района, пишет попытки и УДАЛЯЕТ трек через 14 дней (D-60). Выключен тумблер
+     «участвовать в тропах» → { attempts: [], skipped: "trailsDisabled" }, трек
+     не сохраняется вовсе.
+
+GET  /trails?lat=&lon=                  → { items: [ {id, name, lengthM, points,
+                                            createdByMe, attemptedByMe} ] }
+POST /trails  { name, points: [[lat, lon], ...], city? }   → тропа
+     Линия прореживается, длина 200 м … 42 195 м.
+
+GET  /trails/:id/boards?board=<fastest|mine|frequent|mylane>
+     fastest   лучшее время каждого
+     mine      мои попытки по времени + лучшая
+     frequent  кто прошёл чаще за 90 дней — «местная легенда» по-нашему
+     mylane    только ровесники своего пола (нужен профиль бегуна)
+     → { trail, board, unit, me: {place, of, value, aheadOf}, top[], group? }
+```
+Одна и та же пробежка не даёт две попытки на одной тропе. Невозможная скорость,
+бег в обратную сторону и срезанные углы не засчитываются.
+
 ### Shoes (трекер износа)
 ```
 GET  /shoes                             → ShoeAsset[]            (Квартал показывает ресурс)

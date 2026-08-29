@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     "races",
     # Лига: профиль бегуна и зачёты (docs/LEAGUE_PLAN.md, Э1).
     "league",
+    # Тропы: отрезки маршрутов, попытки, доски (Э3, D-60).
+    "trails",
 ]
 
 # Так админка подписана в приложении-аутентификаторе (D-49).
@@ -428,6 +430,11 @@ CELERY_BEAT_SCHEDULE = {
     },
     # Авто-парсер афиши «Стартов»: раз в сутки в 05:00 (Asia/Yakutsk). Идемпотентно
     # (upsert по source+external_id). Источники — races/importers/.
+    # Треки живут 14 дней и удаляются (D-60) — это условие всей затеи с тропами.
+    "cleanup-tracks-daily": {
+        "task": "trails.cleanup_tracks",
+        "schedule": crontab(hour=3, minute=50),
+    },
     "import-races-daily": {
         "task": "races.import_races",
         "schedule": crontab(hour=5, minute=0),

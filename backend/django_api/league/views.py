@@ -95,6 +95,9 @@ def profile(request):
                 return Response({"detail": "Цель вне разумных границ"}, status=400)
             obj.weekly_goal_km = goal
 
+    if "trailsEnabled" in data:
+        obj.trails_enabled = bool(data.get("trailsEnabled"))
+
     obj.updated_at = timezone.now()
     obj.save()
     return Response({**obj.to_json(), "group": _group_of(obj)})

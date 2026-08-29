@@ -30,6 +30,7 @@ from config.admin_views import (
 )
 from notifications import views as notif_views
 from league import views as league_views
+from trails import views as trails_views
 from legal import views as legal_views
 from runs import views as runs_views
 from clubs import views as clubs_views
@@ -90,6 +91,9 @@ urlpatterns = [
     # Лига: зачёты и профиль бегуна (docs/LEAGUE_PLAN.md).
     path("v1/league/", include("league.urls")),
     path("v1/runner/profile", league_views.profile),
+    # Тропы: приём трека, список, доски (D-60).
+    path("v1/runs/track", trails_views.submit_track),
+    path("v1/trails/", include("trails.urls")),
     # Территории (PostGIS, D-09)
     path("v1/territories/capture", territories_views.capture),
     path("v1/territories", territories_views.list_territories),

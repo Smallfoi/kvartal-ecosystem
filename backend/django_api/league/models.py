@@ -31,6 +31,9 @@ class RunnerProfile(models.Model):
         max_length=12, blank=True, default="", choices=LEVEL_CHOICES, verbose_name="Уровень"
     )
     weekly_goal_km = models.FloatField(null=True, blank=True, verbose_name="Цель на неделю, км")
+    # Участие в тропах: выключено — трек забега не уходит на сервер вовсе (D-60).
+    # По умолчанию включено, иначе функция мертва; выключатель виден в настройках.
+    trails_enabled = models.BooleanField(default=True, verbose_name="Участвовать в тропах")
     updated_at = models.DateTimeField(default=timezone.now, verbose_name="Обновлён")
 
     class Meta:
@@ -44,4 +47,5 @@ class RunnerProfile(models.Model):
             "gender": self.gender or None,
             "level": self.level or None,
             "weeklyGoalKm": self.weekly_goal_km,
+            "trailsEnabled": self.trails_enabled,
         }
