@@ -9,6 +9,8 @@ import '../../features/run/presentation/screens/run_screen.dart';
 import '../../features/permissions/presentation/location_setup_sheet.dart';
 import '../../features/league/presentation/screens/focus_screen.dart';
 import '../../features/league/presentation/screens/league_screen.dart';
+import '../../features/trails/data/trails_provider.dart';
+import '../../features/trails/presentation/screens/trails_screen.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
 import '../../features/races/data/races_provider.dart';
 import '../../features/races/presentation/screens/races_screen.dart';
@@ -168,6 +170,17 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/league',
                 builder: (_, __) => const LeagueScreen(),
+              ),
+              GoRoute(
+                path: '/trails',
+                builder: (_, __) => const TrailsScreen(),
+              ),
+              // Тропу передаём объектом: список уже загружен, второй запрос
+              // ради названия и длины не нужен.
+              GoRoute(
+                path: '/trails/detail',
+                builder: (_, state) =>
+                    TrailDetailScreen(trail: state.extra as Trail),
               ),
             ],
           ),
