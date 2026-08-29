@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/tab_visibility.dart';
@@ -97,7 +98,44 @@ class _Header extends ConsumerWidget {
               _PeriodToggle(period: period),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          // Вход в «Лигу»: те же пробежки, но зачётов несколько — быстрый,
+          // регулярный и возрастной выигрывают в разных (docs/LEAGUE_PLAN.md).
+          GestureDetector(
+            onTap: () => context.push('/league'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.panel,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.separator),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Лига',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Пять зачётов: километры, постоянство, своя лига',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.muted),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           _SegmentedControl(
             selected: tab,
             onChanged: onTabChanged,
