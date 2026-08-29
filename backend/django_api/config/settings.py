@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "runs",
     "analytics",
     "races",
+    # Лига: профиль бегуна и зачёты (docs/LEAGUE_PLAN.md, Э1).
+    "league",
 ]
 
 # Так админка подписана в приложении-аутентификаторе (D-49).

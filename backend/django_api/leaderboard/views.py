@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from accounts.models import Account
 from clubs.models import Club, ClubMember
 from common.cache import LEADERBOARD_TTL, cache_json, leaderboard_key
+from common.people import club_name_of, name_of
 from common.security import user_id_from_request
 from loyalty.models import LoyaltyTransaction
 from territories.views import HOLD_HOURS
@@ -25,17 +26,10 @@ def _period_start(period: str):
     return datetime(1970, 1, 1, tzinfo=dt_tz.utc)
 
 
-def _name_of(uid):
-    a = Account.objects.filter(id=uid).only("name").first()
-    return a.name if a else "—"
-
-
-def _club_name_of(uid):
-    m = ClubMember.objects.filter(user_id=uid).first()
-    if not m:
-        return None
-    c = Club.objects.filter(id=m.club_id).only("name").first()
-    return c.name if c else None
+# Имя и клуб по user_id — общие с зачётами лиги (common/people.py).
+# Свои копии здесь были ровно теми же двумя функциями: разъезжаются такие первыми.
+_name_of = name_of
+_club_name_of = club_name_of
 
 
 @api_view(["GET"])
