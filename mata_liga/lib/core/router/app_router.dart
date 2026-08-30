@@ -11,6 +11,7 @@ import '../../features/league/presentation/screens/focus_screen.dart';
 import '../../features/league/presentation/screens/league_screen.dart';
 import '../../features/trails/data/trails_provider.dart';
 import '../../features/trails/presentation/screens/trails_screen.dart';
+import '../../features/workouts/presentation/screens/watch_sync_screen.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
 import '../../features/races/data/races_provider.dart';
 import '../../features/races/presentation/screens/races_screen.dart';
@@ -237,6 +238,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/profile/privacy',
                 builder: (_, __) => const PrivacyScreen(),
+              ),
+              GoRoute(
+                path: '/profile/watch',
+                builder: (_, __) => const WatchSyncScreen(),
               ),
               GoRoute(
                 path: '/profile/legal',

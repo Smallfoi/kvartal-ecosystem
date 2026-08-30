@@ -13,6 +13,7 @@ import '../../../loyalty/presentation/widgets/loyalty_card.dart';
 import '../../../notifications/data/notifications_provider.dart';
 import '../../../run/data/completed_runs_provider.dart';
 import '../../../shoes/data/shoes_provider.dart';
+import '../../../workouts/data/health_sync.dart';
 import '../../../territory/data/territory_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -47,6 +48,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     if (state == AppLifecycleState.resumed) {
       ref.read(authProvider.notifier).restoreSession();
       ref.read(loyaltyProvider.notifier).refresh();
+      ref.read(healthSyncProvider.notifier).autoSync();
     }
   }
 
@@ -59,6 +61,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       ref.read(shoesProvider.notifier).refresh(),
       ref.read(authProvider.notifier).restoreSession(),
       ref.read(completedRunsProvider.notifier).load(),
+      // Тренировки с часов: пришли в Health Connect — подтянем и начислим.
+      ref.read(healthSyncProvider.notifier).autoSync(),
     ]);
   }
 
@@ -727,6 +731,11 @@ class SettingsScreen extends ConsumerWidget {
               label:
                   '\u0413\u0435\u043e\u043b\u043e\u043a\u0430\u0446\u0438\u044f \u0438 \u0444\u043e\u043d\u043e\u0432\u044b\u0439 \u0440\u0435\u0436\u0438\u043c',
               onTap: () => context.push('/run/location-access'),
+            ),
+            _SettingsTile(
+              icon: CupertinoIcons.time,
+              label: 'Часы и приложения',
+              onTap: () => context.push('/profile/watch'),
             ),
             _SettingsTile(
               icon: CupertinoIcons.bell_fill,

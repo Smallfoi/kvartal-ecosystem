@@ -96,6 +96,8 @@ urlpatterns = [
     path("v1/trails/", include("trails.urls")),
     # Подключение часов: адреса нужны в заявке к COROS до выдачи ключей.
     path("v1/integrations/", include("integrations.urls")),
+    # Тренировки из внешних источников (часы, файлы).
+    path("v1/workouts/", include("workouts.urls")),
     # Территории (PostGIS, D-09)
     path("v1/territories/capture", territories_views.capture),
     path("v1/territories", territories_views.list_territories),
