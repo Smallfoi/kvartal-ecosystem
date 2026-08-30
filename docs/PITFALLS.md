@@ -18,6 +18,41 @@
   `version.json` с `mata-club.ru` падал. Поставлен bucket CORS `GET/HEAD *` (put_bucket_cors через
   ВРЕМЕННЫЙ статический ключ SA — создать/поставить/удалить). Публичным медиа `*` безопасно.
 
+## Health Connect тянет за собой toolchain: AGP ≥ 8.9.1 и compileSdk 36
+
+`androidx.health.connect:connect-client` (пакет `health`) отказывается собираться со
+старым Android Gradle Plugin. Сборка «Лиги» упала дважды подряд, причём ошибки разные
+и вылезают по очереди:
+1. `Dependency 'androidx.health.connect:connect-client' requires Android Gradle plugin
+   8.9.1 or higher` → в `android/settings.gradle.kts` поднять `com.android.application`
+   до 8.9.1 (Gradle 8.12 менять не пришлось);
+2. `:app is currently compiled against android-35` → в `android/app/build.gradle.kts`
+   прописать `compileSdk = 36` ЯВНО, потому что `flutter.compileSdkVersion` даёт 35.
+
+Плюс требования самого плагина `health`: `minSdk` ≥ 26 и `MainActivity` обязан наследовать
+**`FlutterFragmentActivity`**, а не `FlutterActivity` — иначе системный диалог разрешений
+Health Connect просто не открывается (ошибки при этом нет, кнопка «Подключить» молчит).
+
+**В «Квартале» toolchain НЕ трогали** — там всё осталось на AGP 8.7.3 / compileSdk 35.
+
+## Установка сборки поверх: `INSTALL_FAILED_UPDATE_INCOMPATIBLE`
+
+`adb install -r` падает, если подпись новой сборки не совпала с установленной. Лечится
+только `adb uninstall <package>` перед установкой — данные приложения при этом теряются.
+
+Дальше два подвоха подряд:
+- **`adb uninstall` не гарантирует чистый старт.** Android-автобэкап может вернуть
+  данные приложения при переустановке: «Лига» после uninstall + install подняла СТАРЫЙ
+  токен из secure storage, показала экран профиля с именем из локального кэша, а все
+  запросы к бэку при этом отдавали 401. Выглядит как «сломалась авторизация». Чистый
+  сброс — `adb shell pm clear <package>` (подпись не проверяется, данные точно уходят).
+- **`pm clear` отзывает и разрешения Health Connect.** После него «Часы и приложения»
+  снова показывают «Подключить» — это не баг экрана, доступ действительно отозван.
+
+Ещё: `adb shell input keyevent 66` (Enter) НЕ отправляет форму входа во Flutter —
+нажимать надо саму кнопку по координатам. А `KEYCODE_BACK` для скрытия клавиатуры
+сворачивает приложение.
+
 ## iOS deployment target ≥ 13 (иначе pod install падает)
 Проверка сборки под iOS (`ios-build.yml`, unsigned, macOS-раннер, БЕЗ Apple-аккаунта)
 поймала: Квартал не собирался — `audioplayers_darwin` требует iOS ≥ 13.0, а проект
