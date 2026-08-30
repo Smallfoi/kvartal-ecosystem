@@ -77,7 +77,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
       backgroundColor: AppColors.bgDark,
       // Фоновый градиент (синий сверху → чёрный) — как на профиле/клубе/рейтинге.
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.bg,
         ),
         child: SafeArea(
@@ -129,7 +129,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                     ),
                     GestureDetector(
                       onTap: () {},
-                      child: const Text(
+                      child: Text(
                         'Все',
                         style: TextStyle(
                           fontSize: 13,
@@ -302,7 +302,7 @@ class _QuickStat extends StatelessWidget {
             const SizedBox(height: 7),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -312,7 +312,7 @@ class _QuickStat extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 color: AppColors.textSecondary,
               ),
@@ -339,7 +339,7 @@ class _StartCard extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [AppColors.graphite, Color(0xFF15181C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -379,7 +379,7 @@ class _StartCard extends ConsumerWidget {
                           color: AppColors.lime,
                           borderRadius: BorderRadius.circular(AppTheme.rPill),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
@@ -478,7 +478,7 @@ class _ActiveRunView extends ConsumerWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.separator),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         CupertinoIcons.xmark,
                         color: AppColors.textSecondary,
                         size: 16,
@@ -491,7 +491,7 @@ class _ActiveRunView extends ConsumerWidget {
 
               Text(
                 runState.distanceKm.toStringAsFixed(2),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 84,
                   fontWeight: FontWeight.w900,
                   color: AppColors.textPrimary,
@@ -499,7 +499,7 @@ class _ActiveRunView extends ConsumerWidget {
                   letterSpacing: -4,
                 ),
               ),
-              const Text(
+              Text(
                 'КМ',
                 style: TextStyle(
                   fontSize: 12,
@@ -598,7 +598,7 @@ class _ActiveRunView extends ConsumerWidget {
           'Время: ${run.elapsedFormatted}\n'
           'До старта: $gap м\n'
           '$captureHint',
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -782,7 +782,7 @@ class _EmptyRunsHint extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.separator),
       ),
-      child: const Text(
+      child: Text(
         'Завершённые пробежки появятся здесь после первого старта.',
         style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
       ),
@@ -834,7 +834,7 @@ class _WeeklyGoalCard extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: AppColors.bgElevated,
-              valueColor: const AlwaysStoppedAnimation(AppColors.electricBlue),
+              valueColor: AlwaysStoppedAnimation(AppColors.electricBlue),
             ),
           ),
           const SizedBox(height: 10),
@@ -875,7 +875,7 @@ class _RunTile extends StatelessWidget {
               color: AppColors.electricBlue.withValues(alpha: 0.13),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               CupertinoIcons.location_north_fill,
               color: AppColors.warning,
               size: 20,

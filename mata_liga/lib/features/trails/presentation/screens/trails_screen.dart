@@ -39,7 +39,7 @@ class _TrailsScreenState extends ConsumerState<TrailsScreen> with TabVisibility 
                         ?.copyWith(fontWeight: FontWeight.w800, height: 1.1),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Участки, по которым бегают регулярно. Пробежал — прохождение '
                     'засчитается само.',
                     style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.4),
@@ -100,7 +100,7 @@ class _TrailsScreenState extends ConsumerState<TrailsScreen> with TabVisibility 
             const SizedBox(height: 6),
             Text(
               text,
-              style: const TextStyle(fontSize: 14, color: AppColors.muted, height: 1.45),
+              style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.45),
             ),
           ],
         ),
@@ -144,12 +144,12 @@ class _TrailCard extends StatelessWidget {
                       if (trail.attemptedByMe) 'ты здесь бегал',
                       if (trail.createdByMe) 'твоя тропа',
                     ].join(' · '),
-                    style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                    style: TextStyle(fontSize: 13, color: AppColors.muted),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.muted),
+            Icon(Icons.chevron_right, color: AppColors.muted),
           ],
         ),
       ),
@@ -185,7 +185,7 @@ class TrailDetailScreen extends ConsumerWidget {
                 children: [
                   Text(
                     '${trail.lengthLabel} · ${board.hint}',
-                    style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                    style: TextStyle(fontSize: 13, color: AppColors.muted),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -230,7 +230,7 @@ class TrailDetailScreen extends ConsumerWidget {
             Expanded(
               child: async.when(
                 loading: () => const Center(child: CupertinoActivityIndicator()),
-                error: (_, __) => const Center(
+                error: (_, __) => Center(
                   child: Text(
                     'Не удалось загрузить доску',
                     style: TextStyle(color: AppColors.muted),
@@ -295,7 +295,7 @@ class _BoardBody extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Прохождений: ${data.myAttempts}',
-                    style: const TextStyle(fontSize: 14, color: AppColors.muted),
+                    style: TextStyle(fontSize: 14, color: AppColors.muted),
                   ),
                 ],
               ),
@@ -371,7 +371,7 @@ class _BoardBody extends StatelessWidget {
                   hasPlace
                       ? '${data.place} место · ${_value(data.value ?? 0, data.unit)}'
                       : 'Пробеги тропу — попадёшь в таблицу',
-                  style: const TextStyle(fontSize: 14, color: AppColors.muted),
+                  style: TextStyle(fontSize: 14, color: AppColors.muted),
                 ),
               ],
             ),
@@ -393,7 +393,7 @@ class _BoardBody extends StatelessWidget {
                 width: 28,
                 child: Text(
                   '${row.place}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AppColors.muted,
@@ -415,7 +415,7 @@ class _BoardBody extends StatelessWidget {
                         row.club!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textTertiary,
                         ),
@@ -459,7 +459,7 @@ class _BoardBody extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               text,
-              style: const TextStyle(fontSize: 14, color: AppColors.muted, height: 1.45),
+              style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.45),
             ),
           ],
         ),

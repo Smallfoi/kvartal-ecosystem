@@ -78,7 +78,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
         );
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.disabled),
+      hintStyle: TextStyle(color: AppColors.disabled),
       filled: true,
       fillColor: AppColors.panel,
       prefixIcon: prefixIcon,
@@ -131,7 +131,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                     ),
                   ],
                 ),
-                child: const Center(
+                child: Center(
                   child: KvartalLogoMark(
                     size: 46,
                     outline: AppColors.onDark,
@@ -204,7 +204,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               ),
               if (auth.error != null) ...[
                 const SizedBox(height: 12),
-                Text(auth.error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                Text(auth.error!, style: TextStyle(color: AppColors.error, fontSize: 13)),
               ],
               const SizedBox(height: 22),
               SizedBox(
@@ -220,10 +220,10 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               ),
               const SizedBox(height: 12),
               if (_mode == 'login') ...[
-                Center(child: TextButton(onPressed: () => _setMode('register'), child: const Text('Нет аккаунта? Регистрация', style: TextStyle(color: AppColors.accentInk)))),
-                Center(child: TextButton(onPressed: () => _setMode('reset'), child: const Text('Забыл пароль?', style: TextStyle(color: AppColors.muted)))),
+                Center(child: TextButton(onPressed: () => _setMode('register'), child: Text('Нет аккаунта? Регистрация', style: TextStyle(color: AppColors.accentInk)))),
+                Center(child: TextButton(onPressed: () => _setMode('reset'), child: Text('Забыл пароль?', style: TextStyle(color: AppColors.muted)))),
               ] else
-                Center(child: TextButton(onPressed: () => _setMode('login'), child: const Text('Уже есть аккаунт? Войти', style: TextStyle(color: AppColors.accentInk)))),
+                Center(child: TextButton(onPressed: () => _setMode('login'), child: Text('Уже есть аккаунт? Войти', style: TextStyle(color: AppColors.accentInk)))),
               const SizedBox(height: 8),
               Center(
                 child: GestureDetector(

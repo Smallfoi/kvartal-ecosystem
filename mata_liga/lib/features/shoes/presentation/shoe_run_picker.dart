@@ -105,12 +105,12 @@ class _ShoeOption extends StatelessWidget {
                         ? Image.network(
                             shoe.imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
+                            errorBuilder: (_, __, ___) => Icon(
                               Icons.directions_run,
                               color: AppColors.textTertiary,
                             ),
                           )
-                        : const Icon(Icons.directions_run,
+                        : Icon(Icons.directions_run,
                             color: AppColors.textTertiary),
                   ),
                 ),
@@ -155,7 +155,7 @@ class _ShoeOption extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+                Icon(Icons.chevron_right, color: AppColors.textTertiary),
               ],
             ),
           ),
@@ -180,7 +180,7 @@ class _NoShoesOption extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
           child: Row(
             children: [
-              const Icon(Icons.block, size: 20, color: AppColors.textTertiary),
+              Icon(Icons.block, size: 20, color: AppColors.textTertiary),
               const SizedBox(width: 12),
               Text(
                 'Без кроссовок (не списывать ресурс)',

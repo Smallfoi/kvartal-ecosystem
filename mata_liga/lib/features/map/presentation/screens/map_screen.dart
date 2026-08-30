@@ -284,7 +284,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                       point: runState.route.first,
                       width: 30,
                       height: 34,
-                      child: const _RoutePointMarker(
+                      child: _RoutePointMarker(
                         label: 'Старт',
                         color: AppColors.success,
                         icon: CupertinoIcons.play_fill,
@@ -341,7 +341,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
 
           // ── Loading indicator ────────────────────────────────────────────
           if (zonesAsync is AsyncLoading)
-            const Center(
+            Center(
               child: _Glass(
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 child: Row(
@@ -378,13 +378,13 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         CupertinoIcons.wifi_slash,
                         color: AppColors.error,
                         size: 24,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Зоны не загружены',
                         style: TextStyle(
                           color: AppColors.ink,
@@ -394,7 +394,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'GPS работает.\nЗапусти бэкенд и нажми «Повторить».',
                         style: TextStyle(color: AppColors.muted, fontSize: 11),
                         textAlign: TextAlign.center,
@@ -540,9 +540,9 @@ class _MapErrorNotice extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(CupertinoIcons.wifi_slash, color: AppColors.warning, size: 28),
+          Icon(CupertinoIcons.wifi_slash, color: AppColors.warning, size: 28),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             '\u041a\u0430\u0440\u0442\u0430 \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u0430',
             style: TextStyle(
               color: AppColors.ink,
@@ -552,7 +552,7 @@ class _MapErrorNotice extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             '\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0438\u043d\u0442\u0435\u0440\u043d\u0435\u0442 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c\u00bb.',
             style: TextStyle(color: AppColors.muted, fontSize: 13, height: 1.25),
             textAlign: TextAlign.center,
@@ -858,10 +858,10 @@ class _KvartalTopLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Glass(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           KvartalLogoBadge(size: 24),
           SizedBox(height: 4),
           Row(
@@ -913,7 +913,7 @@ class _WeatherChip extends ConsumerWidget {
       onTap: () => showWeatherDetailSheet(context),
       child: _Glass(
         // Поля подобраны так, чтобы высота дотягивала до нормы 48 dp.
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -924,15 +924,15 @@ class _WeatherChip extends ConsumerWidget {
               size: 13,
               color: AppColors.info,
             ),
-            const SizedBox(width: 5),
+            SizedBox(width: 5),
             Text(
               tempText,
               style: Theme.of(
                 context,
               ).textTheme.labelMedium?.copyWith(color: AppColors.ink),
             ),
-            const SizedBox(width: 4),
-            const Icon(
+            SizedBox(width: 4),
+            Icon(
               CupertinoIcons.chevron_down,
               size: 10,
               color: AppColors.textTertiary,
@@ -950,11 +950,11 @@ class _Legend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Glass(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           _LegendDot(color: AppColors.hexOwned, label: 'Мои'),
           SizedBox(height: 3),
           _LegendDot(color: AppColors.hexEnemy, label: 'Чужие'),
@@ -982,7 +982,7 @@ class _LegendDot extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(color: AppColors.ink, fontSize: 10)),
+        Text(label, style: TextStyle(color: AppColors.ink, fontSize: 10)),
       ],
     );
   }

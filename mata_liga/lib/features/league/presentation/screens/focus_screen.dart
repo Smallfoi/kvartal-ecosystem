@@ -58,7 +58,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                     ?.copyWith(fontWeight: FontWeight.w800, height: 1.1),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Соберём главный экран под твой ответ. Остальное никуда не денется — '
                 'включишь в настройках, когда захочешь.',
                 style: TextStyle(fontSize: 15, color: AppColors.muted, height: 1.45),
@@ -100,7 +100,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     o.hint,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       color: AppColors.muted,
                                       height: 1.4,
@@ -110,7 +110,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                               ),
                             ),
                             if (active)
-                              const Icon(Icons.check_circle, color: AppColors.accentInk),
+                              Icon(Icons.check_circle, color: AppColors.accentInk),
                           ],
                         ),
                       ),
