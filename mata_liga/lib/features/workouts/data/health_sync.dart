@@ -236,8 +236,12 @@ class HealthSyncNotifier extends StateNotifier<HealthSyncState> {
         startTime: from,
         endTime: now,
       );
+      // Пульс лежит отдельными записями, не внутри тренировки. Забираем его за то
+      // же окно ОДНИМ запросом и раскладываем по тренировкам сами: запрашивать
+      // пульс на каждую тренировку отдельно — десятки обращений на первой синхронизации.
+      final hr = await _heartRate(from, now);
       final items = points
-          .map(_toItem)
+          .map((p) => _toItem(p, hr))
           .whereType<Map<String, dynamic>>()
           .toList();
       if (items.isEmpty) {
@@ -271,9 +275,32 @@ class HealthSyncNotifier extends StateNotifier<HealthSyncState> {
     }
   }
 
+  /// Удары пульса за окно: (момент, значение). Пустой список, если пульса нет —
+  /// на телефоне без часов его и не будет, это не ошибка.
+  Future<List<(DateTime, int)>> _heartRate(DateTime from, DateTime to) async {
+    try {
+      final points = await _health.getHealthDataFromTypes(
+        types: const [HealthDataType.HEART_RATE],
+        startTime: from,
+        endTime: to,
+      );
+      final out = <(DateTime, int)>[];
+      for (final p in points) {
+        final v = p.value;
+        if (v is NumericHealthValue) {
+          out.add((p.dateFrom, v.numericValue.round()));
+        }
+      }
+      return out;
+    } catch (_) {
+      // Доступ к пульсу могли не дать — тренировки от этого не пропадают.
+      return const [];
+    }
+  }
+
   /// Одна тренировка Health Connect → элемент для `POST /workouts/import`.
   /// Тренировки без дистанции (силовая, йога) пропускаем: считать в них нечего.
-  Map<String, dynamic>? _toItem(HealthDataPoint p) {
+  Map<String, dynamic>? _toItem(HealthDataPoint p, List<(DateTime, int)> hr) {
     final value = p.value;
     if (value is! WorkoutHealthValue) return null;
     final distance =
@@ -281,6 +308,10 @@ class HealthSyncNotifier extends StateNotifier<HealthSyncState> {
     if (distance <= 0) return null;
     final duration = p.dateTo.difference(p.dateFrom).inSeconds;
     if (duration <= 0) return null;
+    final beats = [
+      for (final (at, bpm) in hr)
+        if (!at.isBefore(p.dateFrom) && !at.isAfter(p.dateTo)) bpm,
+    ];
     return {
       // uuid Health Connect стабилен: та же тренировка не приедет дважды.
       'sourceId': p.uuid,
@@ -289,6 +320,9 @@ class HealthSyncNotifier extends StateNotifier<HealthSyncState> {
       'distanceM': distance,
       'sport': _sport(value.workoutActivityType),
       if (value.totalEnergyBurned != null) 'calories': value.totalEnergyBurned,
+      if (beats.isNotEmpty)
+        'avgHr': (beats.reduce((a, b) => a + b) / beats.length).round(),
+      if (beats.isNotEmpty) 'maxHr': beats.reduce((a, b) => a > b ? a : b),
     };
   }
 
