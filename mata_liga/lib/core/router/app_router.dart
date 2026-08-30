@@ -12,7 +12,7 @@ import '../../features/league/presentation/screens/league_screen.dart';
 import '../../features/trails/data/trails_provider.dart';
 import '../../features/trails/presentation/screens/trails_screen.dart';
 import '../../features/workouts/presentation/screens/watch_sync_screen.dart';
-import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
+import '../../features/league/presentation/screens/division_hub_screen.dart';
 import '../../features/races/data/races_provider.dart';
 import '../../features/races/presentation/screens/races_screen.dart';
 import '../../features/races/presentation/screens/race_detail_screen.dart';
@@ -167,7 +167,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/leaderboard',
-                builder: (_, __) => const LeaderboardScreen(),
+                builder: (_, __) => const DivisionHubScreen(),
               ),
               GoRoute(
                 path: '/league',
