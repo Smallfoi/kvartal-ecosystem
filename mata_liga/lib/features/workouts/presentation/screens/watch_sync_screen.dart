@@ -347,10 +347,10 @@ class _Explainer extends StatelessWidget {
         ),
         SizedBox(height: 8),
         Text(
-          'Любые, чьё приложение пишет тренировки в Health Connect: COROS, '
-          'Samsung, Amazfit, Zepp, Polar, Suunto, Huawei и другие. Garmin '
-          'передаёт через Health Sync. Если ваших часов нет в списке — '
-          'проверьте в их приложении раздел «Health Connect».',
+          'Любые, чьё приложение пишет тренировки в Health Connect: Garmin, '
+          'COROS, Samsung, Amazfit, Zepp, Polar, Suunto, Huawei и другие. '
+          'Передачу нужно один раз включить в приложении самих часов — '
+          'ищите там раздел «Health Connect».',
           style: TextStyle(color: AppColors.textSecondary, height: 1.45),
         ),
         SizedBox(height: 16),
