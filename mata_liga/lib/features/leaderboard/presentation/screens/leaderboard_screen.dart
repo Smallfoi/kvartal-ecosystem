@@ -32,7 +32,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
       backgroundColor: AppColors.bgDark,
       // Фоновый градиент (синий сверху → чёрный) — как на профиле и в клубе.
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.bg,
         ),
         child: SafeArea(
@@ -130,7 +130,7 @@ class _Header extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.muted),
+                  Icon(Icons.chevron_right, color: AppColors.muted),
                 ],
               ),
             ),
@@ -165,7 +165,7 @@ class _Header extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.muted),
+                  Icon(Icons.chevron_right, color: AppColors.muted),
                 ],
               ),
             ),
@@ -367,7 +367,7 @@ class _PodiumEntry {
   final String name;
   final String value; // «12.3 км» или «0.45 км²»
   final bool isMe;
-  const _PodiumEntry({
+  _PodiumEntry({
     required this.rank,
     required this.name,
     required this.value,
@@ -385,7 +385,7 @@ class _PodiumCard extends StatelessWidget {
   Widget build(BuildContext context) {
     _PodiumEntry? at(int i) => i < entries.length ? entries[i] : null;
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+      padding: EdgeInsets.fromLTRB(12, 16, 12, 0),
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(24),
@@ -395,7 +395,7 @@ class _PodiumCard extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(CupertinoIcons.rosette, color: AppColors.warning, size: 15),
               SizedBox(width: 5),
               Text(
@@ -436,7 +436,7 @@ class _PodiumItem extends StatelessWidget {
     this.isFirst = false,
   });
 
-  static const _medalColors = [
+  static final _medalColors = [
     AppColors.warning,
     Color(0xFFB0BEC5),
     Color(0xFFCD7F32),
@@ -568,7 +568,7 @@ class _MyPositionBanner extends StatelessWidget {
             ),
             child: Text(
               '#$rank',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.ink,
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
@@ -727,7 +727,7 @@ class _ClubsTab extends ConsumerWidget {
             itemBuilder: (context, i) {
             if (i == 0) return _PodiumCard(entries: podiumEntries);
             final c = rest[i - 1];
-            const color = AppColors.textSecondary;
+            final color = AppColors.textSecondary;
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -864,7 +864,7 @@ class _DistrictsTab extends ConsumerWidget {
             }
             if (idx == 1) return _PodiumCard(entries: podiumEntries);
             final c = rest[idx - 2];
-            const color = AppColors.textSecondary;
+            final color = AppColors.textSecondary;
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

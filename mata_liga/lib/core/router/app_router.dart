@@ -19,6 +19,7 @@ import '../../features/races/presentation/screens/race_detail_screen.dart';
 import '../../features/club/presentation/screens/club_screen.dart';
 import '../../features/club/presentation/screens/club_scan_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/theme_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/legal_documents_screen.dart';
 import '../../features/profile/presentation/screens/privacy_screen.dart';
@@ -238,6 +239,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/profile/privacy',
                 builder: (_, __) => const PrivacyScreen(),
+              ),
+              GoRoute(
+                path: '/profile/theme',
+                builder: (_, __) => const ThemeScreen(),
               ),
               GoRoute(
                 path: '/profile/watch',

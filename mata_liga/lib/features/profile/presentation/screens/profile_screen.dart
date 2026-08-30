@@ -165,7 +165,7 @@ class _NotificationsBell extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 unread > 9 ? '9+' : '$unread',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.ink,
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
@@ -206,7 +206,7 @@ class _ProfileAppBar extends ConsumerWidget {
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: const BoxDecoration(color: AppColors.bg),
+          decoration: BoxDecoration(color: AppColors.bg),
           child: SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -222,11 +222,11 @@ class _ProfileAppBar extends ConsumerWidget {
                         bottom: 0,
                         child: Container(
                           padding: const EdgeInsets.all(5),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.electricBlue,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             CupertinoIcons.pencil,
                             size: 11,
                             color: AppColors.ink,
@@ -258,7 +258,7 @@ class _ProfileAppBar extends ConsumerWidget {
                   ),
                   child: Text(
                     city,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.ink,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -601,7 +601,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               width: 2,
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             CupertinoIcons.camera_fill,
                             size: 13,
                             color: AppColors.ink,
@@ -640,7 +640,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 14),
-                Text(_error!, style: const TextStyle(color: AppColors.error)),
+                Text(_error!, style: TextStyle(color: AppColors.error)),
               ],
               const SizedBox(height: 24),
               SizedBox(
@@ -682,7 +682,7 @@ class _EditField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(color: AppColors.textPrimary),
+      style: TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 18),
@@ -736,6 +736,11 @@ class SettingsScreen extends ConsumerWidget {
               icon: CupertinoIcons.time,
               label: 'Часы и приложения',
               onTap: () => context.push('/profile/watch'),
+            ),
+            _SettingsTile(
+              icon: CupertinoIcons.moon_fill,
+              label: 'Тема',
+              onTap: () => context.push('/profile/theme'),
             ),
             _SettingsTile(
               icon: CupertinoIcons.bell_fill,
@@ -812,7 +817,7 @@ class _SettingsTile extends StatelessWidget {
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           CupertinoIcons.chevron_right,
           color: AppColors.textDisabled,
           size: 16,
@@ -885,7 +890,7 @@ class _PointsCard extends ConsumerWidget {
               ),
               child: Text(
                 loyalty.levelTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.onDark,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
@@ -1189,7 +1194,7 @@ class _FootprintCard extends ConsumerWidget {
               color: AppColors.electricBlue.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               CupertinoIcons.map_fill,
               color: AppColors.electricBlue,
               size: 21,
@@ -1218,7 +1223,7 @@ class _FootprintCard extends ConsumerWidget {
           ),
           Text(
             formatAreaM2(area),
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.electricBlue,
               fontSize: 17,
               fontWeight: FontWeight.w900,
@@ -1275,7 +1280,7 @@ class _ShoesCard extends ConsumerWidget {
                 color: AppColors.electricBlue.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.directions_run,
                 color: AppColors.electricBlue,
                 size: 22,
@@ -1307,7 +1312,7 @@ class _ShoesCard extends ConsumerWidget {
             if (value != null) ...[
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.electricBlue,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -1315,7 +1320,7 @@ class _ShoesCard extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
             ],
-            const Icon(
+            Icon(
               CupertinoIcons.chevron_right,
               color: AppColors.textTertiary,
               size: 18,

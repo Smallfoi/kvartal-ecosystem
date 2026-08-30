@@ -105,7 +105,7 @@ class LocationSetupScreen extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             CupertinoIcons.exclamationmark_triangle_fill,
                             color: AppColors.warning,
                             size: 16,
@@ -206,14 +206,14 @@ class _Step extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: done
-                ? const Icon(
+                ? Icon(
                     CupertinoIcons.check_mark,
                     color: AppColors.success,
                     size: 16,
                   )
                 : Text(
                     '$index',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.electricBlue,
                       fontWeight: FontWeight.w800,
                     ),
@@ -291,7 +291,7 @@ class LocationWarningBanner extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 CupertinoIcons.location_slash_fill,
                 color: AppColors.warning,
                 size: 20,
@@ -319,7 +319,7 @@ class LocationWarningBanner extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(
+              Icon(
                 CupertinoIcons.chevron_right,
                 color: AppColors.warning,
                 size: 16,

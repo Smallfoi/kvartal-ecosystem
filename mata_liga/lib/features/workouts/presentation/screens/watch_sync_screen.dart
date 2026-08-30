@@ -32,11 +32,11 @@ class _WatchSyncScreenState extends ConsumerState<WatchSyncScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bgCard,
-        title: const Text(
+        title: Text(
           'Отключить часы?',
           style: TextStyle(color: AppColors.textPrimary),
         ),
-        content: const Text(
+        content: Text(
           'Мы перестанем читать тренировки и удалим те, что уже забрали. '
           'Начисленные баллы останутся — вы их пробежали.',
           style: TextStyle(color: AppColors.textSecondary),
@@ -48,7 +48,7 @@ class _WatchSyncScreenState extends ConsumerState<WatchSyncScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
+            child: Text(
               'Отключить',
               style: TextStyle(color: AppColors.error),
             ),
@@ -116,7 +116,7 @@ class _WatchSyncScreenState extends ConsumerState<WatchSyncScreen> {
               const SizedBox(height: 12),
               Text(
                 state.error!,
-                style: const TextStyle(color: AppColors.error, fontSize: 13),
+                style: TextStyle(color: AppColors.error, fontSize: 13),
               ),
             ],
             const SizedBox(height: 24),
@@ -132,7 +132,7 @@ class _Lead extends StatelessWidget {
   const _Lead();
 
   @override
-  Widget build(BuildContext context) => const Text(
+  Widget build(BuildContext context) => Text(
     'Бежали с часами — километры засчитаются, даже если приложение не было '
     'открыто. Забег, записанный и часами, и телефоном, считается один раз.',
     style: TextStyle(color: AppColors.textSecondary, height: 1.45),
@@ -175,7 +175,7 @@ class _Card extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
@@ -187,7 +187,7 @@ class _Card extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
               height: 1.45,
             ),
@@ -250,13 +250,13 @@ class _ConnectedCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 CupertinoIcons.checkmark_seal_fill,
                 color: AppColors.success,
                 size: 22,
               ),
-              const SizedBox(width: 10),
-              const Expanded(
+              SizedBox(width: 10),
+              Expanded(
                 child: Text(
                   'Часы подключены',
                   style: TextStyle(
@@ -268,7 +268,7 @@ class _ConnectedCard extends StatelessWidget {
               ),
               Text(
                 _lastSyncLabel,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textDisabled,
                   fontSize: 12,
                 ),
@@ -276,38 +276,38 @@ class _ConnectedCard extends StatelessWidget {
             ],
           ),
           if (state.lastImported > 0) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               state.lastPoints > 0
                   ? 'В прошлый раз забрали ${state.lastImported} '
                         '${_plural(state.lastImported)} и начислили ${state.lastPoints} баллов'
                   : 'В прошлый раз забрали ${state.lastImported} '
                         '${_plural(state.lastImported)}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textSecondary,
                 height: 1.45,
               ),
             ),
           ],
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: FilledButton(
                   onPressed: state.busy ? null : () => onSync(),
                   child: state.busy
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Обновить'),
+                      : Text('Обновить'),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               TextButton(
                 onPressed: state.busy ? null : () => onDisconnect(),
-                child: const Text(
+                child: Text(
                   'Отключить',
                   style: TextStyle(color: AppColors.error),
                 ),
@@ -336,7 +336,7 @@ class _Explainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
           'Какие часы подойдут',
           style: TextStyle(

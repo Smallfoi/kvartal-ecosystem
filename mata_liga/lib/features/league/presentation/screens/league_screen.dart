@@ -267,7 +267,7 @@ class _MyPlaceCard extends StatelessWidget {
           if (groupLabel != null) ...[
             Text(
               groupLabel!.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.w700,
@@ -295,7 +295,7 @@ class _MyPlaceCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'До следующего места ${_amount(me.behindNext!, unit)}',
-              style: const TextStyle(fontSize: 12, color: AppColors.accentInk),
+              style: TextStyle(fontSize: 12, color: AppColors.accentInk),
             ),
           ],
         ],
@@ -356,7 +356,7 @@ class _PersonalCard extends StatelessWidget {
                     me.improved
                         ? 'Лучше прошлого периода на $sign${_fmt(delta)} $unit'
                         : 'В прошлом периоде было ${_fmt(me.prevValue ?? 0)} $unit',
-                    style: const TextStyle(fontSize: 13, color: AppColors.ink),
+                    style: TextStyle(fontSize: 13, color: AppColors.ink),
                   ),
                 ),
               ],
@@ -390,7 +390,7 @@ class _Row extends StatelessWidget {
             width: 28,
             child: Text(
               '${row.place}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
                 color: AppColors.muted,
@@ -412,7 +412,7 @@ class _Row extends StatelessWidget {
                     row.club!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                    style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
                   ),
               ],
             ),
@@ -450,7 +450,7 @@ class _ProfilePrompt extends ConsumerWidget {
                 ?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Здесь ты соревнуешься только с ровесниками своего пола. Чтобы собрать '
             'твою группу, нужны год рождения и пол — больше ничего.',
             style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.45),
@@ -495,7 +495,7 @@ class _Message extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             text,
-            style: const TextStyle(fontSize: 14, color: AppColors.muted, height: 1.45),
+            style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.45),
           ),
         ],
       ),
@@ -567,7 +567,7 @@ Future<void> showRunnerProfileSheet(BuildContext context, WidgetRef ref) async {
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Нужны только для того, чтобы собрать твою группу сравнения.',
                   style: TextStyle(fontSize: 13, color: AppColors.muted),
                 ),
