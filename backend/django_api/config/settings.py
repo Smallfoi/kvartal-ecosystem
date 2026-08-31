@@ -449,6 +449,10 @@ CELERY_BEAT_SCHEDULE = {
 # Пусто → JSON-фид-импортёр молчит (работает только демо-источник и ручные записи).
 RACES_IMPORT_FEED_URL = os.environ.get("RACES_IMPORT_FEED_URL", "")
 
+# Обмен с 1С (D-62). Токен выдаётся стороне 1С и живёт в секретах (Lockbox), не в коде.
+# Пусто — приём выключен: лучше отказать, чем принимать номенклатуру без проверки.
+INTEGRATION_1C_TOKEN = os.environ.get("INTEGRATION_1C_TOKEN", "")
+
 # ── Sentry / GlitchTip (видимость ошибок, D-25/D-32: self-host РФ) ───────────
 # Каркас: подключается ТОЛЬКО при заданном SENTRY_DSN. Без ключа — no-op, без
 # накладных расходов. DSN даёт наш self-host GlitchTip (Sentry-совместимый) —

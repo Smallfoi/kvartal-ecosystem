@@ -67,6 +67,22 @@ class Product(models.Model):
     sort_site = models.IntegerField(default=0, verbose_name="Порядок (сайт)")
     sort_app = models.IntegerField(default=0, verbose_name="Порядок (приложение)")
 
+    # ── Обмен с 1С (D-62). Источник правды по номенклатуре — 1С, но владелец может
+    # точечно переопределить поле в Конструкторе: тогда импорт его НЕ затирает.
+    # Схема: эффективное значение живёт в обычных полях (витрина не меняется),
+    # `from_1c` хранит последнее присланное 1С, `overrides` — что владелец правил руками.
+    external_id = models.CharField(max_length=64, null=True, blank=True, unique=True,
+                                   db_index=True, verbose_name="ID в 1С")
+    article = models.CharField(max_length=64, blank=True, default="", db_index=True,
+                               verbose_name="Артикул")
+    stock_count = models.IntegerField(null=True, blank=True, verbose_name="Остаток, шт")
+    # «В продаже» по данным 1С. Отдельно от is_published: 1С снимает с продажи,
+    # владелец скрывает с витрины — эти решения независимы.
+    is_active_1c = models.BooleanField(default=True, db_index=True, verbose_name="В продаже (1С)")
+    source_updated_at = models.DateTimeField(null=True, blank=True, verbose_name="Изменён в 1С")
+    from_1c = models.JSONField(default=dict, blank=True, verbose_name="Значения из 1С")
+    overrides = models.JSONField(default=list, blank=True, verbose_name="Переопределено владельцем")
+
     class Meta:
         db_table = "catalog_products"
         ordering = ["sort"]
@@ -85,6 +101,35 @@ class Product(models.Model):
         if imgs:
             return f"/media/products/{str(imgs[0]).split('/')[-1]}"
         return ""
+
+    # Поля, которые владелец вправе переопределить (остаток — нет: продадим то, чего нет).
+    OVERRIDABLE = ("price", "oldPrice", "description", "sizes", "colors", "images")
+
+    def is_overridden(self, field: str) -> bool:
+        return field in (self.overrides or [])
+
+    def set_override(self, field: str, on: bool = True) -> None:
+        """Отметить/снять ручное переопределение поля владельцем."""
+        cur = list(self.overrides or [])
+        if on and field not in cur:
+            cur.append(field)
+        if not on and field in cur:
+            cur.remove(field)
+        self.overrides = cur
+
+    def onec_diff(self) -> dict:
+        """Где значение владельца разошлось с 1С — для пометки в Конструкторе."""
+        src = self.from_1c or {}
+        mine = {
+            "price": self.price, "oldPrice": self.old_price,
+            "description": self.description, "sizes": self.sizes or [],
+            "colors": self.colors or [], "images": self.image_urls or [],
+        }
+        out = {}
+        for f in self.OVERRIDABLE:
+            if f in src and self.is_overridden(f) and src[f] != mine.get(f):
+                out[f] = {"onec": src[f], "mine": mine.get(f)}
+        return out
 
     def to_json(self) -> dict:
         return {
