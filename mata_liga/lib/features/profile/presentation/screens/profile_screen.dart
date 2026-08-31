@@ -11,9 +11,12 @@ import '../../../auth/data/auth_provider.dart';
 import '../../../loyalty/data/loyalty_provider.dart';
 import '../../../loyalty/presentation/widgets/loyalty_card.dart';
 import '../../../notifications/data/notifications_provider.dart';
-import '../../../celebration/medal_ceremony.dart';
 import '../../../run/data/completed_runs_provider.dart';
 import '../../data/badge_defs.dart';
+import '../../data/me_stats_provider.dart';
+import '../../../league/data/division_provider.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/kvartal_logo.dart';
 import '../../../shoes/data/shoes_provider.dart';
 import '../../../workouts/data/health_sync.dart';
 import '../../../territory/data/territory_provider.dart';
@@ -94,6 +97,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Ф4 «Статус бегуна»: уровень города + недельный стрик.
+                    const _LevelHeader(),
+                    const SizedBox(height: 12),
+                    const _StreakRow(),
+                    const SizedBox(height: 12),
                     const _PointsCard(),
                     const SizedBox(height: 12),
                     const _StatsRow(),
@@ -109,15 +117,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       onTap: () => context.push('/tools'),
                     ),
                     _AccountCard(user: user),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Достижения',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const _BadgesGrid(),
+                    const SizedBox(height: 12),
+                    const _TrophyEntryRow(),
                     const SizedBox(height: 24),
                     Text(
                       'Активность',
@@ -1334,98 +1335,6 @@ class _ShoesCard extends ConsumerWidget {
   }
 }
 
-class _BadgesGrid extends ConsumerWidget {
-  const _BadgesGrid();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final runs = ref.watch(completedRunsProvider);
-    final loyalty = ref.watch(loyaltyProvider);
-    final facts = BadgeFacts.fromRuns(runs, balance: loyalty.balance);
-
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.02,
-      children: [
-        for (final def in kBadgeDefs)
-          _BadgeTile(
-            icon: def.icon,
-            label: def.title,
-            color: AppColors.limeDeep,
-            unlocked: def.unlocked(facts),
-            // Тап по открытой медали — повтор церемонии (Ф1, Вариант A).
-            onTap: def.unlocked(facts)
-                ? () => showMedalCeremony(context, badge: def)
-                : null,
-          ),
-      ],
-    );
-  }
-}
-
-class _BadgeTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool unlocked;
-  final VoidCallback? onTap;
-  const _BadgeTile({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.unlocked,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: unlocked ? color.withValues(alpha: 0.12) : AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: unlocked
-            ? Border.all(color: color.withValues(alpha: 0.3))
-            : Border.all(color: AppColors.separator),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 28,
-            color: unlocked ? color : AppColors.textDisabled,
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                maxLines: 1,
-                softWrap: false,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: unlocked
-                      ? AppColors.textPrimary
-                      : AppColors.textDisabled,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-}
-
 class _ActivityHeatmap extends ConsumerWidget {
   const _ActivityHeatmap();
 
@@ -1506,6 +1415,242 @@ class _ActivityHeatmap extends ConsumerWidget {
             }),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Ф4 «Статус бегуна» (утверждено 31.08.2026) ───────────────────────────────
+
+/// Шапка уровня: цвет уровня красит карточку, прогресс — по периметру знака.
+class _LevelHeader extends ConsumerWidget {
+  const _LevelHeader();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(meStatsProvider);
+    final stats = statsAsync.valueOrNull;
+    final km = stats?.totalKm ?? 0;
+    final level = RunnerLevel.fromKm(km);
+    final next = level.next;
+    final progress = level.progress(km);
+    final left = next == null ? 0.0 : (next.minKm - km).clamp(0.0, 1e9).toDouble();
+    // На чёрном «Городе» и сером «Асфальте» контраст держит светлый текст.
+    const onLevel = Color(0xFFF2F4EE);
+    final dimmed = onLevel.withValues(alpha: .78);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            level.color,
+            Color.lerp(level.color, const Color(0xFF14181C), .38)!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.rMd),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'УРОВЕНЬ · ${level.roman}',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.6,
+                    color: dimmed,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  level.title,
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontDisplay,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    height: 1.05,
+                    color: onLevel,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  statsAsync.isLoading
+                      ? 'считаем километры…'
+                      : next == null
+                          ? '${_fmtKm(km)} км всего · статус вечный'
+                          : '${_fmtKm(km)} км всего · до «${next.title}» — ${_fmtKm(left)} км',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: dimmed,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Прогресс уровня — заполнение периметра знака (не кольцо!).
+          SizedBox(
+            width: 58,
+            height: 58,
+            child: CustomPaint(
+              painter: KvartalMarkPainter(
+                outline: onLevel,
+                fill: Colors.transparent,
+                close: 1,
+                draw: progress <= 0 ? .02 : progress,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _fmtKm(double v) => v >= 100
+      ? v.round().toString()
+      : (v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1));
+}
+
+/// Недельный стрик: недели подряд с хотя бы одной пробежкой.
+class _StreakRow extends ConsumerWidget {
+  const _StreakRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final streak = ref.watch(weekStreakProvider);
+    final form = ref.watch(weekFormProvider);
+    final ranThisWeek = form.any((d) => d);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(AppTheme.rSm),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            CupertinoIcons.flame_fill,
+            size: 20,
+            color: streak > 0 ? AppColors.limeDeep : AppColors.disabled,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  streak > 0
+                      ? 'Серия: $streak ${_weeks(streak)} подряд'
+                      : 'Серия ещё не началась',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  streak > 0
+                      ? (ranThisWeek
+                          ? 'Эта неделя уже в серии — так держать'
+                          : 'Пробеги на этой неделе, чтобы серия жила')
+                      : 'Одна пробежка в неделю — и серия пошла',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _weeks(int n) {
+    final mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 14) return 'недель';
+    return switch (n % 10) {
+      1 => 'неделя',
+      2 || 3 || 4 => 'недели',
+      _ => 'недель',
+    };
+  }
+}
+
+/// Вход в трофейный зал (медали переехали туда с профиля).
+class _TrophyEntryRow extends ConsumerWidget {
+  const _TrophyEntryRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final runs = ref.watch(completedRunsProvider);
+    final loyalty = ref.watch(loyaltyProvider);
+    final facts = BadgeFacts.fromRuns(runs, balance: loyalty.balance);
+    final unlocked = kBadgeDefs.where((d) => d.unlocked(facts)).length;
+    return Material(
+      color: AppColors.paper,
+      borderRadius: BorderRadius.circular(AppTheme.rSm),
+      child: InkWell(
+        onTap: () => context.push('/profile/trophies'),
+        borderRadius: BorderRadius.circular(AppTheme.rSm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.rSm),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.lime,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(
+                  CupertinoIcons.rosette,
+                  size: 18,
+                  color: Color(0xFF171C19),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Трофейный зал',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    Text(
+                      '$unlocked из ${kBadgeDefs.length} медалей',
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                CupertinoIcons.chevron_right,
+                size: 16,
+                color: AppColors.faint,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

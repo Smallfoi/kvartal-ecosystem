@@ -37,12 +37,16 @@ class BadgeDef {
   final IconData icon;
   final bool Function(BadgeFacts f) unlocked;
 
+  /// Прогресс к медали: (текущее, цель). Для полосы в трофейном зале.
+  final (double, double) Function(BadgeFacts f) progress;
+
   const BadgeDef({
     required this.id,
     required this.title,
     required this.reason,
     required this.icon,
     required this.unlocked,
+    required this.progress,
   });
 }
 
@@ -54,6 +58,7 @@ const kBadgeDefs = <BadgeDef>[
     reason: 'Первая пробежка — самая трудная. Она сделана.',
     icon: CupertinoIcons.snow,
     unlocked: _firstRun,
+    progress: _firstRunP,
   ),
   BadgeDef(
     id: 'sprint-5',
@@ -61,6 +66,7 @@ const kBadgeDefs = <BadgeDef>[
     reason: '5 километров суммарно.',
     icon: CupertinoIcons.bolt_fill,
     unlocked: _km5,
+    progress: _km5P,
   ),
   BadgeDef(
     id: 'series-7',
@@ -68,6 +74,7 @@ const kBadgeDefs = <BadgeDef>[
     reason: '7 пробежек. Постоянство сильнее скорости.',
     icon: CupertinoIcons.flame_fill,
     unlocked: _runs7,
+    progress: _runs7P,
   ),
   BadgeDef(
     id: 'city-10',
@@ -75,6 +82,7 @@ const kBadgeDefs = <BadgeDef>[
     reason: '10 километров по родному городу.',
     icon: CupertinoIcons.moon_stars_fill,
     unlocked: _km10,
+    progress: _km10P,
   ),
   BadgeDef(
     id: 'legend-500',
@@ -82,6 +90,7 @@ const kBadgeDefs = <BadgeDef>[
     reason: '500 баллов МАТА на счету.',
     icon: CupertinoIcons.star_fill,
     unlocked: _balance500,
+    progress: _balance500P,
   ),
   BadgeDef(
     id: 'captures-3',
@@ -89,6 +98,7 @@ const kBadgeDefs = <BadgeDef>[
     reason: '3 захваченных квартала.',
     icon: CupertinoIcons.location_north_fill,
     unlocked: _captures3,
+    progress: _captures3P,
   ),
 ];
 
@@ -98,3 +108,10 @@ bool _runs7(BadgeFacts f) => f.runs >= 7;
 bool _km10(BadgeFacts f) => f.totalKm >= 10;
 bool _balance500(BadgeFacts f) => f.balance >= 500;
 bool _captures3(BadgeFacts f) => f.captures >= 3;
+
+(double, double) _firstRunP(BadgeFacts f) => (f.runs.toDouble(), 1);
+(double, double) _km5P(BadgeFacts f) => (f.totalKm, 5);
+(double, double) _runs7P(BadgeFacts f) => (f.runs.toDouble(), 7);
+(double, double) _km10P(BadgeFacts f) => (f.totalKm, 10);
+(double, double) _balance500P(BadgeFacts f) => (f.balance.toDouble(), 500);
+(double, double) _captures3P(BadgeFacts f) => (f.captures.toDouble(), 3);
