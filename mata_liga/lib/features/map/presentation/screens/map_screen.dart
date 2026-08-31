@@ -261,8 +261,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                       for (final ring in t.rings)
                         Polygon(
                           points: ring,
-                          color: _territoryFill(t.rel),
-                          borderColor: _territoryBorder(t.rel),
+                          // Видимый decay (Ф2): чем ближе конец удержания,
+                          // тем бледнее квартал — землю пора обновлять бегом.
+                          color: _territoryFill(
+                            t.rel,
+                            freshness: _freshness(t.holdHoursLeft),
+                          ),
+                          borderColor: _territoryBorder(
+                            t.rel,
+                            freshness: _freshness(t.holdHoursLeft),
+                          ),
                           borderStrokeWidth: 1.6,
                         ),
                   ],
@@ -509,6 +517,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
           _showQuarterPassport(
             rel: t.rel,
             holdHoursLeft: t.holdHoursLeft,
+            ownerName: t.ownerName,
+            capturedAtMs: t.capturedAtMs,
           );
           return;
         }
@@ -531,6 +541,23 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
     }
   }
 
+  static String _heldLabel(int capturedAtMs) {
+    final captured =
+        DateTime.fromMillisecondsSinceEpoch(capturedAtMs);
+    final days = DateTime.now().difference(captured).inDays;
+    if (days <= 0) return 'Захвачен сегодня';
+    if (days == 1) return 'Держит 1 день';
+    final tail = days % 10;
+    final word = (days % 100 >= 11 && days % 100 <= 14)
+        ? 'дней'
+        : tail == 1
+            ? 'день'
+            : (tail >= 2 && tail <= 4)
+                ? 'дня'
+                : 'дней';
+    return 'Держит $days $word';
+  }
+
   static bool _pointInPolygon(LatLng p, List<LatLng> poly) {
     var inside = false;
     for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -548,7 +575,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
     return inside;
   }
 
-  void _showQuarterPassport({TerritoryRel? rel, double? holdHoursLeft}) {
+  void _showQuarterPassport({
+    TerritoryRel? rel,
+    double? holdHoursLeft,
+    String? ownerName,
+    int capturedAtMs = 0,
+  }) {
     final (title, color, note) = switch (rel) {
       TerritoryRel.mine => (
         'Мой квартал',
@@ -561,7 +593,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
         'Держит твой клуб. Общая оборона — общая заслуга.',
       ),
       TerritoryRel.enemy => (
-        'Чужой квартал',
+        ownerName != null && ownerName.isNotEmpty
+            ? 'Квартал: $ownerName'
+            : 'Чужой квартал',
         AppColors.warm,
         'Замкни маршрут вокруг него — и он твой.',
       ),
@@ -607,6 +641,48 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                 ],
               ),
               const SizedBox(height: 10),
+              if (capturedAtMs > 0) ...[
+                Text(
+                  _heldLabel(capturedAtMs),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.muted,
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+              if (holdHoursLeft != null) ...[
+                // Прочность квартала: сколько удержания осталось (Ф2, decay).
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: (holdHoursLeft / 168).clamp(0.0, 1.0),
+                    minHeight: 5,
+                    backgroundColor: AppColors.soft,
+                    valueColor: AlwaysStoppedAnimation(
+                      holdHoursLeft < 24
+                          ? AppColors.warm
+                          : AppColors.limeDeep,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  holdHoursLeft < 24
+                      ? 'Выцветает: осталось ${holdHoursLeft.round()} ч'
+                      : 'Прочность: ещё ${(holdHoursLeft / 24).floor()} дн '
+                          'удержания',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: holdHoursLeft < 24
+                        ? AppColors.warm
+                        : AppColors.accentInk,
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
               if (protected) ...[
                 Text(
                   'Под защитой ещё ${holdHoursLeft.round()} ч',
@@ -666,19 +742,29 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
     };
   }
 
-  // Реальные территории с сервера — та же палитра, чуть плотнее заливка,
-  // чтобы захваченные маршрутом области читались поверх демо-сетки.
-  Color _territoryFill(TerritoryRel rel) => switch (rel) {
-    TerritoryRel.mine => AppColors.hexOwned.withValues(alpha: 0.28),
-    TerritoryRel.club => AppColors.teal.withValues(alpha: 0.24),
-    TerritoryRel.enemy => AppColors.hexEnemy.withValues(alpha: 0.24),
-  };
+  /// Свежесть удержания 0..1 (168ч = только что захвачен).
+  static double _freshness(double? holdHoursLeft) =>
+      ((holdHoursLeft ?? 168) / 168).clamp(0.0, 1.0);
 
-  Color _territoryBorder(TerritoryRel rel) => switch (rel) {
-    TerritoryRel.mine => AppColors.hexOwned.withValues(alpha: 0.85),
-    TerritoryRel.club => AppColors.teal.withValues(alpha: 0.75),
-    TerritoryRel.enemy => AppColors.hexEnemy.withValues(alpha: 0.70),
-  };
+  // Реальные территории с сервера — та же палитра; насыщенность = прочность
+  // (словарь Ф2: выцветающий квартал видно ещё до потери).
+  Color _territoryFill(TerritoryRel rel, {double freshness = 1}) {
+    final k = 0.45 + 0.55 * freshness;
+    return switch (rel) {
+      TerritoryRel.mine => AppColors.hexOwned.withValues(alpha: 0.28 * k),
+      TerritoryRel.club => AppColors.teal.withValues(alpha: 0.24 * k),
+      TerritoryRel.enemy => AppColors.hexEnemy.withValues(alpha: 0.24 * k),
+    };
+  }
+
+  Color _territoryBorder(TerritoryRel rel, {double freshness = 1}) {
+    final k = 0.5 + 0.5 * freshness;
+    return switch (rel) {
+      TerritoryRel.mine => AppColors.hexOwned.withValues(alpha: 0.85 * k),
+      TerritoryRel.club => AppColors.teal.withValues(alpha: 0.75 * k),
+      TerritoryRel.enemy => AppColors.hexEnemy.withValues(alpha: 0.70 * k),
+    };
+  }
 }
 
 // ── Markers ───────────────────────────────────────────────────────────────────

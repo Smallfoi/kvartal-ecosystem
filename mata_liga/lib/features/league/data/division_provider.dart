@@ -1,6 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/api_config.dart';
+import '../../auth/data/auth_provider.dart';
 import '../../profile/data/me_stats_provider.dart';
 import '../../run/data/completed_runs_provider.dart';
 
@@ -112,4 +115,130 @@ final weekFormProvider = Provider.autoDispose<List<bool>>((ref) {
     if (diff >= 0 && diff < 7) form[diff] = true;
   }
   return form;
+});
+
+
+// ── Серверный дивизион недели (Квартал 2.0, бэкенд 09.2026) ─────────────────
+
+final _divDio = Dio(
+  BaseOptions(
+    baseUrl: ApiConfig.baseUrl,
+    connectTimeout: ApiConfig.connectTimeout,
+    receiveTimeout: ApiConfig.receiveTimeout,
+    headers: {'Content-Type': 'application/json', 'Connection': 'close'},
+  ),
+);
+
+class DivisionMemberRow {
+  final String userId;
+  final String name;
+  final String? club;
+  final double km;
+  final int place;
+  final int? movement;
+  final bool isMe;
+
+  const DivisionMemberRow({
+    required this.userId,
+    required this.name,
+    this.club,
+    required this.km,
+    required this.place,
+    this.movement,
+    required this.isMe,
+  });
+
+  factory DivisionMemberRow.fromJson(Map<String, dynamic> j) =>
+      DivisionMemberRow(
+        userId: j['userId']?.toString() ?? '',
+        name: j['name']?.toString() ?? 'Бегун',
+        club: j['club']?.toString(),
+        km: (j['km'] as num?)?.toDouble() ?? 0,
+        place: (j['place'] as num?)?.toInt() ?? 0,
+        movement: (j['movement'] as num?)?.toInt(),
+        isMe: j['isMe'] == true,
+      );
+}
+
+class DivisionData {
+  final String name;
+  final String tierLabel;
+  final String roman;
+  final int size;
+  final int? myPlace;
+  final int? myMovement;
+  final List<DivisionMemberRow> members;
+
+  const DivisionData({
+    required this.name,
+    required this.tierLabel,
+    required this.roman,
+    required this.size,
+    this.myPlace,
+    this.myMovement,
+    this.members = const [],
+  });
+}
+
+/// Дивизион недели с бэка: группа до 30 бегунов твоего уровня.
+final divisionProvider = FutureProvider.autoDispose<DivisionData?>((ref) async {
+  final token = ref.watch(authProvider).token;
+  if (token == null || token.isEmpty) return null;
+  final res = await _divDio.get<Map<String, dynamic>>(
+    '/league/division',
+    options: Options(headers: {'Authorization': 'Bearer $token'}),
+  );
+  final data = res.data ?? {};
+  final div = (data['division'] as Map<String, dynamic>?) ?? const {};
+  final me = (data['me'] as Map<String, dynamic>?) ?? const {};
+  return DivisionData(
+    name: div['name']?.toString() ?? 'Дивизион',
+    tierLabel: div['tierLabel']?.toString() ?? '',
+    roman: div['roman']?.toString() ?? '–',
+    size: (div['size'] as num?)?.toInt() ?? 0,
+    myPlace: (me['place'] as num?)?.toInt(),
+    myMovement: (me['movement'] as num?)?.toInt(),
+    members: (data['members'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(DivisionMemberRow.fromJson)
+        .toList(),
+  );
+});
+
+// ── Итог прошлого сезона (для церемонии) ────────────────────────────────────
+
+class SeasonResultData {
+  final String month;
+  final int place;
+  final int of;
+  final double km;
+  final int runs;
+
+  const SeasonResultData({
+    required this.month,
+    required this.place,
+    required this.of,
+    required this.km,
+    required this.runs,
+  });
+}
+
+final seasonLatestProvider =
+    FutureProvider.autoDispose<SeasonResultData?>((ref) async {
+  final token = ref.watch(authProvider).token;
+  if (token == null || token.isEmpty) return null;
+  final res = await _divDio.get<Map<String, dynamic>>(
+    '/league/season/latest',
+    options: Options(headers: {'Authorization': 'Bearer $token'}),
+  );
+  final data = res.data ?? {};
+  final me = data['me'];
+  if (me is! Map<String, dynamic>) return null;
+  return SeasonResultData(
+    month: data['month']?.toString() ?? '',
+    place: (me['place'] as num?)?.toInt() ?? 0,
+    of: (me['of'] as num?)?.toInt() ?? 0,
+    km: (me['km'] as num?)?.toDouble() ?? 0,
+    runs: (me['runs'] as num?)?.toInt() ?? 0,
+  );
 });
