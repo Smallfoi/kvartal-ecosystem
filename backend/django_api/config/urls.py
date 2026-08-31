@@ -40,6 +40,7 @@ from shoes import views as shoes_views
 from territories import views as territories_views
 from analytics import views as analytics_views
 from config.errors_view import error_detail, errors_console
+from config.onec_log_view import onec_log
 
 urlpatterns = [
     # Конструктор (live-превью + правка + публикация). Отдельные «Превью» убраны.
@@ -59,6 +60,7 @@ urlpatterns = [
     # «Ошибки» — GlitchTip внутри нашей админки (D-32). ДО admin/ catch-all.
     path("admin/errors/", errors_console, name="errors_console"),
     path("admin/storage/", admin_storage, name="admin_storage"),
+    path("admin/1c-log/", onec_log, name="onec_log"),
     path("admin/errors/<str:issue_id>/", error_detail, name="error_detail"),
     # Второй шаг входа должен стоять выше админки, иначе путь перехватит она.
     path("admin/2fa/", admin2fa.verify_view, name="admin-2fa"),

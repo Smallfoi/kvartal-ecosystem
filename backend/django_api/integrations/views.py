@@ -10,8 +10,10 @@
 """
 import json
 import secrets
+import time
 
 from django.conf import settings
+from django.core.cache import cache
 
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -87,30 +89,47 @@ def _onec_items(request, key: str):
     return None
 
 
+def _reject(operation: str, detail: str, status: int):
+    """Отказ + строка в журнале. Неудачную авторизацию пишем не чаще раза в 5 минут:
+    иначе перебор токена превратился бы в способ забить базу."""
+    from .log import record
+    if status != 401 or cache.add(f"onec_authfail_{operation}", 1, 300):
+        record(operation, detail=detail)
+    return Response({"detail": detail}, status=status)
+
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def onec_catalog(request):
     """Карточки товаров из 1С. Переопределённые владельцем поля не трогаем."""
+    started = time.monotonic()
     if not _onec_authorized(request):
-        return Response({"detail": "Требуется токен обмена"}, status=401)
+        return _reject("catalog", "Требуется токен обмена", 401)
     items = _onec_items(request, "products")
     if items is None:
-        return Response({"detail": "Ожидается массив товаров или {\"products\": [...]}"}, status=400)
+        return _reject("catalog", "Ожидается массив товаров или {\"products\": [...]}", 400)
+    from .log import record
     from .onec import import_catalog
-    return Response(import_catalog(items))
+    result = import_catalog(items)
+    record("catalog", result, started=started)
+    return Response(result)
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def onec_prices(request):
     """Цены и остатки из 1С — частый поток."""
+    started = time.monotonic()
     if not _onec_authorized(request):
-        return Response({"detail": "Требуется токен обмена"}, status=401)
+        return _reject("prices", "Требуется токен обмена", 401)
     items = _onec_items(request, "prices")
     if items is None:
-        return Response({"detail": "Ожидается массив позиций или {\"prices\": [...]}"}, status=400)
+        return _reject("prices", "Ожидается массив позиций или {\"prices\": [...]}", 400)
+    from .log import record
     from .onec import import_prices
-    return Response(import_prices(items))
+    result = import_prices(items)
+    record("prices", result, started=started)
+    return Response(result)
 
 
 @api_view(["GET"])

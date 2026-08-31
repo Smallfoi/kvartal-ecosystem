@@ -221,3 +221,54 @@ class MerchBannerTests(TestCase):
         self.client.logout()
         self.assertIn(self.client.get("/admin/merch/banners").status_code, (302, 403))
         self.assertIn(self.client.post("/admin/merch/banner-create", {"title": "x"}).status_code, (302, 403))
+
+
+class MerchOverride1CTests(TestCase):
+    """Гибрид «1С + Конструктор» (D-62): правка владельца держится, возврат — снимает её."""
+
+    def setUp(self):
+        User.objects.create_superuser("merch_1c", "b@t.dev", "pass12345")
+        self.client.login(username="merch_1c", password="pass12345")
+        self.p = Product.objects.create(
+            id="k1", name="Кроссовки", category_id="c", price=11990,
+            external_id="1c-guid-1", article="ART-1",
+            description="из 1С", sizes=["41", "42"],
+            from_1c={"price": 11990, "description": "из 1С", "sizes": ["41", "42"]},
+        )
+
+    def _post(self, body, pid="k1"):
+        return self.client.post(f"/admin/merch/product/{pid}", data=json.dumps(body),
+                                content_type="application/json")
+
+    def test_edit_marks_field_as_owners(self):
+        self._post({"price": 10990, "description": "из 1С", "sizes": ["41", "42"]})
+        p = Product.objects.get(id="k1")
+        self.assertEqual(p.price, 10990)
+        self.assertEqual(p.overrides, ["price"])          # тронута только цена
+        self.assertEqual(p.from_1c["price"], 11990)       # значение 1С сохранено
+
+    def test_resend_unchanged_form_does_not_override(self):
+        """Конструктор шлёт все поля разом — нетронутые не должны становиться «моими»."""
+        self._post({"price": 11990, "description": "из 1С", "sizes": ["41", "42"]})
+        self.assertEqual(Product.objects.get(id="k1").overrides, [])
+
+    def test_return_to_1c_value_clears_override(self):
+        self._post({"price": 10990})
+        self.assertEqual(Product.objects.get(id="k1").overrides, ["price"])
+        self._post({"price": 11990})                      # «вернуть как в 1С» + сохранить
+        self.assertEqual(Product.objects.get(id="k1").overrides, [])
+
+    def test_console_json_shows_1c_values(self):
+        self._post({"price": 10990})
+        r = self.client.get("/admin/merch/products?platform=site")
+        item = [x for x in r.json()["products"] if x["id"] == "k1"][0]
+        self.assertTrue(item["onec"]["linked"])
+        self.assertEqual(item["onec"]["article"], "ART-1")
+        self.assertEqual(item["onec"]["overrides"], ["price"])
+        self.assertEqual(item["onec"]["from1c"]["price"], 11990)
+
+    def test_plain_product_gets_no_overrides(self):
+        Product.objects.create(id="k2", name="Свой", category_id="c", price=100)
+        self.client.post("/admin/merch/product/k2", data=json.dumps({"price": 200}),
+                         content_type="application/json")
+        self.assertEqual(Product.objects.get(id="k2").overrides, [])

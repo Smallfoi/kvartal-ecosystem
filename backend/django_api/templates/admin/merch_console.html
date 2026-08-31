@@ -73,6 +73,15 @@
 </div>
 <p id="merch-note" style="font-size:12px;color:#9ca3af;margin:8px 0 0"></p>
 
+<style>
+  /* Подсказка «что в 1С» под полем товара (D-62) */
+  .merch-1c-hint{display:none;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:#64748b;margin-top:5px}
+  .merch-1c-hint.own{color:#b45309}
+  .merch-1c-hint button{border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:999px;
+    padding:2px 10px;font-size:11px;font-weight:600;cursor:pointer;line-height:1.6}
+  .merch-1c-hint button:hover{background:#f1f5f9}
+</style>
+
 <!-- Модалка правки товара (открывается кликом по товару на сайте) -->
 <div id="merch-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:12px;max-width:520px;width:92%;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
@@ -81,14 +90,28 @@
       <button type="button" id="merch-m-close" style="border:0;background:none;font-size:22px;cursor:pointer;color:#6b7280">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
-      <label style="font-size:12px;font-weight:600;color:#374151">Цена, ₽
-        <input id="merch-f-price" type="number" step="1" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
-      <label style="font-size:12px;font-weight:600;color:#374151">Старая цена, ₽ (пусто = нет скидки)
-        <input id="merch-f-old" type="number" step="1" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
-      <label style="font-size:12px;font-weight:600;color:#374151">Описание
-        <textarea id="merch-f-desc" rows="4" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></textarea></label>
-      <label style="font-size:12px;font-weight:600;color:#374151">Размеры (через запятую)
-        <input id="merch-f-sizes" type="text" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
+      <!-- Товар ведётся в 1С (D-62): что пришло из учёта и что владелец правил сам -->
+      <div id="merch-m-1c" style="display:none;font-size:12px;color:#475569;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px"></div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#374151">Цена, ₽
+          <input id="merch-f-price" type="number" step="1" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
+        <div class="merch-1c-hint" id="merch-h-price"></div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#374151">Старая цена, ₽ (пусто = нет скидки)
+          <input id="merch-f-old" type="number" step="1" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
+        <div class="merch-1c-hint" id="merch-h-oldPrice"></div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#374151">Описание
+          <textarea id="merch-f-desc" rows="4" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></textarea></label>
+        <div class="merch-1c-hint" id="merch-h-description"></div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#374151">Размеры (через запятую)
+          <input id="merch-f-sizes" type="text" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d1d5db;border-radius:8px"></label>
+        <div class="merch-1c-hint" id="merch-h-sizes"></div>
+      </div>
       <div style="display:flex;gap:18px;flex-wrap:wrap">
         <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input id="merch-f-stock" type="checkbox"> В наличии</label>
         <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input id="merch-f-pub" type="checkbox"> Опубликован</label>
@@ -839,7 +862,75 @@
     document.getElementById("merch-f-pub").checked = !!p.isPublished;
     document.getElementById("merch-f-feat").checked = !!p.isFeatured;
     document.getElementById("merch-m-err").style.display = "none";
+    fillOnec(p);
     modal.style.display = "flex";
+  }
+
+  // ── Что пришло из 1С и что владелец ведёт сам (D-62) ──
+  // Отдельного переключателя «ручной режим» нет: изменил поле — 1С его больше не
+  // трогает; нажал «вернуть как в 1С» и сохранил — обновления снова приходят.
+  var ONEC_INPUT = { price: "merch-f-price", oldPrice: "merch-f-old",
+                     description: "merch-f-desc", sizes: "merch-f-sizes" };
+
+  function onecText(field, v) {
+    if (v === null || v === undefined || v === "") return "пусто";
+    if (field === "price" || field === "oldPrice") {
+      return Number(v).toLocaleString("ru-RU") + " ₽";
+    }
+    if (field === "sizes") return (v || []).join(", ") || "пусто";
+    var t = String(v);
+    return t.length > 90 ? t.slice(0, 90) + "…" : t;
+  }
+
+  function onecToInput(field, v) {
+    var el = document.getElementById(ONEC_INPUT[field]);
+    if (!el) return;
+    if (field === "sizes") el.value = (v || []).join(", ");
+    else if (v === null || v === undefined) el.value = "";
+    else el.value = v;
+  }
+
+  function fillOnec(p) {
+    var o = p.onec || {};
+    var head = document.getElementById("merch-m-1c");
+    var src = o.from1c || {};
+    var own = o.overrides || [];
+    if (o.linked) {
+      var bits = ["Товар ведётся в 1С"];
+      if (o.article) bits.push("артикул " + o.article);
+      if (o.stock !== null && o.stock !== undefined) bits.push("остаток " + o.stock + " шт");
+      if (o.activeIn1c === false) bits.push("снят с продажи в 1С");
+      head.textContent = bits.join(" · ");
+      head.style.display = "block";
+    } else {
+      head.style.display = "none";
+    }
+    Object.keys(ONEC_INPUT).forEach(function (f) {
+      var box = document.getElementById("merch-h-" + f);
+      if (!box) return;
+      box.textContent = "";
+      box.className = "merch-1c-hint";
+      var has = o.linked && Object.prototype.hasOwnProperty.call(src, f);
+      if (!has) { box.style.display = "none"; return; }
+      var overridden = own.indexOf(f) >= 0;
+      var label = document.createElement("span");
+      label.textContent = (overridden ? "Ваша правка. " : "Как в 1С. ") + "В 1С: " + onecText(f, src[f]);
+      box.appendChild(label);
+      if (overridden) {
+        box.className = "merch-1c-hint own";
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "вернуть как в 1С";
+        btn.addEventListener("click", function () {
+          onecToInput(f, src[f]);
+          box.className = "merch-1c-hint";
+          label.textContent = "Вернётся к значению 1С после сохранения: " + onecText(f, src[f]);
+          btn.remove();
+        });
+        box.appendChild(btn);
+      }
+      box.style.display = "flex";
+    });
   }
   function closeEdit() { modal.style.display = "none"; editId = null; }
 
