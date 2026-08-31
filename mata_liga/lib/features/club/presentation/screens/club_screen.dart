@@ -9,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/club_provider.dart';
+import '../../../leaderboard/data/leaderboard_provider.dart';
 import '../widgets/club_style.dart';
 
 class ClubScreen extends ConsumerStatefulWidget {
@@ -592,6 +593,8 @@ class _MyClubBody extends ConsumerWidget {
         _SectionHeader(title: 'Захваченные районы'),
         const SizedBox(height: 10),
         _ClubTerritoryCard(club: club),
+        const SizedBox(height: 12),
+        const _DistrictWarCard(),
         const SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
@@ -2420,4 +2423,120 @@ class _FutureModuleCard extends StatelessWidget {
     subtitle: subtitle,
     color: AppColors.info,
   );
+}
+
+/// Ф6 «Клубная война»: щит района — реальный лидерборд районов
+/// (GET /leaderboard/districts). Мой район подсвечен лаймом.
+class _DistrictWarCard extends ConsumerWidget {
+  const _DistrictWarCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(leaderboardDistrictsProvider);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Война района',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Чей клуб держит больше земли',
+            style: TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+          const SizedBox(height: 12),
+          async.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: CupertinoActivityIndicator(),
+              ),
+            ),
+            error: (_, __) => Text(
+              'Не удалось загрузить районы — потяни вниз, чтобы обновить.',
+              style: TextStyle(fontSize: 12.5, color: AppColors.faint),
+            ),
+            data: (board) {
+              if (board.top.isEmpty) {
+                return Text(
+                  'Пока никто не захватил территорию. Замкни первый круг!',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.faint),
+                );
+              }
+              final maxArea = board.top
+                  .map((d) => d.areaM2)
+                  .fold<double>(1, (a, b) => a > b ? a : b);
+              return Column(
+                children: [
+                  for (final d in board.top.take(6)) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  d.isMine ? '${d.name} · твой клуб' : d.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: d.isMine
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                d.areaLabel,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: d.isMine
+                                      ? AppColors.limeDeep
+                                      : AppColors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: (d.areaM2 / maxArea).clamp(0.02, 1.0),
+                              minHeight: 5,
+                              backgroundColor: AppColors.soft,
+                              valueColor: AlwaysStoppedAnimation(
+                                d.isMine
+                                    ? AppColors.limeDeep
+                                    : AppColors.zoneNeutral,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }

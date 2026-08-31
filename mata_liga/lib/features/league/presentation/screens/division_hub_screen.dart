@@ -813,7 +813,9 @@ class _HubRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final me = row.isMe;
-    return Container(
+    return GestureDetector(
+      onTap: me ? null : () => _showRivalSheet(context),
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: me ? AppColors.block : AppColors.paper,
@@ -871,6 +873,104 @@ class _HubRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+      ),
+    );
+  }
+
+  /// Ф5: профиль соперника — только цифры. Маршруты и кварталы скрыты
+  /// сознательно: чужие GPS-треки не показываем никогда.
+  void _showRivalSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.paper,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.soft,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      row.name.isEmpty ? '?' : row.name[0].toUpperCase(),
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontDisplay,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          row.name,
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontDisplay,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        if ((row.club ?? '').isNotEmpty)
+                          Text(
+                            row.club!,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.soft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '#${row.place} в зачёте · ${_amount(row.value, unit)}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Маршруты и кварталы соперника скрыты — в Лиге видны '
+                'только цифры. Твои треки другим тоже не видны.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.45,
+                  color: AppColors.faint,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
