@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/data/auth_provider.dart';
 import '../../features/auth/presentation/screens/phone_screen.dart';
+import '../../features/auth/presentation/screens/welcome_screen.dart';
 import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/map/presentation/screens/map_screen.dart';
 import '../../features/run/presentation/screens/run_screen.dart';
@@ -86,6 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/splash',
         pageBuilder: (_, __) => const NoTransitionPage(child: SplashScreen()),
+      ),
+      GoRoute(
+        path: '/auth/welcome',
+        pageBuilder: (_, __) => const NoTransitionPage(child: WelcomeScreen()),
       ),
       GoRoute(
         path: '/auth/phone',

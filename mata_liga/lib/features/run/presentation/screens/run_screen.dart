@@ -93,6 +93,11 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                 _RunHeader(),
                 const SizedBox(height: 16),
                 const LocationWarningBanner(),
+                // Ф3: первый квест до первой пробежки — короткий и достижимый.
+                if (recentRuns.isEmpty) ...[
+                  const _FirstQuestCard(),
+                  const SizedBox(height: 16),
+                ],
                 _QuickStatsRow(stats: stats),
                 const SizedBox(height: 20),
                 _StartCard(),
@@ -929,6 +934,58 @@ class _RunTile extends StatelessWidget {
                 ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ф3 «Вход в игру»: первый квест — 800 метров, конец кроется медалью дня 1.
+class _FirstQuestCard extends StatelessWidget {
+  const _FirstQuestCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.block,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ПЕРВЫЙ КВЕСТ',
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.6,
+              color: Color(0xFFDFF45F),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Пробеги 800 метров',
+            style: TextStyle(
+              fontFamily: AppTheme.fontDisplay,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFFEDEFE8),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Небольшой круг у дома — этого достаточно. '
+            'За первую пробежку — медаль «Арктический».',
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF9AA59D),
+            ),
           ),
         ],
       ),

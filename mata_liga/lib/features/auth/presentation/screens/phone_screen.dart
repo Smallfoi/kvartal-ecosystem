@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
@@ -8,6 +9,7 @@ import '../../../../shared/widgets/phone_mask.dart';
 import '../../../profile/data/legal_provider.dart';
 import '../../../profile/presentation/screens/legal_documents_screen.dart';
 import '../../data/auth_provider.dart';
+import 'welcome_screen.dart';
 
 class PhoneScreen extends ConsumerStatefulWidget {
   const PhoneScreen({super.key});
@@ -18,6 +20,20 @@ class PhoneScreen extends ConsumerStatefulWidget {
 
 class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   final _phoneCtrl = PhoneMaskController(hintColor: AppColors.disabled);
+
+  @override
+  void initState() {
+    super.initState();
+    // Ф3 «Вход в игру»: до первого логина — обещание и механика.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      if (!(prefs.getBool(kWelcomeSeenKey) ?? false)) {
+        context.go('/auth/welcome');
+      }
+    });
+  }
+
   final _passCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   String _mode = 'login'; // login | register | reset
