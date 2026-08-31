@@ -122,7 +122,7 @@ class _PeriodToggle extends ConsumerWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: active ? AppColors.onDark : AppColors.muted,
+              color: active ? AppColors.bg : AppColors.muted,
             ),
           ),
         ),
@@ -183,7 +183,7 @@ class _BoardPicker extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: active ? AppColors.onDark : AppColors.muted,
+                  color: active ? AppColors.bg : AppColors.muted,
                 ),
               ),
             ),
@@ -546,7 +546,7 @@ Future<void> showRunnerProfileSheet(BuildContext context, WidgetRef ref) async {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: active ? AppColors.onDark : AppColors.muted,
+                    color: active ? AppColors.bg : AppColors.muted,
                   ),
                 ),
               ),

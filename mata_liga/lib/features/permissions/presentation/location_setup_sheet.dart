@@ -193,7 +193,11 @@ class _Step extends StatelessWidget {
               : AppColors.separator,
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+        Row(
         children: [
           Container(
             width: 30,
@@ -241,16 +245,21 @@ class _Step extends StatelessWidget {
               ],
             ),
           ),
-          if (!done && onTap != null) ...[
-            const SizedBox(width: 8),
-            TextButton(
+        ],
+      ),
+        // Кнопка — своей строкой: длинные лейблы («Отключить экономию»)
+        // больше не зажимают заголовок в столбик.
+        if (!done && onTap != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
               onPressed: onTap,
               child: Text(
                 actionLabel,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );

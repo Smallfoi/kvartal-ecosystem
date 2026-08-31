@@ -1015,27 +1015,28 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
                 color: AppColors.block,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
-                    child: Text(
-                      '1 балл = 1 ₽ скидки в МАТА Store',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFEDEFE8),
-                      ),
+                  const Text(
+                    '1 балл = 1 ₽ скидки в МАТА Store',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFEDEFE8),
                     ),
                   ),
-                  if (stats != null)
+                  if (stats != null) ...[
+                    const SizedBox(height: 3),
                     Text(
-                      '+${stats.earned} · −${stats.spent}',
+                      '+${stats.earned} заработано · −${stats.spent} потрачено',
                       style: const TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFFDFF45F),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),

@@ -41,6 +41,9 @@ class InteriorController extends StateNotifier<Interior> {
 
   Future<void> set(Interior mode) async {
     state = mode;
+    // Палитра живёт в геттерах AppColors: const-виджеты и sliver-делегаты
+    // сами не перечитают её. Полная пересборка — надёжная смена интерьера.
+    WidgetsBinding.instance.reassembleApplication();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKey, mode.name);
   }

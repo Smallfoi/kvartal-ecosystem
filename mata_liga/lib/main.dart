@@ -84,8 +84,10 @@ class _KvartalAppState extends ConsumerState<KvartalApp>
 
   @override
   void didChangePlatformBrightness() {
-    // Режим «Как в системе»: тема телефона поменялась — перерисоваться.
+    // Режим «Как в системе»: тема телефона поменялась — перерисоваться
+    // полностью (const-виджеты не перечитают геттеры палитры сами).
     setState(() {});
+    WidgetsBinding.instance.reassembleApplication();
   }
 
   @override
