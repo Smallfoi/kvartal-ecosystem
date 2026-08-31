@@ -274,8 +274,8 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
                   Positioned(
                     left: 0,
                     right: 0,
-                    top: MediaQuery.of(context).size.height * .60 -
-                        panel * 30,
+                    top: MediaQuery.of(context).size.height * .585 -
+                        panel * 26,
                     child: Transform.scale(
                       scale: .96 + grab * .04,
                       child: Opacity(
@@ -474,11 +474,19 @@ class RoutePainter extends CustomPainter {
   final double flash;
   final double fill;
 
+  /// Какая доля высоты полотна отведена треку (низ — под цифры/панель).
+  final double fitFactor;
+
+  /// Отступ сверху (под заголовок церемонии).
+  final double topInset;
+
   const RoutePainter({
     required this.route,
     required this.progress,
     this.flash = 0,
     this.fill = 0,
+    this.fitFactor = .58,
+    this.topInset = 70,
   });
 
   @override
@@ -513,15 +521,17 @@ class RoutePainter extends CustomPainter {
       maxY = math.max(maxY, y);
     }
     final w = maxX - minX, h = maxY - minY;
-    const pad = 44.0;
+    const pad = 40.0;
+    // Трек живёт в верхней части полотна: ниже — цифры и панель, наложений нет.
+    final fitH = size.height * fitFactor;
     final scale = w == 0 && h == 0
         ? 1.0
         : math.min(
             (size.width - pad * 2) / (w == 0 ? 1e-9 : w),
-            (size.height - pad * 2) / (h == 0 ? 1e-9 : h),
+            (fitH - pad * 2 - topInset) / (h == 0 ? 1e-9 : h),
           );
     final dx = (size.width - w * scale) / 2 - minX * scale;
-    final dy = (size.height - h * scale) / 2 - minY * scale;
+    final dy = topInset + (fitH - topInset - h * scale) / 2 - minY * scale;
 
     final path = Path();
     for (var i = 0; i < pts.length; i++) {
@@ -540,7 +550,7 @@ class RoutePainter extends CustomPainter {
         closed,
         Paint()
           ..color = const Color(0xFFDFF45F)
-              .withValues(alpha: .88 * fill * .5),
+              .withValues(alpha: .88 * fill * .38),
       );
     }
 
