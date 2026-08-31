@@ -152,6 +152,8 @@ class ShareCard extends StatelessWidget {
                   route: r.route,
                   progress: 1,
                   fill: r.hasCapture ? 1 : 0,
+                  fitFactor: 1,
+                  topInset: 6,
                 ),
                 child: const SizedBox.expand(),
               ),

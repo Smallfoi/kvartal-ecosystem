@@ -181,6 +181,7 @@ class _MedalCeremonyState extends State<_MedalCeremony>
 
             return Stack(
               alignment: Alignment.center,
+              fit: StackFit.expand,
               children: [
                 // Осколки и звёзды — только формы, никаких кругов.
                 if (burst > 0 && burst < 1)
@@ -193,6 +194,7 @@ class _MedalCeremonyState extends State<_MedalCeremony>
                   ),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Плита медали.
                     Transform.translate(
@@ -309,19 +311,23 @@ class _MedalPlate extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Container(color: _lime),
-                  // Знак — гравировка-водяной знак.
-                  Opacity(
-                    opacity: .16,
-                    child: CustomPaint(
-                      size: const Size(96, 96),
-                      painter: KvartalMarkPainter(
-                        outline: _ink,
-                        fill: _ink,
-                        close: 1,
+                  Icon(badge.icon, size: 50, color: _ink),
+                  // Знак — мелкая гравировка в углу плиты.
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: Opacity(
+                      opacity: .28,
+                      child: CustomPaint(
+                        size: const Size(20, 20),
+                        painter: KvartalMarkPainter(
+                          outline: _ink,
+                          fill: Colors.transparent,
+                          close: 1,
+                        ),
                       ),
                     ),
                   ),
-                  Icon(badge.icon, size: 46, color: _ink),
                   // Блик после переворота — полоса света по лицу.
                   if (sheen > 0 && sheen < 1)
                     Positioned.fill(
@@ -410,31 +416,32 @@ class _BurstPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2 - 96);
     final fade = (1 - progress).clamp(0.0, 1.0);
 
-    // 8 звёзд по направлениям от плиты.
-    for (var i = 0; i < 8; i++) {
-      final angle = i * math.pi / 4 + .32;
-      final dist = 62 + 74 * Curves.easeOut.transform(progress) + i % 3 * 9;
+    // 10 звёзд по направлениям от плиты.
+    for (var i = 0; i < 10; i++) {
+      final angle = i * math.pi / 5 + .32;
+      final dist = 82 + 118 * Curves.easeOut.transform(progress) + i % 3 * 12;
       final pos = center + Offset(math.cos(angle), math.sin(angle)) * dist;
-      final r = (5.5 - i % 3 * 1.2) * (1 - progress * .4);
+      final r = (9.0 - i % 3 * 1.8) * (1 - progress * .35);
       _star(canvas, pos, r, angle + progress * 2.4,
-          Paint()..color = _lime.withValues(alpha: .95 * fade));
+          Paint()..color = _lime.withValues(alpha: (.95 * (1 - progress * .65)).clamp(0, 1) * (fade > 0 ? 1 : 0)));
     }
 
-    // 6 осколков-прямоугольников.
-    for (var i = 0; i < 6; i++) {
-      final angle = i * math.pi / 3 + .9;
-      final dist = 48 + 96 * Curves.easeOut.transform(progress) + i % 2 * 14;
+    // 8 осколков-прямоугольников.
+    for (var i = 0; i < 8; i++) {
+      final angle = i * math.pi / 4 + .9;
+      final dist = 70 + 140 * Curves.easeOut.transform(progress) + i % 2 * 18;
       final pos = center + Offset(math.cos(angle), math.sin(angle)) * dist;
       canvas.save();
       canvas.translate(pos.dx, pos.dy);
       canvas.rotate(angle + progress * 3.2);
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          const Rect.fromLTWH(-1.6, -4.5, 3.2, 9),
-          const Radius.circular(1.2),
+          const Rect.fromLTWH(-2.2, -6, 4.4, 12),
+          const Radius.circular(1.6),
         ),
         Paint()
-          ..color = (i.isEven ? _light : _lime).withValues(alpha: .85 * fade),
+          ..color = (i.isEven ? _light : _lime)
+              .withValues(alpha: (.9 * (1 - progress * .6)).clamp(0, 1)),
       );
       canvas.restore();
     }
