@@ -321,6 +321,40 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
                                 ),
                               ],
                             ),
+                            // «+N баллов» — как только сервер подтвердил
+                            // начисление (офлайн — долетит и покажется позже).
+                            Consumer(
+                              builder: (context, ref, _) {
+                                final award =
+                                    ref.watch(lastRunPointsProvider);
+                                final points =
+                                    (award != null && award.runId == r.runId)
+                                        ? award.points
+                                        : null;
+                                return AnimatedOpacity(
+                                  duration:
+                                      const Duration(milliseconds: 400),
+                                  opacity:
+                                      points != null && s3 > 0 ? 1 : 0,
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      points != null
+                                          ? '+$points баллов МАТА'
+                                          : ' ',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontFamily: AppTheme.fontDisplay,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFFDFF45F),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ),

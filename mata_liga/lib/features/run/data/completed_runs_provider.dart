@@ -182,7 +182,7 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
     final token = _token;
     if (token == null || _synced.contains(run.id)) return;
     try {
-      await _dio.post<dynamic>(
+      final res = await _dio.post<dynamic>(
         '/runs',
         data: {
           'id': run.id,
@@ -199,6 +199,14 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_runsSyncedKey, _synced.toList());
       // Сервер сам начислил очки за бег (анти-чит S-04) — обновляем баланс.
+      // Сумму показываем в церемонии итогов (Ф1): «+N баллов».
+      final body = res.data;
+      if (body is Map && body['pointsAwarded'] is num) {
+        ref.read(lastRunPointsProvider.notifier).state = (
+          runId: run.id,
+          points: (body['pointsAwarded'] as num).toInt(),
+        );
+      }
       unawaited(ref.read(loyaltyProvider.notifier).refresh());
       unawaited(_sendTrack(run, token));
     } catch (_) {
@@ -292,3 +300,9 @@ final completedRunsProvider =
       });
       return notifier;
     });
+
+
+/// Баллы, начисленные сервером за последнюю отправленную пробежку —
+/// церемония итогов (Ф1) дорисовывает «+N баллов», когда ответ долетел.
+final lastRunPointsProvider =
+    StateProvider<({String runId, int points})?>((_) => null);

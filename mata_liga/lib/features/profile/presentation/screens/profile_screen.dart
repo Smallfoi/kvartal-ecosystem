@@ -1,4 +1,6 @@
 import '../../../../shared/widgets/tab_visibility.dart';
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +16,7 @@ import '../../../notifications/data/notifications_provider.dart';
 import '../../../run/data/completed_runs_provider.dart';
 import '../../data/badge_defs.dart';
 import '../../data/me_stats_provider.dart';
+import '../../data/digest_service.dart';
 import '../../../league/data/division_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
@@ -69,7 +72,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       // Тренировки с часов: пришли в Health Connect — подтянем и начислим.
       ref.read(healthSyncProvider.notifier).autoSync(),
     ]);
-  }
+      // Ф7: свежий дайджест недели + перепланирование уведомления вс 20:00.
+    ref.invalidate(weekDigestProvider);
+    unawaited(ref.read(weekDigestProvider.future).catchError((_) => null));
+}
 
   @override
   Widget build(BuildContext context) {
@@ -1609,6 +1615,19 @@ class _LevelHeader extends ConsumerWidget {
                     color: dimmed,
                   ),
                 ),
+                if (stats?.milestone != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'веха ${stats!.milestone!.atKm} км через '
+                    '${_fmtKm(stats.milestone!.leftKm)} км '
+                    '(+${stats.milestone!.reward} баллов)',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFDFF45F),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1658,9 +1677,13 @@ class _StreakRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final streak = ref.watch(weekStreakProvider);
+    // Серверный стрик (учитывает часы и авто-заморозку); локальный — фолбэк.
+    final server = ref.watch(meStatsProvider).valueOrNull?.streak;
+    final localStreak = ref.watch(weekStreakProvider);
     final form = ref.watch(weekFormProvider);
-    final ranThisWeek = form.any((d) => d);
+    final streak = server?.weeks ?? localStreak;
+    final ranThisWeek = server?.thisWeekDone ?? form.any((d) => d);
+    final frozenCount = server?.frozenWeeks.length ?? 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -1702,6 +1725,25 @@ class _StreakRow extends ConsumerWidget {
               ],
             ),
           ),
+          if (frozenCount > 0) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8FA8D8).withValues(alpha: .16),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '❄ $frozenCount',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF8FA8D8),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

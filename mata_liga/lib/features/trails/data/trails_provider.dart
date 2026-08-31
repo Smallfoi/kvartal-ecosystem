@@ -18,6 +18,12 @@ class Trail {
   final bool createdByMe;
   final bool attemptedByMe;
 
+  /// Двойная мотивация прямо в списке (Ф0): моё лучшее и «чаще всех».
+  final int? myBestS;
+  final int myAttempts;
+  final String? frequentLeaderName;
+  final bool frequentLeaderIsMe;
+
   const Trail({
     required this.id,
     required this.name,
@@ -25,6 +31,10 @@ class Trail {
     this.city,
     this.createdByMe = false,
     this.attemptedByMe = false,
+    this.myBestS,
+    this.myAttempts = 0,
+    this.frequentLeaderName,
+    this.frequentLeaderIsMe = false,
   });
 
   String get lengthLabel => lengthM >= 1000
@@ -38,6 +48,10 @@ class Trail {
     lengthM: (j['lengthM'] as num?)?.toInt() ?? 0,
     createdByMe: j['createdByMe'] == true,
     attemptedByMe: j['attemptedByMe'] == true,
+    myBestS: (j['myBestS'] as num?)?.toInt(),
+    myAttempts: (j['myAttempts'] as num?)?.toInt() ?? 0,
+    frequentLeaderName: (j['frequentLeader'] as Map?)?['name']?.toString(),
+    frequentLeaderIsMe: (j['frequentLeader'] as Map?)?['isMe'] == true,
   );
 }
 

@@ -2,10 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/tab_visibility.dart';
+import '../../../celebration/season_ceremony.dart';
 import '../../../trails/data/trails_provider.dart';
 import '../../data/division_provider.dart';
 import '../../data/league_provider.dart';
@@ -51,6 +53,32 @@ final hubTabProvider = StateProvider<HubTab>((_) => HubTab.km);
 class _DivisionHubScreenState extends ConsumerState<DivisionHubScreen>
     with TabVisibility {
   final _scroll = ScrollController();
+  bool _seasonChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSeason());
+  }
+
+  /// Итог прошлого сезона: церемония показывается один раз на месяц
+  /// (Ф5; отметка о показе — локально, как решили в аудите).
+  Future<void> _maybeShowSeason() async {
+    if (_seasonChecked || !mounted) return;
+    _seasonChecked = true;
+    try {
+      final result = await ref.read(seasonLatestProvider.future);
+      if (result == null || !mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'liga.season.seen.${result.month}';
+      if (prefs.getBool(key) ?? false) return;
+      await prefs.setBool(key, true);
+      if (!mounted) return;
+      await showSeasonCeremony(context, result: result);
+    } catch (_) {
+      _seasonChecked = false; // офлайн — попробуем при следующем входе
+    }
+  }
 
   @override
   void dispose() {
@@ -73,6 +101,11 @@ class _DivisionHubScreenState extends ConsumerState<DivisionHubScreen>
     final form = ref.watch(weekFormProvider);
     final period = ref.watch(leaguePeriodProvider);
     final me = boardAsync.valueOrNull?.me;
+    // Серверный дивизион (Ф0): имя группы, «N бегунов твоего уровня»,
+    // моё место и движение за сутки. На неделе — источник шкалы и таблицы.
+    final division = ref.watch(divisionProvider).valueOrNull;
+    final divisionWeek = period == 'week' &&
+        (tab == HubTab.km || tab == HubTab.consistency);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -92,12 +125,15 @@ class _DivisionHubScreenState extends ConsumerState<DivisionHubScreen>
                 pinned: true,
                 delegate: _DivisionHeaderDelegate(
                   level: level,
+                  divisionName: division?.name,
+                  divisionSize: division?.size ?? 0,
+                  movement: divisionWeek ? division?.myMovement : null,
                   place: tab == HubTab.trails || tab == HubTab.personal
                       ? null
-                      : me?.place,
+                      : (divisionWeek ? division?.myPlace : me?.place),
                   of: tab == HubTab.trails || tab == HubTab.personal
                       ? null
-                      : me?.of,
+                      : (divisionWeek ? division?.size : me?.of),
                   period: period,
                   form: form,
                   showLadder:
@@ -115,6 +151,9 @@ class _DivisionHubScreenState extends ConsumerState<DivisionHubScreen>
               const SliverToBoxAdapter(child: _HubChips()),
               if (tab == HubTab.trails)
                 const _TrailsBody()
+              else if (divisionWeek && division != null &&
+                  division.members.isNotEmpty)
+                _DivisionBody(division: division, tab: tab)
               else
                 _BoardBody(tab: tab),
               const SliverToBoxAdapter(child: SizedBox(height: 110)),
@@ -130,6 +169,9 @@ class _DivisionHubScreenState extends ConsumerState<DivisionHubScreen>
 
 class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
   final RunnerLevel? level;
+  final String? divisionName;
+  final int divisionSize;
+  final int? movement;
   final int? place;
   final int? of;
   final String period;
@@ -140,6 +182,9 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   const _DivisionHeaderDelegate({
     required this.level,
+    this.divisionName,
+    this.divisionSize = 0,
+    this.movement,
     required this.place,
     required this.of,
     required this.period,
@@ -157,6 +202,9 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_DivisionHeaderDelegate old) =>
+      old.divisionName != divisionName ||
+      old.divisionSize != divisionSize ||
+      old.movement != movement ||
       old.level != level ||
       old.place != place ||
       old.of != of ||
@@ -205,6 +253,8 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
                       const SizedBox(height: 12),
                       _DivisionCard(
                         level: level,
+                        divisionName: divisionName,
+                        divisionSize: divisionSize,
                         place: place,
                         of: of,
                         period: period,
@@ -257,8 +307,12 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
                       Expanded(
                         child: Text(
                           [
-                            level?.title ?? 'Лига',
+                            divisionName ?? level?.title ?? 'Лига',
                             if (place != null) '#$place',
+                            if (movement != null && movement != 0)
+                              movement! > 0
+                                  ? '▲$movement'
+                                  : '▼${-movement!}',
                           ].join(' · '),
                           style: TextStyle(
                             fontFamily: AppTheme.fontDisplay,
@@ -288,6 +342,8 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
 /// Графитовая карточка дивизиона: эмблема, имя, шкала позиции, форма недели.
 class _DivisionCard extends StatelessWidget {
   final RunnerLevel? level;
+  final String? divisionName;
+  final int divisionSize;
   final int? place;
   final int? of;
   final String period;
@@ -297,6 +353,8 @@ class _DivisionCard extends StatelessWidget {
 
   const _DivisionCard({
     required this.level,
+    this.divisionName,
+    this.divisionSize = 0,
     required this.place,
     required this.of,
     required this.period,
@@ -313,9 +371,13 @@ class _DivisionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = of != null && of! > 0
-        ? '$of ${_plural(of!, 'бегун', 'бегуна', 'бегунов')} в зачёте · $_resetLabel'
-        : _resetLabel;
+    // «Твоего уровня» — правда дивизиона: группа собрана по пожизненным км.
+    final meta = divisionSize > 0
+        ? '$divisionSize ${_plural(divisionSize, 'бегун', 'бегуна', 'бегунов')} '
+            'твоего уровня · $_resetLabel'
+        : of != null && of! > 0
+            ? '$of ${_plural(of!, 'бегун', 'бегуна', 'бегунов')} в зачёте · $_resetLabel'
+            : _resetLabel;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
@@ -358,7 +420,11 @@ class _DivisionCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            level != null ? 'Дивизион «${level!.title}»' : 'Твой дивизион',
+            divisionName != null
+                ? 'Дивизион «$divisionName»'
+                : level != null
+                    ? 'Дивизион «${level!.title}»'
+                    : 'Твой дивизион',
             style: const TextStyle(
               fontFamily: AppTheme.fontDisplay,
               fontSize: 16,
@@ -666,6 +732,53 @@ class _HubChips extends ConsumerWidget {
   }
 }
 
+// ── Тело дивизиона (неделя: Километры/Постоянство) ─────────────────────────
+
+class _DivisionBody extends StatelessWidget {
+  final DivisionData division;
+  final HubTab tab;
+
+  const _DivisionBody({required this.division, required this.tab});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = [
+      for (final m in division.members)
+        LeagueRow(
+          id: m.userId,
+          name: m.name,
+          club: m.club,
+          value: m.km,
+          place: m.place,
+          isMe: m.isMe,
+        ),
+    ];
+    final movement = {
+      for (final m in division.members) m.userId: m.movement,
+    };
+    final podium = rows.length >= 3;
+    final listRows = podium ? rows.sublist(3) : rows;
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+      sliver: SliverList.separated(
+        itemCount: listRows.length + (podium ? 1 : 0),
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (_, i) {
+          if (podium && i == 0) {
+            return _TopThree(rows: rows.take(3).toList(), unit: 'км');
+          }
+          final row = listRows[podium ? i - 1 : i];
+          return _HubRow(
+            row: row,
+            unit: 'км',
+            movement: movement[row.id],
+          );
+        },
+      ),
+    );
+  }
+}
+
 // ── Тело зачёта ────────────────────────────────────────────────────────────
 
 class _BoardBody extends ConsumerWidget {
@@ -823,7 +936,10 @@ class _HubRow extends StatelessWidget {
   final LeagueRow row;
   final String unit;
 
-  const _HubRow({required this.row, required this.unit});
+  /// Движение места за сутки (дивизион): ▲ поднялся / ▼ опустился.
+  final int? movement;
+
+  const _HubRow({required this.row, required this.unit, this.movement});
 
   @override
   Widget build(BuildContext context) {
@@ -878,6 +994,17 @@ class _HubRow extends StatelessWidget {
               ],
             ),
           ),
+          if (movement != null && movement != 0) ...[
+            Text(
+              movement! > 0 ? '▲${movement!}' : '▼${-movement!}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: movement! > 0 ? AppColors.limeDeep : AppColors.warm,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           Text(
             _amount(row.value, unit),
             style: TextStyle(
@@ -1245,10 +1372,16 @@ class _TrailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final city = trail.city;
+    final leader = trail.frequentLeaderName;
     final meta = [
       trail.lengthLabel,
       if (city != null && city.isNotEmpty) city,
-      if (trail.attemptedByMe) 'ты здесь бегал',
+      if (trail.myBestS != null)
+        'твоё лучшее ${formatDuration(trail.myBestS!)}'
+      else if (trail.attemptedByMe)
+        'ты здесь бегал',
+      if (leader != null)
+        trail.frequentLeaderIsMe ? 'чаще всех: ты' : 'чаще всех: $leader',
     ].join(' · ');
     return Material(
       color: AppColors.paper,

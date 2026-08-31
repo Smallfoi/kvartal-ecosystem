@@ -9,7 +9,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/club_provider.dart';
-import '../../../leaderboard/data/leaderboard_provider.dart';
 import '../widgets/club_style.dart';
 
 class ClubScreen extends ConsumerStatefulWidget {
@@ -2440,7 +2439,7 @@ class _DistrictWarCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(leaderboardDistrictsProvider);
+    final async = ref.watch(clubWarProvider);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -2475,19 +2474,20 @@ class _DistrictWarCard extends ConsumerWidget {
               'Не удалось загрузить районы — потяни вниз, чтобы обновить.',
               style: TextStyle(fontSize: 12.5, color: AppColors.faint),
             ),
-            data: (board) {
-              if (board.top.isEmpty) {
+            data: (war) {
+              if (war.standings.isEmpty && war.threats.isEmpty) {
                 return Text(
                   'Пока никто не захватил территорию. Замкни первый круг!',
                   style: TextStyle(fontSize: 12.5, color: AppColors.faint),
                 );
               }
-              final maxArea = board.top
+              final maxArea = war.standings
                   .map((d) => d.areaM2)
                   .fold<double>(1, (a, b) => a > b ? a : b);
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final d in board.top.take(6)) ...[
+                  for (final d in war.standings) ...[
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Column(
@@ -2497,7 +2497,9 @@ class _DistrictWarCard extends ConsumerWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  d.isMine ? '${d.name} · твой клуб' : d.name,
+                                  d.isMine
+                                      ? '${d.name} · твой клуб'
+                                      : d.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -2510,7 +2512,7 @@ class _DistrictWarCard extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                d.areaLabel,
+                                _fmtArea(d.areaM2),
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -2539,6 +2541,53 @@ class _DistrictWarCard extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  if (war.threats.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Угрозы недели',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.warm,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    for (final t in war.threats.take(5))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 5),
+                        child: Row(
+                          children: [
+                            Icon(
+                              CupertinoIcons.flag_fill,
+                              size: 12,
+                              color: AppColors.warm,
+                            ),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Text(
+                                '${t.attackerName} отрезал '
+                                '${_fmtArea(t.areaM2)} у '
+                                '${t.mine ? 'тебя' : t.victimName}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => context.go('/run'),
+                        child: const Text('Вернуть бегом'),
+                      ),
+                    ),
+                  ],
                 ],
               );
             },
@@ -2546,5 +2595,10 @@ class _DistrictWarCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  static String _fmtArea(double m2) {
+    if (m2 >= 10000) return '${(m2 / 10000).toStringAsFixed(1)} га';
+    return '${m2.round()} м²';
   }
 }
