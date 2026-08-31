@@ -1,0 +1,505 @@
+<title>Паспорт экосистемы МАТА</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{
+    --page:#070a14; --page2:#0b1120;
+    --ink:#eef3fb; --ink2:#ffffff; --muted:#8896ad; --muted2:#6f7f97;
+    --line:#172339; --chip:#0d1322;
+    --blue:#3b82f6; --cyan:#22d3ee; --green:#34d399; --violet:#a78bfa;
+    --amber:#fbbf24; --slate:#94a3b8; --red:#ef6b6b;
+    --c-blue-1:#16223c; --c-blue-2:#0d1525;
+    --c-cyan-1:#0f2533; --c-cyan-2:#0a1622;
+    --c-green-1:#11281e; --c-green-2:#0a1a14;
+    --c-violet-1:#1d1838; --c-violet-2:#120f25;
+    --c-amber-1:#251c0f; --c-amber-2:#17110a;
+    --c-slate-1:#141a26; --c-slate-2:#0d121c;
+    --font:'Manrope',ui-sans-serif,'Segoe UI',system-ui,Arial,sans-serif;
+    --max:1180px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(120% 80% at 50% 0%, #13203b 0%, #0b1120 46%, #05070f 100%) fixed,
+      var(--page);
+    color:var(--ink); font-family:var(--font); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 22px}
+  a{color:var(--cyan)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.87em;
+    background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:#9fd8ea}
+
+  /* ── header ── */
+  header{padding:56px 0 30px;border-bottom:1px solid var(--line)}
+  .brandrow{display:flex;align-items:center;gap:13px;margin-bottom:26px}
+  .mark{width:38px;height:38px;border-radius:11px;background:rgba(10,132,255,.16);
+    border:1px solid rgba(59,155,255,.35);display:grid;place-items:center;
+    font-weight:800;color:#3b9bff;font-size:19px}
+  .brandrow .nm{font-weight:800;letter-spacing:.06em;font-size:15px}
+  .brandrow .dt{margin-left:auto;font-size:12.5px;color:var(--muted2);text-align:right;line-height:1.4}
+  h1{font-weight:800;font-size:clamp(30px,5.2vw,52px);line-height:1.05;letter-spacing:-.02em;
+    color:var(--ink2);text-wrap:balance;max-width:19ch}
+  .sub{color:var(--muted);margin-top:16px;font-size:clamp(16px,2vw,19px);max-width:66ch}
+  .pills{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}
+  .pill{background:var(--chip);border:1px solid var(--line);border-radius:999px;
+    padding:7px 14px;font-size:12.5px;font-weight:600;letter-spacing:.3px;color:#b8c6da}
+  .pill b{color:var(--cyan);font-weight:700}
+
+  /* ── section ── */
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  .seclabel{font-weight:700;font-size:12px;letter-spacing:2.4px;text-transform:uppercase;margin-bottom:14px}
+  .sl-blue{color:var(--blue)} .sl-cyan{color:var(--cyan)} .sl-green{color:var(--green)}
+  .sl-violet{color:var(--violet)} .sl-amber{color:var(--amber)} .sl-slate{color:var(--slate)}
+  h2{font-weight:800;font-size:clamp(23px,3.4vw,34px);letter-spacing:-.015em;color:var(--ink2);
+     line-height:1.15;text-wrap:balance}
+  .lede{color:var(--muted);margin-top:12px;max-width:70ch;font-size:16.5px}
+  .h3{font-weight:700;font-size:17px;color:var(--ink2);margin-bottom:7px}
+
+  /* ── cards ── */
+  .grid{display:grid;gap:16px;margin-top:26px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .card{border-radius:18px;padding:20px;border:1px solid;background-image:linear-gradient(180deg,var(--c1),var(--c2))}
+  .c-blue{--c1:var(--c-blue-1);--c2:var(--c-blue-2);border-color:rgba(59,130,246,.34)}
+  .c-cyan{--c1:var(--c-cyan-1);--c2:var(--c-cyan-2);border-color:rgba(34,211,238,.34)}
+  .c-green{--c1:var(--c-green-1);--c2:var(--c-green-2);border-color:rgba(52,211,153,.34)}
+  .c-violet{--c1:var(--c-violet-1);--c2:var(--c-violet-2);border-color:rgba(167,139,250,.34)}
+  .c-amber{--c1:var(--c-amber-1);--c2:var(--c-amber-2);border-color:rgba(251,191,36,.34)}
+  .c-slate{--c1:var(--c-slate-1);--c2:var(--c-slate-2);border-color:rgba(148,163,184,.3);border-style:dashed}
+  .card p{color:var(--muted);font-size:14.5px;margin-top:5px;line-height:1.5}
+  .tech{margin-top:11px;font-size:12px;color:var(--muted2);letter-spacing:.3px}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    letter-spacing:.9px;text-transform:uppercase;padding:4px 9px;border-radius:7px;margin-bottom:11px}
+  .b-live{background:rgba(52,211,153,.15);color:var(--green)}
+  .b-plan{background:rgba(148,163,184,.14);color:var(--slate)}
+  .b-work{background:rgba(251,191,36,.15);color:var(--amber)}
+  .b-new{background:rgba(34,211,238,.15);color:var(--cyan)}
+
+  /* ── architecture stack ── */
+  .stack{display:flex;flex-direction:column;gap:0;margin-top:28px}
+  .layer{padding:20px 0}
+  .layer + .layer{border-top:1px dashed var(--line)}
+  .lname{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .lname .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .lname span{font-weight:700;font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .lname .proto{margin-left:auto;font-size:11.5px;color:var(--muted2);letter-spacing:.4px;
+    background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  .nodes{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+  .node{border-radius:14px;padding:15px 16px;border:1px solid;background-image:linear-gradient(180deg,var(--c1),var(--c2))}
+  .node b{display:block;font-size:15px;color:var(--ink2);font-weight:700}
+  .node small{display:block;color:var(--muted2);font-size:12.2px;margin-top:4px;line-height:1.45}
+  .apps{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+  .app{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:7px;
+    background:rgba(52,211,153,.09);border:1px solid rgba(52,211,153,.22);color:#8ee0be}
+  .app.newapp{background:rgba(34,211,238,.12);border-color:rgba(34,211,238,.35);color:#8fe3f2}
+
+  /* ── list ── */
+  ul.clean{list-style:none;display:flex;flex-direction:column;gap:9px;margin-top:12px}
+  ul.clean li{display:flex;gap:10px;font-size:14.6px;color:var(--muted);line-height:1.5}
+  ul.clean li b{color:var(--ink)}
+  .mk{flex:none;font-weight:800}
+  .mk-y{color:var(--green)} .mk-n{color:var(--red)} .mk-p{color:var(--slate)} .mk-a{color:var(--amber)}
+
+  /* ── league table ── */
+  .scroll{overflow-x:auto;margin-top:22px;border:1px solid var(--line);border-radius:16px}
+  table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:560px}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted2);font-weight:700;
+     background:rgba(255,255,255,.02)}
+  td{color:var(--muted)} td b{color:var(--ink);font-weight:700}
+  tr:last-child td{border-bottom:none}
+
+  /* ── roadmap ── */
+  .road{display:flex;flex-direction:column;gap:14px;margin-top:26px}
+  .step{display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:start;
+    border-radius:16px;padding:18px;border:1px solid var(--line);background:rgba(255,255,255,.017)}
+  .step .no{font-weight:800;font-size:15px;letter-spacing:.5px;color:var(--ink2);
+    background:var(--chip);border:1px solid var(--line);border-radius:11px;padding:9px 0;text-align:center}
+  .step.done{border-color:rgba(52,211,153,.32)} .step.done .no{color:var(--green)}
+  .step.now{border-color:rgba(251,191,36,.32)} .step.now .no{color:var(--amber)}
+  .step h4{font-size:16.5px;font-weight:700;color:var(--ink2);margin-bottom:5px}
+  .step p{color:var(--muted);font-size:14.5px}
+  .step .metric{margin-top:9px;font-size:12.5px;color:var(--muted2)}
+
+  /* callout */
+  .call{border-radius:16px;padding:20px;margin-top:24px;border:1px solid rgba(251,191,36,.34);
+    background-image:linear-gradient(180deg,var(--c-amber-1),var(--c-amber-2))}
+  .call .h3{color:var(--amber)}
+  .call p{color:#d7c9a8;font-size:14.8px;margin-top:6px}
+
+  footer{padding:44px 0 70px;color:var(--muted2);font-size:13px}
+  footer .wrap{display:flex;flex-direction:column;gap:5px}
+
+  @media (max-width:640px){
+    section{padding:38px 0} header{padding:38px 0 24px}
+    .step{grid-template-columns:1fr;gap:10px} .step .no{width:64px}
+  }
+  @media print{ body{background:var(--page)} section{break-inside:avoid} }
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="brandrow">
+      <div class="mark">М</div>
+      <div class="nm">МАТА · ЭКОСИСТЕМА</div>
+      <div class="dt">актуально · 31.08.2026<br>заменяет: архитектуру, презентацию, 1С</div>
+    </div>
+    <h1>Паспорт экосистемы МАТА</h1>
+    <p class="sub">Один документ вместо трёх: как устроена система технически, что получает бегун
+      и как подключается 1С. Состояние бегового приложения описано <b>по плану «Лиги»</b> — это
+      вторая версия «Квартала», которая сейчас в активной разработке и со временем его заменит.</p>
+    <div class="pills">
+      <span class="pill">Бег: <b>Квартал</b> → <b>Лига</b></span>
+      <span class="pill">Магазин: <b>МАТА Store</b></span>
+      <span class="pill">Сайт + Конструктор витрины</span>
+      <span class="pill">Общий backend · <b>api.mata-club.ru</b></span>
+    </div>
+  </div>
+</header>
+
+<!-- 1 · ЧТО ИЗМЕНИЛОСЬ -->
+<section>
+  <div class="wrap">
+    <div class="seclabel sl-cyan">01 · Что изменилось с прошлой версии</div>
+    <h2>Обновление документов</h2>
+    <p class="lede">Прошлые материалы (архитектура от 12.08, презентация, черновик 1С) отстали от
+      реальности. Здесь сведено то, что изменилось.</p>
+    <div class="grid g2">
+      <div class="card c-green">
+        <span class="badge b-new">Добавилось</span>
+        <div class="h3">Второе беговое приложение «Лига»</div>
+        <p>Копия «Квартала» под новую геймификацию (решение D-59). Своя лига и зачёты вместо
+          единственной игры в захват территорий. Живёт локально, в бой не выкатывается (D-61).</p>
+      </div>
+      <div class="card c-green">
+        <span class="badge b-new">Добавилось</span>
+        <div class="h3">Импорт тренировок с часов — работает</div>
+        <p>Health Connect на Android запущен 30.08: COROS, Samsung, Amazfit, Polar, Huawei без
+          чьего-либо одобрения. Раньше часы стояли в «планах».</p>
+      </div>
+      <div class="card c-green">
+        <span class="badge b-new">Добавилось</span>
+        <div class="h3">Прод в бою</div>
+        <p>Боевой сервер <code>api.mata-club.ru</code> (HTTPS, авто-деплой из main), раздача сборок
+          тестерам, юр-документы опубликованы. В старых схемах прод не был показан.</p>
+      </div>
+      <div class="card c-slate">
+        <span class="badge b-plan">Устарело — убрано</span>
+        <div class="h3">FastAPI, SQLite, Firebase</div>
+        <p>Старая схема описывала стек, которого больше нет: FastAPI и SQLite заменены на
+          Django + PostgreSQL/PostGIS (D-12), Firebase — на RuStore Push, вход — по телефону.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · АРХИТЕКТУРА -->
+<section>
+  <div class="wrap">
+    <div class="seclabel sl-green">02 · Архитектура</div>
+    <h2>Кто с кем работает</h2>
+    <p class="lede">Четыре клиента, один общий backend, одна база. Единый аккаунт по телефону и общий
+      баланс баллов на все продукты — это не три отдельных приложения, а одна система.</p>
+
+    <div class="stack">
+      <div class="layer">
+        <div class="lname"><span class="dot" style="background:var(--blue)"></span><span>Клиенты</span>
+          <span class="proto">HTTPS · REST/JSON · JWT</span></div>
+        <div class="nodes">
+          <div class="node c-blue"><b>Квартал</b><small>Flutter · Riverpod — бег, GPS, захват территорий. Боевое приложение у тестировщиков.</small></div>
+          <div class="node c-cyan"><b>Лига</b><small>Flutter · Riverpod — 2-я версия Квартала: зачёты, тропы, часы. Пока только локально.</small></div>
+          <div class="node c-blue"><b>МАТА Store</b><small>Flutter · Provider — каталог, заказы, оплата баллами.</small></div>
+          <div class="node c-blue"><b>Сайт + Конструктор</b><small>HTML/CSS/JS + Django Admin — витрина и правка контента владельцем.</small></div>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="lname"><span class="dot" style="background:var(--cyan)"></span><span>Периметр</span>
+          <span class="proto">TLS · Nginx 1.27 → Gunicorn :8000</span></div>
+        <div class="nodes">
+          <div class="node c-cyan"><b>Nginx · TLS</b><small>Обратный прокси, HTTPS-сертификаты, статика сайта. Домен api.mata-club.ru.</small></div>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="lname"><span class="dot" style="background:var(--green)"></span><span>Backend · ядро</span>
+          <span class="proto">Python 3 · Django 5.1 · DRF 3.15</span></div>
+        <div class="nodes">
+          <div class="node c-green"><b>Django REST API</b><small>Вход по телефону (JWT), права, ограничение частоты, фильтры. Серверный расчёт очков и античит.</small></div>
+          <div class="node c-green"><b>Celery · worker + beat</b><small>Фоновые задачи и расписания: пересчёты, уведомления, бэкапы.</small></div>
+        </div>
+        <div class="apps">
+          <span class="app">accounts</span><span class="app">runs</span><span class="app">territories</span>
+          <span class="app">loyalty</span><span class="app">leaderboard</span><span class="app">clubs</span>
+          <span class="app">catalog</span><span class="app">orders</span><span class="app">shoes</span>
+          <span class="app">notifications</span><span class="app">legal</span><span class="app">analytics</span>
+          <span class="app">races</span><span class="app">core</span><span class="app">common</span>
+          <span class="app newapp">league · зачёты</span><span class="app newapp">trails · тропы</span>
+          <span class="app newapp">runner profile</span><span class="app newapp">workouts · импорт</span>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="lname"><span class="dot" style="background:var(--violet)"></span><span>Данные и хранилища</span>
+          <span class="proto">SQL :5432 · RESP :6379 · S3</span></div>
+        <div class="nodes">
+          <div class="node c-violet"><b>PostgreSQL 16 + PostGIS 3.4</b><small>Единая база. Геометрия территорий и троп — на стороне БД. Данные на отдельном диске, переживают пересоздание сервера.</small></div>
+          <div class="node c-violet"><b>Redis 7</b><small>Кэш досок, ограничение частоты, коды входа, брокер задач.</small></div>
+          <div class="node c-violet"><b>Object Storage · S3</b><small>Медиа, сборки для тестеров, резервные копии.</small></div>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="lname"><span class="dot" style="background:var(--amber)"></span><span>Внешние сервисы</span>
+          <span class="proto">HTTPS · OAuth · webhook</span></div>
+        <div class="nodes">
+          <div class="node c-amber"><b>Health Connect</b><small><b style="color:var(--green)">Работает.</b> Тренировки с часов: COROS, Samsung, Amazfit, Polar, Huawei.</small></div>
+          <div class="node c-amber"><b>CARTO · MET Norway</b><small>Тайлы карты и погода — запрашиваются с телефона напрямую.</small></div>
+          <div class="node c-amber"><b>RuStore Push · GlitchTip</b><small>Уведомления и сбор ошибок (self-host, РФ).</small></div>
+          <div class="node c-slate"><b>SMS · Оплата</b><small>Вход по SMS-коду и ЮKassa/СБП — каркас готов, ждут договоров.</small></div>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="lname"><span class="dot" style="background:var(--slate)"></span><span>Интеграции · план</span>
+          <span class="proto">CommerceML / OData / REST</span></div>
+        <div class="nodes">
+          <div class="node c-slate"><b>1С Розница 2.3</b><small>Каталог, цены, остатки → в магазин; заказы → обратно в 1С. Подробно в разделе 05.</small></div>
+          <div class="node c-slate"><b>Партнёрские API часов</b><small>Garmin, Suunto, COROS — заявки поданы, ждём одобрения. Health Connect работает уже сейчас.</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · ПРОДУКТ -->
+<section>
+  <div class="wrap">
+    <div class="seclabel sl-blue">03 · Продукт «Лига» — по плану</div>
+    <h2>Одна пробежка — сразу несколько зачётов</h2>
+    <p class="lede">Главная мысль второй версии: бегун сам выбирает, в чём соревноваться. Захват
+      территорий остаётся, но становится одним из режимов, а не единственной игрой. Принцип —
+      <b>никаких проигравших</b>: в каждом зачёте человек видит не только топ, но и «ты обошёл N из M».</p>
+
+    <div class="scroll">
+      <table>
+        <tr><th>Зачёт</th><th>Что считает</th><th>Кого удерживает</th></tr>
+        <tr><td><b>Абсолютный</b></td><td>Сумма километров или лучшее время</td><td>Быстрых</td></tr>
+        <tr><td><b>Личный рекорд</b></td><td>Улучшил ли ты себя прежнего</td><td>Всех без исключения</td></tr>
+        <tr><td><b>Постоянство</b></td><td>Число пробежек за 90 дней, не километры</td><td>Медленных и упорных</td></tr>
+        <tr><td><b>Своя лига</b></td><td>Рейтинг внутри группы возраст × пол</td><td>Возрастных, женщин, новичков</td></tr>
+        <tr><td><b>Усилие</b></td><td>Вклад по пульсу, а не по темпу</td><td>Новичков и тех, кто с часами</td></tr>
+        <tr><td><b>Клубный</b></td><td>Сумма километров команды</td><td>Социальных и корпоративных</td></tr>
+      </table>
+    </div>
+
+    <div class="grid g3">
+      <div class="card c-blue">
+        <div class="h3">Профиль бегуна</div>
+        <p>Год рождения, пол, уровень, недельная цель — всё необязательно. Не указал — участвуешь
+          в общем зачёте, «своя лига» просто скрыта. Возраст на входе не спрашиваем.</p>
+      </div>
+      <div class="card c-blue">
+        <div class="h3">Тропы</div>
+        <p>Маршрут со стартом и финишем: пробежал — попытка засчитана. Четыре доски на каждой тропе:
+          быстрейшие, мой прогресс, кто чаще всех, моя лига. Поправки на набор высоты, мороз и ветер.</p>
+      </div>
+      <div class="card c-blue">
+        <div class="h3">Режимы</div>
+        <p>При первом запуске — «зачем ты бегаешь»: здоровье, соревноваться, с людьми, разгрузить
+          голову. Главный экран собирается под ответ. Есть мирный режим — захваченное не отберут.</p>
+      </div>
+      <div class="card c-blue">
+        <div class="h3">Клуб и эстафеты</div>
+        <p>Клубный зачёт по всем доскам, эстафета (команда набирает дистанцию сообща) и клубный
+          кошелёк в баллах — первая выручка, не зависящая от магазина.</p>
+      </div>
+      <div class="card c-blue">
+        <div class="h3">Часы и файлы</div>
+        <p>Health Connect уже работает. Дальше — файлы GPX/TCX/FIT, Apple Health, партнёрские API.
+          Забег, записанный и часами, и телефоном, считается один раз.</p>
+      </div>
+      <div class="card c-blue">
+        <div class="h3">Баллы — общая валюта</div>
+        <p>Начисляет сервер по единым правилам с античитом; суточный лимит общий для своих забегов
+          и импорта. Тратятся в МАТА Store: платим себестоимостью товара, не рублём.</p>
+      </div>
+    </div>
+
+    <div class="call">
+      <div class="h3">Требует решения владельца — до этапа троп</div>
+      <p>Как честно считать попытки на тропе, не храня постоянно карту передвижений. Предложение:
+        телефон шлёт прореженный трек (точка раз в 5 секунд, домашняя зона вырезана), сервер
+        сверяет его с тропами и сохраняет только результат попытки, а сам трек удаляется через
+        14 дней. В настройках — выключатель «участвовать в тропах».</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · ДОРОЖНАЯ КАРТА -->
+<section>
+  <div class="wrap">
+    <div class="seclabel sl-amber">04 · Дорожная карта</div>
+    <h2>Пять этапов «Лиги»</h2>
+    <p class="lede">Каждый этап заканчивается тем, что можно показать. Ничего не переписываем с
+      нуля: бег, рейтинги, клубы, территории, начисление очков и античит переиспользуются как есть.</p>
+
+    <div class="road">
+      <div class="step now">
+        <div class="no">Э1</div>
+        <div>
+          <h4>Лига без троп <span class="badge b-work" style="margin-left:8px">делаем сейчас</span></h4>
+          <p>Профиль бегуна, расчёт зачётов на уже записываемых пробежках, экран «Лига». От владельца
+            ничего не требуется.</p>
+          <div class="metric">Цель: повторный вход в «Лигу» больше 40%, заполнение года и пола — больше 30%.</div>
+        </div>
+      </div>
+      <div class="step done">
+        <div class="no">Э2</div>
+        <div>
+          <h4>Часы и файлы <span class="badge b-live" style="margin-left:8px">Health Connect работает</span></h4>
+          <p>Импорт тренировок запущен 30.08. Дальше — файлы GPX/TCX/FIT, затем Apple Health (ждёт
+            аккаунт Apple Developer) и партнёрские API по мере ответов.</p>
+          <div class="metric">Цель: доля тренировок, пришедших с часов или файлов, больше 25%.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="no">Э3</div>
+        <div>
+          <h4>Тропы</h4>
+          <p>Стартует после решения по хранению трека. Сначала тропы рисуют вручную клубы и бегуны,
+            автоматический поиск — позже, когда наберётся плотность треков.</p>
+          <div class="metric">Цель: не меньше трёх повторных попыток на тропу в месяц.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="no">Э4</div>
+        <div>
+          <h4>Режимы и онбординг</h4>
+          <p>Вопрос «зачем ты бегаешь» при первом запуске, сборка главного экрана под ответ, мирный
+            режим территорий.</p>
+          <div class="metric">Цель: больше половины бегунов — на не-территориальном режиме.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="no">Э5</div>
+        <div>
+          <h4>Клуб и эстафеты</h4>
+          <p>Командные зачёты по всем доскам, эстафеты и клубный кошелёк в баллах.</p>
+          <div class="metric">Общая цель: удержание на восьмой неделе больше 35%.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · 1С -->
+<section>
+  <div class="wrap">
+    <div class="seclabel sl-slate">05 · Интеграция с 1С</div>
+    <h2>Каталог из 1С, заказы обратно</h2>
+    <p class="lede">1С Розница 2.3 — источник правды по номенклатуре, ценам и остаткам для магазина
+      и сайта. Беговые приложения в обмене не участвуют. <b>Статус: спроектировано, не реализовано —
+      в коде обмена пока нет.</b></p>
+
+    <div class="grid g2">
+      <div class="card c-slate">
+        <div class="h3">Этап 1 · 1С → МАТА</div>
+        <p>Категории и карточки товаров (наименование, бренд, описание, размеры, цвета, фото,
+          признак активности) — редко. Отдельным частым потоком, раз в 5–15 минут, — цены и
+          числовые остатки.</p>
+        <div class="tech">Ключ обмена — неизменный артикул позиции + идентификатор варианта на размер и цвет</div>
+      </div>
+      <div class="card c-slate">
+        <div class="h3">Этап 2 · МАТА → 1С</div>
+        <p>Заказы уходят в 1С, статусы возвращаются обратно. У заказа появляется номер документа 1С
+          и признак синхронизации.</p>
+        <div class="tech">Обмен идемпотентный: повтор сообщения не создаёт дубль</div>
+      </div>
+    </div>
+
+    <h2 style="margin-top:44px;font-size:22px">Что изменить в описании обмена</h2>
+    <p class="lede">Черновик писался, когда экосистемы в нынешнем виде ещё не было. Расхождения,
+      которые надо закрыть до начала работ.</p>
+
+    <div class="grid g2">
+      <div class="card c-green">
+        <div class="h3" style="color:var(--green)">Добавить</div>
+        <ul class="clean">
+          <li><span class="mk mk-y">+</span><span><b>Защиту витринных полей.</b> Импорт из 1С не должен трогать то, чем управляет владелец в Конструкторе: порядок товаров, «новинка», «рекомендуем», публикация, рейтинг и отзывы.</span></li>
+          <li><span class="mk mk-y">+</span><span><b>Правило приоритета.</b> Владелец правит цену и размеры в Конструкторе, а 1С считается источником правды по тем же полям — надо решить, кто побеждает, иначе импорт затрёт ручные правки.</span></li>
+          <li><span class="mk mk-y">+</span><span><b>Ответ по фотографиям.</b> Сейчас фото загружает владелец, и они имеют приоритет. Определить: фото ведёт МАТА или 1С.</span></li>
+          <li><span class="mk mk-y">+</span><span><b>Поля в каталог:</b> артикул, числовой остаток, дата изменения (для передачи только изменившегося).</span></li>
+        </ul>
+      </div>
+      <div class="card c-amber">
+        <div class="h3" style="color:var(--amber)">Обновить</div>
+        <ul class="clean">
+          <li><span class="mk mk-a">→</span><span><b>Единый словарь статусов заказа.</b> Сейчас их три разных — в черновике 1С, в контракте API и в самом коде. Свести к одному, иначе статусы из 1С не сопоставятся.</span></li>
+          <li><span class="mk mk-a">→</span><span><b>Способ обмена.</b> Раньше склонялись к промежуточной базе. Сервер уже работает и имеет API — проще принимать данные напрямую, без второй базы.</span></li>
+          <li><span class="mk mk-a">→</span><span><b>Идентификатор товара.</b> Артикул из 1С добавить отдельным полем, а внутренний идентификатор не трогать — иначе сломаются уже оформленные заказы и отзывы.</span></li>
+          <li><span class="mk mk-a">→</span><span><b>Названия и статус.</b> «SportStore» → «МАТА Store»; убрать фразу, что сервер ещё не поднят — он в бою.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card c-slate" style="margin-top:16px">
+      <div class="h3" style="color:var(--slate)">Убрать</div>
+      <ul class="clean">
+        <li><span class="mk mk-p">−</span><span><b>Схему промежуточной базы</b> — дублирует описание полей и заводит вторую базу без необходимости. Оставить как запасной вариант, не основной.</span></li>
+        <li><span class="mk mk-p">−</span><span><b>Формулировку про публичный репозиторий</b> в предупреждении о персональных данных — суть в том, чтобы не передавать лишнего и закрыть канал обмена, публичность репозитория тут ни при чём.</span></li>
+        <li><span class="mk mk-p">−</span><span><b>Повторяющиеся перечни полей</b> — оставить один список: что ведёт 1С, а что МАТА.</span></li>
+      </ul>
+    </div>
+
+    <div class="grid g2" style="margin-top:26px">
+      <div class="card c-green">
+        <span class="badge b-live">Готово</span>
+        <div class="h3">Конструктор витрины</div>
+        <p>Живое превью сайта и приложения, перетаскивание порядка товаров и баннеров отдельно для
+          каждой площадки, правка товара кликом прямо в превью, тексты и фото сайта. Данные общие —
+          раскладка у сайта и приложения своя.</p>
+      </div>
+      <div class="card c-slate">
+        <span class="badge b-plan">Осталось</span>
+        <div class="h3">Разделы главного экрана приложения</div>
+        <p>Сейчас порядок секций на главной в приложении задан в коде. Чтобы владелец собирал их
+          сам, нужно перенести раскладку в данные.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · ПЕРЕХОД -->
+<section>
+  <div class="wrap">
+    <div class="seclabel sl-violet">06 · Переход</div>
+    <h2>Квартал → Лига</h2>
+    <p class="lede">«Лига» — вторая версия «Квартала» на той же инфраструктуре. Оба приложения стоят
+      на телефоне одновременно и не мешают друг другу: разные идентификаторы, разные песочницы.</p>
+    <div class="scroll">
+      <table>
+        <tr><th></th><th>Квартал</th><th>Лига</th></tr>
+        <tr><td><b>Роль</b></td><td>Боевое приложение у тестировщиков</td><td>Площадка новой геймификации</td></tr>
+        <tr><td><b>Что туда идёт</b></td><td>Исправления багов и мелкие улучшения</td><td>Всё новое: зачёты, тропы, режимы, часы</td></tr>
+        <tr><td><b>Где работает</b></td><td>Боевой сервер api.mata-club.ru</td><td>Только локально, в бой не выкатывается</td></tr>
+        <tr><td><b>Раздача</b></td><td>Сборки уходят тестировщикам</td><td>Не раздаётся</td></tr>
+      </table>
+    </div>
+    <ul class="clean" style="margin-top:20px">
+      <li><span class="mk mk-y">✓</span><span><b>Backend общий.</b> Договорённости API нельзя ломать ни из «Лиги», ни из «Квартала» — на них живут ещё магазин и сайт.</span></li>
+      <li><span class="mk mk-y">✓</span><span><b>Правки не переносятся сами.</b> Всё новое делается в «Лиге»; в «Квартал» переносится только то, что владелец назвал явно.</span></li>
+      <li><span class="mk mk-a">→</span><span><b>Когда «Лига» будет готова</b>, она займёт место «Квартала» у тестировщиков и дальше — в магазинах приложений.</span></li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Паспорт экосистемы МАТА · заменяет MATA_Architecture_Tech, MATA_Presentation_User и черновик интеграции 1С.</div>
+    <div>Состояние бегового приложения — по плану «Лиги», не по текущему коду. Обновлено 31.08.2026.</div>
+  </div>
+</footer>
