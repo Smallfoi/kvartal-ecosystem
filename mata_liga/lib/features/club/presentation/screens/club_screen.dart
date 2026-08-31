@@ -287,6 +287,12 @@ class _ClubSliverHeader extends ConsumerWidget {
               // Анимированная тема — только без обложки (иначе фото — главный фон).
               if (hasClub && !hasCover)
                 Positioned.fill(child: ClubHeaderBackground(style: s)),
+              // Графит (Ф8): светлые пресеты гасим тёмной вуалью — светлый
+              // текст шапки читается, оттенок пресета остаётся подсветкой.
+              if (AppColors.isGraphite && !hasCover)
+                const DecoratedBox(
+                  decoration: BoxDecoration(color: Color(0xD920252B)),
+                ),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -538,6 +544,8 @@ class _DiscoverBodyState extends ConsumerState<_DiscoverBody> {
           )
         else
           ...state.clubs.map((club) => _ClubListTile(club: club)),
+        const SizedBox(height: 12),
+        const _DistrictWarCard(),
       ],
     );
   }
