@@ -387,17 +387,19 @@ class _StartCard extends ConsumerWidget {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
+                          children: const [
+                            // На лайме — только константный тёмный: AppColors.ink
+                            // в графитовой теме светлый и на лайме невидим.
                             Icon(
                               CupertinoIcons.play_fill,
-                              color: AppColors.ink,
+                              color: Color(0xFF171C19),
                               size: 13,
                             ),
                             SizedBox(width: 8),
                             Text(
                               'НАЧАТЬ',
                               style: TextStyle(
-                                color: AppColors.ink,
+                                color: Color(0xFF171C19),
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
                                 letterSpacing: 1.2,

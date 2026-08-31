@@ -197,6 +197,14 @@ class _RunNavItem extends StatelessWidget {
                   size: 24,
                   animated: isActive,
                   glow: false,
+                  // На лаймовой пилюле знак обязан быть тёмным: светлый контур
+                  // по лайму невидим (баг, найденный владельцем 01.09).
+                  outline: isActive
+                      ? const Color(0xFF171C19)
+                      : AppColors.ink,
+                  fill: isActive
+                      ? const Color(0xFF171C19)
+                      : AppColors.lime,
                 ),
               ),
             ),
