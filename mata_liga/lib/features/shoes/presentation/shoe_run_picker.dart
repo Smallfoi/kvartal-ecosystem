@@ -182,11 +182,13 @@ class _NoShoesOption extends StatelessWidget {
             children: [
               Icon(Icons.block, size: 20, color: AppColors.textTertiary),
               const SizedBox(width: 12),
-              Text(
-                'Без кроссовок (не списывать ресурс)',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+              Expanded(
+                child: Text(
+                  'Без кроссовок (не списывать ресурс)',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
               ),
             ],
           ),

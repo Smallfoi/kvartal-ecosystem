@@ -216,7 +216,7 @@ class TrailDetailScreen extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: active ? AppColors.onDark : AppColors.muted,
+                                color: active ? AppColors.bg : AppColors.muted,
                               ),
                             ),
                           ),

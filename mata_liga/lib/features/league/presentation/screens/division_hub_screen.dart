@@ -102,6 +102,9 @@ class _DivisionHubScreenState extends ConsumerState<DivisionHubScreen>
                   form: form,
                   showLadder:
                       tab != HubTab.trails && tab != HubTab.personal,
+                  noLadderText: tab == HubTab.trails
+                      ? 'Пробеги тропу — прохождение засчитается само'
+                      : 'Зачёт без мест — ты против себя',
                   onCompactTap: () => _scroll.animateTo(
                     0,
                     duration: AppTheme.durFast,
@@ -132,6 +135,7 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
   final String period;
   final List<bool> form;
   final bool showLadder;
+  final String noLadderText;
   final VoidCallback onCompactTap;
 
   const _DivisionHeaderDelegate({
@@ -141,6 +145,7 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.period,
     required this.form,
     required this.showLadder,
+    required this.noLadderText,
     required this.onCompactTap,
   });
 
@@ -157,7 +162,8 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
       old.of != of ||
       old.period != period ||
       old.form.join() != form.join() ||
-      old.showLadder != showLadder;
+      old.showLadder != showLadder ||
+      old.noLadderText != noLadderText;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
@@ -204,6 +210,7 @@ class _DivisionHeaderDelegate extends SliverPersistentHeaderDelegate {
                         period: period,
                         form: form,
                         showLadder: showLadder,
+                        noLadderText: noLadderText,
                       ),
                     ],
                   ),
@@ -286,6 +293,7 @@ class _DivisionCard extends StatelessWidget {
   final String period;
   final List<bool> form;
   final bool showLadder;
+  final String noLadderText;
 
   const _DivisionCard({
     required this.level,
@@ -294,6 +302,7 @@ class _DivisionCard extends StatelessWidget {
     required this.period,
     required this.form,
     required this.showLadder,
+    required this.noLadderText,
   });
 
   String get _resetLabel => switch (period) {
@@ -370,11 +379,11 @@ class _DivisionCard extends StatelessWidget {
           if (showLadder)
             _PositionLadder(place: place, of: of)
           else
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'Зачёт без мест — ты против себя',
-                style: TextStyle(
+                noLadderText,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF9AA59D),
@@ -735,7 +744,12 @@ class _TopThree extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget slot(LeagueRow row, {required bool first}) {
       return Expanded(
-        child: Padding(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: row.isMe
+              ? null
+              : () => showRivalProfileSheet(context, row, unit),
+          child: Padding(
           padding: EdgeInsets.only(top: first ? 0 : 14),
           child: Column(
             children: [
@@ -759,7 +773,7 @@ class _TopThree extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                row.name,
+                _shortName(row.name),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -780,6 +794,7 @@ class _TopThree extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ),
       );
@@ -878,10 +893,14 @@ class _HubRow extends StatelessWidget {
     );
   }
 
-  /// Ф5: профиль соперника — только цифры. Маршруты и кварталы скрыты
-  /// сознательно: чужие GPS-треки не показываем никогда.
-  void _showRivalSheet(BuildContext context) {
-    showModalBottomSheet<void>(
+  void _showRivalSheet(BuildContext context) =>
+      showRivalProfileSheet(context, row, unit);
+}
+
+/// Ф5: профиль соперника — только цифры. Маршруты и кварталы скрыты
+/// сознательно: чужие GPS-треки не показываем никогда.
+void showRivalProfileSheet(BuildContext context, LeagueRow row, String unit) {
+  showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.paper,
       builder: (_) => SafeArea(
@@ -973,7 +992,6 @@ class _HubRow extends StatelessWidget {
         ),
       ),
     );
-  }
 }
 
 /// «Прогресс» — ты против себя в прошлом периоде: зачёт, где выигрывают все.
@@ -1296,6 +1314,13 @@ String _amount(double value, String unit) {
     return '$text ${_plural(value.round(), 'пробежка', 'пробежки', 'пробежек')}';
   }
   return '$text $unit';
+}
+
+/// «Иван Быстрый» → «Иван Б.» — подиум не режет имена многоточием.
+String _shortName(String name) {
+  final parts = name.trim().split(RegExp(r'\s+'));
+  if (parts.length < 2 || parts[0].length > 10) return name;
+  return '${parts[0]} ${parts[1][0]}.';
 }
 
 String _plural(int n, String one, String few, String many) {
