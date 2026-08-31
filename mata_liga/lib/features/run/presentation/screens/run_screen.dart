@@ -13,6 +13,7 @@ import '../../../territory/data/territory_provider.dart';
 import '../../../permissions/data/location_access_provider.dart';
 import '../../../permissions/presentation/location_setup_sheet.dart';
 import '../../data/run_provider.dart';
+import 'run_result_screen.dart';
 import '../../data/completed_runs_provider.dart';
 import '../../../shoes/presentation/shoe_run_picker.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
@@ -608,9 +609,19 @@ class _ActiveRunView extends ConsumerWidget {
           if (!canCapture)
             TextButton(
               onPressed: () {
+                final result = RunResult(
+                  route: List.of(run.route),
+                  elapsed: run.elapsed,
+                  distanceMeters: run.distanceMeters,
+                  capturedZones: 0,
+                  capturedTerritory: false,
+                  finishedAt: DateTime.now(),
+                  runId: '',
+                );
                 ref.read(runProvider.notifier).stop();
                 Navigator.pop(ctx);
-                context.go('/map');
+                // Без захвата — без салюта: церемония пройдёт тихой веткой.
+                context.push('/run/result', extra: result);
               },
               child: const Text('Завершить без захвата'),
             ),
@@ -633,6 +644,15 @@ class _ActiveRunView extends ConsumerWidget {
                             elapsedSeconds: run.elapsed.inSeconds,
                           ),
                     );
+                    final result = RunResult(
+                      route: List.of(run.route),
+                      elapsed: run.elapsed,
+                      distanceMeters: run.distanceMeters,
+                      capturedZones: captured.length,
+                      capturedTerritory: true,
+                      finishedAt: DateTime.now(),
+                      runId: '',
+                    );
                     ref
                         .read(runProvider.notifier)
                         .stop(
@@ -640,7 +660,7 @@ class _ActiveRunView extends ConsumerWidget {
                           capturedTerritory: true,
                         );
                     Navigator.pop(ctx);
-                    context.go('/map');
+                    context.push('/run/result', extra: result);
                   }
                 : null,
             style: FilledButton.styleFrom(

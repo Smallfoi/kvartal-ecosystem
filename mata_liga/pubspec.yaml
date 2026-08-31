@@ -49,6 +49,9 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
 
+  # Шаринг-карточка пробежки (Ф1 «Праздник»): рендер RepaintBoundary → PNG → share.
+  share_plus: ^10.1.4
+
   # Открытие внешних ссылок (напр. страница регистрации на забег).
   url_launcher: ^6.3.1
   package_info_plus: ^8.1.1  # текущий versionCode для проверки обновлений
