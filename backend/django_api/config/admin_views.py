@@ -18,6 +18,41 @@ from django.views.decorators.http import require_http_methods
 _PLATFORM_FIELD = {"site": "sort_site", "app": "sort_app"}
 
 
+# Поля, которые ведёт 1С и которые владелец может перебить в Конструкторе (D-62).
+# Ключ — как в JSON конструктора и в Product.OVERRIDABLE, значение — поле модели.
+_OVERRIDABLE = {"price": "price", "oldPrice": "old_price",
+                "description": "description", "sizes": "sizes"}
+
+
+def _norm(field, value):
+    """Привести значение к сравнимому виду: 1С шлёт цену числом, форма — строкой."""
+    if field in ("price", "oldPrice"):
+        if value in (None, "", 0, "0"):
+            return None if field == "oldPrice" else 0.0
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+    if field == "sizes":
+        return [str(x).strip() for x in (value or []) if str(x).strip()]
+    return str(value or "")
+
+
+def _onec_json(p):
+    """Что показать в Конструкторе рядом с полями: значение 1С и след правки владельца."""
+    src = p.from_1c or {}
+    from_1c = {f: src[f] for f in _OVERRIDABLE if f in src}
+    return {
+        "linked": bool(p.external_id or p.article),
+        "article": p.article or "",
+        "externalId": p.external_id or "",
+        "stock": p.stock_count,
+        "activeIn1c": p.is_active_1c,
+        "overrides": [f for f in (p.overrides or []) if f in _OVERRIDABLE],
+        "from1c": from_1c,
+    }
+
+
 def _merch_json(p):
     return {
         "id": p.id,
@@ -31,6 +66,7 @@ def _merch_json(p):
         "description": p.description,
         "sizes": p.sizes or [],
         "categoryId": p.category_id,
+        "onec": _onec_json(p),
     }
 
 
@@ -95,6 +131,9 @@ def merch_product(request, pid):
         d = json.loads(request.body or b"{}")
     except ValueError:
         return JsonResponse({"detail": "Некорректный JSON"}, status=400)
+    # Значения ДО правки — чтобы отличить «владелец изменил» от «просто переслал форму»:
+    # конструктор отправляет все поля разом, даже нетронутые.
+    before = {f: _norm(f, getattr(p, m)) for f, m in _OVERRIDABLE.items()}
     if "price" in d:
         try:
             p.price = float(d["price"])
@@ -116,8 +155,29 @@ def merch_product(request, pid):
         p.is_featured = bool(d["isFeatured"])
     if isinstance(d.get("sizes"), list):
         p.sizes = [str(s).strip() for s in d["sizes"] if str(s).strip()]
+    _sync_overrides(p, d, before)
     p.save()
     return JsonResponse({"ok": True, "product": _merch_json(p)})
+
+
+def _sync_overrides(p, incoming: dict, before: dict) -> None:
+    """Правка поля в Конструкторе = «веду сам», возврат к значению 1С = «веди из 1С».
+
+    Отдельной кнопки-переключателя нет намеренно: владелец думает про цену, а не про
+    режим поля. Поставил своё — 1С это поле больше не трогает; вернул как в 1С —
+    обновления снова приходят автоматически.
+    """
+    if not (p.from_1c or p.external_id or p.article):
+        return  # товар не из 1С — переопределять нечего
+    src = p.from_1c or {}
+    for field, model_field in _OVERRIDABLE.items():
+        if field not in incoming:
+            continue
+        now = _norm(field, getattr(p, model_field))
+        if field in src and now == _norm(field, src[field]):
+            p.set_override(field, False)
+        elif now != before.get(field):
+            p.set_override(field, True)
 
 
 # ── Контент сайта (мини-CMS): тексты и фото шапки/hero/секций ────────────────

@@ -377,6 +377,9 @@ UNFOLD = {
                     # Свободное место на дисках/в БД — наглядно (D-?).
                     {"title": "Диски", "icon": "storage",
                      "link": reverse_lazy("admin_storage")},
+                    # История выгрузок из 1С: что и когда пришло (D-62).
+                    {"title": "Журнал обмена", "icon": "sync_alt",
+                     "link": reverse_lazy("onec_log")},
                 ],
             },
         ],
