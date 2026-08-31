@@ -6,6 +6,7 @@ import '../../features/auth/presentation/screens/phone_screen.dart';
 import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/map/presentation/screens/map_screen.dart';
 import '../../features/run/presentation/screens/run_screen.dart';
+import '../../features/run/presentation/screens/run_result_screen.dart';
 import '../../features/permissions/presentation/location_setup_sheet.dart';
 import '../../features/league/presentation/screens/focus_screen.dart';
 import '../../features/league/presentation/screens/league_screen.dart';
@@ -105,6 +106,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/focus',
         builder: (_, __) => const FocusScreen(),
+      ),
+      // Церемония итогов пробежки (Ф1) — на весь экран, без таб-бара.
+      GoRoute(
+        path: '/run/result',
+        builder: (_, state) =>
+            RunResultScreen(result: state.extra as RunResult),
       ),
       GoRoute(
         path: '/club/scan',

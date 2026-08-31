@@ -11,7 +11,9 @@ import '../../../auth/data/auth_provider.dart';
 import '../../../loyalty/data/loyalty_provider.dart';
 import '../../../loyalty/presentation/widgets/loyalty_card.dart';
 import '../../../notifications/data/notifications_provider.dart';
+import '../../../celebration/medal_ceremony.dart';
 import '../../../run/data/completed_runs_provider.dart';
+import '../../data/badge_defs.dart';
 import '../../../shoes/data/shoes_provider.dart';
 import '../../../workouts/data/health_sync.dart';
 import '../../../territory/data/territory_provider.dart';
@@ -1339,47 +1341,7 @@ class _BadgesGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final runs = ref.watch(completedRunsProvider);
     final loyalty = ref.watch(loyaltyProvider);
-    final totalKm = runs.fold<double>(0, (s, r) => s + r.distanceKm);
-    final runsCount = runs.length;
-    final captures = runs.where((r) => r.capturedTerritory).length;
-    final badges = [
-      (
-        CupertinoIcons.snow,
-        '\u0410\u0440\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439',
-        AppColors.info,
-        runsCount >= 1,
-      ),
-      (
-        CupertinoIcons.bolt_fill,
-        '\u0421\u043f\u0440\u0438\u043d\u0442\u0435\u0440',
-        AppColors.warning,
-        totalKm >= 5,
-      ),
-      (
-        CupertinoIcons.flame_fill,
-        '\u0421\u0435\u0440\u0438\u044f 7',
-        AppColors.error,
-        runsCount >= 7,
-      ),
-      (
-        CupertinoIcons.moon_stars_fill,
-        '\u042f\u043a\u0443\u0442\u0441\u043a',
-        AppColors.textSecondary,
-        totalKm >= 10,
-      ),
-      (
-        CupertinoIcons.star_fill,
-        '\u041b\u0435\u0433\u0435\u043d\u0434\u0430',
-        AppColors.warning,
-        loyalty.balance >= 500,
-      ),
-      (
-        CupertinoIcons.location_north_fill,
-        '\u0412\u044b\u0441\u043e\u0442\u043d\u0438\u043a',
-        AppColors.success,
-        captures >= 3,
-      ),
-    ];
+    final facts = BadgeFacts.fromRuns(runs, balance: loyalty.balance);
 
     return GridView.count(
       crossAxisCount: 3,
@@ -1388,16 +1350,19 @@ class _BadgesGrid extends ConsumerWidget {
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
       childAspectRatio: 1.02,
-      children: badges
-          .map(
-            (b) => _BadgeTile(
-              icon: b.$1,
-              label: b.$2,
-              color: b.$3,
-              unlocked: b.$4,
-            ),
-          )
-          .toList(),
+      children: [
+        for (final def in kBadgeDefs)
+          _BadgeTile(
+            icon: def.icon,
+            label: def.title,
+            color: AppColors.limeDeep,
+            unlocked: def.unlocked(facts),
+            // Тап по открытой медали — повтор церемонии (Ф1, Вариант A).
+            onTap: def.unlocked(facts)
+                ? () => showMedalCeremony(context, badge: def)
+                : null,
+          ),
+      ],
     );
   }
 }
@@ -1407,16 +1372,20 @@ class _BadgeTile extends StatelessWidget {
   final String label;
   final Color color;
   final bool unlocked;
+  final VoidCallback? onTap;
   const _BadgeTile({
     required this.icon,
     required this.label,
     required this.color,
     required this.unlocked,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: unlocked ? color.withValues(alpha: 0.12) : AppColors.bgCard,
@@ -1451,6 +1420,7 @@ class _BadgeTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
