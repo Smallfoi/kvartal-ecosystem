@@ -1601,7 +1601,7 @@ class _LevelHeader extends ConsumerWidget {
                       ? 'считаем километры…'
                       : next == null
                           ? '${_fmtKm(km)} км всего · статус вечный'
-                          : '${_fmtKm(km)} км всего · до «${next.title}» — ${_fmtKm(left)} км',
+                          : '${_fmtKm(km)} км всего · до уровня «${next.title}» — ${_fmtKm(left)} км',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
@@ -1616,13 +1616,29 @@ class _LevelHeader extends ConsumerWidget {
           SizedBox(
             width: 58,
             height: 58,
-            child: CustomPaint(
-              painter: KvartalMarkPainter(
-                outline: onLevel,
-                fill: Colors.transparent,
-                close: 1,
-                draw: progress <= 0 ? .02 : progress,
-              ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Подложка: полный контур слабым тоном.
+                Opacity(
+                  opacity: .30,
+                  child: CustomPaint(
+                    painter: KvartalMarkPainter(
+                      outline: onLevel,
+                      fill: Colors.transparent,
+                      close: 1,
+                    ),
+                  ),
+                ),
+                CustomPaint(
+                  painter: KvartalMarkPainter(
+                    outline: onLevel,
+                    fill: Colors.transparent,
+                    close: 1,
+                    draw: progress <= 0 ? .03 : progress,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

@@ -1302,8 +1302,11 @@ class _TodayRow extends ConsumerWidget {
     final form = ref.watch(weekFormProvider);
     final days = form.where((d) => d).length;
 
-    return SizedBox(
-      height: 58,
+    // Кламп масштаба текста: на телефонах с крупным шрифтом карточки не рвёт.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.0,
+      child: SizedBox(
+      height: 62,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(14, 4, 14, 6),
@@ -1337,6 +1340,7 @@ class _TodayRow extends ConsumerWidget {
             onTap: () => context.go('/leaderboard'),
           ),
         ],
+      ),
       ),
     );
   }
