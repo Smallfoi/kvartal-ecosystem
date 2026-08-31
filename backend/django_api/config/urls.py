@@ -74,11 +74,13 @@ urlpatterns = [
     path("v1/account/export", account_views.account_export),  # выгрузка ПДн (152-ФЗ §2)
     path("v1/account/delete", account_views.delete_account),
     path("v1/me/stats", account_views.me_stats),
+    path("v1/me/digest", account_views.me_digest),
     # Продуктовая аналитика (D-30): приём клиентских событий.
     path("v1/events", analytics_views.events),
     path("v1/loyalty/", include("loyalty.urls")),
     # Клубы — порядок важен: 'me' и 'requests/...' раньше generic '<club_id>'.
     path("v1/clubs", clubs_views.clubs_root),
+    path("v1/clubs/war", clubs_views.war),
     path("v1/clubs/me", clubs_views.my_club),
     path("v1/clubs/requests/<str:req_id>/approve", clubs_views.approve_request),
     path("v1/clubs/requests/<str:req_id>/reject", clubs_views.reject_request),

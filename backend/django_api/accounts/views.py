@@ -346,7 +346,22 @@ def _compute_stats(uid):
             "count": orders_agg["c"] or 0,
             "totalSpent": int(orders_agg["total"] or 0),
         },
+        # Квартал 2.0 (Ф4): ближайшая веха км и недельный стрик с заморозкой.
+        "milestone": _milestone_block((km_agg["d"] or 0) / 1000.0),
+        "streak": _streak_block(uid),
     }
+
+
+def _milestone_block(total_km):
+    from runs.milestones import next_milestone
+
+    return next_milestone(total_km)
+
+
+def _streak_block(uid):
+    from league.streaks import week_streak
+
+    return week_streak(uid)
 
 
 @api_view(["GET"])
@@ -479,3 +494,76 @@ def delete_account(request):
     # Сам аккаунт.
     acc.delete()
     return Response({"ok": True, "deleted": deleted})
+
+
+@api_view(["GET"])
+def me_digest(request):
+    """Итоги недели (Квартал 2.0, Ф7): км, пробежки, баллы, территория.
+
+    Приложение показывает дайджест и планирует локальное напоминание вс 20:00 —
+    настоящий пуш подключится вместе с FCM-аккаунтом.
+    """
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+
+    from datetime import datetime, timezone as dt_tz
+
+    from django.db import connection
+    from django.db.models import Count, Sum
+
+    from league.services import period_start
+    from loyalty.models import LoyaltyTransaction
+    from runs.models import Run
+
+    week_start = period_start("week")
+    week_agg = Run.objects.filter(
+        user_id=uid, flagged=False, finished_at__gte=week_start
+    ).aggregate(d=Sum("distance_m"), c=Count("id"))
+    earned = (
+        LoyaltyTransaction.objects.filter(
+            user_id=uid, amount__gt=0, created_at__gte=week_start
+        ).aggregate(s=Sum("amount"))["s"]
+        or 0
+    )
+
+    territories = {"count": 0, "areaM2": 0.0, "expiringSoon": []}
+    with connection.cursor() as cur:
+        cur.execute(
+            """
+            SELECT ST_Area(geom::geography),
+                   EXTRACT(EPOCH FROM (captured_at + make_interval(hours => 168)
+                           - now())) / 3600.0
+            FROM territories
+            WHERE owner_id = %s
+              AND captured_at > now() - make_interval(hours => 168)
+            """,
+            [uid],
+        )
+        for area, hours_left in cur.fetchall():
+            territories["count"] += 1
+            territories["areaM2"] += float(area or 0)
+            if hours_left is not None and hours_left < 48:
+                territories["expiringSoon"].append(
+                    {
+                        "areaM2": round(float(area or 0), 1),
+                        "hoursLeft": round(float(hours_left), 1),
+                    }
+                )
+    territories["areaM2"] = round(territories["areaM2"], 1)
+    territories["expiringSoon"] = sorted(
+        territories["expiringSoon"], key=lambda x: x["hoursLeft"]
+    )[:5]
+
+    return Response(
+        {
+            "weekStartMs": int(week_start.timestamp() * 1000),
+            "weekKm": round((week_agg["d"] or 0) / 1000.0, 2),
+            "weekRuns": week_agg["c"] or 0,
+            "earnedPoints": int(earned),
+            "territories": territories,
+            "generatedAtMs": int(
+                datetime.now(dt_tz.utc).timestamp() * 1000
+            ),
+        }
+    )

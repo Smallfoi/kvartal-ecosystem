@@ -132,17 +132,66 @@ def trails(request):
                 pass
 
         items = list(qs[:100])
+        ids = [t.id for t in items]
         mine = set(
             TrailAttempt.objects.filter(
-                user_id=me, trail_id__in=[t.id for t in items]
+                user_id=me, trail_id__in=ids
             ).values_list("trail_id", flat=True)
         )
+
+        # Квартал 2.0 (Ф0): двойная мотивация прямо в списке — «твоё лучшее»
+        # и «чаще всех» за 90 дней. Троп ≤ 100 — считаем батчево.
+        from datetime import timedelta as _td
+
+        from django.db.models import Count, Min
+        from django.utils import timezone as dj_tz
+
+        my_best = {
+            r["trail_id"]: r
+            for r in TrailAttempt.objects.filter(user_id=me, trail_id__in=ids)
+            .values("trail_id")
+            .annotate(best=Min("duration_s"), n=Count("id"))
+        }
+        freq_leader = {}
+        for r in (
+            TrailAttempt.objects.filter(
+                trail_id__in=ids,
+                started_at__gte=dj_tz.now() - _td(days=90),
+            )
+            .values("trail_id", "user_id")
+            .annotate(n=Count("id"))
+        ):
+            cur = freq_leader.get(r["trail_id"])
+            if not cur or (r["n"], r["user_id"]) > (cur["n"], cur["user_id"]):
+                freq_leader[r["trail_id"]] = r
+        from common.people import names_of
+
+        leader_names = names_of([r["user_id"] for r in freq_leader.values()])
+
+        def _extras(tid):
+            best = my_best.get(tid)
+            leader = freq_leader.get(tid)
+            return {
+                "myBestS": best["best"] if best else None,
+                "myAttempts": best["n"] if best else 0,
+                "frequentLeader": (
+                    {
+                        "name": leader_names.get(leader["user_id"], "Бегун"),
+                        "count": leader["n"],
+                        "isMe": leader["user_id"] == me,
+                    }
+                    if leader
+                    else None
+                ),
+            }
+
         return Response({
             "items": [
                 {
                     **t.to_json(),
                     "createdByMe": t.created_by == me,
                     "attemptedByMe": t.id in mine,
+                    **_extras(t.id),
                 }
                 for t in items
             ]

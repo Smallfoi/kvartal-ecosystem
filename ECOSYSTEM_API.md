@@ -397,3 +397,32 @@ Backend меняет статус заказа → создаёт Notification �
 - [ ] `runId` в LoyaltyTransaction (для Runner-источников).
 - [ ] Расширить `Product` полями из RECOMMENDATION ч.3 (видео, остатки по вариантам, состав).
 - [ ] Эндпоинт `/auth/me` + хранение `userId` для всех сущностей.
+
+## Квартал 2.0 — дивизионы, сезоны, вехи, война (добавлено 2026-08-31)
+
+Новые эндпоинты аддитивны — старые контракты не менялись.
+
+- `GET /v1/league/division` — дивизион недели (группа ≤30 бегунов одного
+  уровня; уровень = пожизненные км). Ответ: `division{id,tier,tierLabel,roman,
+  name,size,resetAtMs}`, `me{place,of,km,movement}`, `members[{userId,name,club,
+  km,runs,place,movement,isMe}]`, `zones{up,down}`. Назначение и закрытие
+  прошлой недели — ленивые; топ-3 недели получают 50/30/20 баллов
+  (`source=runnerDivision`, дедуп `run_id="div:<division>:<uid>"`).
+- `GET /v1/league/season/latest` — итог прошлого месяца: `month`, `me{place,of,
+  km,runs}|null`, `top[3]`, `currentMonth`. Закрытие ленивое одноразовое
+  (SeasonClose); топ-3 сезона: 100/60/30 (`source=runnerSeason`).
+- `GET /v1/me/stats` — добавлены `milestone{atKm,leftKm,reward}|null` и
+  `streak{weeks,thisWeekDone,frozenWeeks[]}` (недельный стрик, авто-заморозка
+  1 пустая неделя/календарный месяц).
+- Вехи пожизненных км: сервер начисляет +50 при пересечении (25…20000 км),
+  `source=runnerMilestone`, дедуп `run_id="ms:<км>"`.
+- `GET /v1/me/digest` — итоги недели: `weekKm`, `weekRuns`, `earnedPoints`,
+  `territories{count,areaM2,expiringSoon[{areaM2,hoursLeft}]}`.
+- `GET /v1/clubs/war` — «война района»: `standings[{clubId,name,areaM2,pieces,
+  place,isMine}]` (top-6 по земле) + `threats[{attackerName,victimName,mine,
+  areaM2,atMs}]` за 7 дней (события `territory_events` пишутся при захвате).
+- `GET /v1/territories` — добавлены `ownerName`, `capturedAtMs` (паспорт
+  квартала и видимое выцветание в приложении).
+- `GET /v1/trails/` — добавлены `myBestS`, `myAttempts`,
+  `frequentLeader{name,count,isMe}|null` (мотивация прямо в списке).
+
