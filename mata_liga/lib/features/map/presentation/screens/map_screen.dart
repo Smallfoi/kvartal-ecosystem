@@ -7,9 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/location_provider.dart';
 import '../../data/zone_provider.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../league/data/division_provider.dart';
+import '../../../league/data/league_provider.dart';
+import '../../../weather/domain/run_window.dart';
 import '../../../run/data/run_provider.dart';
 import '../../../territory/data/territory_provider.dart';
 import '../../../weather/data/weather_provider.dart';
@@ -178,6 +183,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
               initialZoom: 16,
               minZoom: 5,
               maxZoom: 20,
+              onTap: (_, latLng) => _onMapTap(latLng),
               onMapEvent: (e) {
                 if (e is MapEventMove && e.source == MapEventSource.onDrag) {
                   if (_followUser) setState(() => _followUser = false);
@@ -334,6 +340,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                     padding: const EdgeInsets.only(left: 16, top: 2, bottom: 4),
                     child: _Legend(),
                   ),
+                  // Блок «Сегодня» (Ф2): дивизион, форма недели, окно бега.
+                  // Во время бега прячется — не мешать.
+                  if (runState.status == RunStatus.idle) const _TodayRow(),
                 ],
               ),
             ),
@@ -491,12 +500,158 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
     );
   }
 
+  /// Тап по карте — паспорт квартала (Ф2): чей, защита, как забрать.
+  void _onMapTap(LatLng point) {
+    final territories = ref.read(territoryProvider).territories;
+    for (final t in territories) {
+      for (final ring in t.rings) {
+        if (_pointInPolygon(point, ring)) {
+          _showQuarterPassport(
+            rel: t.rel,
+            holdHoursLeft: t.holdHoursLeft,
+          );
+          return;
+        }
+      }
+    }
+    final zones = ref.read(zoneProvider).valueOrNull ?? const <BlockZone>[];
+    for (final z in zones) {
+      if (_pointInPolygon(point, z.vertices)) {
+        _showQuarterPassport(
+          rel: switch (z.owner) {
+            ZoneOwner.mine => TerritoryRel.mine,
+            ZoneOwner.club => TerritoryRel.club,
+            ZoneOwner.enemy => TerritoryRel.enemy,
+            ZoneOwner.free => null,
+          },
+          holdHoursLeft: null,
+        );
+        return;
+      }
+    }
+  }
+
+  static bool _pointInPolygon(LatLng p, List<LatLng> poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      final a = poly[i];
+      final b = poly[j];
+      if ((a.latitude > p.latitude) != (b.latitude > p.latitude) &&
+          p.longitude <
+              (b.longitude - a.longitude) *
+                      (p.latitude - a.latitude) /
+                      (b.latitude - a.latitude) +
+                  a.longitude) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  void _showQuarterPassport({TerritoryRel? rel, double? holdHoursLeft}) {
+    final (title, color, note) = switch (rel) {
+      TerritoryRel.mine => (
+        'Мой квартал',
+        AppColors.lime,
+        'Это твоя земля. Бегай рядом, чтобы её удерживать.',
+      ),
+      TerritoryRel.club => (
+        'Квартал клуба',
+        AppColors.teal,
+        'Держит твой клуб. Общая оборона — общая заслуга.',
+      ),
+      TerritoryRel.enemy => (
+        'Чужой квартал',
+        AppColors.warm,
+        'Замкни маршрут вокруг него — и он твой.',
+      ),
+      null => (
+        'Ничей квартал',
+        AppColors.zoneNeutral,
+        'Свободная земля. Замкни маршрут вокруг — и он твой.',
+      ),
+    };
+    final protected = holdHoursLeft != null && holdHoursLeft > 0;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.paper,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontDisplay,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (protected) ...[
+                Text(
+                  'Под защитой ещё ${holdHoursLeft.round()} ч',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accentInk,
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+              Text(
+                note,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.45,
+                  color: AppColors.muted,
+                ),
+              ),
+              if (rel != TerritoryRel.mine && rel != TerritoryRel.club) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      context.go('/run');
+                    },
+                    child: const Text('Бежать за ним'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Color _fill(ZoneOwner owner, {bool flash = false}) {
     if (flash) return AppColors.warning.withValues(alpha: 0.42);
     return switch (owner) {
       ZoneOwner.mine => AppColors.hexOwned.withValues(alpha: 0.22),
       ZoneOwner.enemy => AppColors.hexEnemy.withValues(alpha: 0.18),
-      ZoneOwner.club => AppColors.success.withValues(alpha: 0.18),
+      ZoneOwner.club => AppColors.teal.withValues(alpha: 0.20),
       ZoneOwner.free => Colors.transparent,
     };
   }
@@ -506,7 +661,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
     return switch (owner) {
       ZoneOwner.mine => AppColors.hexOwned.withValues(alpha: 0.70),
       ZoneOwner.enemy => AppColors.hexEnemy.withValues(alpha: 0.58),
-      ZoneOwner.club => AppColors.success.withValues(alpha: 0.58),
+      ZoneOwner.club => AppColors.teal.withValues(alpha: 0.62),
       ZoneOwner.free => AppColors.zoneNeutral.withValues(alpha: 0.55),
     };
   }
@@ -515,13 +670,13 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
   // чтобы захваченные маршрутом области читались поверх демо-сетки.
   Color _territoryFill(TerritoryRel rel) => switch (rel) {
     TerritoryRel.mine => AppColors.hexOwned.withValues(alpha: 0.28),
-    TerritoryRel.club => AppColors.success.withValues(alpha: 0.24),
+    TerritoryRel.club => AppColors.teal.withValues(alpha: 0.24),
     TerritoryRel.enemy => AppColors.hexEnemy.withValues(alpha: 0.24),
   };
 
   Color _territoryBorder(TerritoryRel rel) => switch (rel) {
     TerritoryRel.mine => AppColors.hexOwned.withValues(alpha: 0.85),
-    TerritoryRel.club => AppColors.success.withValues(alpha: 0.75),
+    TerritoryRel.club => AppColors.teal.withValues(alpha: 0.75),
     TerritoryRel.enemy => AppColors.hexEnemy.withValues(alpha: 0.70),
   };
 }
@@ -899,6 +1054,14 @@ class _KvartalTopLogo extends StatelessWidget {
 class _WeatherChip extends ConsumerWidget {
   const _WeatherChip();
 
+  /// «−2° · окно 18–20» — лучшее окно бега прямо в чипе (Ф2).
+  static String _chipText(String tempText, WeatherData? w) {
+    final hourly = w?.hourly ?? const <HourForecast>[];
+    final win = bestRunWindow(hourly);
+    if (win == null) return tempText;
+    return '$tempText · окно ${win.start.hour}–${win.end.hour}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(weatherProvider);
@@ -926,7 +1089,7 @@ class _WeatherChip extends ConsumerWidget {
             ),
             SizedBox(width: 5),
             Text(
-              tempText,
+              _chipText(tempText, w),
               style: Theme.of(
                 context,
               ).textTheme.labelMedium?.copyWith(color: AppColors.ink),
@@ -955,11 +1118,13 @@ class _Legend extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _LegendDot(color: AppColors.hexOwned, label: 'Мои'),
+          _LegendDot(color: AppColors.hexOwned, label: 'Моё'),
           SizedBox(height: 3),
-          _LegendDot(color: AppColors.hexEnemy, label: 'Чужие'),
+          _LegendDot(color: AppColors.teal, label: 'Клуба'),
           SizedBox(height: 3),
-          _LegendDot(color: AppColors.success, label: 'Клуб'),
+          _LegendDot(color: AppColors.hexEnemy, label: 'Чужое'),
+          SizedBox(height: 3),
+          _LegendDot(color: AppColors.zoneNeutral, label: 'Ничьё'),
         ],
       ),
     );
@@ -1121,4 +1286,115 @@ class _Div extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Container(width: 1, height: 36, color: AppColors.bgElevated);
+}
+
+// ── Блок «Сегодня» (Ф2 «Карта-дом») ──────────────────────────────────────────
+
+class _TodayRow extends ConsumerWidget {
+  const _TodayRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weather = ref.watch(weatherProvider).valueOrNull;
+    final win = bestRunWindow(weather?.hourly ?? const []);
+    final level = ref.watch(runnerLevelProvider).valueOrNull;
+    final me = ref.watch(leagueBoardDataProvider).valueOrNull?.me;
+    final form = ref.watch(weekFormProvider);
+    final days = form.where((d) => d).length;
+
+    return SizedBox(
+      height: 58,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(14, 4, 14, 6),
+        children: [
+          if (win != null)
+            _TodayCard(
+              icon: CupertinoIcons.timer,
+              title: 'Окно бега',
+              value:
+                  '${win.start.hour}:00–${win.end.hour}:00',
+              onTap: () => showWeatherDetailSheet(context),
+            ),
+          _TodayCard(
+            icon: CupertinoIcons.chart_bar_alt_fill,
+            title: 'Дивизион',
+            value: [
+              if (level != null) level.title,
+              if (me?.place != null) '#${me!.place}',
+            ].join(' · ').isEmpty
+                ? 'загрузка…'
+                : [
+                    if (level != null) level.title,
+                    if (me?.place != null) '#${me!.place}',
+                  ].join(' · '),
+            onTap: () => context.go('/leaderboard'),
+          ),
+          _TodayCard(
+            icon: CupertinoIcons.calendar,
+            title: 'Неделя',
+            value: '$days из 7 дней',
+            onTap: () => context.go('/leaderboard'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TodayCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+
+  const _TodayCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: _Glass(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: AppColors.accentInk),
+              const SizedBox(width: 8),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: .6,
+                      color: AppColors.faint,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
