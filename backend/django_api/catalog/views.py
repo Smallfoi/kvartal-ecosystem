@@ -25,9 +25,11 @@ def _is_preview(request) -> bool:
 
 
 def _visible_products(request):
+    """На витрине — только опубликованное владельцем И не снятое с продажи в 1С.
+    Это два независимых решения: владелец прячет товар, 1С снимает с продажи."""
     qs = Product.objects.all()
     if not _is_preview(request):
-        qs = qs.filter(is_published=True)
+        qs = qs.filter(is_published=True, is_active_1c=True)
     return qs
 
 
