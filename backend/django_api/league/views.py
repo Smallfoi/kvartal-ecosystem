@@ -13,6 +13,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from common.security import user_id_from_request
+from league import divisions as divisions_svc
+from league import seasons as seasons_svc
 from league import services
 from league.models import RunnerProfile
 
@@ -119,3 +121,24 @@ def _group_of(obj):
         "gender": obj.gender,
         "label": services.group_label(age, obj.gender),
     }
+
+
+@api_view(["GET"])
+def division(request):
+    """Дивизион недели (Квартал 2.0, Ф0/Ф5): группа до 30 бегунов твоего уровня.
+
+    Ленивое назначение и ленивое закрытие прошлой недели — см. league.divisions.
+    """
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    return Response(divisions_svc.division_payload(uid))
+
+
+@api_view(["GET"])
+def season_latest(request):
+    """Итог прошлого сезона (месяца) — для церемонии в приложении."""
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+    return Response(seasons_svc.season_payload(uid))

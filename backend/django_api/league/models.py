@@ -64,3 +64,81 @@ class RunnerProfile(models.Model):
             "weeklyGoalKm": self.weekly_goal_km,
             "trailsEnabled": self.trails_enabled,
         }
+
+
+# ── Дивизионы недели (Квартал 2.0, Ф0/Ф5) ────────────────────────────────────
+#
+# Дивизион — группа до 30 бегунов одного уровня (уровень = пожизненные км),
+# живущая одну неделю. Формируется лениво: первый запрос бегуна на этой неделе
+# кладёт его в открытую группу его уровня (или создаёт новую). По завершении
+# недели топ-3 группы получают баллы — начисление ленивое и идемпотентное.
+
+
+class Division(models.Model):
+    """Недельная группа бегунов одного уровня."""
+
+    id = models.CharField(primary_key=True, max_length=40)
+    tier = models.IntegerField(verbose_name="Уровень (0=Асфальт … 6=Лайм)")
+    week_start = models.DateField(db_index=True, verbose_name="Понедельник недели")
+    seq = models.IntegerField(default=1, verbose_name="Номер группы в уровне")
+    closed = models.BooleanField(default=False, verbose_name="Неделя закрыта")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "league_divisions"
+        unique_together = [("tier", "week_start", "seq")]
+        verbose_name = "Дивизион недели"
+        verbose_name_plural = "Дивизионы недели"
+
+
+class DivisionMember(models.Model):
+    """Членство бегуна в дивизионе. Одна неделя — один дивизион."""
+
+    division_id = models.CharField(max_length=40, db_index=True)
+    user_id = models.CharField(max_length=40, db_index=True)
+    week_start = models.DateField()
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "league_division_members"
+        unique_together = [("user_id", "week_start")]
+        verbose_name = "Участник дивизиона"
+        verbose_name_plural = "Участники дивизионов"
+
+
+# ── Сезоны района (Квартал 2.0, Ф5) ──────────────────────────────────────────
+#
+# Сезон = календарный месяц. Закрывается лениво при первом запросе нового
+# месяца: снапшот мест месячного зачёта + баллы топ-3. Накопленное (уровень,
+# медали, баллы) не отнимается — сбрасывается только таблица месяца.
+
+
+class SeasonClose(models.Model):
+    """Отметка «сезон закрыт» — гарантия одноразового закрытия."""
+
+    month = models.CharField(primary_key=True, max_length=7)  # "2026-08"
+    closed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "league_season_closes"
+        verbose_name = "Закрытие сезона"
+        verbose_name_plural = "Закрытия сезонов"
+
+
+class SeasonResult(models.Model):
+    """Итог бегуна в сезоне — вечная строка трофейной истории."""
+
+    id = models.CharField(primary_key=True, max_length=64)  # sr_<month>_<uid>
+    month = models.CharField(max_length=7, db_index=True)
+    user_id = models.CharField(max_length=40, db_index=True)
+    place = models.IntegerField()
+    of = models.IntegerField()
+    km = models.FloatField()
+    runs = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "league_season_results"
+        unique_together = [("month", "user_id")]
+        verbose_name = "Итог сезона"
+        verbose_name_plural = "Итоги сезонов"

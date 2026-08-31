@@ -168,6 +168,17 @@ def capture(request):
             has_gain = bool(eff_ewkt) and "EMPTY" not in eff_ewkt.upper()
             # 5) перехват: срезаем у чужих ТОЛЬКО незащищённую часть (effective)
             if has_gain:
+                # 5а) события «кто у кого отрезал» (Квартал 2.0, Ф6) — до среза,
+                # пока пересечение ещё видно. Лента угроз клуба живёт на них.
+                cur.execute(
+                    "INSERT INTO territory_events (victim_owner, attacker, area_m2) "
+                    "SELECT owner_id, %s, "
+                    "  ST_Area(ST_Intersection(geom, ST_GeomFromEWKT(%s))::geography) "
+                    "FROM territories "
+                    "WHERE owner_id <> %s AND ST_Intersects(geom, ST_GeomFromEWKT(%s)) "
+                    "  AND ST_Area(ST_Intersection(geom, ST_GeomFromEWKT(%s))::geography) > 1",
+                    [uid, eff_ewkt, uid, eff_ewkt, eff_ewkt],
+                )
                 cur.execute(
                     "UPDATE territories SET geom = ST_Multi(ST_CollectionExtract("
                     "ST_Difference(geom, ST_GeomFromEWKT(%s)),3)) "
@@ -256,7 +267,10 @@ def list_territories(request):
     hold_left = (
         "EXTRACT(EPOCH FROM (captured_at + make_interval(hours => %s) - now())) / 3600.0"
     )
-    cols = f"owner_id, club_id, ST_AsGeoJSON({simplify}), {hold_left}"
+    cols = (
+        f"owner_id, club_id, ST_AsGeoJSON({simplify}), {hold_left}, "
+        "EXTRACT(EPOCH FROM captured_at) * 1000"
+    )
     # Активны только территории, удерживаемые < 72ч назад.
     fresh = "captured_at > now() - make_interval(hours => %s)"
     with connection.cursor() as cur:
@@ -276,17 +290,23 @@ def list_territories(request):
                 [HOLD_HOURS, HOLD_HOURS],
             )
         rows = cur.fetchall()
+    # Имена владельцев — публичная часть паспорта квартала (Ф2): как в рейтинге.
+    from common.people import names_of
+
+    names = names_of([r[0] for r in rows])
     out = []
-    for owner_id, club_id, gj, hours_left in rows:
+    for owner_id, club_id, gj, hours_left, captured_ms in rows:
         rel = "mine" if owner_id == uid else (
             "club" if club_id and club_id == my_club else "enemy"
         )
         out.append(
             {
                 "ownerId": owner_id,
+                "ownerName": names.get(owner_id, "Бегун"),
                 "clubId": club_id,
                 "rel": rel,
                 "holdHoursLeft": round(max(0.0, float(hours_left or 0)), 1),
+                "capturedAtMs": int(captured_ms or 0),
                 "geojson": json.loads(gj),
             }
         )

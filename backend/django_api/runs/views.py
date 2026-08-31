@@ -145,6 +145,12 @@ def runs(request):
         add_txn(uid, points, "runnerRun",
                 f"Пробежка {distance_m / 1000.0:.1f} км", None, rid)
 
+    # Вехи пожизненных километров (Квартал 2.0, Ф4) — идемпотентно.
+    if not flagged:
+        from runs.milestones import award_milestones
+
+        award_milestones(uid, distance_m / 1000.0)
+
     # Режим доверия: если забегов с флагом накопилось много — пометить на ревью.
     if flagged:
         _maybe_flag_for_review(uid)
@@ -177,4 +183,7 @@ def approve_run(run):
     run.flag_reason = ""
     run.points_awarded = points
     run.save(update_fields=["flagged", "flag_reason", "points_awarded"])
+    from runs.milestones import award_milestones
+
+    award_milestones(run.user_id, run.distance_m / 1000.0)
     return points

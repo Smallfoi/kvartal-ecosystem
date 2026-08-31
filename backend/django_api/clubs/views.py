@@ -439,3 +439,87 @@ def club_challenge(request, club_id):
         end_at=now + timedelta(days=days),
     )
     return Response(_detail(club, uid))
+
+
+@api_view(["GET"])
+def war(request):
+    """«Война района» (Квартал 2.0, Ф6): позиции клубов по земле + угрозы недели.
+
+    Угроза — чужой захват, отрезавший землю у тебя или у одноклубника за
+    последние 7 дней (лента territory_events из capture).
+    """
+    uid = user_id_from_request(request)
+    if not uid:
+        return Response({"detail": "Нет токена"}, status=401)
+
+    from django.db import connection
+
+    from common.people import names_of
+    from territories.views import HOLD_HOURS
+
+    my_membership = ClubMember.objects.filter(user_id=uid).first()
+    my_club = my_membership.club_id if my_membership else None
+
+    with connection.cursor() as cur:
+        cur.execute(
+            """
+            SELECT club_id, SUM(ST_Area(geom::geography)) AS area, COUNT(*)
+            FROM territories
+            WHERE club_id IS NOT NULL
+              AND captured_at > now() - make_interval(hours => %s)
+            GROUP BY club_id ORDER BY area DESC LIMIT 6
+            """,
+            [HOLD_HOURS],
+        )
+        standing_rows = cur.fetchall()
+
+    standings = []
+    for i, (club_id, area, pieces) in enumerate(standing_rows):
+        club = Club.objects.filter(id=club_id).first()
+        standings.append(
+            {
+                "clubId": club_id,
+                "name": club.name if club else "Клуб",
+                "areaM2": round(float(area or 0), 1),
+                "pieces": pieces,
+                "place": i + 1,
+                "isMine": club_id == my_club,
+            }
+        )
+
+    victims = [uid]
+    if my_club:
+        victims = list(
+            ClubMember.objects.filter(club_id=my_club).values_list(
+                "user_id", flat=True
+            )
+        )
+    threats = []
+    with connection.cursor() as cur:
+        cur.execute(
+            """
+            SELECT victim_owner, attacker, area_m2,
+                   EXTRACT(EPOCH FROM created_at) * 1000
+            FROM territory_events
+            WHERE victim_owner = ANY(%s)
+              AND created_at > now() - interval '7 days'
+            ORDER BY created_at DESC LIMIT 20
+            """,
+            [victims],
+        )
+        threat_rows = cur.fetchall()
+    people = names_of(
+        list({r[0] for r in threat_rows} | {r[1] for r in threat_rows})
+    )
+    for victim, attacker, area, at_ms in threat_rows:
+        threats.append(
+            {
+                "victimName": people.get(victim, "Бегун"),
+                "attackerName": people.get(attacker, "Бегун"),
+                "mine": victim == uid,
+                "areaM2": round(float(area or 0), 1),
+                "atMs": int(at_ms or 0),
+            }
+        )
+
+    return Response({"standings": standings, "threats": threats})
