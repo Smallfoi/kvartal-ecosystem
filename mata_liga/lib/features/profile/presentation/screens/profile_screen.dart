@@ -933,13 +933,6 @@ class _PointsCard extends ConsumerWidget {
   }
 }
 
-String _formatTxnDate(String? iso) {
-  if (iso == null) return '';
-  final dt = DateTime.tryParse(iso)?.toLocal();
-  if (dt == null) return '';
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(dt.day)}.${two(dt.month)}.${dt.year} ${two(dt.hour)}:${two(dt.minute)}';
-}
 
 /// История баллов экосистемы (за что начислено/списано). Открывается тапом по карточке.
 class PointsHistoryScreen extends ConsumerStatefulWidget {
@@ -950,7 +943,11 @@ class PointsHistoryScreen extends ConsumerStatefulWidget {
       _PointsHistoryScreenState();
 }
 
+/// Кошелёк (Ф7 «Экономика баллов», утверждено 31.08.2026): карта лояльности,
+/// строка ценности «1 балл = 1 ₽», фильтры и история по дням.
 class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
+  int _filter = 0; // 0 — все · 1 — начисления · 2 — списания
+
   @override
   void initState() {
     super.initState();
@@ -962,141 +959,260 @@ class _PointsHistoryScreenState extends ConsumerState<PointsHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final loyalty = ref.watch(loyaltyProvider);
-    final txns = loyalty.transactions;
+    final stats = ref.watch(meStatsProvider).valueOrNull;
+    final txns = switch (_filter) {
+      1 => loyalty.transactions.where((t) => t.amount >= 0).toList(),
+      2 => loyalty.transactions.where((t) => t.amount < 0).toList(),
+      _ => loyalty.transactions,
+    };
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        title: const Text('История баллов'),
+        backgroundColor: AppColors.bg,
+        title: const Text('Кошелёк'),
       ),
       body: SafeArea(
-        child: Column(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
-            // Единая карта лояльности МАТА (дизайн-проект v5): материал уровня,
-            // «живые» анимации, переворот на QR, тап по QR — во весь экран.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
-              child: Center(
-                child: Builder(
-                  builder: (context) {
-                    final user = ref.watch(authProvider).user;
-                    return LoyaltyCard3D(
-                      balance: loyalty.balance,
-                      levelLabel: loyalty.levelTitle,
-                      holderName: user?.name ?? 'Бегун ЛИГА',
-                      // QR кодирует ПОСТОЯННЫЙ 6-значный код лояльности (не баланс).
-                      qrData: loyalty.code.isNotEmpty
-                          ? loyalty.code
-                          : (user?.id ?? ''),
-                      tier: switch (loyalty.level) {
-                        'platinum' => LoyaltyCardTier.platinum,
-                        'gold' => LoyaltyCardTier.gold,
-                        'silver' => LoyaltyCardTier.silver,
-                        _ => LoyaltyCardTier.basic,
-                      },
-                    );
-                  },
-                ),
+            // Единая карта лояльности МАТА (дизайн-проект v5).
+            Center(
+              child: Builder(
+                builder: (context) {
+                  final user = ref.watch(authProvider).user;
+                  return LoyaltyCard3D(
+                    balance: loyalty.balance,
+                    levelLabel: loyalty.levelTitle,
+                    holderName: user?.name ?? 'Бегун ЛИГА',
+                    qrData: loyalty.code.isNotEmpty
+                        ? loyalty.code
+                        : (user?.id ?? ''),
+                    tier: switch (loyalty.level) {
+                      'platinum' => LoyaltyCardTier.platinum,
+                      'gold' => LoyaltyCardTier.gold,
+                      'silver' => LoyaltyCardTier.silver,
+                      _ => LoyaltyCardTier.basic,
+                    },
+                  );
+                },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+            const SizedBox(height: 8),
+            Center(
               child: Text(
                 'нажми карту — QR для кассы МАТА Store',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textTertiary,
+                  color: AppColors.faint,
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            // Цепочка ценности: бег → баллы → скидка в Store.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.block,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '1 балл = 1 ₽ скидки в МАТА Store',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFEDEFE8),
+                      ),
+                    ),
+                  ),
+                  if (stats != null)
+                    Text(
+                      '+${stats.earned} · −${stats.spent}',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFDFF45F),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Фильтры.
+            Row(
+              children: [
+                for (final (idx, label) in const [
+                  (0, 'Все'),
+                  (1, 'Начисления'),
+                  (2, 'Списания'),
+                ]) ...[
+                  GestureDetector(
+                    onTap: () => setState(() => _filter = idx),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _filter == idx
+                            ? AppColors.ink
+                            : AppColors.paper,
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: _filter == idx
+                              ? AppColors.ink
+                              : AppColors.line,
+                        ),
+                      ),
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: _filter == idx
+                              ? AppColors.bg
+                              : AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
             if (txns.isEmpty)
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.only(top: 40),
                 child: Center(
                   child: Text(
                     loyalty.isLoading
                         ? 'Загрузка…'
                         : 'Пока нет операций с баллами',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textTertiary,
+                      color: AppColors.faint,
                     ),
                   ),
                 ),
               )
             else
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: txns.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    final t = txns[i];
-                    final meta = _loyaltySourceMeta(t.source);
-                    final positive = t.amount >= 0;
-                    final accent = positive
-                        ? AppColors.success
-                        : AppColors.error;
-                    return Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.bgCard,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.separator),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: accent.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(meta.icon, size: 20, color: accent),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  t.description.isNotEmpty
-                                      ? t.description
-                                      : meta.label,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _formatTxnDate(t.createdAt),
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(color: AppColors.textTertiary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${positive ? '+' : ''}${t.amount}',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  color: accent,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            const SizedBox(height: 8),
+              ..._groupedTxns(context, txns),
           ],
         ),
       ),
     );
+  }
+
+  /// Группировка операций по дням: Сегодня · Вчера · ДД.ММ.
+  List<Widget> _groupedTxns(BuildContext context, List<LoyaltyTxn> txns) {
+    final out = <Widget>[];
+    String? lastDay;
+    for (final t in txns) {
+      final day = _dayLabel(t.createdAt);
+      if (day != lastDay) {
+        lastDay = day;
+        out.add(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 10, 4, 8),
+            child: Text(
+              day.toUpperCase(),
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+                color: AppColors.faint,
+              ),
+            ),
+          ),
+        );
+      }
+      out.add(_txnRow(context, t));
+      out.add(const SizedBox(height: 8));
+    }
+    return out;
+  }
+
+  Widget _txnRow(BuildContext context, LoyaltyTxn t) {
+    final meta = _loyaltySourceMeta(t.source);
+    final positive = t.amount >= 0;
+    // Словарь цвета Ф7: начисления — лайм («моё» растёт), списания — тёплый.
+    final accent = positive ? AppColors.limeDeep : AppColors.warm;
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(meta.icon, size: 19, color: accent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t.description.isNotEmpty ? t.description : meta.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  _formatTxnTime(t.createdAt),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.faint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${positive ? '+' : ''}${t.amount}',
+            style: TextStyle(
+              fontFamily: AppTheme.fontDisplay,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: accent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _dayLabel(String? createdAt) {
+    final d = DateTime.tryParse(createdAt ?? '')?.toLocal();
+    if (d == null) return 'Ранее';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return 'Сегодня';
+    if (diff == 1) return 'Вчера';
+    return '${day.day.toString().padLeft(2, '0')}.${day.month.toString().padLeft(2, '0')}';
+  }
+
+  static String _formatTxnTime(String? createdAt) {
+    final d = DateTime.tryParse(createdAt ?? '')?.toLocal();
+    if (d == null) return '';
+    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 }
 
