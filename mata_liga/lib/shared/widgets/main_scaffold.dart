@@ -110,8 +110,6 @@ class _RunPlate extends StatelessWidget {
   final VoidCallback onTap;
   const _RunPlate({required this.isActive, required this.onTap});
 
-  static const _ink = Color(0xFF171C19);
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -120,23 +118,24 @@ class _RunPlate extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        width: 58,
-        height: 58,
+        // Плита всегда графитовая (замечание владельца: тёмный знак на лайме
+        // смотрится плохо). Активность — яркий знак, полная лаймовая рамка,
+        // сильное свечение по контуру и лёгкий рост плиты.
+        width: isActive ? 62 : 58,
+        height: isActive ? 62 : 58,
         decoration: BoxDecoration(
-          color: isActive ? AppColors.lime : AppColors.block,
-          borderRadius: BorderRadius.circular(19),
+          color: AppColors.block,
+          borderRadius: BorderRadius.circular(isActive ? 20 : 19),
           border: Border.all(
-            color: isActive
-                ? AppColors.limeDeep
-                : AppColors.lime.withValues(alpha: .55),
-            width: 1.4,
+            color: AppColors.lime.withValues(alpha: isActive ? 1 : .45),
+            width: isActive ? 1.8 : 1.3,
           ),
           boxShadow: [
             // Свечение строго по контуру плиты — без кругов и пульсов.
             BoxShadow(
-              color: AppColors.lime.withValues(alpha: isActive ? .45 : .18),
-              blurRadius: isActive ? 22 : 12,
-              spreadRadius: 1,
+              color: AppColors.lime.withValues(alpha: isActive ? .5 : .15),
+              blurRadius: isActive ? 26 : 10,
+              spreadRadius: isActive ? 2 : 1,
             ),
             BoxShadow(
               color: const Color(0x66101312),
@@ -147,11 +146,11 @@ class _RunPlate extends StatelessWidget {
         ),
         child: Center(
           child: KvartalLogoMark(
-            size: 30,
+            size: isActive ? 33 : 30,
             animated: isActive,
             glow: false,
-            outline: isActive ? _ink : const Color(0xFFEDEFE8),
-            fill: isActive ? _ink : AppColors.lime,
+            outline: const Color(0xFFEDEFE8),
+            fill: AppColors.lime,
           ),
         ),
       ),
