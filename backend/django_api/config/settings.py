@@ -61,6 +61,10 @@ INSTALLED_APPS = [
     "staff",
 ]
 
+# Закреплённый владелец (S-13): если задан, спорить не с чем. Пусто — берётся
+# строка OwnerPin в базе (ставится сама по первому суперпользователю).
+MATA_OWNER_ID = os.environ.get("MATA_OWNER_ID", "")
+
 # Права сотрудников считаются по вкладкам (S-12). Штатный ModelBackend оставляем:
 # им живут суперпользователь, вход по паролю и старые группы.
 AUTHENTICATION_BACKENDS = [
@@ -79,9 +83,12 @@ def _tab(key):
 
 
 def _owner_only(request):
+    """Пункт меню владельца. Проверяем закреплённую запись, а не флаг (S-13)."""
+    from staff.owner import is_owner
+
     user = getattr(request, "user", None)
-    return bool(getattr(user, "is_authenticated", False) and user.is_superuser
-                and user.is_active)
+    return bool(getattr(user, "is_authenticated", False) and user.is_active
+                and user.is_staff and is_owner(user))
 
 # Так админка подписана в приложении-аутентификаторе (D-49).
 OTP_TOTP_ISSUER = "МАТА"
