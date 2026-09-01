@@ -88,9 +88,72 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     return Scaffold(
       extendBody: true,
       body: widget.navigationShell,
+      // Центральная кнопка «Бег» — приподнятая плита знака (мотив эмблемы
+      // дивизиона и медалей): док по центру, наполовину над баром.
+      floatingActionButton: _RunPlate(
+        isActive: widget.navigationShell.currentIndex == 1,
+        onTap: () => _onTap(1),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _KvartalNavBar(
         currentIndex: widget.navigationShell.currentIndex,
         onTap: _onTap,
+      ),
+    );
+  }
+}
+
+// ── Плита «Бег» над баром ────────────────────────────────────────────────────
+
+class _RunPlate extends StatelessWidget {
+  final bool isActive;
+  final VoidCallback onTap;
+  const _RunPlate({required this.isActive, required this.onTap});
+
+  static const _ink = Color(0xFF171C19);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.lime : AppColors.block,
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(
+            color: isActive
+                ? AppColors.limeDeep
+                : AppColors.lime.withValues(alpha: .55),
+            width: 1.4,
+          ),
+          boxShadow: [
+            // Свечение строго по контуру плиты — без кругов и пульсов.
+            BoxShadow(
+              color: AppColors.lime.withValues(alpha: isActive ? .45 : .18),
+              blurRadius: isActive ? 22 : 12,
+              spreadRadius: 1,
+            ),
+            BoxShadow(
+              color: const Color(0x66101312),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Center(
+          child: KvartalLogoMark(
+            size: 30,
+            animated: isActive,
+            glow: false,
+            outline: isActive ? _ink : const Color(0xFFEDEFE8),
+            fill: isActive ? _ink : AppColors.lime,
+          ),
+        ),
       ),
     );
   }
@@ -176,39 +239,15 @@ class _RunNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Сама плита знака — приподнятый FAB над баром (_RunPlate); в баре
+    // остаётся только подпись, выровненная по остальным вкладкам.
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              width: 56,
-              height: 32,
-              decoration: BoxDecoration(
-                color: isActive ? AppColors.lime : AppColors.soft,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Center(
-                child: KvartalLogoMark(
-                  size: 24,
-                  animated: isActive,
-                  glow: false,
-                  // На лаймовой пилюле знак обязан быть тёмным: светлый контур
-                  // по лайму невидим (баг, найденный владельцем 01.09).
-                  outline: isActive
-                      ? const Color(0xFF171C19)
-                      : AppColors.ink,
-                  fill: isActive
-                      ? const Color(0xFF171C19)
-                      : AppColors.lime,
-                ),
-              ),
-            ),
-            const SizedBox(height: 3),
             Text(
               AppStrings.tabRun,
               style: TextStyle(
@@ -219,6 +258,7 @@ class _RunNavItem extends StatelessWidget {
                 color: isActive ? AppColors.ink : AppColors.muted,
               ),
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),

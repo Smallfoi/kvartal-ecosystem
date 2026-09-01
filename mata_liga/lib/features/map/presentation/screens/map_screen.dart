@@ -494,10 +494,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                         },
                       ),
                     ),
-                  _BottomPanel(
-                    runState: runState,
-                    zones: zones,
-                    closureStatus: closureStatus,
+                  Padding(
+                    // Плита «Бег» приподнята над баром — панели нужен воздух.
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _BottomPanel(
+                      runState: runState,
+                      zones: zones,
+                      closureStatus: closureStatus,
+                    ),
                   ),
                 ],
               ),
