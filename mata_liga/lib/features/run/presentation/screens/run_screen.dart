@@ -86,7 +86,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
             onRefresh: _refresh,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 128),
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
