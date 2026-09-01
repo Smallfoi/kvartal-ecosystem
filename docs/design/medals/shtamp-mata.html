@@ -1,0 +1,1382 @@
+<title>Штамп МАТА</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ink:#111317; --muted:#63666C; --faint:#8A8D93;
+  --bg:#F4F1EA; --paper:#FFFDF8; --panel:#FFFFFF; --soft:#E7EEF0;
+  --graphite:#20252B; --on-dark:#FFFFFF;
+  --accent:#57BCD8; --accent-ink:#136A82; --lime:#DFF45F; --lime-ink:#5E6B12;
+  --hairline:#D9D5CC;
+  --stage:#EDE9E0;
+  --display:'Unbounded','Manrope',ui-sans-serif,system-ui,sans-serif;
+  --body:'Manrope',ui-sans-serif,system-ui,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ink:#F2EFE8; --muted:#9AA0A6; --faint:#7C838A;
+    --bg:#14181C; --paper:#1B2026; --panel:#20262D; --soft:#232B32;
+    --graphite:#0D1114; --on-dark:#F2EFE8;
+    --accent:#57BCD8; --accent-ink:#7FD3E8; --lime:#DFF45F; --lime-ink:#C7DE3F;
+    --hairline:rgba(242,239,232,.14);
+    --stage:#101418;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#F2EFE8; --muted:#9AA0A6; --faint:#7C838A;
+  --bg:#14181C; --paper:#1B2026; --panel:#20262D; --soft:#232B32;
+  --graphite:#0D1114; --on-dark:#F2EFE8;
+  --accent:#57BCD8; --accent-ink:#7FD3E8; --lime:#DFF45F; --lime-ink:#C7DE3F;
+  --hairline:rgba(242,239,232,.14);
+  --stage:#101418;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--body); font-size:17px; line-height:1.5;
+  letter-spacing:-.2px; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1200px; margin:0 auto; padding:0 32px}
+section{padding:100px 0}
+section.paper{background:var(--paper)}
+@media (max-width:760px){ section{padding:64px 0} .wrap{padding:0 20px} }
+
+h1,h2,h3{font-family:var(--display); font-weight:700; margin:0; text-wrap:balance}
+h1{font-size:clamp(40px,7.4vw,86px); line-height:1.04; letter-spacing:-1.4px}
+h2{font-size:clamp(30px,4.2vw,44px); line-height:1.08; letter-spacing:-.7px}
+h3{font-size:21px; line-height:1.25; letter-spacing:-.3px}
+p{margin:0}
+.lede{font-size:21px; line-height:1.42; color:var(--muted); max-width:62ch}
+.body{max-width:66ch; color:var(--muted)}
+.eyebrow{
+  font-size:12px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase;
+  color:var(--accent-ink); font-family:var(--body);
+}
+.num{font-variant-numeric:tabular-nums}
+
+/* ── hero ───────────────────────────────────────────────── */
+.hero{
+  background:var(--stage); padding:0; overflow:hidden;
+  border-bottom:1px solid var(--hairline);
+}
+.hero-grid{
+  display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center;
+  min-height:min(88vh,760px); padding:80px 0;
+}
+@media (max-width:900px){ .hero-grid{grid-template-columns:1fr; gap:36px; padding:56px 0; min-height:0} }
+.hero-copy{display:flex; flex-direction:column; gap:24px; align-items:flex-start}
+.hero-stat{display:flex; gap:36px; flex-wrap:wrap; margin-top:4px}
+.hero-stat div{display:flex; flex-direction:column; gap:2px}
+.hero-stat b{font-family:var(--display); font-size:34px; font-weight:700; letter-spacing:-.8px}
+.hero-stat span{font-size:13px; color:var(--muted); letter-spacing:.2px}
+.case{
+  background:var(--soft); border:1px solid var(--hairline);
+  border-radius:44px; padding:10px;
+}
+.case-core{
+  position:relative; overflow:hidden; border-radius:35px;
+  background:radial-gradient(130% 110% at 50% 24%, #2A323A 0%, #161B20 52%, #0A0D10 100%);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.09), inset 0 -24px 48px rgba(0,0,0,.42);
+  padding:64px 44px 72px;
+}
+.case-core::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(58% 42% at 50% 16%, rgba(255,255,255,.11), transparent 72%);
+}
+.case-core::after{
+  content:''; position:absolute; inset:0; pointer-events:none; opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.hero-medal{position:relative; z-index:1; display:flex; justify-content:center; align-items:center}
+.hero-medal svg{
+  width:min(400px,72vw); height:auto;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.45)) drop-shadow(0 46px 90px rgba(0,0,0,.55));
+}
+
+/* ── generic blocks ─────────────────────────────────────── */
+.head{display:flex; flex-direction:column; gap:16px; margin-bottom:56px; max-width:70ch}
+.cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:28px}
+.card{
+  background:var(--panel); border-radius:28px; padding:32px;
+  display:flex; flex-direction:column; gap:12px;
+}
+section.paper .card{background:var(--bg)}
+.card h3{font-family:var(--display)}
+.card p{font-size:15px; color:var(--muted); line-height:1.5}
+.k{font-size:13px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--faint)}
+
+/* audit table */
+.tbl-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; min-width:600px; font-size:15px}
+th,td{text-align:left; padding:14px 18px 14px 0; vertical-align:top; border-bottom:1px solid var(--hairline)}
+th{font-size:12px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--faint)}
+td.n{color:var(--muted)}
+tbody tr:last-child td{border-bottom:none}
+
+/* verdict list */
+.verdict{display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:48px}
+@media (max-width:760px){ .verdict{grid-template-columns:1fr} }
+.verdict ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:14px}
+.verdict li{font-size:16px; line-height:1.45; padding-left:26px; position:relative; color:var(--muted)}
+.verdict li b{color:var(--ink); font-weight:600}
+.verdict li::before{
+  position:absolute; left:0; top:0; font-weight:700; font-size:15px;
+}
+.take li::before{content:'+'; color:var(--accent-ink)}
+.drop li::before{content:'—'; color:var(--faint)}
+
+/* ── system rails ───────────────────────────────────────── */
+.rail{display:grid; grid-template-columns:repeat(5,1fr); gap:20px}
+@media (max-width:860px){ .rail{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:420px){ .rail{grid-template-columns:1fr} }
+.rail-item{display:flex; flex-direction:column; gap:12px; align-items:flex-start}
+.rail-item svg{width:100%; max-width:132px; height:auto}
+.rail-item .t{font-family:var(--display); font-size:15px; font-weight:700; letter-spacing:-.1px}
+.rail-item .d{font-size:13px; color:var(--muted); line-height:1.4}
+
+/* ── anatomy ────────────────────────────────────────────── */
+.anat{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,.85fr); gap:56px; align-items:center}
+@media (max-width:900px){ .anat{grid-template-columns:1fr; gap:36px} }
+.anat-svg{display:flex; justify-content:center}
+.anat-svg svg{width:min(400px,84vw); height:auto}
+.layers{display:flex; flex-direction:column; gap:0}
+.layer{display:grid; grid-template-columns:34px 1fr; gap:16px; padding:16px 0; border-bottom:1px solid var(--hairline); align-items:baseline}
+.layer:last-child{border-bottom:none}
+.layer .i{font-family:var(--display); font-size:13px; font-weight:700; color:var(--accent-ink); font-variant-numeric:tabular-nums}
+.layer .t{font-size:16px; font-weight:600}
+.layer .d{font-size:14px; color:var(--muted); line-height:1.45; margin-top:3px}
+
+/* ── series ─────────────────────────────────────────────── */
+.cat{margin-top:72px}
+.cat:first-of-type{margin-top:0}
+.cat-head{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; padding-bottom:20px; border-bottom:1px solid var(--hairline); margin-bottom:36px}
+.cat-head h3{font-size:28px; letter-spacing:-.5px}
+.cat-head .meta{font-size:13px; color:var(--muted)}
+.cat-head .count{
+  font-size:12px; font-weight:700; letter-spacing:.6px; color:var(--accent-ink);
+  border:1px solid var(--accent); border-radius:999px; padding:3px 12px; margin-left:auto;
+}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:32px 20px}
+.medal{display:flex; flex-direction:column; gap:10px; align-items:center; text-align:center}
+.medal svg{
+  width:100%; max-width:132px; height:auto; display:block;
+  filter:drop-shadow(0 2px 3px rgba(10,14,18,.22)) drop-shadow(0 16px 30px rgba(10,14,18,.16));
+  transition:transform .6s cubic-bezier(.32,.72,0,1);
+}
+.medal:hover svg{transform:translateY(-6px) scale(1.045)}
+.medal .nm{font-size:14px; font-weight:600; line-height:1.25; letter-spacing:-.1px}
+.medal .rq{font-size:12px; color:var(--muted); line-height:1.35}
+
+.flips{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.flipcard{cursor:pointer}
+.flip-inner{position:relative; width:100%; max-width:132px; margin:0 auto; aspect-ratio:1/1;
+  transform-style:preserve-3d}
+.flip-inner{transition:transform .8s cubic-bezier(.32,.72,0,1)}
+.flipcard.on .flip-inner{transform:rotateY(180deg)}
+.face{position:absolute; inset:0; backface-visibility:hidden}
+.face svg{width:100%; height:auto; display:block}
+.f-back{transform:rotateY(180deg)}
+.flipcard:hover svg{transform:none}
+.flip-hint{margin-top:28px; font-size:14px; color:var(--muted); max-width:56ch}
+@media (prefers-reduced-motion:reduce){ .flip-inner{transition:none} }
+
+.rv{opacity:0; transform:translateY(26px); filter:blur(5px);
+  transition:opacity .8s cubic-bezier(.32,.72,0,1), transform .8s cubic-bezier(.32,.72,0,1), filter .8s cubic-bezier(.32,.72,0,1);
+  transition-delay:var(--d,0s)}
+.rv.in{opacity:1; transform:none; filter:blur(0)}
+@media (prefers-reduced-motion:reduce){ .rv{opacity:1; transform:none; filter:none; transition:none} .medal:hover svg{transform:none} }
+
+.sheen{transform-box:view-box; transform-origin:50% 50%; transform:translateX(-138px);
+  transition:transform .85s cubic-bezier(.22,.61,.36,1)}
+.medal:hover .sheen,.hero-medal:hover .sheen{transform:translateX(138px)}
+@media (prefers-reduced-motion:reduce){ .sheen{transition:none} }
+
+/* ═══ жизнь медалей: чеканка при появлении + свой цикл у каждой ═══ */
+.a-emb,.a-live,.a-plaque,.a-wing,.a-gem,.a-mg1,.a-mg2,.a-mg3,.a-shieldbody,.a-arrow,
+.a-moonwrap,.a-cloth,.a-sun,.a-rays,.a-refl,.a-runner,.a-hflag,.a-roadflow,.a-cupshine{
+  transform-box:fill-box; transform-origin:50% 50%}
+.a-rays{transform-origin:50% 92%}
+.a-wing{transform-origin:4% 50%}
+.a-cloth{transform-origin:0% 50%}
+.a-hflag{transform-origin:0% 100%}
+
+/* чеканка: эмблема вбивается, плашка выезжает снизу, дуга проявляется */
+:is(.in,.hero-medal,.anat-svg,.face) .a-emb{animation:embIn .6s cubic-bezier(.3,1.35,.45,1) both}
+:is(.in,.hero-medal,.anat-svg,.face) .a-plaque{animation:plaqueUp .55s .18s cubic-bezier(.32,.72,0,1) both}
+:is(.in,.hero-medal,.anat-svg,.face) .a-arc{animation:arcIn .6s .32s ease both}
+@keyframes embIn{0%{transform:scale(.66); opacity:0} 62%{transform:scale(1.07); opacity:1} 100%{transform:scale(1); opacity:1}}
+@keyframes plaqueUp{0%{transform:translateY(9px); opacity:0} 100%{transform:translateY(0); opacity:1}}
+@keyframes arcIn{0%{opacity:0} 100%{opacity:1}}
+
+/* территория: самоцвет дышит; район смагничивается; щит принимает стрелу */
+.a-g-hexcap .a-live,.a-g-mata .a-live{animation:gemSway 5.5s ease-in-out infinite alternate}
+@keyframes gemSway{0%{transform:rotate(-3.5deg)}100%{transform:rotate(3.5deg)}}
+:is(.in,.hero-medal) .a-mg1{animation:mgIn1 .8s .35s cubic-bezier(.3,1.3,.5,1) both}
+:is(.in,.hero-medal) .a-mg2{animation:mgIn2 .8s .5s cubic-bezier(.3,1.3,.5,1) both}
+:is(.in,.hero-medal) .a-mg3{animation:mgIn3 .8s .65s cubic-bezier(.3,1.3,.5,1) both}
+@keyframes mgIn1{0%{transform:translate(0,-14px); opacity:0}100%{transform:none; opacity:1}}
+@keyframes mgIn2{0%{transform:translate(-14px,8px); opacity:0}100%{transform:none; opacity:1}}
+@keyframes mgIn3{0%{transform:translate(14px,8px); opacity:0}100%{transform:none; opacity:1}}
+.a-mline{animation:mlineGlow 3.8s ease-in-out infinite alternate}
+@keyframes mlineGlow{0%{opacity:.16}100%{opacity:.42}}
+.a-arrow{animation:arrowFly 5.6s cubic-bezier(.55,0,.85,1) infinite}
+@keyframes arrowFly{0%{transform:translate(26px,-7px); opacity:0} 4%{opacity:1} 9%{transform:translate(0,0); opacity:1} 10%{opacity:0} 100%{transform:translate(0,0); opacity:0}}
+.a-shieldbody{animation:shieldHit 5.6s ease-out infinite}
+@keyframes shieldHit{0%,9%{transform:none} 11%{transform:translateX(-2.6px) rotate(-1.6deg)} 16%{transform:none} 100%{transform:none}}
+.a-frag1{animation:frag1 5.6s ease-out infinite}
+.a-frag2{animation:frag2 5.6s ease-out infinite}
+@keyframes frag1{0%,9%{opacity:0; transform:none} 10.5%{opacity:.9} 20%{opacity:0; transform:translate(7px,-7px)} 100%{opacity:0}}
+@keyframes frag2{0%,9%{opacity:0; transform:none} 10.5%{opacity:.9} 20%{opacity:0; transform:translate(8px,4px)} 100%{opacity:0}}
+
+/* перехват: один оборот — и замер */
+.a-g-swap .a-live{animation:swapTurn 5s cubic-bezier(.5,0,.15,1) infinite}
+@keyframes swapTurn{0%{transform:rotate(0)} 16%{transform:rotate(360deg)} 100%{transform:rotate(360deg)}}
+
+/* ночь: месяц дрейфует, звёзды мерцают вразнобой */
+.a-moonwrap{animation:moonDrift 6s ease-in-out infinite alternate}
+@keyframes moonDrift{0%{transform:translateY(-1.6px)}100%{transform:translateY(1.6px)}}
+.a-tw1{animation:tw 4.4s ease-in-out infinite}
+.a-tw2{animation:tw 4.4s 1.4s ease-in-out infinite}
+.a-tw3{animation:tw 4.4s 2.8s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.25} 12%{opacity:1} 24%{opacity:.25}}
+
+/* дистанция: разметка бежит, флажок на горизонте машет, бегун в ритме */
+.a-roadflow{animation:roadFlow 1.5s linear infinite}
+@keyframes roadFlow{0%{transform:translateY(0)}100%{transform:translateY(13px)}}
+.a-hflag{animation:hflagWave 2.2s ease-in-out infinite alternate}
+@keyframes hflagWave{0%{transform:rotate(-4deg)}100%{transform:rotate(4deg)}}
+.a-runner{animation:runBob .85s ease-in-out infinite alternate}
+@keyframes runBob{0%{transform:translateY(-1.2px) rotate(-1.4deg)}100%{transform:translateY(1.2px) rotate(1.2deg)}}
+.a-st1{animation:streakOut 1.3s linear infinite}
+.a-st2{animation:streakOut 1.3s .25s linear infinite}
+.a-st3{animation:streakOut 1.3s .5s linear infinite}
+@keyframes streakOut{0%{opacity:0; transform:translateX(6px)} 30%{opacity:.75} 100%{opacity:0; transform:translateX(-9px)}}
+.a-g-snow .a-live{animation:spinSlow 40s linear infinite}
+@keyframes spinSlow{to{transform:rotate(360deg)}}
+
+/* рассвет: солнце всходит, лучи растут и тлеют, дорожка мерцает */
+:is(.in,.hero-medal) .a-sun{animation:sunRise 1s .25s cubic-bezier(.32,.72,0,1) both}
+@keyframes sunRise{0%{transform:translateY(11px); opacity:.2}100%{transform:none; opacity:1}}
+:is(.in,.hero-medal) .a-rays{animation:raysIn .9s .6s cubic-bezier(.3,1.3,.5,1) both, raysGlow 3.4s 1.6s ease-in-out infinite alternate}
+.a-rays{animation:raysGlow 3.4s ease-in-out infinite alternate}
+@keyframes raysIn{0%{transform:scale(.35); opacity:0}100%{transform:scale(1); opacity:1}}
+@keyframes raysGlow{0%{opacity:.8}100%{opacity:1}}
+.a-refl{animation:reflShim 2.8s ease-in-out infinite alternate}
+@keyframes reflShim{0%{opacity:.65}100%{opacity:1}}
+
+/* сезон: крылья взмахивают и парят, кубок ловит блик, ткань полощется */
+:is(.in,.hero-medal) .a-wing{animation:wingFlap .9s .25s cubic-bezier(.3,1.2,.5,1) both, wingSway 3.6s 1.3s ease-in-out infinite alternate}
+.a-wing{animation:wingSway 3.6s ease-in-out infinite alternate}
+@keyframes wingFlap{0%{transform:rotate(24deg)} 55%{transform:rotate(-7deg)} 100%{transform:rotate(0)}}
+@keyframes wingSway{0%{transform:rotate(-2deg)}100%{transform:rotate(2deg)}}
+.a-gem{animation:gemSway 5.5s ease-in-out infinite alternate}
+.a-cloth{animation:clothSway 2s ease-in-out infinite alternate}
+@keyframes clothSway{0%{transform:skewY(-1.8deg)}100%{transform:skewY(1.8deg)}}
+.a-cupshine{animation:cupShine 4.2s cubic-bezier(.4,0,.6,1) infinite}
+@keyframes cupShine{0%{transform:rotate(16deg) translateX(-26px); opacity:0} 12%{opacity:.55} 26%{transform:rotate(16deg) translateX(26px); opacity:0} 100%{transform:rotate(16deg) translateX(26px); opacity:0}}
+
+/* Победа: искры вспыхивают на лучах; город: окна загораются по очереди */
+.a-gl1{animation:glint 4.6s 1s ease-out infinite}
+.a-gl2{animation:glint 4.6s 3.2s ease-out infinite}
+@keyframes glint{0%,100%{opacity:0; transform:scale(.4)} 6%{opacity:.95; transform:scale(1)} 13%{opacity:0; transform:scale(.5)}}
+.a-w1{animation:winOn 12s .4s steps(1,end) infinite}
+.a-w2{animation:winOn 12s 2.2s steps(1,end) infinite}
+.a-w3{animation:winOn 12s 3.6s steps(1,end) infinite}
+.a-w4{animation:winOn 12s 5.4s steps(1,end) infinite}
+.a-w5{animation:winOn 12s 7.1s steps(1,end) infinite}
+.a-w6{animation:winOn 12s 8.8s steps(1,end) infinite}
+@keyframes winOn{0%{opacity:0} 6%{opacity:.95} 74%{opacity:.95} 80%{opacity:0} 100%{opacity:0}}
+
+/* эко: лист покачивается */
+.a-g-leaf .a-live{animation:leafSway 4.4s ease-in-out infinite alternate; transform-origin:50% 10%}
+@keyframes leafSway{0%{transform:rotate(-4.5deg)}100%{transform:rotate(4.5deg)}}
+
+@media (prefers-reduced-motion:reduce){
+  svg *{animation:none!important}
+  .a-emb,.a-plaque,.a-arc,.a-mg1,.a-mg2,.a-mg3,.a-sun,.a-rays,.a-wing{opacity:1; transform:none}
+}
+
+/* ── states ─────────────────────────────────────────────── */
+.states{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:28px}
+.state{display:flex; flex-direction:column; gap:14px; align-items:center; text-align:center}
+.state svg{width:132px; height:auto}
+.state .t{font-family:var(--display); font-size:15px; font-weight:700}
+.state .d{font-size:13px; color:var(--muted); line-height:1.45; max-width:28ch}
+.locked{filter:grayscale(1) contrast(.72) brightness(.98); opacity:.42}
+
+/* ── spec ───────────────────────────────────────────────── */
+.spec{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:2px; background:var(--hairline); border-radius:28px; overflow:hidden}
+.spec > div{background:var(--paper); padding:28px}
+section.paper .spec > div{background:var(--bg)}
+.spec .k{margin-bottom:8px}
+.spec p{font-size:15px; color:var(--muted); line-height:1.5}
+.spec code{
+  font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:13px;
+  background:var(--soft); color:var(--ink); padding:2px 6px; border-radius:6px;
+}
+.sizes{display:flex; align-items:flex-end; gap:24px; flex-wrap:wrap; margin-top:8px}
+.size{display:flex; flex-direction:column; align-items:center; gap:8px}
+.size span{font-size:11px; color:var(--faint); font-variant-numeric:tabular-nums; letter-spacing:.3px}
+
+footer{padding:64px 0 80px; border-top:1px solid var(--hairline)}
+footer p{font-size:14px; color:var(--muted); max-width:64ch; line-height:1.55}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="metaldefs"></defs></svg>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Система наград · Квартал</span>
+      <h1>44 награды.<br>Один штамп.</h1>
+      <p class="lede">У Apple каждая медаль — плоский круг с градиентом. У нас каждая
+        отчеканена одним шестигранным штампом — формой квартала на карте. Категорию
+        держит кант, ранг — металл, награду — гравюра. Серию видно целиком с двух метров.</p>
+      <div class="hero-stat">
+        <div><b class="num">5</b><span>категорий</span></div>
+        <div><b class="num">5</b><span>металлов</span></div>
+        <div><b class="num">44</b><span>награды в серии</span></div>
+      </div>
+    </div>
+    <div class="case">
+      <div class="case-core">
+        <div class="hero-medal" id="hero"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Разбор</span>
+      <h2>Что именно сделала Apple</h2>
+      <p class="body">Полный список наград Apple Fitness делится на пять разделов. Ниже —
+        каркас их системы: он логичный, и его стоит взять. Спорна только графика.</p>
+    </div>
+
+    <div class="tbl-scroll">
+      <table>
+        <thead>
+          <tr><th>Раздел</th><th>Что внутри</th><th>Механика</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Close Your Rings</b></td>
+            <td class="n">New Move Goal, Move Goal 200 / 300 / 400 %, 100 / 500 / 1000 целей всего,
+              Perfect Week (Move, Exercise, Stand, All Activity), Perfect Month, Longest Move Streak</td>
+            <td class="n">Круглый год, накопительно</td>
+          </tr>
+          <tr>
+            <td><b>Monthly Challenges</b></td>
+            <td class="n">Персональная цель на месяц, пересчитывается по прошлой активности</td>
+            <td class="n">Новая каждый месяц</td>
+          </tr>
+          <tr>
+            <td><b>Limited Edition</b></td>
+            <td class="n">Turkey&nbsp;Trot, New&nbsp;Year, Heart&nbsp;Month, Женский день, Earth&nbsp;Day,
+              Yoga&nbsp;Day, National&nbsp;Parks, Veterans&nbsp;Day, Unity, Mother's&nbsp;Day</td>
+            <td class="n">Один день или неделя, ~9 в год с 2016-го, повторно не выдаётся</td>
+          </tr>
+          <tr>
+            <td><b>Workouts</b></td>
+            <td class="n">First Running Workout и первая тренировка каждого типа, 7-Workout Week</td>
+            <td class="n">Разовые, по факту</td>
+          </tr>
+          <tr>
+            <td><b>Competitions</b></td>
+            <td class="n">Победы в семидневных дуэлях с друзьями</td>
+            <td class="n">Соревновательные</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="verdict">
+      <div>
+        <span class="k">Берём</span>
+        <ul class="take">
+          <li><b>Двухслойность.</b> Постоянные награды держат ритм, лимитированные дают повод вернуться в конкретный день.</li>
+          <li><b>Серия выдаётся, когда обрывается.</b> Медаль приходит в момент, когда серия закончилась и оказалась рекордной — это честнее, чем награда авансом.</li>
+          <li><b>Региональный слот.</b> У Apple есть China Fitness Day и Japan Sports Day. У нас на этом месте — местные праздники.</li>
+        </ul>
+      </div>
+      <div>
+        <span class="k">Отказываемся</span>
+        <ul class="drop">
+          <li><b>Плоский круг с градиентом.</b> Сорок кругов в столбик неразличимы: глаз читает только цвет.</li>
+          <li><b>Ранг не виден.</b> У Apple редкая награда выглядит так же, как первая — нет материала, нет иерархии.</li>
+          <li><b>Форма не принадлежит продукту.</b> Круг ничего не говорит о беге и территории. Шестигранник говорит.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="paper">
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Правило 1 · Кант</span>
+      <h2>Кант держит категорию</h2>
+      <p class="body">Силуэт не меняется никогда. Меняется обработка канта — как на монетном
+        дворе, где один гурт отличает серию от серии. Категория узнаётся на периферии зрения,
+        до того как прочитана гравюра.</p>
+    </div>
+    <div class="rail" id="rims"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Правило 2 · Металл</span>
+      <h2>Металл держит ранг</h2>
+      <p class="body">Пять сплавов, всегда в одном порядке. Сталь — вход, иридий — вершина, и
+        он один несёт эмаль: лаймовую вставку получает только то, что берут единицы.</p>
+    </div>
+    <div class="rail" id="metals"></div>
+  </div>
+</section>
+
+<section class="paper">
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Анатомия</span>
+      <h2>Из чего собран штамп</h2>
+      <p class="body">Девять слоёв. Ни один не декоративный: каждый отвечает либо за
+        считываемость, либо за ощущение отчеканенного металла, а не за красоту саму по себе.</p>
+    </div>
+    <div class="anat">
+      <div class="anat-svg" id="anatomy"></div>
+      <div class="layers">
+        <div class="layer"><span class="i">01</span><div><div class="t">Гурт</div><div class="d">Внешний шестигранник, R&nbsp;=&nbsp;50. Единая форма всей серии — квартал карты.</div></div></div>
+        <div class="layer"><span class="i">02</span><div><div class="t">Обработка канта</div><div class="d">Насечка, рифление, трос, бисер или полировка — код категории.</div></div></div>
+        <div class="layer"><span class="i">03</span><div><div class="t">Огранка</div><div class="d">Шесть граней гурта, каждая залита по своему углу к свету, плюс вогнутая ступень к полю — медаль перестаёт быть наклейкой.</div></div></div>
+        <div class="layer"><span class="i">04</span><div><div class="t">Поле</div><div class="d">Утопленная площадка, R&nbsp;=&nbsp;41, темнее гурта на две ступени.</div></div></div>
+        <div class="layer"><span class="i">05</span><div><div class="t">Азурирование</div><div class="d">Концентрические круги машинной гравировки, как на циферблатах. Кольца обходят пояс надписей и не имеют лучей — никакой «паутины».</div></div></div>
+        <div class="layer"><span class="i">06</span><div><div class="t">Эмаль</div><div class="d">Только иридий и отдельные лимитированные. Лайм, голубой или графит — плоско, без градиента.</div></div></div>
+        <div class="layer"><span class="i">07</span><div><div class="t">Эмблема-иллюстрация</div><div class="d">Не пиктограмма, а многослойная художественная чеканка на всё поле: гранёные самоцветы, крылья дивизионов, орденские звёзды. Цифра и год — на графитовой плашке с металлическим кантом.</div></div></div>
+        <div class="layer"><span class="i">08</span><div><div class="t">Свет</div><div class="d">Купольное поле, затенение по краю, лужица света за эмблемой, глянцевый полумесяц сверху и кромочный свет на гранях. Золото и иридий несут заклёпки по углам, иридий — две искры. Никаких пульсаций и волн.</div></div></div>
+        <div class="layer"><span class="i">09</span><div><div class="t">Зерно и надписи</div><div class="d">Турбулентный шум 6&nbsp;% против пластиковой гладкости. По верхней дуге поля выгравирована категория, по нижней — «МАТА». Дуги круговые: буквы не сталкиваются и ни на что не налегают.</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Полная серия</span>
+      <h2>Сорок четыре награды</h2>
+      <p class="body">Наведите на любую — по металлу пройдёт свет. Категории идут в порядке,
+        в котором игрок их встречает: сначала ритм, потом территория, дистанция, сезон и,
+        отдельно, лимитированные.</p>
+    </div>
+    <div id="series"></div>
+  </div>
+</section>
+
+<section class="paper">
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Состояния</span>
+      <h2>Как медаль живёт в экране</h2>
+      <p class="body">Закрытая награда не прячется — она видна как силуэт, чтобы игрок понимал,
+        куда идти. Обесцвечивание фильтром, а не отдельным файлом: один SVG на оба состояния.</p>
+    </div>
+    <div class="states" id="states"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Персонализация · Реверс</span>
+      <h2>Каждая медаль — именная</h2>
+      <p class="body">Вехи чеканятся автоматически: приложение само следит за зонами, сериями
+        и дистанциями — «Территория 100» приходит в момент сотой захваченной зоны. А медаль
+        двусторонняя, как настоящая: нажмите — она перевернётся. На обороте гравируется личное:
+        пик захвата, время марафона, город и дата. У двух бегунов не бывает одинаковых медалей.</p>
+    </div>
+    <div class="grid flips" id="flips"></div>
+    <p class="flip-hint">Нажмите на медаль. День города берёт город из GPS: пробежка
+      в Хабаровске чеканит хабаровскую медаль, в Якутске — якутскую.</p>
+  </div>
+</section>
+
+<section class="paper">
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Внедрение</span>
+      <h2>Спецификация</h2>
+    </div>
+    <div class="spec">
+      <div>
+        <div class="k">Размеры</div>
+        <p>Четыре шага. Гильош гаснет ниже 64&nbsp;px, цифра — ниже 40&nbsp;px: остаётся только знак и металл.</p>
+        <div class="sizes" id="sizes"></div>
+      </div>
+      <div>
+        <div class="k">Формат</div>
+        <p>Один <code>medals.svg</code>-спрайт с общими градиентами в <code>&lt;defs&gt;</code>, награды —
+          через <code>&lt;use&gt;</code>. Вес всей серии ниже 60&nbsp;КБ, потому что металлы и фильтры
+          определены по одному разу.</p>
+      </div>
+      <div>
+        <div class="k">Флаттер</div>
+        <p>Кладём в <code>assets/medals/</code>, рисуем через <code>flutter_svg</code>. Закрытое
+          состояние — <code>ColorFilter.matrix</code> поверх того же файла, второй ассет не нужен.</p>
+      </div>
+      <div>
+        <div class="k">Движение</div>
+        <p>У каждой медали своя анимация самой эмблемы: щит принимает стрелу и вздрагивает, перехват делает один оборот и замирает, район смагничивается из трёх кварталов, разметка дороги бежит, солнце восходит, крылья дивизиона взмахивают, окна города загораются, снег идёт, лучи ордена вращаются. При появлении — «чеканка»: эмблема вбивается, плашка с цифрой выезжает снизу.
+          Круги, ударные волны и пульсации запрещены — по стандарту знака Квартала.</p>
+      </div>
+      <div>
+        <div class="k">Палитра</div>
+        <p>Эмали берутся из <code>app_colors.dart</code> без исключений: лайм <code>#DFF45F</code>,
+          голубой <code>#57BCD8</code>, графит <code>#20252B</code>. Металлы — служебные градиенты,
+          в токены не попадают.</p>
+      </div>
+      <div>
+        <div class="k">Открытые слоты</div>
+        <p>Три лимитированные привязаны к региону и берутся из профиля: местный праздник,
+          день города и собственный забег. Год чеканится в поле — награда 2027 года не равна 2026-й.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Дизайн-предложение для Квартала. Палитра и типографика — из действующей системы МАТА
+      (<b>Unbounded</b> для дисплея, <b>Manrope</b> для текста, цвета из <b>app_colors.dart</b>);
+      айдентика по D-34 не затронута. Знак МАТА на медали «Забег МАТА» — геометрический дублёр,
+      при сборке заменяется на файл из <b>assets/brand</b>.</p>
+  </div>
+</footer>
+
+<script>
+/* ═══ металлы ═══════════════════════════════════════════════ */
+const METALS = {
+  steel  : {hi:'#E2E9ED', mid:'#93A0AA', lo:'#5F6C77', deep:'#39444E', cut:'#232C34', name:'Сталь',   note:'Первый шаг. Награда за то, что начал.'},
+  bronze : {hi:'#FFDFB2', mid:'#D8894A', lo:'#9C5A1E', deep:'#6B3A0F', cut:'#4A2606', name:'Бронза',  note:'Регулярность. Держится несколько недель.'},
+  silver : {hi:'#FFFFFF', mid:'#CBD8E2', lo:'#93A3B1', deep:'#63737F', cut:'#47545F', name:'Серебро', note:'Месяцы. Виден стабильный режим.'},
+  gold   : {hi:'#FFF6CF', mid:'#F0BE3C', lo:'#B37C14', deep:'#7C540C', cut:'#573A05', name:'Золото',  note:'Год или предел дистанции.'},
+  iridium: {hi:'#A8B7C4', mid:'#39454F', lo:'#171D23', deep:'#070A0D', cut:'#000000', name:'Иридий',  note:'Единицы. Единственный носит эмаль.'}
+};
+const ENAMEL = {lime:'#DFF45F', blue:'#57BCD8', graphite:'#20252B', ice:'#E7EEF0'};
+const CATLABEL = {rhythm:'РИТМ', territory:'ТЕРРИТОРИЯ', distance:'ДИСТАНЦИЯ', season:'СЕЗОН', limited:'СОБЫТИЕ'};
+
+/* ═══ геометрия ════════════════════════════════════════════ */
+const SQ3 = Math.sqrt(3)/2;
+function hexPts(r, rot){
+  rot = rot || 0;
+  let p = [];
+  for(let i=0;i<6;i++){
+    const a = (Math.PI/180)*(90 + i*60 + rot);
+    p.push([(r*Math.cos(a)).toFixed(2), (-r*Math.sin(a)).toFixed(2)]);
+  }
+  return p;
+}
+function hexPath(r, rot){
+  return 'M' + hexPts(r,rot).map(p=>p.join(',')).join('L') + 'Z';
+}
+
+/* ═══ примитивы гравюр ═════════════════════════════════════ */
+function starPts(n, R, r, rot){
+  rot = rot||0; let p=[];
+  for(let i=0;i<n*2;i++){
+    const rad = i%2 ? r : R;
+    const a = (Math.PI/180)*(90 + i*(180/n) + rot);
+    p.push((rad*Math.cos(a)).toFixed(1)+','+(-rad*Math.sin(a)).toFixed(1));
+  }
+  return p.join(' ');
+}
+const F = ' fill="currentColor" stroke="none"';
+
+const GLYPH = {
+  ring:    '<circle cx="0" cy="0" r="30"/>',
+  week:    (()=>{let s='';for(let i=0;i<7;i++){const x=-36+i*12;s+=`<line x1="${x}" y1="-19" x2="${x}" y2="19"/>`}return s})(),
+  month:   (()=>{let s='';for(let r=0;r<4;r++)for(let c=0;c<6;c++)s+=`<circle cx="${-32.5+c*13}" cy="${-19.5+r*13}" r="4"${F}/>`;return s})(),
+  year:    (()=>{let s='<circle cx="0" cy="0" r="32"/>';for(let i=0;i<12;i++){const a=Math.PI/180*(i*30);const L=(i%3===0)?12:7;const x1=(32*Math.cos(a)).toFixed(1),y1=(-32*Math.sin(a)).toFixed(1),x2=((32-L)*Math.cos(a)).toFixed(1),y2=(-(32-L)*Math.sin(a)).toFixed(1);s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`}return s})(),
+  mult:    '<circle cx="0" cy="0" r="31"/><circle cx="0" cy="0" r="17"/>',
+  streak:  '<polyline points="-34,14 -17,2 0,8 17,-8 34,-18"/><circle cx="-34" cy="14" r="5"'+F+'/><circle cx="34" cy="-18" r="6"'+F+'/>',
+  hexcap:  '<path d="'+hexPath(30)+'"'+F+'/>',
+  hexgrid: '<path d="'+hexPath(15)+'" transform="translate(0,-17)"'+F+'/><path d="'+hexPath(15)+'" transform="translate(-14.5,9)"/><path d="'+hexPath(15)+'" transform="translate(14.5,9)"/>',
+  shield:  '<path d="M0,-32 L28,-21 L28,4 Q28,24 0,33 Q-28,24 -28,4 L-28,-21 Z"/><polyline points="-12,0 -3,10 14,-9"/>',
+  swap:    '<path d="M-30,-10 A26,26 0 0 1 22,-14"/><polyline points="22,-27 24,-13 10,-11"/><path d="M30,10 A26,26 0 0 1 -22,14"/><polyline points="-22,27 -24,13 -10,11"/>',
+  moon:    '<path d="M14,-30 A32,32 0 1 0 14,30 A26,26 0 1 1 14,-30 Z"'+F+'/>',
+  flag:    '<line x1="-19" y1="-32" x2="-19" y2="32"/><path d="M-19,-30 L24,-19 L-19,-6 Z"'+F+'/>',
+  run:     '<circle cx="9" cy="-25" r="8"'+F+'/><polyline points="-4,-8 12,-12 22,0"/><polyline points="-4,-8 -12,8 -2,20"/><polyline points="-2,20 12,30"/><line x1="-24" y1="2" x2="-10" y2="-2"/>',
+  road:    '<path d="M-28,28 Q-4,20 0,0 Q4,-20 28,-28"/><circle cx="-28" cy="28" r="6"'+F+'/><path d="'+hexPath(9)+'" transform="translate(28,-28)"'+F+'/>',
+  sun:     '<circle cx="0" cy="6" r="13"/><path d="M-32,26 L32,26"/>'+(()=>{let s='';for(let i=0;i<5;i++){const a=Math.PI/180*(30+i*30);s+=`<line x1="${(21*Math.cos(a)).toFixed(1)}" y1="${(6-21*Math.sin(a)).toFixed(1)}" x2="${(31*Math.cos(a)).toFixed(1)}" y2="${(6-31*Math.sin(a)).toFixed(1)}"/>`}return s})(),
+  snow:    (()=>{let s='';for(let i=0;i<3;i++){const a=Math.PI/180*(i*60);const x=(32*Math.cos(a)).toFixed(1),y=(-32*Math.sin(a)).toFixed(1);s+=`<line x1="${-x}" y1="${-y}" x2="${x}" y2="${y}"/>`;
+    [.55,-.55].forEach(k=>{const bx=(x*.55).toFixed(1),by=(y*.55).toFixed(1);const a2=a+k;s+=`<line x1="${bx}" y1="${by}" x2="${(bx*1+11*Math.cos(a2)).toFixed(1)}" y2="${(by*1-11*Math.sin(a2)).toFixed(1)}"/>`;
+      s+=`<line x1="${-bx}" y1="${-by}" x2="${(-bx-11*Math.cos(a2)).toFixed(1)}" y2="${(-by+11*Math.sin(a2)).toFixed(1)}"/>`})}return s})(),
+  laurel:  (()=>{
+    let s='<path d="M-5,31 Q-23,17 -25,-9"/><path d="M5,31 Q23,17 25,-9"/>';
+    const L=[[-13,25,-52],[-20,15,-34],[-24,4,-16],[-25,-8,2]];
+    L.forEach(([x,y,r])=>{
+      s+=`<ellipse cx="${x}" cy="${y}" rx="7.5" ry="3.2" transform="rotate(${r} ${x} ${y})"${F}/>`;
+      s+=`<ellipse cx="${-x}" cy="${y}" rx="7.5" ry="3.2" transform="rotate(${-r} ${-x} ${y})"${F}/>`;
+    });
+    return s;
+  })(),
+  finish:  '<line x1="-22" y1="-32" x2="-22" y2="32"/><rect x="-22" y="-30" width="40" height="28"/>'
+           + '<rect x="-22" y="-30" width="20" height="14"'+F+'/><rect x="-2" y="-16" width="20" height="14"'+F+'/>',
+  div:     '<polyline points="-26,10 0,-10 26,10"/><polyline points="-26,26 0,6 26,26"/><polyline points="-26,-6 0,-26 26,-6"/>',
+  star:    '<path d="'+hexPath(33)+'"/><polygon points="'+starPts(5,20,8.4)+'"'+F+'/>',
+  cup:     '<path d="M-18,-28 L18,-28 L16,0 Q16,12 0,12 Q-16,12 -16,0 Z"'+F+'/><path d="M-18,-22 Q-32,-20 -30,-8 Q-28,2 -16,2"/><path d="M18,-22 Q32,-20 30,-8 Q28,2 16,2"/><line x1="0" y1="12" x2="0" y2="24"/><path d="M-16,32 L16,32 L13,24 L-13,24 Z"'+F+'/>',
+  fir:     '<polygon points="0,-32 15,-10 -15,-10"'+F+'/><polygon points="0,-19 21,6 -21,6"'+F+'/><polygon points="0,-6 27,22 -27,22"'+F+'/><rect x="-4.5" y="22" width="9" height="10"'+F+'/>',
+  star5:   '<polygon points="'+starPts(5,32,13)+'"'+F+'/>',
+  serge:   '<path d="M-13,-32 L13,-32 L9,-24 L-9,-24 Z"'+F+'/><line x1="0" y1="-24" x2="0" y2="32"/><ellipse cx="0" cy="-10" rx="12" ry="4.5"/><ellipse cx="0" cy="4" rx="12" ry="4.5"/><ellipse cx="0" cy="18" rx="12" ry="4.5"/>',
+  city:    '<rect x="-30" y="-6" width="17" height="38"'+F+'/><rect x="-9" y="-26" width="18" height="58"'+F+'/><rect x="13" y="2" width="17" height="30"'+F+'/><polygon points="0,-38 8,-26 -8,-26"'+F+'/>',
+  leaf:    '<path d="M28,-28 Q-6,-28 -20,-8 Q-32,12 -16,26 Q6,34 20,12 Q30,-6 28,-28 Z"/><path d="M-14,26 Q4,2 24,-20"/>',
+  mata:    '<path d="'+hexPath(33)+'"/><polyline points="-16,14 -16,-13 0,4 16,-13 16,14"/>'
+};
+
+/* ═══ канты ════════════════════════════════════════════════ */
+/* Точки идут по ПЕРИМЕТРУ шестигранника, а не по окружности: на окружности
+   пряди у середин граней вылезали за гурт и обрезались в полумесяцы. */
+function hexEdge(r, n){
+  const v = hexPts(r).map(p=>[parseFloat(p[0]), parseFloat(p[1])]);
+  const out=[], per=Math.round(n/6);
+  for(let e=0;e<6;e++){
+    const a=v[e], b=v[(e+1)%6];
+    const ang=Math.atan2(b[1]-a[1], b[0]-a[0]);
+    const deg=ang*180/Math.PI, nx=Math.sin(ang), ny=-Math.cos(ang);
+    for(let i=0;i<per;i++){
+      const t=(i+0.5)/per;
+      out.push({x:a[0]+(b[0]-a[0])*t, y:a[1]+(b[1]-a[1])*t, deg:deg, nx:nx, ny:ny});
+    }
+  }
+  return out;
+}
+
+function rim(kind, m, cid){
+  const line = `stroke="${m.cut}" stroke-opacity=".42" fill="none"`;
+  const lite = `stroke="${m.hi}" stroke-opacity=".3" fill="none"`;
+  const F2 = n => n.toFixed(2);
+
+  if(kind==='rhythm')
+    return `<path d="${hexPath(45.5)}" ${line} stroke-width="1"/><path d="${hexPath(44)}" ${lite} stroke-width=".7"/>`;
+
+  if(kind==='territory'){                       // насечка
+    let s='';
+    hexEdge(49.2, 60).forEach(p=>{
+      s+=`<line x1="${F2(p.x)}" y1="${F2(p.y)}" x2="${F2(p.x+p.nx*6)}" y2="${F2(p.y+p.ny*6)}" stroke-width="1.4"/>`;
+    });
+    return `<g ${line} stroke-opacity=".6" clip-path="url(#${cid})">${s}</g>`
+         + `<path d="${hexPath(42.6)}" ${lite} stroke-width=".8"/>`;
+  }
+
+  if(kind==='distance'){                        // рифление
+    let s='';
+    hexEdge(49.4, 24).forEach(p=>{
+      s+=`<line x1="${F2(p.x)}" y1="${F2(p.y)}" x2="${F2(p.x+p.nx*7.4)}" y2="${F2(p.y+p.ny*7.4)}" stroke-width="3.2"/>`;
+    });
+    return `<g ${line} stroke-opacity=".48" stroke-linecap="round" clip-path="url(#${cid})">${s}</g>`
+         + `<path d="${hexPath(42.6)}" ${lite} stroke-width=".8"/>`;
+  }
+
+  if(kind==='season'){                          // витой трос
+    let s='';
+    hexEdge(46.2, 42).forEach(p=>{
+      const rot=F2(p.deg+32);
+      s+=`<ellipse cx="${F2(p.x)}" cy="${F2(p.y)}" rx="4.4" ry="2" transform="rotate(${rot} ${F2(p.x)} ${F2(p.y)})" fill="${m.cut}" fill-opacity=".5" stroke="none"/>`;
+      s+=`<ellipse cx="${F2(p.x-p.nx*.7)}" cy="${F2(p.y-p.ny*.7)}" rx="3.4" ry="1.25" transform="rotate(${rot} ${F2(p.x)} ${F2(p.y)})" fill="${m.hi}" fill-opacity=".42" stroke="none"/>`;
+    });
+    return `<g clip-path="url(#${cid})">${s}</g><path d="${hexPath(42.2)}" ${line} stroke-width=".9"/>`;
+  }
+
+  // limited — бисер и двойная канавка
+  let s=`<path d="${hexPath(45.2)}" ${line} stroke-width=".9"/><path d="${hexPath(41.6)}" ${line} stroke-width=".7"/>`;
+  hexEdge(46.6, 48).forEach(p=>{
+    s+=`<circle cx="${F2(p.x)}" cy="${F2(p.y)}" r="1.5" fill="${m.hi}" fill-opacity=".55" stroke="none"/>`;
+    s+=`<circle cx="${F2(p.x+p.nx*.5)}" cy="${F2(p.y+p.ny*.5)}" r="1.5" fill="${m.cut}" fill-opacity=".18" stroke="none"/>`;
+  });
+  return `<g clip-path="url(#${cid})">${s}</g>`;
+}
+
+/* ═══ гильош ═══════════════════════════════════════════════ */
+function guilloche(m, dark, en){
+  // азурирование: концентрические круги машинной гравировки, без лучей.
+  // Кольца держатся внутри пояса надписей (r < 26), чтобы ни на что не налегать.
+  let s='';
+  const col = dark ? m.hi : m.cut;
+  const op  = dark ? .11 : .13;
+  for(let i=0;i<8;i++){
+    const r = 26 - i*2.3;
+    s += `<circle cx="0" cy="0" r="${r.toFixed(1)}" fill="none" stroke="${col}" stroke-opacity="${op}" stroke-width=".55"/>`;
+  }
+  if(!en) s += `<circle cx="0" cy="0" r="34" fill="none" stroke="${col}" stroke-opacity="${op}" stroke-width=".55"/>`;
+  return s;
+}
+
+/* ═══ гравировка ═══════════════════════════════════════════ */
+function engrave(frag, m, sw){
+  return `<g fill="none" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">`
+       + `<g color="${m.hi}" stroke="currentColor" opacity=".46" transform="translate(.9,1.5)">${frag}</g>`
+       + `<g color="${m.cut}" stroke="currentColor" opacity=".85">${frag}</g></g>`;
+}
+
+/* ═══ огранка ══════════════════════════════════════════════ */
+function mixc(c1,c2,t){
+  const P=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  const a=P(c1),b=P(c2);
+  return '#'+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,'0')).join('');
+}
+/* Шесть граней между двумя шестигранниками; каждая залита по углу к свету.
+   invert=true — вогнутая ступень: свет меняется местами с тенью. */
+function facets(rOut, rIn, m, invert){
+  const V=hexPts(rOut).map(p=>[+p[0],+p[1]]), W=hexPts(rIn).map(p=>[+p[0],+p[1]]);
+  const Lx=-0.55, Ly=-0.835;
+  let s='';
+  for(let i=0;i<6;i++){
+    const a=V[i], b=V[(i+1)%6], c=W[(i+1)%6], d=W[i];
+    const mx=(a[0]+b[0])/2, my=(a[1]+b[1])/2, len=Math.hypot(mx,my);
+    let t=(mx/len)*Lx+(my/len)*Ly;
+    if(invert) t=-t;
+    const col = t>=0 ? mixc(m.mid,m.hi,Math.pow(t,.8)) : mixc(m.mid,m.deep,Math.pow(-t,.8));
+    const dq=`M${a[0]},${a[1]}L${b[0]},${b[1]}L${c[0]},${c[1]}L${d[0]},${d[1]}Z`;
+    s+=`<path d="${dq}" fill="${col}"/><path d="${dq}" fill="none" stroke="${m.cut}" stroke-opacity=".22" stroke-width=".4"/>`;
+  }
+  return s;
+}
+/* Санберст-шлифовка поля — 72 луча, как на циферблате */
+function sunburst(m){
+  let s='';
+  for(let i=0;i<72;i++){
+    const a=Math.PI*2*i/72;
+    s+=`<line x1="${(9*Math.cos(a)).toFixed(1)}" y1="${(9*Math.sin(a)).toFixed(1)}" x2="${(40.5*Math.cos(a)).toFixed(1)}" y2="${(40.5*Math.sin(a)).toFixed(1)}" stroke="${i%2?m.cut:m.hi}" stroke-opacity="${i%2?'.055':'.07'}" stroke-width=".45"/>`;
+  }
+  return s;
+}
+
+/* ═══ эмблемы-иллюстрации: многослойная художественная чеканка ═══ */
+function facetStar(R,r,rot,light,dark,edge){
+  let s='';
+  for(let k=0;k<5;k++){
+    const aO=(90+72*k+rot)*Math.PI/180, aL=(90+72*k+36+rot)*Math.PI/180, aR=(90+72*k-36+rot)*Math.PI/180;
+    const ox=(R*Math.cos(aO)).toFixed(1), oy=(-R*Math.sin(aO)).toFixed(1);
+    const lx=(r*Math.cos(aL)).toFixed(1), ly=(-r*Math.sin(aL)).toFixed(1);
+    const rx=(r*Math.cos(aR)).toFixed(1), ry=(-r*Math.sin(aR)).toFixed(1);
+    s+=`<path d="M0,0 L${lx},${ly} L${ox},${oy} Z" fill="${light}"/><path d="M0,0 L${rx},${ry} L${ox},${oy} Z" fill="${dark}"/>`;
+  }
+  return s+`<polygon points="${starPts(5,R,r,rot)}" fill="none" stroke="${edge}" stroke-width=".7" stroke-opacity=".55"/>`;
+}
+function gemHex(R,Rt,m,id){
+  return facets(R,Rt,m,false)
+       + `<path d="${hexPath(Rt)}" fill="url(#${id}r2)"/>`
+       + `<path d="${hexPath(Rt)}" fill="none" stroke="${m.hi}" stroke-opacity=".4" stroke-width=".7"/>`
+       + `<path d="${hexPath(R)}" fill="none" stroke="#0A0E12" stroke-opacity=".45" stroke-width=".9"/>`;
+}
+/* призрачные лучи: полупрозрачный вращающийся слой позади эмблемы */
+function ghostRays(m, en, dark){
+  const R = en ? 25 : 27;
+  const col = dark ? m.hi : m.cut;
+  let r='';
+  for(let k=0;k<8;k++){
+    r+=`<path d="M0,-${R} L4.4,-11 L-4.4,-11 Z" transform="rotate(${k*45})" fill="${col}"/>`;
+  }
+  return `<g opacity="${dark?'.10':'.08'}" transform="rotate(15)">${r}</g>`;
+}
+
+const EMB = {
+  /* бегун — шлейф скорости живёт, корпус держит ритм шага */
+  run: (m,id)=>{
+    const c=mixc(m.mid,m.hi,.5), st=`stroke="${c}" stroke-linecap="round" fill="none"`;
+    return `<rect class="a-st1" x="-46" y="-11" width="21" height="3.4" rx="1.7" fill="${c}"/>`
+      + `<rect class="a-st2" x="-42" y="-3" width="27" height="3.4" rx="1.7" fill="${c}"/>`
+      + `<rect class="a-st3" x="-45" y="5" width="17" height="3.4" rx="1.7" fill="${c}"/>`
+      + `<g class="a-runner"><circle cx="17" cy="-31" r="7.5" fill="${c}"/>`
+      + `<path d="M13,-21 L3,4" ${st} stroke-width="9"/>`
+      + `<path d="M12,-17 L26,-8 L36,-16" ${st} stroke-width="8"/>`
+      + `<path d="M11,-19 L-4,-12 L-12,-22" ${st} stroke-width="8"/>`
+      + `<path d="M3,4 L22,14 L28,32" ${st} stroke-width="9"/>`
+      + `<path d="M3,4 L-12,18 L-26,10" ${st} stroke-width="9"/></g>`;
+  },
+  /* ледяной кристалл — гранёная снежинка */
+  snow: (m,id)=>{
+    let arms='';
+    for(let k=0;k<6;k++){
+      arms+=`<g transform="rotate(${k*60})">`
+        + `<path d="M-2.5,-8 L2.5,-8 L1.6,-40 L-1.6,-40 Z" fill="#DFF1F8" stroke="#0A0E12" stroke-opacity=".22" stroke-width=".6"/>`
+        + `<path d="M0,-24 L9,-33" stroke="#B7DEED" stroke-width="3.4" stroke-linecap="round" fill="none"/>`
+        + `<path d="M0,-24 L-9,-33" stroke="#B7DEED" stroke-width="3.4" stroke-linecap="round" fill="none"/>`
+        + `<rect x="-3.2" y="-46" width="6.4" height="6.4" rx="1" transform="rotate(45 0 -42.8)" fill="#FFFFFF"/>`
+        + `</g>`;
+    }
+    return arms + `<path d="${hexPath(8)}" fill="#EAF7FC" stroke="#9CCFE0" stroke-width="1"/>`
+      + `<path d="${hexPath(4.2)}" fill="#B7DEED"/>`;
+  },
+  /* рассвет — солнце восходит, лучи растут, дорожка света мерцает */
+  sun: (m,id)=>{
+    let rays='';
+    for(let k=0;k<7;k++){
+      const a=(30+k*20)*Math.PI/180, L=(k%2?30:38);
+      rays+=`<path d="M${(20*Math.cos(a)).toFixed(1)},${(8-20*Math.sin(a)).toFixed(1)} L${(L*Math.cos(a)+2.6*Math.sin(a)).toFixed(1)},${(8-L*Math.sin(a)+2.6*Math.cos(a)).toFixed(1)} L${(L*Math.cos(a)-2.6*Math.sin(a)).toFixed(1)},${(8-L*Math.sin(a)-2.6*Math.cos(a)).toFixed(1)} Z" fill="#F0BE3C"/>`;
+    }
+    return `<g class="a-rays">${rays}</g>`
+      + `<g class="a-sun"><path d="M-16,8 A16,16 0 0 1 16,8 Z" fill="#FFE9A8"/>`
+      + `<path d="M-10.5,8 A10.5,10.5 0 0 1 10.5,8 Z" fill="#FFD35C"/></g>`
+      + `<line x1="-34" y1="8" x2="34" y2="8" stroke="${m.cut}" stroke-width="2.4" stroke-linecap="round"/>`
+      + `<g class="a-refl"><rect x="-10" y="14" width="20" height="3" rx="1.5" fill="#F0BE3C" opacity=".55"/>`
+      + `<rect x="-6.5" y="20" width="13" height="2.6" rx="1.3" fill="#F0BE3C" opacity=".38"/>`
+      + `<rect x="-3.5" y="26" width="7" height="2.2" rx="1.1" fill="#F0BE3C" opacity=".25"/></g>`;
+  },
+  /* полночь — изящный месяц с кратерами, звёзды мерцают */
+  moon: (m,id)=>{
+    return `<circle cx="-6" cy="0" r="30" fill="#FFFDF8" opacity=".07"/>`
+      + `<mask id="${id}mn"><circle cx="-4" cy="0" r="26" fill="#fff"/><circle cx="9" cy="-3" r="23" fill="#000"/></mask>`
+      + `<g class="a-moonwrap">`
+      + `<g mask="url(#${id}mn)">`
+      + `<circle cx="-4" cy="0" r="26" fill="#F1F5F8"/>`
+      + `<circle cx="-7" cy="1" r="24" fill="#DDE6EC"/>`
+      + `<circle cx="-16" cy="-7" r="3.6" fill="#9FB2BF" opacity=".5"/>`
+      + `<circle cx="-12" cy="7" r="2.4" fill="#9FB2BF" opacity=".4"/>`
+      + `<circle cx="-19" cy="12" r="1.7" fill="#9FB2BF" opacity=".35"/>`
+      + `</g>`
+      + `<path d="M-4,-26 A26,26 0 1 0 -4,26 A26,26 0 0 0 -4,-26" fill="none" stroke="#0A0E12" stroke-opacity=".35" stroke-width="1"/>`
+      + `</g>`
+      + `<path class="a-tw1" d="M20,-18 L21.4,-14 L25.4,-12.6 L21.4,-11.2 L20,-7.2 L18.6,-11.2 L14.6,-12.6 L18.6,-14 Z" fill="#FFFDF8"/>`
+      + `<path class="a-tw2" d="M28,4 L29,6.8 L31.8,7.8 L29,8.8 L28,11.6 L27,8.8 L24.2,7.8 L27,6.8 Z" fill="#FFFDF8"/>`
+      + `<path class="a-tw3" d="M20,20 L20.8,22.2 L23,23 L20.8,23.8 L20,26 L19.2,23.8 L17,23 L19.2,22.2 Z" fill="#FFFDF8"/>`;
+  },
+  /* дивизион — крылья взмахивают, самоцвет дышит */
+  div: (m,id)=>{
+    let wings='';
+    [1,-1].forEach(sgn=>{
+      let f='';
+      for(let k=0;k<5;k++){
+        const ang=-36+k*15, len=36-k*4;
+        f+=`<rect x="11" y="-3.4" width="${len}" height="6.8" rx="3.4" transform="rotate(${ang} 11 0)" fill="${k%2?mixc(m.mid,m.deep,.15):mixc(m.mid,m.hi,.5)}" stroke="#0A0E12" stroke-opacity=".3" stroke-width=".6"/>`;
+      }
+      wings+=`<g${sgn<0?' transform="scale(-1,1)"':''}><g class="a-wing">${f}</g></g>`;
+    });
+    return wings + `<g class="a-gem">${gemHex(14,7,m,id)}</g>`
+      + `<path d="M-14,24 L14,24 L11,31 L-11,31 Z" fill="${mixc(m.mid,m.deep,.25)}" stroke="#0A0E12" stroke-opacity=".3" stroke-width=".6"/>`;
+  },
+  /* сезон закрыт — клетчатая ткань полощется на древке */
+  finish: (m,id)=>{
+    const c=mixc(m.mid,m.hi,.5);
+    return `<rect x="-31.5" y="-40" width="3.6" height="74" rx="1.8" fill="${c}"/>`
+      + `<circle cx="-29.7" cy="-42" r="3.6" fill="${c}"/>`
+      + `<g class="a-cloth">`
+      + `<path d="M-28,-38 C-10,-44 8,-32 30,-38 L30,-12 C8,-6 -10,-18 -28,-12 Z" fill="#FFFDF8" stroke="#0A0E12" stroke-opacity=".45" stroke-width="1"/>`
+      + `<path d="M-28,-38 C-19,-41 -14,-40 -14,-39.5 L-14,-26.5 C-19,-27.5 -24,-26 -28,-25 Z" fill="#20252B"/>`
+      + `<path d="M2,-35.5 C9,-34 16,-34.5 16,-35 L16,-22 C10,-21.5 5,-22 2,-22.5 Z" fill="#20252B"/>`
+      + `<path d="M2,-22.5 C10,-21 22,-23 30,-25 L30,-12 C22,-10 10,-8 2,-9 Z" fill="#20252B"/>`
+      + `<path d="M-28,-25 C-19,-27 -8,-24 2,-22.5 L2,-9 C-8,-11 -19,-14 -28,-12 Z" fill="#FFFDF8" stroke="none"/>`
+      + `<path d="M-28,-38 C-10,-44 8,-32 30,-38 L30,-12 C8,-6 -10,-18 -28,-12 Z" fill="none" stroke="#0A0E12" stroke-opacity=".45" stroke-width="1"/>`
+      + `</g>`
+      + `<ellipse cx="2" cy="33" rx="20" ry="3" fill="#0A0E12" opacity=".18"/>`;
+  },
+  /* клубный кубок — трофей с каннелюрами */
+  cup: (m,id)=>{
+    const hi=mixc(m.mid,m.hi,.55), body=mixc(m.mid,m.hi,.25), dk=mixc(m.mid,m.deep,.25);
+    return `<path d="M-21,-22 C-35,-20 -35,-2 -17,1" stroke="${dk}" stroke-width="4.4" fill="none" stroke-linecap="round"/>`
+      + `<path d="M21,-22 C35,-20 35,-2 17,1" stroke="${dk}" stroke-width="4.4" fill="none" stroke-linecap="round"/>`
+      + `<path d="M-20,-27 L20,-27 C20,-2 12,10 0,13 C-12,10 -20,-2 -20,-27 Z" fill="${body}" stroke="#0A0E12" stroke-opacity=".4" stroke-width="1"/>`
+      + `<path d="M8,-27 L20,-27 C20,-2 12,10 0,13 C10,7 14,-8 8,-27 Z" fill="${dk}" opacity=".6"/>`
+      + `<path d="M-13,-22 C-13,-6 -9,3 -4,8" stroke="${hi}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>`
+      + `<ellipse cx="0" cy="-27" rx="20" ry="4.6" fill="${hi}"/>`
+      + `<ellipse cx="0" cy="-27" rx="15.5" ry="3" fill="${dk}"/>`
+      + `<polygon points="${starPts(5,6.5,2.8)}" transform="translate(0,-9)" fill="${mixc(m.deep,'#000000',.1)}" opacity=".55"/>`
+      + `<path d="M-4,13 L4,13 L5,22 L-5,22 Z" fill="${body}"/>`
+      + `<rect x="-13" y="22" width="26" height="5.5" rx="2" fill="${body}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".7"/>`
+      + `<rect x="-17" y="27.5" width="34" height="6.5" rx="2.4" fill="${dk}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".7"/>`
+      + `<clipPath id="${id}cupc"><path d="M-20,-31 L20,-31 C20,-2 12,10 0,13 C-12,10 -20,-2 -20,-31 Z"/></clipPath>`
+      + `<g clip-path="url(#${id}cupc)"><rect class="a-cupshine" x="-5" y="-36" width="7" height="56" fill="#FFFFFF" opacity="0" transform="rotate(16)"/></g>`;
+  },
+  /* чемпион — орденская звезда: вращающиеся лучи + гранёная золотая звезда */
+  star: (m,id)=>{
+    let rays='';
+    for(let k=0;k<8;k++){
+      rays+=`<g transform="rotate(${k*45})">`
+        + `<path d="M0,-44 L4.8,-18 L0,-14 Z" fill="${mixc(m.hi,'#FFFFFF',.15)}"/>`
+        + `<path d="M0,-44 L-4.8,-18 L0,-14 Z" fill="${mixc(m.mid,m.deep,.25)}"/>`
+        + `<path d="M0,-31 L2.8,-16 L0,-14 Z" transform="rotate(22.5)" fill="${mixc(m.hi,'#FFFFFF',.05)}" opacity=".8"/>`
+        + `<path d="M0,-31 L-2.8,-16 L0,-14 Z" transform="rotate(22.5)" fill="${mixc(m.mid,m.deep,.4)}" opacity=".8"/>`
+        + `</g>`;
+    }
+    return `<g class="emb-rays"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="26s" repeatCount="indefinite"/>${rays}</g>`
+      + facetStar(30,12.6,0,'#FFEC9E','#C9932B','#7A5410')
+      + `<path d="${hexPath(10)}" fill="#FFF6CF" stroke="#7A5410" stroke-width=".8"/>`
+      + `<path d="${hexPath(6.2)}" fill="#E2AC35"/>`
+      + `<text x="0" y="2.8" text-anchor="middle" font-family="Unbounded,Manrope,sans-serif" font-size="7.6" font-weight="800" fill="#6E480C">М</text>`;
+  },
+  /* День Победы — гранёная золотая звезда ордена с сиянием */
+  star5: (m,id)=>{
+    let rays='';
+    for(let k=0;k<8;k++){
+      rays+=`<g transform="rotate(${k*45+22.5})">`
+        + `<path d="M0,-44 L3.4,-16 L0,-13 Z" fill="${mixc(m.hi,'#FFFFFF',.1)}"/>`
+        + `<path d="M0,-44 L-3.4,-16 L0,-13 Z" fill="${mixc(m.mid,m.deep,.3)}"/>`
+        + `</g>`;
+    }
+    return `<g opacity=".5"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="34s" repeatCount="indefinite"/>${rays}</g>`
+      + facetStar(40,16.6,0,'#FFEC9E','#C9932B','#7A5410')
+      + `<path class="a-gl1" d="M0,-44 L1.6,-39.6 L6,-38 L1.6,-36.4 L0,-32 L-1.6,-36.4 L-6,-38 L-1.6,-39.6 Z" fill="#FFFFFF" opacity="0"/>`
+      + `<path class="a-gl2" d="M36,-13 L37.2,-9.8 L40.4,-8.6 L37.2,-7.4 L36,-4.2 L34.8,-7.4 L31.6,-8.6 L34.8,-9.8 Z" fill="#FFFFFF" opacity="0"/>`
+      + `<circle cx="0" cy="0" r="6.2" fill="#FFF6CF" stroke="#7A5410" stroke-width=".8"/>`
+      + `<circle cx="0" cy="0" r="3.4" fill="#E2AC35"/>`;
+  },
+  /* Новый год — наряженная ёлка со снегом */
+  fir: (m,id)=>{
+    const snowcap=(y,w)=>`<path d="M${-w},${y} Q${-w*.62},${y-4} ${-w*.28},${y} Q0,${y-4} ${w*.28},${y} Q${w*.62},${y-4} ${w},${y} L${w*.84},${y+3} Q0,${y+6} ${-w*.84},${y+3} Z" fill="#FFFDF8"/>`;
+    return `<ellipse cx="0" cy="35" rx="17" ry="4" fill="#FFFDF8" opacity=".85"/>`
+      + `<rect x="-4" y="26" width="8" height="9" rx="1.5" fill="#6B4A2B"/>`
+      + `<polygon points="0,-14 30,22 -30,22" fill="#2F6B3D" stroke="#0A0E12" stroke-opacity=".3" stroke-width=".8"/>`
+      + `<polygon points="0,-30 23,-1 -23,-1" fill="#377A47" stroke="#0A0E12" stroke-opacity=".3" stroke-width=".8"/>`
+      + `<polygon points="0,-43 16,-21 -16,-21" fill="#3F8A50" stroke="#0A0E12" stroke-opacity=".3" stroke-width=".8"/>`
+      + snowcap(-21,16) + snowcap(-1,23) + snowcap(22,30)
+      + `<polygon points="${starPts(5,6,2.5)}" transform="translate(0,-46)" fill="#DFF45F" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".5"/>`
+      + `<circle cx="-8" cy="-9" r="2.4" fill="#57BCD8"/><circle cx="7" cy="-6" r="2.4" fill="#FFFDF8"/>`
+      + `<circle cx="-13" cy="13" r="2.6" fill="#DFF45F"/><circle cx="1" cy="9" r="2.4" fill="#57BCD8"/>`
+      + `<circle cx="13" cy="15" r="2.6" fill="#FFFDF8"/>`;
+  },
+  /* оборона — щит принимает стрелу и вздрагивает */
+  shield: (m,id)=>{
+    return `<g class="a-shieldbody">`
+      + `<path d="M0,-36 L28,-25 L28,2 Q28,23 0,36 Q-28,23 -28,2 L-28,-25 Z" fill="${mixc(m.mid,m.deep,.1)}" stroke="#0A0E12" stroke-opacity=".45" stroke-width="1.2"/>`
+      + `<path d="M0,-31 L23,-22 L23,1 Q23,19 0,30 Q-23,19 -23,1 L-23,-22 Z" fill="${mixc(m.mid,m.hi,.4)}"/>`
+      + `<path d="M0,-31 L23,-22 L23,1 Q23,19 0,30 Z" fill="${mixc(m.mid,m.deep,.2)}"/>`
+      + `<g>${gemHex(9,4.6,m,id)}</g>`
+      + `<circle cx="-20" cy="-20" r="1.8" fill="${m.hi}"/><circle cx="20" cy="-20" r="1.8" fill="${m.hi}"/>`
+      + `<circle cx="-19" cy="6" r="1.8" fill="${m.hi}"/><circle cx="19" cy="6" r="1.8" fill="${m.hi}"/>`
+      + `</g>`
+      + `<g class="a-arrow" opacity="0"><polygon points="26,-6 31.4,-8.8 31.4,-3.2" fill="${m.cut}"/><line x1="31.4" y1="-6" x2="45" y2="-8" stroke="${m.cut}" stroke-width="2.6" stroke-linecap="round"/></g>`
+      + `<line class="a-frag1" x1="27" y1="-8" x2="33" y2="-13" stroke="${m.cut}" stroke-width="2.2" stroke-linecap="round" opacity="0"/>`
+      + `<line class="a-frag2" x1="27" y1="-4" x2="34" y2="-1" stroke="${m.cut}" stroke-width="2.2" stroke-linecap="round" opacity="0"/>`;
+  },
+  /* дистанция — дорога в перспективе к финишу */
+  road: (m,id)=>{
+    return `<line x1="-30" y1="-27" x2="30" y2="-27" stroke="${m.cut}" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>`
+      + `<path d="M-3.4,-27 L3.4,-27 L27,34 L-27,34 Z" fill="${mixc(m.deep,'#000000',.15)}" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".8"/>`
+      + `<path d="M-2.9,-27 L-1.9,-27 L-23,34 L-27,34 Z" fill="#FFFDF8" opacity=".85"/>`
+      + `<path d="M2.9,-27 L1.9,-27 L23,34 L27,34 Z" fill="#FFFDF8" opacity=".85"/>`
+      + `<g clip-path="url(#${id}roadc)"><g class="a-roadflow"><rect x="-1.7" y="24" width="3.4" height="8" rx="1.2" fill="#FFFDF8"/>
+<rect x="-1.3" y="8" width="2.6" height="6" rx="1" fill="#FFFDF8" opacity=".85"/>
+<rect x="-.9" y="-5" width="1.8" height="4.6" rx=".8" fill="#FFFDF8" opacity=".7"/>
+<rect x="-.6" y="-16" width="1.2" height="3.4" rx=".6" fill="#FFFDF8" opacity=".55"/></g></g>
+<clipPath id="${id}roadc"><path d="M-3.4,-27 L3.4,-27 L27,34 L-27,34 Z"/></clipPath>`
+      + `<rect x="1.2" y="-40" width="1.6" height="13" fill="${mixc(m.mid,m.hi,.4)}"/>`
+      + `<g class="a-hflag"><path d="M2.8,-40 L14,-38.5 L14,-31.5 L2.8,-33 Z" fill="#FFFDF8" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".6"/>`
+      + `<path d="M2.8,-40 L8.4,-39.2 L8.4,-35.7 L2.8,-36.5 Z" fill="#20252B"/>`
+      + `<path d="M8.4,-35.7 L14,-35 L14,-31.5 L8.4,-32.2 Z" fill="#20252B"/></g>`;
+  },
+  /* квартал — гранёный самоцвет */
+  hexcap: (m,id)=>gemHex(30,16.5,m,id)
+    + `<path d="M-9,-22 L2,-24" stroke="${m.hi}" stroke-opacity=".8" stroke-width="2" stroke-linecap="round" fill="none"/>`,
+  /* весь район — кварталы смагничиваются в созвездие */
+  hexgrid: (m,id)=>
+      `<line class="a-mline" x1="0" y1="-16" x2="-15" y2="10" stroke="${m.hi}" stroke-width="1.2"/>`
+    + `<line class="a-mline" x1="0" y1="-16" x2="15" y2="10" stroke="${m.hi}" stroke-width="1.2"/>`
+    + `<line class="a-mline" x1="-15" y1="10" x2="15" y2="10" stroke="${m.hi}" stroke-width="1.2"/>`
+    + `<g class="a-mg1" transform="translate(0,-16)">${gemHex(13,7,m,id)}</g>`
+    + `<g class="a-mg2" transform="translate(-15,10)">${gemHex(13,7,m,id)}</g>`
+    + `<g class="a-mg3" transform="translate(15,10)">${gemHex(13,7,m,id)}</g>`,
+  /* Первопроходец — лаймовый вымпел полощется на древке */
+  flag: (m,id)=>{
+    const c=mixc(m.mid,m.hi,.5);
+    return `<circle cx="-16" cy="-38" r="3.4" fill="${c}"/>`
+      + `<rect x="-17.6" y="-36" width="3.2" height="70" rx="1.6" fill="${c}"/>`
+      + `<path fill="#DFF45F" stroke="#0A0E12" stroke-opacity=".4" stroke-width="1" d="M-14,-34 L28,-25 L-14,-14 Z">`
+      + `<animate attributeName="d" values="M-14,-34 L28,-25 L-14,-14 Z; M-14,-34 L27,-20.5 L-14,-14 Z; M-14,-34 L28,-25 L-14,-14 Z" dur="2.4s" repeatCount="indefinite"/></path>`
+      + `<ellipse cx="-4" cy="36" rx="15" ry="2.6" fill="#0A0E12" opacity=".16"/>`;
+  },
+  /* День города — вечерний город: окна загораются по очереди */
+  city: (m,id)=>{
+    const b1=mixc(m.mid,m.deep,.3), b2=mixc(m.mid,m.hi,.35), b3=mixc(m.mid,m.deep,.12);
+    const win=(x,y,c)=>`<rect class="${c}" x="${x}" y="${y}" width="4.4" height="5.4" rx=".9" fill="#FFE9A8" opacity="0"/>`;
+    return `<rect x="-34" y="-2" width="18" height="36" rx="1.5" fill="${b1}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".8"/>`
+      + `<rect x="-11" y="-26" width="21" height="60" rx="1.5" fill="${b2}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".8"/>`
+      + `<polygon points="-0.5,-38 3.4,-26 -4.4,-26" fill="${b2}"/>`
+      + `<rect x="14" y="6" width="19" height="28" rx="1.5" fill="${b3}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".8"/>`
+      + win(-30,4,'a-w1')+win(-22.5,13,'a-w2')+win(-6,-18,'a-w3')+win(1.5,-7,'a-w4')+win(-6,4,'a-w5')+win(19,12,'a-w6')
+      + `<line x1="-38" y1="34" x2="38" y2="34" stroke="${m.cut}" stroke-width="2" stroke-linecap="round" opacity=".7"/>`;
+  }
+};
+
+/* Игровой чанки-рельеф: почти чёрная тень, горячий свет, тело из светлого металла */
+function emboss2(frag, m, sw){
+  return `<g fill="none" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">`
+       + `<g color="#0A0E12" stroke="currentColor" opacity=".5" transform="translate(1.8,2.4)">${frag}</g>`
+       + `<g color="${m.hi}" stroke="currentColor" opacity=".95" transform="translate(-.9,-1.3)">${frag}</g>`
+       + `<g color="${mixc(m.mid,m.hi,.42)}" stroke="currentColor">${frag}</g></g>`;
+}
+/* Выпуклый рельеф: тень снизу-справа, свет сверху-слева, тело светлее поля */
+function emboss(frag, m, sw){
+  return `<g fill="none" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">`
+       + `<g color="${m.deep}" stroke="currentColor" opacity=".62" transform="translate(1.4,1.9)">${frag}</g>`
+       + `<g color="${m.hi}" stroke="currentColor" opacity=".85" transform="translate(-.7,-1)">${frag}</g>`
+       + `<g color="${mixc(m.mid,m.hi,.24)}" stroke="currentColor">${frag}</g></g>`;
+}
+
+/* ═══ медаль ═══════════════════════════════════════════════ */
+let UID = 0;
+function renderMedal(o){
+  const grain = !!o.grain;
+  const m = METALS[o.tier];
+  const dark = o.tier==='iridium';
+  const id = 'md'+(UID++);
+  const en = o.enamel ? ENAMEL[o.enamel] : null;
+
+  let face = '';
+  const g = GLYPH[o.glyph] || GLYPH.ring;
+  const gm = m;
+  const pt = (o.num!=null||o.year!=null) ? String(o.num!=null?o.num:o.year) : null;
+  const pw = pt ? (pt.length>3?27:22) : 0;
+
+  // эмаль — узкий инкрустированный кант; под плашку в канте вырезано окно,
+  // чтобы плашка не ложилась поверх эмали
+  if(en) face += `<g${pt?` mask="url(#${id}mk)"`:''}>`
+              +  `<path d="${hexPath(39.5)}${hexPath(33.5)}" fill="${en}" fill-rule="evenodd"/>`
+              +  `<path d="${hexPath(39.5)}" fill="none" stroke="#000" stroke-opacity=".34" stroke-width="1.2"/>`
+              +  `<path d="${hexPath(33.5)}" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="1"/>`
+              +  `<path d="${hexPath(38.3)}" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width=".6"/>`
+              +  `<path d="${hexPath(39.5)}${hexPath(33.5)}" fill="url(#${id}eg)" fill-rule="evenodd"/></g>`;
+
+  // надписи по круговым дугам: на дуге буквы не сталкиваются, в отличие от
+  // шестиугольной дорожки с углами; эмалевые медали и так насыщены — им не надо
+  if(!en){
+    face += `<text class="a-arc" font-family="Unbounded,Manrope,sans-serif" font-size="4.2" font-weight="600" letter-spacing="1.6" fill="${m.cut}" fill-opacity=".62"><textPath href="#${id}a1" startOffset="50%" text-anchor="middle">${o.event||CATLABEL[o.cat]||'КВАРТАЛ'}</textPath></text>`;
+  }
+
+  // призрачные лучи — фоновая жизнь в каждой медали (у чемпиона свои)
+  if(o.glyph!=='star') face += ghostRays(m, !!en, dark);
+
+  // тематический слой лимитированных: фон-примета позади эмблемы
+  if(o.deco==='pobeda'){
+    // обелиск со звездой — полупрозрачный, не перетягивает внимание
+    face += `<g opacity=".14" fill="${m.cut}" stroke="none">`
+          + `<path d="M-3.4,9 L-1.9,-20 L1.9,-20 L3.4,9 Z"/>`
+          + `<polygon points="${starPts(5,3,1.3)}" transform="translate(0,-23.4)"/></g>`;
+  }
+
+  // эмблема-иллюстрация занимает почти всё поле; счётчики остаются гравюрой
+  if(EMB[o.glyph]){
+    const esc = o.glyph==='star' ? .56 : (pt ? .38 : (en ? .50 : .52));
+    const ey  = o.glyph==='star' ? 0 : (o.glyph==='star5' ? -10 : (pt ? -8 : 2));
+    face += `<g filter="url(#${id}es)" transform="translate(0,${ey}) scale(${esc})" class="a-g-${o.glyph}"><g class="a-emb"><g class="a-live">${EMB[o.glyph](m,id)}</g></g></g>`;
+  } else if(pt){
+    face += `<g transform="translate(0,-9) scale(.34)" class="a-g-${o.glyph}"><g class="a-emb"><g class="a-live">${emboss2(g, gm, 8)}</g></g></g>`;
+  } else {
+    face += `<g transform="translate(0,1) scale(${en?.44:.50})" class="a-g-${o.glyph}"><g class="a-emb"><g class="a-live">${emboss2(g, gm, 7)}</g></g></g>`;
+  }
+
+  // плашка с цифрой или годом
+  if(pt){
+    const pfs = pt.length>3 ? 12.5 : (pt.length>2 ? 14.5 : 16.5);
+    face += `<g class=\"a-plaque\"><rect x="${-pw}" y="16.6" width="${pw*2}" height="19" rx="7" fill="#0A0E12" opacity=".4"/>`
+          + `<rect x="${-pw}" y="15" width="${pw*2}" height="19" rx="7" fill="url(#${id}pl)"/>`
+          + `<rect x="${-pw}" y="15" width="${pw*2}" height="19" rx="7" fill="none" stroke="url(#${id}nt)" stroke-width="1.2"/>`
+          + `<text x="0" y="28.6" text-anchor="middle" font-family="Unbounded,Manrope,sans-serif" font-size="${pfs}" font-weight="800" letter-spacing="${pt.length>3?0:.5}" fill="url(#${id}nt)" stroke="none">${pt}</text></g>`;
+  }
+
+  // приметы поверх эмблемы — у каждого события свои
+  if(o.deco==='ny'){
+    // падающий снег по сторонам наряженной ёлки
+    face += `<g><animateTransform attributeName="transform" type="translate" values="0 -7; 0 13" dur="7s" repeatCount="indefinite"/>`
+          + `<animate attributeName="opacity" values="0;.75;.75;0" keyTimes="0;.18;.78;1" dur="7s" repeatCount="indefinite"/>`
+          + `<path d="M-22,-20 L-20.7,-16.3 L-17,-15 L-20.7,-13.7 L-22,-10 L-23.3,-13.7 L-27,-15 L-23.3,-16.3 Z" fill="#FFFDF8"/></g>`
+          + `<g><animateTransform attributeName="transform" type="translate" values="0 -10; 0 11" dur="9.5s" begin="2.8s" repeatCount="indefinite"/>`
+          + `<animate attributeName="opacity" values="0;.6;.6;0" keyTimes="0;.2;.8;1" dur="9.5s" begin="2.8s" repeatCount="indefinite"/>`
+          + `<path d="M23,-8.6 L24,-6 L26.6,-5 L24,-4 L23,-1.4 L22,-4 L19.4,-5 L22,-6 Z" fill="#FFFDF8"/></g>`;
+  } else if(o.deco==='pobeda'){
+    // георгиевская лента между эмблемой и плашкой
+    face += `<g stroke="none">`
+          + `<rect x="-14" y="8.8" width="28" height="1.16" fill="#2E2A26"/>`
+          + `<rect x="-14" y="9.96" width="28" height="1.16" fill="#E8722D"/>`
+          + `<rect x="-14" y="11.12" width="28" height="1.16" fill="#2E2A26"/>`
+          + `<rect x="-14" y="12.28" width="28" height="1.16" fill="#E8722D"/>`
+          + `<rect x="-14" y="13.44" width="28" height="1.16" fill="#2E2A26"/></g>`;
+  } else if(o.deco==='ysyakh'){
+    // солнце Ысыаха рядом с сэргэ
+    face += `<g stroke="${m.cut}" stroke-opacity=".65" fill="none" stroke-width="1" stroke-linecap="round">`
+          + `<circle cx="13" cy="-20" r="2.8"/>`
+          + `<g><animateTransform attributeName="transform" type="rotate" values="0 13 -20; 360 13 -20" dur="26s" repeatCount="indefinite"/>`
+          + `<line x1="17.2" y1="-20" x2="18.6" y2="-20"/><line x1="15.1" y1="-23.6" x2="15.8" y2="-24.8"/>`
+          + `<line x1="10.9" y1="-23.6" x2="10.2" y2="-24.8"/><line x1="7.4" y1="-20" x2="8.8" y2="-20"/>`
+          + `<line x1="10.9" y1="-16.4" x2="10.2" y2="-15.2"/><line x1="15.1" y1="-16.4" x2="15.8" y2="-15.2"/></g></g>`;
+  }
+
+  return `<svg viewBox="-58 -58 116 116" role="img" aria-label="${o.name}">
+  <defs>
+    <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${m.hi}"/><stop offset=".26" stop-color="${m.mid}"/>
+      <stop offset=".52" stop-color="${m.hi}" stop-opacity=".85"/><stop offset=".74" stop-color="${m.lo}"/>
+      <stop offset="1" stop-color="${m.deep}"/>
+    </linearGradient>
+    <linearGradient id="${id}r2" x1="1" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="${m.hi}"/><stop offset=".3" stop-color="${m.mid}"/>
+      <stop offset=".72" stop-color="${m.lo}"/><stop offset="1" stop-color="${m.deep}"/>
+    </linearGradient>
+    <radialGradient id="${id}f" cx=".5" cy=".42" r=".78">
+      <stop offset="0" stop-color="${mixc(m.mid,m.deep,.22)}"/>
+      <stop offset=".64" stop-color="${mixc(m.deep,m.lo,.3)}"/>
+      <stop offset="1" stop-color="${mixc(m.deep,'#000000',.28)}"/>
+    </radialGradient>
+    <linearGradient id="${id}pl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E353D"/><stop offset="1" stop-color="#14191E"/>
+    </linearGradient>
+    <linearGradient id="${id}nt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${m.hi}"/><stop offset="1" stop-color="${mixc(m.mid,m.lo,.35)}"/>
+    </linearGradient>
+    <linearGradient id="${id}s" x1="0" y1="0" x2="1" y2=".35">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".42" stop-color="#fff" stop-opacity="${dark?.30:.55}"/>
+      <stop offset=".58" stop-color="#fff" stop-opacity="${dark?.30:.55}"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="${id}c"><path d="${hexPath(50)}"/></clipPath>
+    <clipPath id="${id}c2"><path d="${hexPath(41)}"/></clipPath>
+    ${!en?`<path id="${id}a1" d="M -31,0 A 31,31 0 0 1 31,0" fill="none"/>`:''}
+    <filter id="${id}es" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="1.4" dy="2" stdDeviation=".7" flood-color="#0A0E12" flood-opacity=".5"/></filter>
+    ${(en&&pt)?`<mask id="${id}mk"><rect x="-58" y="-58" width="116" height="116" fill="#fff"/><rect x="${-(pw+3)}" y="12.5" width="${(pw+3)*2}" height="25" rx="9" fill="#000"/></mask>`:''}
+    <radialGradient id="${id}ao"><stop offset="60%" stop-color="${m.deep}" stop-opacity="0"/><stop offset="100%" stop-color="${m.deep}" stop-opacity=".48"/></radialGradient>
+    <radialGradient id="${id}gl"><stop offset="0%" stop-color="${m.hi}" stop-opacity=".32"/><stop offset="72%" stop-color="${m.hi}" stop-opacity="0"/></radialGradient>
+    ${en?`<linearGradient id="${id}eg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".36"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>`:''}
+    ${grain?`<filter id="${id}n" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" result="n"/>
+      <feColorMatrix in="n" type="saturate" values="0" result="d"/>
+      <feComposite operator="in" in="d" in2="SourceGraphic"/>
+    </filter>`:''}
+  </defs>
+
+  <path d="${hexPath(51.4)}" fill="${mixc(m.deep,'#000000',.55)}" opacity=".85"/>
+  <path d="${hexPath(50)}" fill="url(#${id}r)"/>
+  <g opacity=".5">${facets(50, 43.2, m, false)}</g>
+  ${rim(o.cat, m, id+"c")}
+  <path d="${hexPath(43.2)}" fill="url(#${id}r2)"/>
+  <path d="${hexPath(42)}" fill="none" stroke="${m.hi}" stroke-opacity=".25" stroke-width=".6"/>
+  <path d="${hexPath(41)}" fill="url(#${id}f)"/>
+  <path d="${hexPath(41)}" fill="none" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".9"/>
+  <path d="${hexPath(41)}" fill="url(#${id}ao)"/>
+  <circle cx="-5" cy="-8" r="31" fill="url(#${id}gl)"/>
+  <g clip-path="url(#${id}c2)">${guilloche(m, dark, en)}</g>
+  ${face}
+  <g clip-path="url(#${id}c)"><ellipse cx="0" cy="-31" rx="57" ry="34" fill="#fff" opacity="${dark?.07:.12}"/></g>
+  ${(o.tier==='gold'||dark)?hexPts(46.4).map(pt2=>`<circle cx="${pt2[0]}" cy="${pt2[1]}" r="2.4" fill="url(#${id}r)" stroke="#0A0E12" stroke-opacity=".55" stroke-width=".7"/>`).join(''):''}
+  ${dark?`<path d="M-18,-23 L-16.7,-19.3 L-13,-18 L-16.7,-16.7 L-18,-13 L-19.3,-16.7 L-23,-18 L-19.3,-19.3 Z" fill="#fff" opacity=".85"/><path d="M21,-5.6 L22,-3 L24.6,-2 L22,-1 L21,1.6 L20,-1 L17.4,-2 L20,-3 Z" fill="#fff" opacity=".6"/>`:''}
+  <g clip-path="url(#${id}c)"><g class="sheen"><rect x="-19" y="-78" width="34" height="156" fill="url(#${id}s)" transform="rotate(17)"/></g></g>
+  <path d="M${hexPts(50)[5].join(',')}L${hexPts(50)[0].join(',')}L${hexPts(50)[1].join(',')}L${hexPts(50)[2].join(',')}" fill="none" stroke="${m.hi}" stroke-opacity="${dark?.5:.85}" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M${hexPts(50)[2].join(',')}L${hexPts(50)[3].join(',')}L${hexPts(50)[4].join(',')}L${hexPts(50)[5].join(',')}" fill="none" stroke="${m.cut}" stroke-opacity=".45" stroke-width="1.2" stroke-linecap="round"/>
+  ${grain?`<g clip-path="url(#${id}c)" opacity=".07" filter="url(#${id}n)"><rect x="-58" y="-58" width="116" height="116"/></g>`:''}
+</svg>`;
+}
+
+/* ═══ серия ════════════════════════════════════════════════ */
+const SERIES = [
+  {cat:'rhythm', title:'Ритм', rim:'Полированный кант с одной канавкой',
+   note:'Постоянные награды за режим. Приходят сами, если человек просто не бросает.', items:[
+    {name:'Первая цель',      rq:'Дневная цель закрыта впервые', tier:'steel',   glyph:'ring'},
+    {name:'Идеальная неделя', rq:'Семь дней подряд без пропуска', tier:'bronze',  glyph:'week'},
+    {name:'Идеальный месяц',  rq:'Все дни календарного месяца',   tier:'silver',  glyph:'month'},
+    {name:'Идеальный год',    rq:'365 дней без единого пропуска', tier:'gold',    glyph:'year'},
+    {name:'Цель ×2',          rq:'Двойная норма за день',         tier:'bronze',  glyph:'mult', num:'×2'},
+    {name:'Цель ×3',          rq:'Тройная норма за день',         tier:'silver',  glyph:'mult', num:'×3'},
+    {name:'Цель ×5',          rq:'Пятикратная норма за день',     tier:'gold',    glyph:'mult', num:'×5'},
+    {name:'Серия 7',          rq:'Рекорд серии — неделя',         tier:'steel',   glyph:'streak', num:'7'},
+    {name:'Серия 30',         rq:'Рекорд серии — месяц',          tier:'silver',  glyph:'streak', num:'30'},
+    {name:'Серия 100',        rq:'Рекорд серии — сто дней',       tier:'gold',    glyph:'streak', num:'100'},
+    {name:'Серия 365',        rq:'Рекорд серии — год',            tier:'iridium', glyph:'streak', num:'365', enamel:'lime'}
+  ]},
+  {cat:'territory', title:'Территория', rim:'Насечка — 48 зубцов по гурту',
+   note:'То, чего нет ни у кого: награды за захват и удержание кварталов на карте.', items:[
+    {name:'Первый квартал', rq:'Первая захваченная зона',        tier:'steel',   glyph:'hexcap'},
+    {name:'10 кварталов',   rq:'Десять зон за всё время',        tier:'bronze',  glyph:'hexcap', num:'10'},
+    {name:'50 кварталов',   rq:'Пятьдесят зон',                  tier:'silver',  glyph:'hexcap', num:'50'},
+    {name:'100 кварталов',  rq:'Сотня зон',                      tier:'gold',    glyph:'hexcap', num:'100'},
+    {name:'Весь район',     rq:'Все зоны района одновременно',   tier:'iridium', glyph:'hexgrid', enamel:'lime'},
+    {name:'Оборона',        rq:'Зона удержана семь дней',        tier:'bronze',  glyph:'shield', num:'7'},
+    {name:'Перехват',       rq:'Спорная зона отбита у соперника',tier:'silver',  glyph:'swap'},
+    {name:'Ночной захват',  rq:'Зона взята между 00:00 и 05:00', tier:'steel',   glyph:'moon', enamel:'ice'},
+    {name:'Первопроходец',  rq:'Зона, которую не брал никто',    tier:'gold',    glyph:'flag'}
+  ]},
+  {cat:'distance', title:'Дистанция', rim:'Рифление — 18 клиньев',
+   note:'Классика бега плюс две награды, которые может выдать только наш климат.', items:[
+    {name:'Первый бег',    rq:'Первая пробежка в приложении',  tier:'steel',   glyph:'run'},
+    {name:'5 км',          rq:'Пять километров без остановки', tier:'bronze',  glyph:'road', num:'5'},
+    {name:'10 км',         rq:'Десять километров',             tier:'bronze',  glyph:'road', num:'10'},
+    {name:'Полумарафон',   rq:'21,1 км за одну пробежку',      tier:'silver',  glyph:'road', num:'21'},
+    {name:'Марафон',       rq:'42,2 км за одну пробежку',      tier:'gold',    glyph:'road', num:'42'},
+    {name:'100 за месяц',  rq:'Сто километров за календарный месяц', tier:'silver', glyph:'road', num:'100'},
+    {name:'1000 км',       rq:'Тысяча километров за всё время',tier:'iridium', glyph:'road', num:'1000', enamel:'lime'},
+    {name:'Рассвет',       rq:'Пробежка начата до 07:00',      tier:'bronze',  glyph:'sun'},
+    {name:'Полночь',       rq:'Пробежка начата после 23:00',   tier:'silver',  glyph:'moon'},
+    {name:'Мороз −40',     rq:'Пробежка при −40 °C и ниже',    tier:'iridium', glyph:'snow', num:'−40', enamel:'blue'},
+    {name:'100 тренировок',rq:'Сто тренировок любого типа',    tier:'gold',    glyph:'run', num:'100'}
+  ]},
+  {cat:'season', title:'Сезон и лига', rim:'Витой трос — 40 прядей',
+   note:'Итог сезона. Дивизион чеканится в металле — ранг виден без подписи.', items:[
+    {name:'Сезон закрыт',   rq:'Сезон пройден до конца',      tier:'steel',   glyph:'finish'},
+    {name:'Дивизион «Бронза»', rq:'Финиш сезона в бронзе',    tier:'bronze',  glyph:'div'},
+    {name:'Дивизион «Серебро»',rq:'Финиш сезона в серебре',   tier:'silver',  glyph:'div'},
+    {name:'Дивизион «Золото»', rq:'Финиш сезона в золоте',    tier:'gold',    glyph:'div'},
+    {name:'Дивизион «Элита»',  rq:'Высший дивизион сезона',   tier:'iridium', glyph:'div', enamel:'blue'},
+    {name:'Чемпион сезона', rq:'Первое место в дивизионе',    tier:'iridium', glyph:'star', enamel:'lime'},
+    {name:'Клубный кубок',  rq:'Клуб взял сезон',             tier:'gold',    glyph:'cup'}
+  ]},
+  {cat:'limited', title:'Лимитированные', rim:'Бисер и двойная канавка, год в поле',
+   note:'Один день в году, повторно не выдаётся. Имя события — на дуге, у каждого свои приметы; город берётся из GPS пробежки.', items:[
+    {name:'Новый год',   rq:'31 декабря или 1 января: ёлка со звездой и шарами', tier:'silver',  glyph:'fir',   year:'2026', event:'НОВЫЙ ГОД', deco:'ny'},
+    {name:'День Победы', rq:'9 мая, от 9 км: обелиск и георгиевская лента', tier:'gold',    glyph:'star5', year:'2026', event:'ДЕНЬ ПОБЕДЫ', deco:'pobeda'},
+    {name:'Ысыах',       rq:'Региональный праздник: сэргэ и солнце',  tier:'bronze', glyph:'serge', year:'2026', event:'ЫСЫАХ', deco:'ysyakh'},
+    {name:'День города', rq:'Город из GPS: пробежка в Якутске чеканит якутскую', tier:'silver',  glyph:'city',  year:'2026', event:'ЯКУТСК'},
+    {name:'Экодень',     rq:'22 апреля, тренировка на улице',   tier:'iridium', glyph:'leaf',  year:'2026', event:'ЭКОДЕНЬ'},
+    {name:'Забег МАТА',  rq:'Финиш официального забега МАТА',   tier:'gold',    glyph:'mata',  year:'2026', event:'ЗАБЕГ МАТА'}
+  ]}
+];
+
+/* ═══ сборка страницы ══════════════════════════════════════ */
+document.getElementById('hero').innerHTML =
+  renderMedal({name:'Чемпион сезона', cat:'season', tier:'iridium', glyph:'star', enamel:'lime', grain:true});
+
+document.getElementById('rims').innerHTML = SERIES.map(c=>{
+  const sample = {rhythm:{tier:'silver',glyph:'week'}, territory:{tier:'steel',glyph:'hexcap'},
+                  distance:{tier:'bronze',glyph:'run'}, season:{tier:'gold',glyph:'cup'},
+                  limited:{tier:'silver',glyph:'fir',year:'2026'}}[c.cat];
+  return `<div class="rail-item">${renderMedal(Object.assign({name:c.title,cat:c.cat,grain:true},sample))}
+    <div><div class="t">${c.title}</div><div class="d">${c.rim}</div></div></div>`;
+}).join('');
+
+document.getElementById('metals').innerHTML = Object.keys(METALS).map(k=>{
+  const m = METALS[k];
+  return `<div class="rail-item">${renderMedal({name:m.name, cat:'rhythm', tier:k, glyph:'hexcap', grain:true,
+    enamel: k==='iridium' ? 'lime' : null})}
+    <div><div class="t">${m.name}</div><div class="d">${m.note}</div></div></div>`;
+}).join('');
+
+document.getElementById('anatomy').innerHTML =
+  renderMedal({name:'Анатомия', cat:'territory', tier:'gold', glyph:'hexcap', num:'100', grain:true});
+
+document.getElementById('series').innerHTML = SERIES.map(c=>
+  `<div class="cat">
+     <div class="cat-head">
+       <h3>${c.title}</h3><span class="meta">${c.note}</span>
+       <span class="count num">${c.items.length}</span>
+     </div>
+     <div class="grid">${c.items.map(it=>
+        `<div class="medal">${renderMedal(Object.assign({cat:c.cat},it))}
+          <div class="nm">${it.name}</div><div class="rq">${it.rq}</div></div>`).join('')}
+     </div>
+   </div>`).join('');
+
+document.getElementById('states').innerHTML = [
+  {t:'Получена', d:'Полный металл, гильош, блик по наведению.', cls:''},
+  {t:'Закрыта',  d:'Тот же файл под обесцвечивающим фильтром, 42 % непрозрачности.', cls:'locked'},
+  {t:'Новая',    d:'Лаймовая эмаль и тонкий кант — три дня после получения.', cls:'', hl:true}
+].map(s=>`<div class="state"><div class="${s.cls}">${renderMedal({name:s.t, cat:'distance',
+   tier:s.hl?'gold':'silver', glyph:'road', num:'42', enamel:s.hl?'lime':null})}</div>
+   <div><div class="t">${s.t}</div><div class="d">${s.d}</div></div></div>`).join('');
+
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box=document.getElementById('hero');
+  const svg=()=>box.querySelector('svg');
+  svg().style.transition='transform .22s ease-out';
+  box.addEventListener('pointermove',e=>{
+    const r=svg().getBoundingClientRect();
+    const dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
+    svg().style.transform=`perspective(900px) rotateY(${(dx*10).toFixed(2)}deg) rotateX(${(-dy*10).toFixed(2)}deg)`;
+  });
+  box.addEventListener('pointerleave',()=>{ svg().style.transform='none'; });
+})();
+
+/* ═══ реверс: личная гравировка ══════════════════════════ */
+function renderReverse(tier, v, u, sub){
+  const m=METALS[tier]; const dark=tier==='iridium'; const id='mr'+(UID++);
+  let rings='';
+  for(let i=0;i<11;i++){
+    const r=34-i*2.6;
+    rings+=`<circle cx="0" cy="0" r="${r.toFixed(1)}" fill="none" stroke="${dark?m.hi:m.cut}" stroke-opacity="${dark?'.11':'.12'}" stroke-width=".55"/>`;
+  }
+  const vfs = v.length<=4 ? 16 : (v.length<=7 ? 11.5 : 9.5);
+  return `<svg viewBox="-58 -58 116 116" role="img" aria-label="Оборот медали">
+  <defs>
+    <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${m.hi}"/><stop offset=".26" stop-color="${m.mid}"/>
+      <stop offset=".52" stop-color="${m.hi}" stop-opacity=".85"/><stop offset=".74" stop-color="${m.lo}"/>
+      <stop offset="1" stop-color="${m.deep}"/>
+    </linearGradient>
+    <linearGradient id="${id}r2" x1="1" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="${m.hi}"/><stop offset=".3" stop-color="${m.mid}"/>
+      <stop offset=".72" stop-color="${m.lo}"/><stop offset="1" stop-color="${m.deep}"/>
+    </linearGradient>
+    <radialGradient id="${id}f" cx=".5" cy=".42" r=".78">
+      <stop offset="0" stop-color="${mixc(m.mid,m.deep,.22)}"/>
+      <stop offset=".64" stop-color="${mixc(m.deep,m.lo,.3)}"/>
+      <stop offset="1" stop-color="${mixc(m.deep,'#000000',.28)}"/>
+    </radialGradient>
+    <clipPath id="${id}c"><path d="${hexPath(50)}"/></clipPath>
+    <path id="${id}a1" d="M -30,0 A 30,30 0 0 1 30,0" fill="none"/>
+    <path id="${id}a2" d="M -30,0 A 30,30 0 0 0 30,0" fill="none"/>
+    <linearGradient id="${id}pl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E353D"/><stop offset="1" stop-color="#14191E"/>
+    </linearGradient>
+    <linearGradient id="${id}nt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${m.hi}"/><stop offset="1" stop-color="${mixc(m.mid,m.lo,.35)}"/>
+    </linearGradient>
+  </defs>
+  <path d="${hexPath(51.4)}" fill="${mixc(m.deep,'#000000',.55)}" opacity=".85"/>
+  <path d="${hexPath(50)}" fill="url(#${id}r)"/>
+  <path d="${hexPath(45.5)}" fill="none" stroke="${m.cut}" stroke-opacity=".42" stroke-width="1"/>
+  <path d="${hexPath(43.2)}" fill="url(#${id}r2)"/>
+  <path d="${hexPath(41)}" fill="url(#${id}f)"/>
+  <path d="${hexPath(41)}" fill="none" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".9"/>
+  ${rings}
+  <text font-family="Unbounded,Manrope,sans-serif" font-size="4.6" font-weight="600" letter-spacing="1.6" fill="${dark?m.hi:m.cut}" fill-opacity=".62"><textPath href="#${id}a1" startOffset="50%" text-anchor="middle">МАТА · КВАРТАЛ</textPath></text>
+  <rect x="-30" y="-8.4" width="60" height="24" rx="8" fill="#0A0E12" opacity=".4" transform="translate(0,1.6)"/>
+  <rect x="-30" y="-10" width="60" height="24" rx="8" fill="url(#${id}pl)"/>
+  <rect x="-30" y="-10" width="60" height="24" rx="8" fill="none" stroke="url(#${id}nt)" stroke-width="1.2"/>
+  <text x="0" y="3.6" text-anchor="middle" font-family="Unbounded,Manrope,sans-serif" font-size="${vfs}" font-weight="800" letter-spacing="-.3" fill="url(#${id}nt)" stroke="none">${v}</text>
+  <text x="0" y="11.2" text-anchor="middle" font-family="Manrope,sans-serif" font-size="4" font-weight="700" letter-spacing="1.1" fill="url(#${id}nt)" opacity=".8" stroke="none">${u}</text>
+  <text font-family="Manrope,sans-serif" font-size="4.2" font-weight="700" letter-spacing="1" fill="${dark?m.hi:m.cut}" fill-opacity=".62"><textPath href="#${id}a2" startOffset="50%" text-anchor="middle">${sub}</textPath></text>
+  <g clip-path="url(#${id}c)"><ellipse cx="0" cy="-31" rx="57" ry="34" fill="#fff" opacity="${dark?.07:.12}"/></g>
+  <path d="M${hexPts(50)[5].join(',')}L${hexPts(50)[0].join(',')}L${hexPts(50)[1].join(',')}L${hexPts(50)[2].join(',')}" fill="none" stroke="${m.hi}" stroke-opacity="${dark?.5:.85}" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M${hexPts(50)[2].join(',')}L${hexPts(50)[3].join(',')}L${hexPts(50)[4].join(',')}L${hexPts(50)[5].join(',')}" fill="none" stroke="${m.cut}" stroke-opacity=".45" stroke-width="1.2" stroke-linecap="round"/>
+</svg>`;
+}
+
+const FLIPS=[
+  {front:{name:'100 кварталов', cat:'territory', tier:'gold', glyph:'hexcap', num:'100', grain:true},
+   v:'127', u:'ЗОН · ПИК', sub:'12.05.2026 · ЯКУТСК'},
+  {front:{name:'Марафон', cat:'distance', tier:'gold', glyph:'road', num:'42', grain:true},
+   v:'4:12:56', u:'ЛИЧНОЕ ВРЕМЯ', sub:'21.09.2026 · ЯКУТСК'},
+  {front:{name:'День города', cat:'limited', tier:'silver', glyph:'city', year:'2026', event:'ХАБАРОВСК', grain:true},
+   v:'10,2 КМ', u:'ДЕНЬ ГОРОДА', sub:'31.05.2026 · ХАБАРОВСК'}
+];
+document.getElementById('flips').innerHTML = FLIPS.map(f=>
+  `<div class="flipcard medal"><div class="flip-inner"><div class="face">${renderMedal(Object.assign({},f.front))}</div><div class="face f-back">${renderReverse(f.front.tier, f.v, f.u, f.sub)}</div></div><div class="nm">${f.front.name}</div><div class="rq">Нажмите — оборот с личной гравировкой</div></div>`).join('');
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+  document.querySelectorAll('animateTransform, animate').forEach(a=>a.remove());
+}
+document.getElementById('flips').addEventListener('click',e=>{
+  const c=e.target.closest('.flipcard'); if(c) c.classList.toggle('on');
+});
+
+/* каскадное появление: тяжёлый мягкий подъём с расфокусом */
+(function(){
+  const targets=[];
+  document.querySelectorAll('.head,.rail-item,.layer,.state,.spec > div,.verdict li,.flipcard').forEach(el=>targets.push(el));
+  document.querySelectorAll('.grid').forEach(g=>{
+    [...g.children].forEach((el,i)=>{ el.style.setProperty('--d',(i%6)*.06+'s'); targets.push(el); });
+  });
+  targets.forEach(el=>el.classList.add('rv'));
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){ targets.forEach(el=>el.classList.add('in')); return; }
+  const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }),{rootMargin:'0px 0px -8% 0px'});
+  targets.forEach(el=>io.observe(el));
+})();
+
+document.getElementById('sizes').innerHTML = [132,72,44,28].map(px=>
+  `<div class="size"><div style="width:${px}px">${renderMedal({name:px+' px', cat:'season',
+    tier:'gold', glyph:'star'})}</div><span>${px} px</span></div>`).join('');
+</script>
