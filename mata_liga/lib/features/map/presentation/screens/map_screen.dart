@@ -40,6 +40,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
   bool get _hasCarto => _cartoKey.isNotEmpty;
 
   bool _followUser = true;
+
+  // Легенда карты: свёрнута по умолчанию, не закрывает карту.
+
+  bool _legendOpen = false;
   bool _baseMapFailed = false;
   int _tileErrorCount = 0;
   int _tileLayerReloadId = 0;
@@ -187,6 +191,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
               onMapEvent: (e) {
                 if (e is MapEventMove && e.source == MapEventSource.onDrag) {
                   if (_followUser) setState(() => _followUser = false);
+                  if (_legendOpen) setState(() => _legendOpen = false);
                 }
                 // Перезагружаем территории только на РУЧНЫЕ жесты (пан/зум),
                 // но не на программное авто-слежение во время бега — иначе
@@ -344,13 +349,20 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 2, bottom: 4),
-                    child: _Legend(),
-                  ),
-                  // Блок «Сегодня» (Ф2): дивизион, форма недели, окно бега.
+                  // Блок «Сегодня» (Ф2): окно бега · дивизион · неделя —
+                  // сразу под шапкой (раскладка владельца, 01.09).
                   // Во время бега прячется — не мешать.
                   if (runState.status == RunStatus.idle) const _TodayRow(),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 14, top: 2, bottom: 4),
+                    // Легенда сворачиваемая: тап — развернуть, тап по карте
+                    // или пан — свернётся сама. Свёрнутая не закрывает карту.
+                    child: _CollapsibleLegend(
+                      open: _legendOpen,
+                      onToggle: () =>
+                          setState(() => _legendOpen = !_legendOpen),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -514,6 +526,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
 
   /// Тап по карте — паспорт квартала (Ф2): чей, защита, как забрать.
   void _onMapTap(LatLng point) {
+    // Тап по карте сворачивает развёрнутую легенду (следующий тап — паспорт).
+    if (_legendOpen) {
+      setState(() => _legendOpen = false);
+      return;
+    }
     final territories = ref.read(territoryProvider).territories;
     for (final t in territories) {
       for (final ring in t.rings) {
@@ -1144,14 +1161,6 @@ class _KvartalTopLogo extends StatelessWidget {
 class _WeatherChip extends ConsumerWidget {
   const _WeatherChip();
 
-  /// «−2° · окно 18–20» — лучшее окно бега прямо в чипе (Ф2).
-  static String _chipText(String tempText, WeatherData? w) {
-    final hourly = w?.hourly ?? const <HourForecast>[];
-    final win = bestRunWindow(hourly);
-    if (win == null) return tempText;
-    return '$tempText · окно ${win.start.hour}–${win.end.hour}';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(weatherProvider);
@@ -1179,7 +1188,7 @@ class _WeatherChip extends ConsumerWidget {
             ),
             SizedBox(width: 5),
             Text(
-              _chipText(tempText, w),
+              tempText,
               style: Theme.of(
                 context,
               ).textTheme.labelMedium?.copyWith(color: AppColors.ink),
@@ -1198,6 +1207,59 @@ class _WeatherChip extends ConsumerWidget {
 }
 
 // ── Legend ────────────────────────────────────────────────────────────────────
+
+class _CollapsibleLegend extends StatelessWidget {
+  final bool open;
+  final VoidCallback onToggle;
+  const _CollapsibleLegend({required this.open, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onToggle,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topLeft,
+        child: open
+            ? _Legend()
+            // Свёрнутая: компактная плитка 2×2 цветов словаря.
+            : _Glass(
+                padding: const EdgeInsets.all(7),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _dot(AppColors.hexOwned),
+                        const SizedBox(width: 3),
+                        _dot(AppColors.teal),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _dot(AppColors.hexEnemy),
+                        const SizedBox(width: 3),
+                        _dot(AppColors.zoneNeutral),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _dot(Color c) => Container(
+        width: 7,
+        height: 7,
+        decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+      );
+}
 
 class _Legend extends StatelessWidget {
   @override
@@ -1289,9 +1351,12 @@ class _BottomPanel extends StatelessWidget {
     final club = zones.where((z) => z.owner == ZoneOwner.club).length;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: _Glass(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: isRunning ? 12 : 7,
+        ),
         child: isRunning
             ? Row(
                 children: [
@@ -1317,6 +1382,7 @@ class _BottomPanel extends StatelessWidget {
                     value: '$mine',
                     icon: CupertinoIcons.hexagon,
                     color: AppColors.hexOwned,
+                    compact: true,
                   ),
                   _Div(),
                   _Stat(
@@ -1324,13 +1390,15 @@ class _BottomPanel extends StatelessWidget {
                     value: '$enemy',
                     icon: CupertinoIcons.flag,
                     color: AppColors.hexEnemy,
+                    compact: true,
                   ),
                   _Div(),
                   _Stat(
                     label: 'Клуб',
                     value: '$club',
                     icon: CupertinoIcons.person_2,
-                    color: AppColors.success,
+                    color: AppColors.teal,
+                    compact: true,
                   ),
                 ],
               ),
@@ -1343,16 +1411,48 @@ class _Stat extends StatelessWidget {
   final String label, value;
   final IconData? icon;
   final Color? color;
+
+  /// Компактный режим (счётчики зон): панель ниже — карту видно больше.
+  final bool compact;
   const _Stat({
     required this.label,
     required this.value,
     this.icon,
     this.color,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = color ?? AppColors.ink;
+    if (compact) {
+      // Одна строка: иконка · число · подпись.
+      return Expanded(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: c),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: AppTheme.fontDisplay,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: c,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11.5, color: AppColors.muted),
+            ),
+          ],
+        ),
+      );
+    }
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
