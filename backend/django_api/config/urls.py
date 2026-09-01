@@ -41,6 +41,7 @@ from territories import views as territories_views
 from analytics import views as analytics_views
 from config.errors_view import error_detail, errors_console
 from config.onec_log_view import onec_log
+from staff import views as staff_views
 
 urlpatterns = [
     # Конструктор (live-превью + правка + публикация). Отдельные «Превью» убраны.
@@ -62,6 +63,17 @@ urlpatterns = [
     path("admin/storage/", admin_storage, name="admin_storage"),
     path("admin/1c-log/", onec_log, name="onec_log"),
     path("admin/errors/<str:issue_id>/", error_detail, name="error_detail"),
+    # Сотрудники и права (S-12). Тоже ДО admin/ — иначе перехватит catch-all.
+    path("admin/staff/", staff_views.staff_list, name="staff_list"),
+    path("admin/staff/create", staff_views.staff_create, name="staff_create"),
+    path("admin/staff/<int:pk>/", staff_views.staff_member, name="staff_member"),
+    path("admin/staff/<int:pk>/rights", staff_views.staff_rights, name="staff_rights"),
+    path("admin/staff/<int:pk>/action", staff_views.staff_action, name="staff_action"),
+    # Приём приглашения — единственная публичная страница раздела.
+    path("admin/invite/<str:token>/", staff_views.staff_invite, name="staff_invite"),
+    path("admin/no-access/", staff_views.staff_no_access, name="staff_no_access"),
+    # Привязка второго фактора СЕБЕ. Выше admin/2fa/ — иначе путь съест ввод кода.
+    path("admin/2fa/setup/", staff_views.otp_setup, name="staff_otp_setup"),
     # Второй шаг входа должен стоять выше админки, иначе путь перехватит она.
     path("admin/2fa/", admin2fa.verify_view, name="admin-2fa"),
     path("admin/", admin.site.urls),

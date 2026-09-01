@@ -57,7 +57,31 @@ INSTALLED_APPS = [
     "integrations",
     # Тренировки извне: Health Connect, файлы, партнёрские API (Э2 плана лиги).
     "workouts",
+    # Сотрудники админки и их доступ к вкладкам (S-12).
+    "staff",
 ]
+
+# Права сотрудников считаются по вкладкам (S-12). Штатный ModelBackend оставляем:
+# им живут суперпользователь, вход по паролю и старые группы.
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "staff.backends.TabPermissionBackend",
+]
+
+
+def _tab(key):
+    """Показывать пункт меню, только если вкладка открыта этому сотруднику.
+    Импорт внутри — на момент чтения настроек приложения ещё не загружены."""
+    def allowed(request):
+        from staff.access import can
+        return can(getattr(request, "user", None), key)
+    return allowed
+
+
+def _owner_only(request):
+    user = getattr(request, "user", None)
+    return bool(getattr(user, "is_authenticated", False) and user.is_superuser
+                and user.is_active)
 
 # Так админка подписана в приложении-аутентификаторе (D-49).
 OTP_TOTP_ISSUER = "МАТА"
@@ -71,6 +95,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     # Должен идти сразу после аутентификации: добавляет user.is_verified().
     "django_otp.middleware.OTPMiddleware",
+    # Сотрудник без второго фактора и без прав дальше админки не идёт (S-12).
+    "staff.middleware.StaffOnboardingMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Анти-брутфорс формы входа в админку: лимиты DRF её не покрывают (D-39).
@@ -293,7 +319,8 @@ UNFOLD = {
                 "items": [
                     # Дашборд — сводка по экосистеме (заказы, пользователи, баллы, античит…).
                     {"title": "Дашборд", "icon": "space_dashboard",
-                     "link": reverse_lazy("admin:index")},
+                     "link": reverse_lazy("admin:index"),
+                     "permission": _tab("dashboard")},
                 ],
             },
             {
@@ -301,13 +328,17 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {"title": "Товары", "icon": "inventory_2",
-                     "link": reverse_lazy("admin:catalog_product_changelist")},
+                     "link": reverse_lazy("admin:catalog_product_changelist"),
+                     "permission": _tab("catalog.products")},
                     {"title": "Категории", "icon": "category",
-                     "link": reverse_lazy("admin:catalog_category_changelist")},
+                     "link": reverse_lazy("admin:catalog_category_changelist"),
+                     "permission": _tab("catalog.categories")},
                     {"title": "Баннеры", "icon": "image",
-                     "link": reverse_lazy("admin:catalog_banner_changelist")},
+                     "link": reverse_lazy("admin:catalog_banner_changelist"),
+                     "permission": _tab("catalog.banners")},
                     {"title": "Отзывы", "icon": "reviews",
-                     "link": reverse_lazy("admin:catalog_review_changelist")},
+                     "link": reverse_lazy("admin:catalog_review_changelist"),
+                     "permission": _tab("catalog.reviews")},
                 ],
             },
             {
@@ -315,11 +346,14 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {"title": "Заказы", "icon": "shopping_cart",
-                     "link": reverse_lazy("admin:orders_order_changelist")},
+                     "link": reverse_lazy("admin:orders_order_changelist"),
+                     "permission": _tab("orders")},
                     {"title": "Баллы", "icon": "loyalty",
-                     "link": reverse_lazy("admin:loyalty_loyaltytransaction_changelist")},
+                     "link": reverse_lazy("admin:loyalty_loyaltytransaction_changelist"),
+                     "permission": _tab("loyalty")},
                     {"title": "Кроссовки", "icon": "directions_run",
-                     "link": reverse_lazy("admin:shoes_shoeasset_changelist")},
+                     "link": reverse_lazy("admin:shoes_shoeasset_changelist"),
+                     "permission": _tab("shoes")},
                 ],
             },
             {
@@ -327,17 +361,23 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {"title": "Клубы", "icon": "groups",
-                     "link": reverse_lazy("admin:clubs_club_changelist")},
+                     "link": reverse_lazy("admin:clubs_club_changelist"),
+                     "permission": _tab("clubs")},
                     {"title": "Заявки в клуб", "icon": "how_to_reg",
-                     "link": reverse_lazy("admin:clubs_clubjoinrequest_changelist")},
+                     "link": reverse_lazy("admin:clubs_clubjoinrequest_changelist"),
+                     "permission": _tab("clubs")},
                     {"title": "Участники клубов", "icon": "badge",
-                     "link": reverse_lazy("admin:clubs_clubmember_changelist")},
+                     "link": reverse_lazy("admin:clubs_clubmember_changelist"),
+                     "permission": _tab("clubs")},
                     {"title": "Челленджи клубов", "icon": "emoji_events",
-                     "link": reverse_lazy("admin:clubs_clubchallenge_changelist")},
+                     "link": reverse_lazy("admin:clubs_clubchallenge_changelist"),
+                     "permission": _tab("clubs")},
                     {"title": "Пользователи", "icon": "person",
-                     "link": reverse_lazy("admin:accounts_account_changelist")},
+                     "link": reverse_lazy("admin:accounts_account_changelist"),
+                     "permission": _tab("accounts")},
                     {"title": "Уведомления", "icon": "notifications",
-                     "link": reverse_lazy("admin:notifications_notification_changelist")},
+                     "link": reverse_lazy("admin:notifications_notification_changelist"),
+                     "permission": _tab("notifications")},
                 ],
             },
             {
@@ -345,16 +385,19 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {"title": "Забеги (анти-чит)", "icon": "sports_score",
-                     "link": reverse_lazy("admin:runs_run_changelist")},
+                     "link": reverse_lazy("admin:runs_run_changelist"),
+                     "permission": _tab("runs")},
                 ],
             },
             {
                 "title": "Право и согласия",
                 "items": [
                     {"title": "Документы", "icon": "gavel",
-                     "link": reverse_lazy("admin:legal_legaldocument_changelist")},
+                     "link": reverse_lazy("admin:legal_legaldocument_changelist"),
+                     "permission": _tab("legal")},
                     {"title": "Согласия", "icon": "fact_check",
-                     "link": reverse_lazy("admin:legal_userconsent_changelist")},
+                     "link": reverse_lazy("admin:legal_userconsent_changelist"),
+                     "permission": _tab("legal")},
                 ],
             },
             {
@@ -364,7 +407,8 @@ UNFOLD = {
                     # Конструктор = live-превью + правка + публикация (отдельные
                     # страницы «Превью» убраны — конструктор их заменяет).
                     {"title": "Конструктор", "icon": "dashboard_customize",
-                     "link": reverse_lazy("merch_console")},
+                     "link": reverse_lazy("merch_console"),
+                     "permission": _tab("merch")},
                 ],
             },
             {
@@ -373,13 +417,27 @@ UNFOLD = {
                 "items": [
                     # «Вкладка Ошибки» внутри админки (GlitchTip по API, D-32).
                     {"title": "Ошибки", "icon": "bug_report",
-                     "link": reverse_lazy("errors_console")},
+                     "link": reverse_lazy("errors_console"),
+                     "permission": _tab("errors")},
                     # Свободное место на дисках/в БД — наглядно (D-?).
                     {"title": "Диски", "icon": "storage",
-                     "link": reverse_lazy("admin_storage")},
+                     "link": reverse_lazy("admin_storage"),
+                     "permission": _tab("storage")},
                     # История выгрузок из 1С: что и когда пришло (D-62).
                     {"title": "Журнал обмена", "icon": "sync_alt",
-                     "link": reverse_lazy("onec_log")},
+                     "link": reverse_lazy("onec_log"),
+                     "permission": _tab("onec_log")},
+                ],
+            },
+            {
+                "title": "Доступ",
+                "separator": True,
+                "items": [
+                    # Сотрудники и их права (S-12). Пункт виден ТОЛЬКО владельцу:
+                    # правом раздавать права поделиться нельзя.
+                    {"title": "Сотрудники", "icon": "manage_accounts",
+                     "link": reverse_lazy("staff_list"),
+                     "permission": _owner_only},
                 ],
             },
         ],
