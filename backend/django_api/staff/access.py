@@ -89,12 +89,18 @@ def tab_required(key: str, need: str = LEVEL_VIEW):
 
 
 def superuser_required(view):
-    """Только владелец. Отдельно от вкладок: этим правом нельзя поделиться."""
+    """Только владелец. Отдельно от вкладок: этим правом нельзя поделиться.
+
+    Проверяем не «является ли суперпользователем», а «та ли это закреплённая
+    запись» (S-13): случайно всплывший флаг суперпользователя сюда не пустит.
+    """
     @wraps(view)
     def wrapper(request, *args, **kwargs):
+        from .owner import is_owner
+
         user = request.user
         if not (getattr(user, "is_authenticated", False) and user.is_active
-                and user.is_staff and user.is_superuser):
+                and user.is_staff and user.is_superuser and is_owner(user)):
             raise PermissionDenied("Раздел доступен только владельцу")
         return view(request, *args, **kwargs)
     return wrapper
@@ -106,5 +112,6 @@ def nav_permission(key: str):
 
 
 def superuser_only(request) -> bool:
-    user = getattr(request, "user", None)
-    return bool(getattr(user, "is_authenticated", False) and user.is_superuser)
+    from .owner import is_owner
+
+    return is_owner(getattr(request, "user", None))

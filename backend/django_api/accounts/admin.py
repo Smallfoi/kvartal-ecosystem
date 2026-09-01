@@ -115,18 +115,20 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
         )
 
     def get_fieldsets(self, request, obj=None):
+        """Блок «Права доступа» убран у ВСЕХ записей (S-13).
+
+        Раньше галочки «суперпользователь», «сотрудник», группы и права прятались
+        только на своей карточке. Но именно они и были способом обойти всё
+        остальное: поставил галочку — получил полный доступ мимо вкладки
+        «Сотрудники». Теперь доступ сотрудников выдаётся только там, а владелец
+        закреплён по идентификатору записи и в интерфейсе не переназначается.
+        """
         fieldsets = super().get_fieldsets(request, obj)
-        # Свой аккаунт суперпользователя (создатель, «вшитый» админ): прячем управление
-        # правами/группами (он и так суперюзер) и дату регистрации — оставляем только
-        # последний вход. Для чужих аккаунтов (сотрудники) — всё как обычно.
-        own_super = obj is not None and obj.pk == request.user.pk and request.user.is_superuser
-        if not own_super:
-            return fieldsets
         out = []
         for name, opts in fieldsets:
             fields = tuple(opts.get("fields", ()))
-            if any(f in fields for f in ("is_superuser", "user_permissions", "groups")):
-                continue  # убрать блок «Права доступа» целиком
+            if any(f in fields for f in ("is_superuser", "is_staff", "user_permissions", "groups")):
+                continue  # блок прав целиком — не показываем и не принимаем
             if "date_joined" in fields:
                 fields = tuple(f for f in fields if f != "date_joined")  # только последний вход
             if "password" in fields:
@@ -137,9 +139,17 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
             out.append((name, {**opts, "fields": fields}))
         return out
 
+    def has_add_permission(self, request):
+        """Заводить людей — во вкладке «Сотрудники»: там сразу приглашение и права.
+        Здесь создание запрещено, чтобы не появлялись учётные записи в обход неё."""
+        return False
+
     def has_delete_permission(self, request, obj=None):
-        # Себя (суперпользователя-создателя) удалять нельзя — прячем кнопку «Удалить».
-        if obj is not None and obj.pk == request.user.pk:
+        from staff.owner import is_owner
+
+        # Владельца и себя удалять нельзя — иначе одним кликом можно остаться
+        # снаружи навсегда.
+        if obj is not None and (obj.pk == request.user.pk or is_owner(obj)):
             return False
         return super().has_delete_permission(request, obj)
 

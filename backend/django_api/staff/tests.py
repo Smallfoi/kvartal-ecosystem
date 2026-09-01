@@ -168,9 +168,16 @@ class OwnerOnlyTests(Base):
         self.assertEqual(r.status_code, 403)
         self.assertTrue(User.objects.get(pk=other.pk).is_active)
 
-    def test_owner_cannot_manage_another_superuser(self):
+    def test_second_superuser_simply_cannot_exist(self):
+        """С S-13 второго владельца не бывает: флаг снимается при сохранении."""
         boss = User.objects.create_superuser("boss", "b@t.dev", "x")
+        self.assertFalse(User.objects.get(pk=boss.pk).is_superuser)
+
+    def test_superuser_record_is_not_managed_from_the_tab(self):
+        """Если флаг всё же оказался в базе (прямым запросом), вкладка его не трогает."""
+        boss = User.objects.create_user("boss@t.dev", "boss@t.dev", "x", is_staff=True)
         boss_profile = StaffProfile.objects.create(user=boss, full_name="Второй владелец")
+        User.objects.filter(pk=boss.pk).update(is_superuser=True)   # мимо сигнала
         self.login_owner()
         self.assertEqual(self.client.get(f"/admin/staff/{boss_profile.pk}/").status_code, 403)
 

@@ -173,3 +173,35 @@ class StaffAudit(models.Model):
 def _client_ip(request):
     fwd = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
     return fwd or request.META.get("REMOTE_ADDR") or None
+
+
+class OwnerPin(models.Model):
+    """Закреплённый владелец: одна строка на всю систему (S-13).
+
+    Специально не зарегистрирована в админке: закрепление меняется только с
+    сервера (`manage.py mata_owner --set <id>`) или переменной окружения
+    `MATA_OWNER_ID`. Иначе «единственный владелец» переписывался бы парой кликов
+    там же, где его и защищают.
+
+    Закрепляем идентификатор записи, а не почту и не логин: их владелец меняет,
+    а идентификатор — нет.
+    """
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                related_name="+", verbose_name="Владелец")
+    pinned_at = models.DateTimeField(default=timezone.now, verbose_name="Закреплён")
+    note = models.CharField(max_length=200, blank=True, default="",
+                            verbose_name="Пояснение")
+
+    class Meta:
+        verbose_name = "Закреплённый владелец"
+        verbose_name_plural = "Закреплённый владелец"
+
+    def __str__(self):
+        return f"Владелец: id={self.user_id} ({self.user})"
+
+    def save(self, *args, **kwargs):
+        # Строка ровно одна: второй «владелец» — это уже не владелец.
+        if not self.pk:
+            OwnerPin.objects.exclude(user_id=self.user_id).delete()
+        return super().save(*args, **kwargs)

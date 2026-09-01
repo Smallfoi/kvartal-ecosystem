@@ -28,6 +28,14 @@ class StaffOnboardingMiddleware:
     def __call__(self, request):
         path = request.path
         user = getattr(request, "user", None)
+
+        # Правило «суперпользователь — только владелец» проверяем на каждом запросе,
+        # а не только при сохранении записи: если флаг появился в обход Django (SQL,
+        # чужая команда), он не должен продержаться дольше одного обращения.
+        if user is not None and getattr(user, "is_superuser", False):
+            from .owner import enforce
+            enforce(user)
+
         if (path.startswith("/admin")
                 and not path.startswith(_FREE)
                 and user is not None
