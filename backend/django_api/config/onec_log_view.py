@@ -14,6 +14,7 @@ from django.template.response import TemplateResponse
 from django.utils import timezone
 
 from integrations.models import OneCExchange
+from staff.access import tab_required
 
 PAGE_SIZE = 200
 
@@ -32,6 +33,7 @@ def _hours_since(dt):
 
 
 @staff_member_required
+@tab_required("onec_log")
 def onec_log(request):
     op = (request.GET.get("op") or "all").strip()
     status = (request.GET.get("status") or "all").strip()

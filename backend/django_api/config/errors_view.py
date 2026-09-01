@@ -6,6 +6,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.template.response import TemplateResponse
 
 from common import glitchtip
+from staff.access import tab_required
 
 
 # Уровни-«проблемы» (ошибки) vs информационные — разделяем в разные вкладки.
@@ -17,6 +18,7 @@ def _is_err(issue):
 
 
 @staff_member_required
+@tab_required("errors")
 def errors_console(request):
     q = (request.GET.get("q") or "").strip()
     status = request.GET.get("status") or "unresolved"
@@ -57,6 +59,7 @@ def errors_console(request):
 
 
 @staff_member_required
+@tab_required("errors")
 def error_detail(request, issue_id):
     """Карточка ошибки прямо в админке: стек-трейс, крошки, теги, контекст."""
     issue, err1 = glitchtip.fetch_issue(issue_id)

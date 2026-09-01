@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Доступ не настроен · МАТА</title>
+  {# Сотрудник вошёл, но вкладок ему пока не выдали. Сводку по экосистеме не показываем. #}
+  <style>
+    :root{color-scheme:light}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;
+      background:linear-gradient(180deg,#e8eef2 0%,#f4f1ea 100%);
+      font-family:Manrope,ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;color:#111317}
+    .card{width:100%;max-width:420px;background:#fff;border-radius:18px;padding:28px 26px;
+      box-shadow:0 24px 60px rgba(32,37,43,.14);text-align:center}
+    .brand{font-size:11px;letter-spacing:.28em;color:#9aa0a6;font-weight:700;margin:0 0 18px}
+    h1{font-size:20px;margin:0 0 8px;font-weight:800}
+    p{font-size:13.5px;color:#6f7278;margin:0 0 8px;line-height:1.55}
+    a{display:inline-block;margin-top:14px;font-size:13.5px;color:#167a95;font-weight:700;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="brand">МАТА · КОНСОЛЬ</p>
+    <h1>Доступ пока не настроен</h1>
+    <p>Здравствуйте, {{ name }}. Учётная запись работает, но разделы вам ещё не открыли.</p>
+    <p>Напишите владельцу — он выдаст нужные вкладки, и они появятся в меню слева.</p>
+    <a href="/admin/logout/">Выйти</a>
+  </div>
+</body>
+</html>

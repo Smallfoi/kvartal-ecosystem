@@ -10,6 +10,9 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
+from staff.access import tab_required
+from staff.models import LEVEL_EDIT
+
 
 # ── Конструктор витрины (мерчендайзинг) ──────────────────────────────────────
 # Данные товара ОБЩИЕ (одна запись), а порядок раскладки РАЗДЕЛЬНЫЙ по площадкам
@@ -71,6 +74,7 @@ def _merch_json(p):
 
 
 @staff_member_required
+@tab_required("merch")
 def merch_console(request):
     """«Конструктор витрины»: перетаскивание порядка товаров раздельно для сайта и
     приложения + правка товара (цена/старая цена/описание/наличие/публикация) прямо в
@@ -88,6 +92,7 @@ def merch_console(request):
 
 
 @staff_member_required
+@tab_required("merch")
 @require_http_methods(["GET"])
 def merch_products(request):
     """Список товаров для конструктора в порядке выбранной площадки."""
@@ -100,6 +105,7 @@ def merch_products(request):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_reorder(request):
     """Сохранить новый порядок для площадки: {platform, order:[id,...]} → sort_site/app."""
@@ -119,6 +125,7 @@ def merch_reorder(request):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_product(request, pid):
     """Правка ЦЕНТРАЛЬНОГО товара (меняется на всех площадках)."""
@@ -208,6 +215,7 @@ def _delete_media_url(url):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_site_content(request):
     """Правка текста блока сайта: {key, value} → SiteContent (публикуется на сайт)."""
@@ -239,6 +247,7 @@ def merch_site_content(request):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_site_image(request):
     """Замена фото блока сайта: multipart image + key → SiteContent.image."""
@@ -308,6 +317,7 @@ def _webify_image(f):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_site_video(request):
     """Загрузка короткого видео на фон блока: multipart video → сохраняем в
@@ -438,6 +448,7 @@ def _apply_banner_fields(b, post, files):
 
 
 @staff_member_required
+@tab_required("merch")
 @require_http_methods(["GET"])
 def merch_banners(request):
     """Список баннеров для конструктора в порядке выбранной площадки."""
@@ -450,6 +461,7 @@ def merch_banners(request):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_banner_create(request):
     """Создать баннер (multipart: title/subtitle/action/isPublished + image)."""
@@ -473,6 +485,7 @@ def merch_banner_create(request):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_banner(request, bid):
     """Правка баннера (multipart, image опционально)."""
@@ -490,6 +503,7 @@ def merch_banner(request, bid):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_banner_delete(request, bid):
     """Удалить баннер."""
@@ -502,6 +516,7 @@ def merch_banner_delete(request, bid):
 
 
 @staff_member_required
+@tab_required("merch", LEVEL_EDIT)
 @require_http_methods(["POST"])
 def merch_banner_reorder(request):
     """Порядок баннеров для площадки: {platform, order:[id,...]} → sort_site/app."""
@@ -521,6 +536,7 @@ def merch_banner_reorder(request):
 
 
 @staff_member_required
+@tab_required("storage")
 @require_http_methods(["GET"])
 def admin_storage(request):
     """Свободное место: диски (ФС) + размер БД + вес загрузок — наглядно, чтобы владелец
