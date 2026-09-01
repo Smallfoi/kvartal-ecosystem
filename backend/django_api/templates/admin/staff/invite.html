@@ -26,6 +26,9 @@
       padding:11px 13px;border-radius:11px;margin:0 0 18px;line-height:1.45}
     .rules{font-size:11.5px;color:#9aa0a6;margin:14px 0 0;line-height:1.5}
     .done{font-size:14px;color:#15803d;font-weight:600}
+    .warn{background:#fff6e5;border:1px solid #f5d99a;color:#7a5b12;font-size:12.5px;
+      padding:11px 13px;border-radius:11px;margin:0 0 18px;line-height:1.5}
+    .warn b{color:#5c4409}
     a.go{display:inline-block;margin-top:16px;font-size:14px;color:#167a95;font-weight:700;text-decoration:none}
     .foot{text-align:center;font-size:11px;letter-spacing:.16em;color:#b6bcc2;margin-top:18px}
   </style>
@@ -37,8 +40,15 @@
 
       {% if done %}
         <h1>Пароль сохранён</h1>
-        <p class="sub">Теперь войдите в админку. При первом входе понадобится привязать
-          приложение-аутентификатор — это одна страница, всё объяснено на месте.</p>
+        <p class="sub">Логин для входа — <b>{{ login }}</b>. При первом входе понадобится
+          привязать приложение-аутентификатор: это одна страница, всё объяснено на месте.</p>
+        {% if was %}
+        <div class="warn">
+          В этом браузере была открыта админка под <b>{{ was }}</b> — мы из неё вышли.
+          Иначе страница входа молча пустила бы обратно эту же учётную запись, и вы
+          увидели бы админку её глазами, а не глазами сотрудника.
+        </div>
+        {% endif %}
         <p class="done">Готово</p>
         <a class="go" href="/admin/login/">Перейти ко входу →</a>
 
@@ -52,6 +62,12 @@
           Вас пригласили в админку МАТА. Придумайте пароль — он будет известен только вам,
           владелец его не увидит. Ссылка одноразовая.
         </p>
+        {% if current %}
+        <div class="warn">
+          Сейчас в этом браузере открыта админка под <b>{{ current }}</b>. После сохранения
+          пароля мы из неё выйдем — иначе вход вернул бы вас в ту же учётную запись.
+        </div>
+        {% endif %}
         {% if error %}<div class="err">{{ error }}</div>{% endif %}
         <form method="post" autocomplete="off">
           {% csrf_token %}
