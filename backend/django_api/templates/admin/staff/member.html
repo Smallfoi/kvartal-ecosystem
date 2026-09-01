@@ -39,6 +39,12 @@
   .sm-link button{padding:9px 15px;border:0;border-radius:9px;background:#065f46;color:#fff;font-weight:600;cursor:pointer;font-size:13px}
   .sm-note{font-size:11.5px;color:#6b7280;margin-top:8px}
   .sm-audit{font-size:12.5px;color:#6b7280}
+  .seen{display:flex;gap:8px;flex-wrap:wrap}
+  .seen-i{display:inline-flex;align-items:baseline;gap:6px;padding:7px 13px;border-radius:999px;
+    background:#f1f5f9;font-size:12.5px;color:#475569}
+  .dark .seen-i{background:#0f172a;color:#cbd5e1}
+  .seen-i b{font-size:13px;color:#111;font-weight:700}
+  .dark .seen-i b{color:#e2e8f0}
   .sm-audit div{padding:5px 0;border-bottom:1px solid #f1f2f4}
   .dark .sm-audit div{border-color:#2b3240}
 </style>
@@ -79,6 +85,28 @@
     <div class="sm-note">Передайте лично. Пароль сотрудник задаст себе сам — вам он не виден.</div>
   </div>
   {% endif %}
+
+  <div class="sm-card">
+    <h2>Что ему видно</h2>
+    {% if granted %}
+    <p class="sm-hint" style="margin-bottom:12px">
+      Ровно это и ничего сверх: остальные разделы не появятся в меню и не откроются
+      по прямой ссылке.
+    </p>
+    <div class="seen">
+      {% for g in granted %}<span class="seen-i"><b>{{ g.title }}</b>{{ g.level|lower }}</span>{% endfor %}
+    </div>
+    {% else %}
+    <p class="sm-hint" style="margin:0">
+      Пока ничего: войдёт и увидит страницу «доступ не настроен». Выдайте вкладки ниже.
+    </p>
+    {% endif %}
+    <p class="sm-hint" style="margin:14px 0 0">
+      <b>Проверять — только в отдельном окне («инкогнито»).</b> Если открыть вход в этом же
+      браузере, вы уже вошли как владелец, и админка покажет ВАШИ права, а не его —
+      будет казаться, что ограничения не работают.
+    </p>
+  </div>
 
   {% if not has_2fa %}
   <div class="sm-card" style="border-color:#f5d99a;background:#fff6e5">

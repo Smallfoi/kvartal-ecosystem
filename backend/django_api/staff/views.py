@@ -16,7 +16,7 @@ import re
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, logout as auth_logout
 from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -168,11 +168,16 @@ def staff_member(request, pk: int):
             "title": group_title,
             "tabs": [{"tab": t, "level": current.get(t.key, LEVEL_NONE)} for t in tabs],
         })
+    # Сводка «что ему видно» — чтобы проверить доступ, не входя под сотрудником.
+    names = dict(LEVELS)
+    granted = [{"title": t.title, "level": names[current[t.key]]}
+               for t in TABS if current.get(t.key, LEVEL_NONE) != LEVEL_NONE]
     return TemplateResponse(request, "admin/staff/member.html", _ctx(
         request,
         title=profile.full_name,
         profile=profile,
         blocks=blocks,
+        granted=granted,
         levels=LEVELS,
         has_2fa=_has_device(profile.user),
         audit=StaffAudit.objects.filter(target=profile.user)[:15],
@@ -267,8 +272,14 @@ def staff_invite(request, token: str):
                      "Попросите владельца выдать новую.",
         }, status=404)
 
+    # Кто сейчас открыт в этом браузере. Если владелец принимает приглашение из
+    # своего окна, он останется в СВОЕЙ сессии и увидит админку своими глазами —
+    # именно так и рождается вывод «права не работают». Предупреждаем заранее.
+    current = request.user.get_username() if request.user.is_authenticated else ""
+
     if request.method == "GET":
-        return render(request, "admin/staff/invite.html", {"profile": profile})
+        return render(request, "admin/staff/invite.html",
+                      {"profile": profile, "current": current})
 
     p1 = request.POST.get("password1") or ""
     p2 = request.POST.get("password2") or ""
@@ -279,14 +290,21 @@ def staff_invite(request, token: str):
         validate_password(p1, user=profile.user, password_validators=_password_rules())
     except ValidationError as e:
         return render(request, "admin/staff/invite.html",
-                      {"profile": profile, "error": " ".join(e.messages)})
+                      {"profile": profile, "current": current, "error": " ".join(e.messages)})
 
     with transaction.atomic():
         profile.user.set_password(p1)
         profile.user.save(update_fields=["password"])
         profile.accept_invite()
     StaffAudit.write(request, "Приглашение принято, пароль задан", target=profile.user)
-    return render(request, "admin/staff/invite.html", {"done": True})
+
+    # Закрываем чужую сессию в этом браузере. Иначе следующая же страница входа
+    # молча пустит того, кто был открыт раньше (Django пропускает уже вошедшего
+    # мимо формы), и человек будет уверен, что вошёл сотрудником.
+    if current:
+        auth_logout(request)
+    return render(request, "admin/staff/invite.html",
+                  {"done": True, "was": current, "login": profile.user.get_username()})
 
 
 # ─────────────────────────── Второй фактор (свой) ──────────────────────────

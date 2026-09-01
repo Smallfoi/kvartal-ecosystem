@@ -327,3 +327,44 @@ class OnboardingTests(Base):
         self.client.post("/admin/2fa/setup/", {"code": "000000", "user": self.owner.pk})
         self.assertFalse(TOTPDevice.objects.filter(user=self.owner, confirmed=False).exists())
         self.assertTrue(TOTPDevice.objects.filter(user=self.staff).exists())
+
+
+class InviteSessionTests(Base):
+    """Приглашение не должно оставлять чужую сессию — иначе «права не работают».
+
+    Реальный случай: владелец принял приглашение в своём окне, нажал «войти» и
+    попал в админку под собой (Django пускает уже вошедшего мимо формы). Выглядит
+    как полный доступ у сотрудника, хотя сотрудник не входил ни разу.
+    """
+
+    def test_owner_session_is_closed_after_accepting(self):
+        self.login_owner()
+        token = self.profile.issue_invite()
+        r = self.client.post(f"/admin/invite/{token}/",
+                             {"password1": "Kvartal-Osen-2026", "password2": "Kvartal-Osen-2026"})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "мы из неё вышли")
+        # Сессия владельца закрыта: страница входа теперь покажет форму, а не админку.
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_open_invite_warns_about_current_session(self):
+        self.login_owner()
+        token = self.profile.issue_invite()
+        r = self.client.get(f"/admin/invite/{token}/")
+        self.assertContains(r, "открыта админка под")
+
+    def test_anonymous_accept_needs_no_warning(self):
+        token = self.profile.issue_invite()
+        r = self.client.post(f"/admin/invite/{token}/",
+                             {"password1": "Kvartal-Osen-2026", "password2": "Kvartal-Osen-2026"})
+        self.assertNotContains(r, "мы из неё вышли")
+
+    def test_member_card_lists_what_he_sees(self):
+        self.grant("orders", LEVEL_EDIT)
+        self.grant("onec_log", LEVEL_VIEW)
+        self.login_owner()
+        r = self.client.get(f"/admin/staff/{self.profile.pk}/")
+        self.assertContains(r, "Что ему видно")
+        self.assertContains(r, "Заказы")
+        self.assertContains(r, "Журнал обмена")
+        self.assertEqual(len(r.context["granted"]), 2)
