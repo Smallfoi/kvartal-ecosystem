@@ -1,27 +1,24 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../celebration/medal_ceremony.dart';
-import '../../../loyalty/data/loyalty_provider.dart';
-import '../../../run/data/completed_runs_provider.dart';
-import '../../data/badge_defs.dart';
+import '../../../medals/data/medal_defs.dart';
+import '../../../medals/data/medals_provider.dart';
+import '../../../medals/presentation/medal_detail.dart';
+import '../../../medals/presentation/medal_widgets.dart';
 
-/// Трофейный зал (Ф4 «Статус бегуна», утверждено 31.08.2026).
+/// Трофейный зал — «Штамп МАТА» (утверждено 01.09.2026, D-64).
 ///
-/// Медали — плиты; открытые лаймовые, закрытые показывают полосу прогресса.
-/// Тап по открытой — повтор церемонии (Вариант A). Накопленное не отнимается.
+/// 44 награды пятью сериями. Открытые — полный металл, закрытые — тот же
+/// штамп под обесцвечиванием (42 %), новые три дня носят лаймовый кант.
+/// Тап — карточка с чеканкой; у полученных — оборот с личной гравировкой.
 class TrophyScreen extends ConsumerWidget {
   const TrophyScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final runs = ref.watch(completedRunsProvider);
-    final loyalty = ref.watch(loyaltyProvider);
-    final facts = BadgeFacts.fromRuns(runs, balance: loyalty.balance);
-    final unlockedCount = kBadgeDefs.where((d) => d.unlocked(facts)).length;
+    final medals = ref.watch(medalsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -30,143 +27,175 @@ class TrophyScreen extends ConsumerWidget {
         title: const Text('Трофейный зал'),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 12),
-              child: Text(
-                'Открыто $unlockedCount из ${kBadgeDefs.length} · '
-                'накопленное не отнимается',
-                style: TextStyle(fontSize: 13, color: AppColors.muted),
-              ),
-            ),
-            for (final def in kBadgeDefs) ...[
-              _TrophyRow(def: def, facts: facts),
-              const SizedBox(height: 10),
-            ],
-          ],
+        child: medals.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) =>
+              _Offline(onRetry: () => ref.invalidate(medalsProvider)),
+          data: (list) => _Hall(list: list),
         ),
       ),
     );
   }
 }
 
-class _TrophyRow extends StatelessWidget {
-  final BadgeDef def;
-  final BadgeFacts facts;
-
-  const _TrophyRow({required this.def, required this.facts});
+class _Hall extends StatelessWidget {
+  final List<MedalFull> list;
+  const _Hall({required this.list});
 
   @override
   Widget build(BuildContext context) {
-    final unlocked = def.unlocked(facts);
-    final (cur, target) = def.progress(facts);
-    final frac = (cur / target).clamp(0.0, 1.0);
-
-    return Material(
-      color: AppColors.paper,
-      borderRadius: BorderRadius.circular(AppTheme.rSm),
-      child: InkWell(
-        onTap: unlocked ? () => showMedalCeremony(context, badge: def) : null,
-        borderRadius: BorderRadius.circular(AppTheme.rSm),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.rSm),
-            border: Border.all(
-              color: unlocked ? AppColors.limeDeep : AppColors.line,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Плита медали.
-              Container(
-                width: 52,
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: unlocked ? AppColors.lime : AppColors.soft,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Icon(
-                  def.icon,
-                  size: 24,
-                  color: unlocked
-                      ? const Color(0xFF171C19)
-                      : AppColors.disabled,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      def.title,
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontDisplay,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      def.reason,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: AppColors.muted,
-                      ),
-                    ),
-                    if (!unlocked) ...[
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: frac,
-                          minHeight: 5,
-                          backgroundColor: AppColors.soft,
-                          valueColor: AlwaysStoppedAnimation(
-                            AppColors.limeDeep,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _progressLabel(cur, target),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.faint,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (unlocked) ...[
-                const SizedBox(width: 8),
-                Icon(
-                  CupertinoIcons.play_circle,
-                  size: 20,
-                  color: AppColors.accentInk,
-                ),
-              ],
-            ],
+    final earned = list.where((m) => m.earned).length;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 14),
+          child: Text(
+            'Штамп МАТА · открыто $earned из ${list.length} · '
+            'накопленное не отнимается',
+            style: TextStyle(fontSize: 13, color: AppColors.muted),
           ),
         ),
+        for (final cat in MedalCat.values) ...[
+          _CatSection(
+            cat: cat,
+            medals: [
+              for (final m in list)
+                if (m.def.cat == cat) m,
+            ],
+          ),
+          const SizedBox(height: 18),
+        ],
+      ],
+    );
+  }
+}
+
+class _CatSection extends StatelessWidget {
+  final MedalCat cat;
+  final List<MedalFull> medals;
+  const _CatSection({required this.cat, required this.medals});
+
+  @override
+  Widget build(BuildContext context) {
+    final earned = medals.where((m) => m.earned).length;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(AppTheme.rSm),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  cat.title,
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontDisplay,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              Text(
+                '$earned / ${medals.length}',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: earned > 0 ? AppColors.accentInk : AppColors.faint,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            cat.note,
+            style: TextStyle(
+              fontSize: 11.5,
+              height: 1.35,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: medals.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 10,
+              childAspectRatio: .8,
+            ),
+            itemBuilder: (context, i) => _MedalCell(medal: medals[i]),
+          ),
+        ],
       ),
     );
   }
+}
 
-  static String _progressLabel(double cur, double target) {
-    String f(double v) => v == v.roundToDouble()
-        ? v.toStringAsFixed(0)
-        : v.toStringAsFixed(1);
-    return '${f(cur.clamp(0, target))} из ${f(target)}';
+class _MedalCell extends StatelessWidget {
+  final MedalFull medal;
+  const _MedalCell({required this.medal});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => showMedalDetail(context, medal),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, box) => MedalImage(
+                def: medal.def,
+                earned: medal.earned,
+                isNew: medal.state.isNew,
+                size: box.maxHeight,
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            medal.def.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: medal.earned ? AppColors.ink : AppColors.faint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Offline extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _Offline({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Зал наград не открылся — нет связи',
+            style: TextStyle(fontSize: 13.5, color: AppColors.muted),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(onPressed: onRetry, child: const Text('Повторить')),
+        ],
+      ),
+    );
   }
 }

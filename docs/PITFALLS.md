@@ -938,3 +938,31 @@ yc порезал. На ВМ: `sudo sed -n '...' /opt/mata-deploy.sh` покаж
 --noinput`. Так же гоняет и CI (`python manage.py test --verbosity 2`), поэтому зелёный
 последовательный прогон — это и есть настоящая проверка. В CI Redis нет (LocMem у каждого
 процесса свой), так что там проблема не проявляется.
+
+## `docker compose ps` врёт: контейнер running, а Django внутри мёртв
+
+02.09.2026: параллельная сессия переключила ветку в основном чекауте, autoreloader
+dev-сервера поймал дерево на полпути (`views.py` уже импортировал модуль, файла ещё
+не было) — `django-main-thread` упал, но контейнер `web` остался `running`.
+`docker compose ps` показывает всё зелёным. **Живость проверять ТОЛЬКО
+`GET /v1/health`**; упал — `docker compose restart web`.
+
+Следствие для параллельных сессий: bind-mount `./django_api:/app` означает, что
+:8000 всегда сервит ТЕКУЩУЮ ветку чекаута. Тесты и ручки СВОЕЙ ветки гонять через
+отдельный контейнер с worktree: `docker compose run --rm --no-deps
+-v <worktree>/backend/django_api:/app web python manage.py test <app>` — живой
+web при этом не трогается. После D-61 живой :8000 нужен ещё и телефону владельца
+(«Лига» debug ходит только на локалку) — не оставлять его лежачим.
+
+## Экспорт SVG-эталона в ассеты: XML строже HTML
+
+Медали «Штамп МАТА» выгружались из `docs/design/medals/shtamp-mata.html` браузером
+(canvas → WebP): рендерим `renderMedal()` как **standalone** SVG в `Image`. Грабли:
+- без `xmlns="http://www.w3.org/2000/svg"` standalone-SVG молча не грузится (onerror);
+- дубли атрибутов (`stroke-opacity` дважды) HTML прощает, XML-парсер — нет.
+  Лечение: строку прогнать через HTML-парсер и сериализовать назад
+  (`div.innerHTML = svg; new XMLSerializer().serializeToString(...)`) — дубли уходят;
+- шрифты для SVG-в-Image должны быть инлайн `@font-face` с data:-URI (внешние не
+  загружаются); Google Fonts css2 + fetch woff2 → base64 работает;
+- CSS-классы страницы (`.sheen` и чеканка) в standalone не действуют: блик-«sheen»
+  ВЫРЕЗАТЬ из экспорта, иначе статичная белая полоса поверх медали.

@@ -30,6 +30,7 @@ from config.admin_views import (
 )
 from notifications import views as notif_views
 from league import views as league_views
+from medals import views as medals_views
 from trails import views as trails_views
 from legal import views as legal_views
 from runs import views as runs_views
@@ -90,6 +91,8 @@ urlpatterns = [
     path("v1/account/delete", account_views.delete_account),
     path("v1/me/stats", account_views.me_stats),
     path("v1/me/digest", account_views.me_digest),
+    # Награды «Штамп МАТА» (D-64): состояние 44 медалей + ленивая выдача.
+    path("v1/me/medals", medals_views.me_medals),
     # Продуктовая аналитика (D-30): приём клиентских событий.
     path("v1/events", analytics_views.events),
     path("v1/loyalty/", include("loyalty.urls")),
