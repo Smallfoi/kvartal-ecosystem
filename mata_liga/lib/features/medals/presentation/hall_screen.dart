@@ -261,11 +261,12 @@ class _HeroPage extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, box) {
         // Компактные экраны — ужимаем медаль, чтобы зал не скроллился.
-        final medalSize = math.min(216.0, box.maxHeight - 210);
+        final medalSize = math.min(224.0, box.maxHeight - 170);
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Медаль парит над пьедесталом; тап — оборот с гравировкой.
+            // Медаль просто парит в луче — без пьедестала и отражения
+            // (упрощение по слову владельца, 02.09). Тап — оборот.
             AnimatedBuilder(
               animation: float,
               builder: (context, child) => Transform.translate(
@@ -277,41 +278,7 @@ class _HeroPage extends StatelessWidget {
               ),
               child: MedalFlip(medal: medal, size: medalSize),
             ),
-            // Пьедестал — сплюснутый шестигранник с лаймовой кромкой.
-            Transform.translate(
-              offset: const Offset(0, -6),
-              child: const CustomPaint(
-                size: Size(232, 54),
-                painter: _PedestalPainter(),
-              ),
-            ),
-            // Отражение в полированном полу.
-            Opacity(
-              opacity: .17,
-              child: ClipRect(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  heightFactor: .3,
-                  child: ShaderMask(
-                    blendMode: BlendMode.dstIn,
-                    shaderCallback: (r) => const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xD9000000), Color(0x00000000)],
-                    ).createShader(r),
-                    child: Transform.flip(
-                      flipY: true,
-                      child: MedalImage(
-                        def: medal.def,
-                        earned: true,
-                        size: 180,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 26),
             Text(
               medal.def.name,
               style: const TextStyle(
@@ -375,13 +342,6 @@ class _EmptyHero extends StatelessWidget {
               child: const CustomPaint(
                 size: Size(150, 168),
                 painter: _DashedHexPainter(),
-              ),
-            ),
-            Transform.translate(
-              offset: const Offset(0, 8),
-              child: const CustomPaint(
-                size: Size(232, 54),
-                painter: _PedestalPainter(),
               ),
             ),
             const SizedBox(height: 26),
@@ -590,7 +550,7 @@ class _Offline extends StatelessWidget {
 
 // ── художники зала ───────────────────────────────────────────────────────────
 
-/// Луч прожектора: трапеция света сверху к пьедесталу + редкие пылинки.
+/// Луч прожектора: трапеция света сверху к медали + редкие пылинки.
 class _BeamPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -628,70 +588,6 @@ class _BeamPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BeamPainter oldDelegate) => false;
-}
-
-/// Сплюснутый шестигранник-пьедестал с лаймовой светящейся кромкой.
-class _PedestalPainter extends CustomPainter {
-  const _PedestalPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    final hex = Path()
-      ..moveTo(w * .22, 0)
-      ..lineTo(w * .78, 0)
-      ..lineTo(w, h * .5)
-      ..lineTo(w * .78, h)
-      ..lineTo(w * .22, h)
-      ..lineTo(0, h * .5)
-      ..close();
-    canvas.drawPath(
-      hex,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF262E37), Color(0xFF14181D)],
-        ).createShader(Offset.zero & size),
-    );
-    // Светящаяся верхняя кромка.
-    final rim = Path()
-      ..moveTo(w * .22, 0)
-      ..lineTo(w * .78, 0);
-    canvas.drawPath(
-      rim,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.4
-        ..strokeCap = StrokeCap.round
-        ..color = _hallLime.withValues(alpha: .6)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
-    );
-    canvas.drawPath(
-      rim,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..strokeCap = StrokeCap.round
-        ..color = _hallLime.withValues(alpha: .85),
-    );
-    // Холодный блик по верхним граням.
-    final top = Path()
-      ..moveTo(0, h * .5)
-      ..lineTo(w * .22, 0)
-      ..moveTo(w * .78, 0)
-      ..lineTo(w, h * .5);
-    canvas.drawPath(
-      top,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = const Color(0xFFEDEFE8).withValues(alpha: .14),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _PedestalPainter oldDelegate) => false;
 }
 
 /// Пунктирный шестигранник — место, которое ждёт медаль.
