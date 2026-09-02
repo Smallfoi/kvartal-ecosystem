@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 
-from catalog.models import Product
+from catalog.models import Category, Product
 from integrations.models import OneCExchange
 
 TOKEN = "test-1c-token"
@@ -16,6 +16,9 @@ AUTH = {"HTTP_AUTHORIZATION": f"Bearer {TOKEN}"}
 class OneCLogTests(TestCase):
     def setUp(self):
         cache.clear()   # счётчик «не чаще раза в 5 минут» не должен течь между тестами
+        # Категория из выгрузок ниже: без неё обмен честно помечается «с замечаниями»
+        # (товар сохранится, но не покажется в разделе) — это проверяет отдельный тест.
+        Category.objects.create(id="c", name="Категория")
 
     def _catalog(self, items, **extra):
         return self.client.post("/v1/integrations/1c/catalog",
@@ -31,6 +34,14 @@ class OneCLogTests(TestCase):
         self.assertEqual(row.created_count, 1)
         self.assertEqual(row.updated_count, 0)
         self.assertEqual(row.touched, 1)
+
+    def test_unknown_category_makes_exchange_partial(self):
+        """Товары приехали, но раздела для них нет — журнал обязан это показать."""
+        self._catalog([{"id": "g2", "name": "Шапка", "categoryId": "нет-такой"}], **AUTH)
+        row = OneCExchange.objects.first()
+        self.assertEqual(row.status, "partial")
+        self.assertEqual(row.created_count, 1)
+        self.assertTrue(any("нет-такой" in e for e in row.errors))
 
     def test_second_run_counts_as_update(self):
         item = {"id": "g1", "name": "Кроссовки", "categoryId": "c", "price": 100}

@@ -45,8 +45,17 @@
     var colorDots = colors
       .map(function (c) { return '<i style="--c:' + esc(c) + '"></i>'; })
       .join("");
+    // Остаток по размерам приходит из 1С (stockBySize). Пусто — разбивки нет,
+    // и тогда доступны все размеры: прятать имеющийся хуже, чем показать лишний.
+    var bySize = p.stockBySize && typeof p.stockBySize === "object" ? p.stockBySize : null;
+    var out = bySize
+      ? sizes.filter(function (s) { return !(Number(bySize[s]) > 0); })
+      : [];
     var sizeChips = sizes
-      .map(function (s) { return "<span>" + esc(s) + "</span>"; })
+      .map(function (s) {
+        var gone = out.indexOf(s) !== -1;
+        return '<span' + (gone ? ' class="is-out"' : "") + ">" + esc(s) + "</span>";
+      })
       .join("");
     var desc = p.description || "";
     return (
@@ -54,6 +63,7 @@
       ' data-name="' + esc(p.name) + '" data-price="' + Number(p.price) + '"' +
       ' data-cat="' + esc(catLabel) + '" data-img="' + esc(img) + '"' +
       ' data-sizes="' + esc(sizes.join(",")) + '" data-colors="' + esc(colors.join(",")) + '"' +
+      ' data-outofstock="' + esc(out.join(",")) + '"' +
       ' data-stock="' + esc(stock) + '" data-desc="' + esc(desc) + '">' +
       '<div class="product-media" data-quick-view tabindex="0" role="button" aria-label="Подробнее: ' +
       esc(p.name) + '">' +

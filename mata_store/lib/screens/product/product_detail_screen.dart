@@ -189,6 +189,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       _SizeSelector(
                         sizes: product.sizes,
                         selected: _selectedSize,
+                        isAvailable: product.hasSize,
                         onSelected: (s) => setState(() => _selectedSize = s),
                       ),
                       const SizedBox(height: 20),
@@ -332,10 +333,14 @@ class _SizeSelector extends StatelessWidget {
   final String? selected;
   final ValueChanged<String> onSelected;
 
+  /// Есть ли размер на складе (остаток по размерам приходит из 1С).
+  final bool Function(String size) isAvailable;
+
   const _SizeSelector({
     required this.sizes,
     required this.selected,
     required this.onSelected,
+    required this.isAvailable,
   });
 
   @override
@@ -374,16 +379,23 @@ class _SizeSelector extends StatelessWidget {
           runSpacing: 8,
           children: sizes.map((size) {
             final isSelected = size == selected;
+            // Размера нет на складе: гасим и зачёркиваем, нажать нельзя. Узнать
+            // об отсутствии в корзине или после оформления — куда обиднее.
+            final available = isAvailable(size);
             return GestureDetector(
-              onTap: () => onSelected(size),
+              onTap: available ? () => onSelected(size) : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 width: 52,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.black : AppColors.white,
+                  color: !available
+                      ? AppColors.grey100
+                      : (isSelected ? AppColors.black : AppColors.white),
                   border: Border.all(
-                    color: isSelected ? AppColors.black : AppColors.grey200,
+                    color: !available
+                        ? AppColors.grey200
+                        : (isSelected ? AppColors.black : AppColors.grey200),
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(8),
@@ -394,7 +406,12 @@ class _SizeSelector extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? AppColors.lime : AppColors.black,
+                    color: !available
+                        ? AppColors.grey400
+                        : (isSelected ? AppColors.lime : AppColors.black),
+                    decoration:
+                        available ? TextDecoration.none : TextDecoration.lineThrough,
+                    decorationColor: AppColors.grey400,
                   ),
                 ),
               ),
