@@ -18,6 +18,7 @@ class OneCExchange(models.Model):
     """Одна операция обмена с 1С."""
 
     OPERATIONS = [
+        ("categories", "Категории"),
         ("catalog", "Каталог"),
         ("prices", "Цены и остатки"),
     ]

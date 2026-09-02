@@ -13,6 +13,11 @@ class Category(models.Model):
     # Загруженное в админке фото категории (приоритетнее image_url).
     image = models.ImageField(upload_to="uploads/categories/", null=True, blank=True, verbose_name="Фото")
     sort = models.IntegerField(default=0, verbose_name="Порядок")
+    # Родитель из 1С (D-62). Витрина пока плоская и это поле не показывает, но
+    # принимать и хранить его надо: иначе, когда дерево понадобится, придётся
+    # просить 1С выгружать справочник заново.
+    parent_id = models.CharField(max_length=40, blank=True, default="", db_index=True,
+                                 verbose_name="Родительская категория (ID)")
 
     class Meta:
         db_table = "catalog_categories"
@@ -76,6 +81,10 @@ class Product(models.Model):
     article = models.CharField(max_length=64, blank=True, default="", db_index=True,
                                verbose_name="Артикул")
     stock_count = models.IntegerField(null=True, blank=True, verbose_name="Остаток, шт")
+    # Остаток по размерам: {"41": 0, "42": 7}. Нужен, чтобы витрина гасила размер,
+    # которого нет, а не сообщала об этом уже в корзине. Общий остаток
+    # (`stock_count`) остаётся суммой — на него смотрит карточка списка.
+    stock_by_size = models.JSONField(default=dict, blank=True, verbose_name="Остаток по размерам")
     # «В продаже» по данным 1С. Отдельно от is_published: 1С снимает с продажи,
     # владелец скрывает с витрины — эти решения независимы.
     is_active_1c = models.BooleanField(default=True, db_index=True, verbose_name="В продаже (1С)")
@@ -149,6 +158,9 @@ class Product(models.Model):
             "rating": self.rating,
             "reviewCount": self.review_count,
             "inStock": self.in_stock,
+            # Пусто = разбивки нет (1С прислала общий остаток или товар не из 1С).
+            # Витрина в этом случае считает доступными все размеры, как раньше.
+            "stockBySize": self.stock_by_size or {},
         }
 
 
