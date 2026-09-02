@@ -10,6 +10,8 @@
 """
 import hashlib
 
+from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
@@ -26,23 +28,68 @@ FIELD_MAP = {
 }
 
 
-def _make_id(external_id: str, article: str) -> str:
-    """Внутренний id для НОВОГО товара. Идентификатор 1С в первичный ключ не кладём:
-    на него уже ссылаются заказы и отзывы, менять их формат нельзя."""
-    base = (article or external_id or "").strip()
-    if base and len(base) <= 40 and not Product.objects.filter(id=base).exists():
-        return base
-    return "p_" + hashlib.sha1((external_id or article).encode("utf-8")).hexdigest()[:16]
+# Сколько позиций принимаем за один запрос. Выгрузка целиком тоже не редкость,
+# поэтому потолок высокий — он защищает от бессмысленного, а не от большого.
+# Всё, что приходит, разбирается пачками по CHUNK, а не построчно.
+MAX_ITEMS = 20_000
+CHUNK = 500
 
 
-def _find(external_id: str, article: str):
-    if external_id:
-        p = Product.objects.filter(external_id=external_id).first()
-        if p:
-            return p
-    if article:
-        return Product.objects.filter(article=article).first()
-    return None
+class _Index:
+    """Что уже есть в базе — одним запросом на всю выгрузку.
+
+    Раньше на каждую позицию уходило по два-три обращения к базе (найти по id 1С,
+    найти по артикулу, проверить свободен ли внутренний id). На тысяче товаров это
+    тысячи запросов, и выгрузка упиралась в таймаут.
+    """
+
+    def __init__(self, items):
+        ext, art = set(), set()
+        for raw in items:
+            if not isinstance(raw, dict):
+                continue
+            e = str(raw.get("id") or "").strip()
+            a = str(raw.get("article") or "").strip()
+            if e:
+                ext.add(e)
+            if a:
+                art.add(a)
+
+        rows = Product.objects.filter(Q(external_id__in=ext) | Q(article__in=art))
+        self.by_ext, self.by_art = {}, {}
+        for p in rows:
+            if p.external_id:
+                self.by_ext[p.external_id] = p
+            if p.article:
+                self.by_art.setdefault(p.article, p)
+        # Занятые внутренние id: проверяем по множеству, а не запросом на товар.
+        self.taken = set(
+            Product.objects.filter(id__in=(ext | art)).values_list("id", flat=True)
+        )
+
+    def find(self, external_id: str, article: str):
+        if external_id and external_id in self.by_ext:
+            return self.by_ext[external_id]
+        if article:
+            return self.by_art.get(article)
+        return None
+
+    def make_id(self, external_id: str, article: str) -> str:
+        """Внутренний id для НОВОГО товара. Идентификатор 1С в первичный ключ не кладём:
+        на него уже ссылаются заказы и отзывы, менять их формат нельзя."""
+        base = (article or external_id or "").strip()
+        if base and len(base) <= 40 and base not in self.taken:
+            self.taken.add(base)
+            return base
+        return "p_" + hashlib.sha1((external_id or article).encode("utf-8")).hexdigest()[:16]
+
+    def remember(self, product: Product) -> None:
+        """Новый товар — чтобы дубль внутри ОДНОЙ выгрузки не создался дважды."""
+        if product.external_id:
+            self.by_ext[product.external_id] = product
+        if product.article:
+            self.by_art.setdefault(product.article, product)
+        self.taken.add(product.id)
 
 
 def _apply(product: Product, payload: dict, fields: dict) -> list:
@@ -73,8 +120,10 @@ def import_categories(items) -> dict:
     молчаливое удаление увело бы их с витрины. Категория — вещь редкая, убрать её
     осознанно проще в админке, чем разбираться, почему исчез раздел.
     """
-    created = updated = 0
     errors = []
+    ids = [str(r.get("id") or "").strip() for r in items if isinstance(r, dict)]
+    existing = {c.id: c for c in Category.objects.filter(id__in=[i for i in ids if i])}
+    to_create, to_update = [], []
 
     for raw in items:
         if not isinstance(raw, dict):
@@ -88,13 +137,14 @@ def import_categories(items) -> dict:
             errors.append(f"{cid[:20]}…: id длиннее 40 символов")
             continue
 
-        category = Category.objects.filter(id=cid).first()
+        category = existing.get(cid)
         is_new = category is None
         if is_new:
             if not raw.get("name"):
                 errors.append(f"{cid}: нет названия")
                 continue
             category = Category(id=cid)
+            existing[cid] = category   # дубль внутри одной выгрузки не создастся дважды
 
         if raw.get("name"):
             category.name = str(raw["name"])[:120]
@@ -105,17 +155,34 @@ def import_categories(items) -> dict:
                 category.sort = int(raw["sort"])
             except (TypeError, ValueError):
                 errors.append(f"{cid}: порядок не число")
-        category.save()
-        created += int(is_new)
-        updated += int(not is_new)
+        (to_create if is_new else to_update).append(category)
 
-    return {"received": len(items), "created": created, "updated": updated,
+    with transaction.atomic():
+        Category.objects.bulk_create(to_create, batch_size=CHUNK)
+        if to_update:
+            # Только то, что ведёт 1С: эмодзи и фото категории остаются нашими.
+            Category.objects.bulk_update(to_update, ["name", "parent_id", "sort"],
+                                         batch_size=CHUNK)
+
+    return {"received": len(items), "created": len(to_create), "updated": len(to_update),
             "errors": errors[:20]}
+
+
+# Что переписывает выгрузка карточек. Поля витрины (публикация, новинка,
+# рекомендуемое, порядок, рейтинг) в списке отсутствуют намеренно — это зона МАТА.
+CATALOG_FIELDS = [
+    "external_id", "article", "name", "category_id", "brand", "is_active_1c",
+    "source_updated_at", "from_1c", "price", "old_price", "description",
+    "sizes", "colors", "image_urls",
+]
+
+# Что переписывает выгрузка цен и остатков.
+PRICE_FIELDS = ["price", "old_price", "from_1c", "stock_count", "stock_by_size", "in_stock"]
 
 
 def import_catalog(items) -> dict:
     """Карточки товаров: наименование, категория, бренд, описание, размеры, фото."""
-    created = updated = skipped = 0
+    skipped = 0
     kept_fields: set = set()
     errors = []
     # Категория — простая строка, а не внешний ключ, поэтому товар с незнакомой
@@ -123,6 +190,11 @@ def import_catalog(items) -> dict:
     # нельзя: со стороны это выглядит как «товар не выгрузился».
     known = set(Category.objects.values_list("id", flat=True))
     unknown: set = set()
+    index = _Index(items)
+    # Словари, а не списки: проверка «этот товар уже в пачке» по ключу, иначе на
+    # тысячах позиций получится квадрат — ровно то, что мы здесь и чиним.
+    to_create: dict = {}
+    to_update: dict = {}
 
     for raw in items:
         if not isinstance(raw, dict):
@@ -134,13 +206,13 @@ def import_catalog(items) -> dict:
             errors.append("нет id и артикула")
             continue
 
-        product = _find(external_id, article)
+        product = index.find(external_id, article)
         is_new = product is None
         if is_new:
             if not raw.get("name"):
                 errors.append(f"{external_id or article}: нет наименования")
                 continue
-            product = Product(id=_make_id(external_id, article), price=0)
+            product = Product(id=index.make_id(external_id, article), price=0)
 
         # Поля, которые ведёт только 1С.
         product.external_id = external_id or product.external_id
@@ -159,9 +231,18 @@ def import_catalog(items) -> dict:
             product.source_updated_at = parse_datetime(raw["updatedAt"]) or timezone.now()
 
         kept_fields.update(_apply(product, raw, FIELD_MAP))
-        product.save()
-        created += int(is_new)
-        updated += int(not is_new)
+        if is_new:
+            index.remember(product)
+            to_create[product.id] = product
+        elif product.id not in to_create:
+            to_update[product.id] = product
+
+    with transaction.atomic():
+        Product.objects.bulk_create(list(to_create.values()), batch_size=CHUNK)
+        if to_update:
+            Product.objects.bulk_update(list(to_update.values()), CATALOG_FIELDS,
+                                        batch_size=CHUNK)
+    created, updated = len(to_create), len(to_update)
 
     for cid in sorted(unknown):
         errors.append(f"категория «{cid}» не заведена — товары не попадут в раздел")
@@ -175,9 +256,10 @@ def import_catalog(items) -> dict:
 
 def import_prices(items) -> dict:
     """Цены и остатки — частый поток. Остаток пишем всегда, цену — если не переопределена."""
-    updated = 0
     kept_fields: set = set()
     errors = []
+    index = _Index(items)
+    touched: dict = {}
 
     for raw in items:
         if not isinstance(raw, dict):
@@ -185,7 +267,7 @@ def import_prices(items) -> dict:
             continue
         external_id = str(raw.get("id") or "").strip()
         article = str(raw.get("article") or "").strip()
-        product = _find(external_id, article)
+        product = index.find(external_id, article)
         if product is None:
             errors.append(f"{external_id or article}: товар не найден")
             continue
@@ -228,8 +310,10 @@ def import_prices(items) -> dict:
         if product.stock_count is not None:
             product.in_stock = product.stock_count > 0
 
-        product.save()
-        updated += 1
+        touched[product.id] = product
 
-    return {"received": len(items), "updated": updated,
+    with transaction.atomic():
+        Product.objects.bulk_update(list(touched.values()), PRICE_FIELDS, batch_size=CHUNK)
+
+    return {"received": len(items), "updated": len(touched),
             "keptByOwner": sorted(kept_fields), "errors": errors[:20]}

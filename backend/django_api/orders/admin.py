@@ -18,14 +18,25 @@ class OrderAdmin(ExportCsvMixin, UserRefMixin, ModelAdmin):
         "payment_status",
         "points_redeemed",
         "created_at",
+        # Обмен с 1С: сразу видно, ушёл ли заказ на склад и что там с ним.
+        "onec_state",
     )
     list_display_links = ("order_id",)
     list_editable = ("status",)
-    list_filter = ("status", "payment_status")
+    list_filter = ("status", "payment_status", "onec_status")
     search_fields = ("order_id", "user_id")
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
-    readonly_fields = ("payload", "created_at")
+    readonly_fields = ("payload", "created_at", "onec_taken_at", "onec_number",
+                       "onec_status", "onec_status_at")
+
+    @admin.display(description="1С")
+    def onec_state(self, obj):
+        """Одна колонка вместо четырёх: главное — забран заказ или ещё в очереди."""
+        if not obj.onec_taken_at:
+            return "в очереди"
+        label = obj.get_onec_status_display() if obj.onec_status else "забран"
+        return f"{label}{f' · {obj.onec_number}' if obj.onec_number else ''}"
     csv_filename = "orders"
     export_fields = ("order_id", "user_id", "total", "status", "payment_status",
                      "points_redeemed", "created_at")
