@@ -8,13 +8,14 @@ import '../../../medals/data/medals_provider.dart';
 import '../../../medals/presentation/medal_detail.dart';
 import '../../../medals/presentation/medal_widgets.dart';
 
-/// Трофейный зал — «Штамп МАТА» (утверждено 01.09.2026, D-64).
+/// Каталог «Все медали» — «Штамп МАТА» (утверждено 01.09.2026, D-64).
 ///
-/// 44 награды пятью сериями. Открытые — полный металл, закрытые — тот же
-/// штамп под обесцвечиванием (42 %), новые три дня носят лаймовый кант.
-/// Тап — карточка с чеканкой; у полученных — оборот с личной гравировкой.
-class TrophyScreen extends ConsumerWidget {
-  const TrophyScreen({super.key});
+/// Открывается из Зала славы кнопкой «Все медали»: 44 награды пятью сериями.
+/// Открытые — полный металл, закрытые — тот же штамп под обесцвечиванием
+/// (42 %), новые три дня носят лаймовый кант. Тап — карточка с чеканкой;
+/// у полученных — оборот с личной гравировкой.
+class MedalCatalogScreen extends ConsumerWidget {
+  const MedalCatalogScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,7 +25,7 @@ class TrophyScreen extends ConsumerWidget {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: AppColors.bg,
-        title: const Text('Трофейный зал'),
+        title: const Text('Все медали'),
       ),
       body: SafeArea(
         child: medals.when(
