@@ -22,6 +22,8 @@ PAGE_URLS = {
     "errors": "errors_console",
     "storage": "admin_storage",
     "onec_log": "onec_log",
+    # У вкладки «Забеги» рабочая страница — разбор помеченных, а не список.
+    "runs": "runs_review",
 }
 
 

@@ -59,6 +59,60 @@ class DeviceToken(models.Model):
         verbose_name_plural = "Токены устройств"
 
 
+class DeviceAccount(models.Model):
+    """След «с этого устройства входил такой-то аккаунт» (анти-чит, S-04).
+
+    `DeviceToken.token` уникален: когда на телефоне входит второй аккаунт, строка
+    просто переезжает к нему, и факт, что телефон общий, бесследно исчезает. Для
+    модерации важен именно этот факт, поэтому ведём отдельную историю: пара
+    «устройство + аккаунт», по одной записи на пару.
+
+    Это подсказка человеку, а не приговор: телефон дают близким, аккаунт заводят
+    заново после потери доступа. Храним ограниченное время — старое неинтересно
+    и хранить его незачем (приватность, LAUNCH_READINESS §2).
+    """
+    KEEP_DAYS = 180
+
+    token = models.CharField(max_length=255, db_index=True, verbose_name="Токен устройства")
+    user_id = models.CharField(max_length=40, db_index=True, verbose_name="Пользователь (ID)")
+    platform = models.CharField(max_length=20, default="android", verbose_name="Платформа")
+    first_seen = models.DateTimeField(default=timezone.now, verbose_name="Впервые")
+    last_seen = models.DateTimeField(default=timezone.now, verbose_name="Последний раз")
+
+    class Meta:
+        db_table = "device_accounts"
+        unique_together = ("token", "user_id")
+        verbose_name = "Устройство и аккаунт"
+        verbose_name_plural = "Устройства и аккаунты"
+
+    @classmethod
+    def note(cls, token, user_id, platform="android"):
+        """Отметить вход аккаунта с устройства. Тихо: сбой не должен ломать пуши."""
+        if not token or not user_id:
+            return
+        try:
+            cls.objects.update_or_create(
+                token=token, user_id=user_id,
+                defaults={"last_seen": timezone.now(), "platform": platform},
+            )
+            cls.prune()
+        except Exception:
+            pass
+
+    @classmethod
+    def prune(cls):
+        """Чистим раз в сутки, а не на каждом запросе."""
+        from django.core.cache import cache
+
+        if not cache.add("device_accounts_pruned", 1, 24 * 3600):
+            return
+        from datetime import timedelta
+
+        cls.objects.filter(
+            last_seen__lt=timezone.now() - timedelta(days=cls.KEEP_DAYS)
+        ).delete()
+
+
 def create_notification(user_id, title, body="", type="system", order_id=None):
     """Создать уведомление пользователю + (если настроено) отправить пуш.
     Безопасно (без user_id — ничего не делает)."""

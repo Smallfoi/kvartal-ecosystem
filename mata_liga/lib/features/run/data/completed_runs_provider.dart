@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api/api_config.dart';
 import '../../auth/data/auth_provider.dart';
 import '../../loyalty/data/loyalty_provider.dart';
+import '../../notifications/data/notifications_provider.dart';
 
 const _completedRunsKey = 'kvartal.completed_runs.v1';
 const _runsSyncedKey = 'kvartal.runs_synced.v1';
@@ -208,6 +209,10 @@ class CompletedRunsNotifier extends StateNotifier<List<CompletedRun>> {
         );
       }
       unawaited(ref.read(loyaltyProvider.notifier).refresh());
+      // Сервер мог сказать что-то про этот забег: придержал баллы до проверки,
+      // засчитал веху или итоги дивизиона. Тянем ленту сразу, иначе колокольчик
+      // узнает об этом только после перезапуска приложения.
+      unawaited(ref.read(notificationsProvider.notifier).refresh());
       unawaited(_sendTrack(run, token));
     } catch (_) {
       // офлайн/ошибка — синхронизируем позже (старт/вход)

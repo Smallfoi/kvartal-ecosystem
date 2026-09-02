@@ -58,6 +58,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       ref.read(authProvider.notifier).restoreSession();
       ref.read(loyaltyProvider.notifier).refresh();
       ref.read(healthSyncProvider.notifier).autoSync();
+      ref.read(notificationsProvider.notifier).refresh();
     }
   }
 
@@ -70,6 +71,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       ref.read(shoesProvider.notifier).refresh(),
       ref.read(authProvider.notifier).restoreSession(),
       ref.read(completedRunsProvider.notifier).load(),
+      // Лента: счётчик на колокольчике живёт здесь, поэтому обновляем его
+      // вместе с экраном — иначе он показывал бы цифру со времени входа.
+      ref.read(notificationsProvider.notifier).refresh(),
       // Тренировки с часов: пришли в Health Connect — подтянем и начислим.
       ref.read(healthSyncProvider.notifier).autoSync(),
     ]);
@@ -146,6 +150,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   }
 }
 
+/// Счётчик непрочитанного: постоянная пара «заливка + текст», одинаковая в обеих
+/// темах — маленькая цифра обязана читаться всегда.
+const Color _badgeFill = Color(0xFFD9483B);
+const Color _badgeInk = Color(0xFFFFFFFF);
+
 class _NotificationsBell extends StatelessWidget {
   final int unread;
   const _NotificationsBell({required this.unread});
@@ -168,15 +177,19 @@ class _NotificationsBell extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               decoration: BoxDecoration(
-                color: AppColors.error,
+                // Константная пара к заливке: `error` в графитовой теме светлеет
+                // до лососевого, а `ink` там же становится почти белым — цифра
+                // на счётчике пропадала. На цветной заливке инвертируемые токены
+                // не используем (правило владельца после бага с лаймом).
+                color: _badgeFill,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.bgDark, width: 1.5),
               ),
               alignment: Alignment.center,
               child: Text(
                 unread > 9 ? '9+' : '$unread',
-                style: TextStyle(
-                  color: AppColors.ink,
+                style: const TextStyle(
+                  color: _badgeInk,
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
                   height: 1,

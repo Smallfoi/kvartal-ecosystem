@@ -393,6 +393,11 @@ UNFOLD = {
                 "title": "Бег и модерация",
                 "separator": True,
                 "items": [
+                    # Разбор помеченных забегов — отдельной страницей: список забегов
+                    # это архив, а решение принимают, глядя на бегуна целиком.
+                    {"title": "Проверка забегов", "icon": "gavel",
+                     "link": reverse_lazy("runs_review"),
+                     "permission": _tab("runs")},
                     {"title": "Забеги (анти-чит)", "icon": "sports_score",
                      "link": reverse_lazy("admin:runs_run_changelist"),
                      "permission": _tab("runs")},

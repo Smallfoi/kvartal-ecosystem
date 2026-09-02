@@ -42,6 +42,7 @@ from territories import views as territories_views
 from analytics import views as analytics_views
 from config.errors_view import error_detail, errors_console
 from config.onec_log_view import onec_log
+from config.runs_review_view import runs_review
 from staff import views as staff_views
 
 urlpatterns = [
@@ -63,6 +64,8 @@ urlpatterns = [
     path("admin/errors/", errors_console, name="errors_console"),
     path("admin/storage/", admin_storage, name="admin_storage"),
     path("admin/1c-log/", onec_log, name="onec_log"),
+    # «Проверка забегов» — разбор помеченных анти-читом (S-04 ф.2). ДО admin/.
+    path("admin/runs-review/", runs_review, name="runs_review"),
     path("admin/errors/<str:issue_id>/", error_detail, name="error_detail"),
     # Сотрудники и права (S-12). Тоже ДО admin/ — иначе перехватит catch-all.
     path("admin/staff/", staff_views.staff_list, name="staff_list"),

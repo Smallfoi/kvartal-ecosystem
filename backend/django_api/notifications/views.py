@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from common.security import user_id_from_request
 
-from .models import DeviceToken, Notification
+from .models import DeviceAccount, DeviceToken, Notification
 
 
 @api_view(["POST"])
@@ -21,6 +21,9 @@ def register_device(request):
     DeviceToken.objects.update_or_create(
         token=token, defaults={"user_id": uid, "platform": platform},
     )
+    # Токен уникален и при входе второго аккаунта переезжает к нему — сам факт
+    # «телефон общий» на этом теряется. Отмечаем пару отдельно (анти-чит S-04).
+    DeviceAccount.note(token, uid, platform)
     return Response({"ok": True})
 
 

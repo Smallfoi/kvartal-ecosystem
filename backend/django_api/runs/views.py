@@ -4,8 +4,9 @@
                              СЕРВЕР сам валидирует забег и начисляет очки за бег
                              (клиент очки больше не присылает — иначе их можно подделать).
 Требуется Bearer-токен. Сырой GPS-маршрут НЕ принимаем/не храним (приватность §2)."""
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timezone as dt_timezone
 
+from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -14,21 +15,26 @@ from common.security import user_id_from_request
 from loyalty.models import LoyaltyTransaction, add_txn
 
 from .models import Run
+# Пороги и цена километра — общие для приёма забега, разбора и часов (runs/rules.py).
+from .rules import (  # noqa: F401  (re-export: workouts берёт POINTS_PER_KM отсюда)
+    FUTURE_SKEW,
+    MAX_DAY_DISTANCE_M,
+    MAX_RUN_AGE,
+    MAX_RUN_DISTANCE_M,
+    MAX_RUNS_PER_DAY,
+    MAX_SPEED_MS,
+    POINTS_PER_KM,
+    REVIEW_FLAGGED_THRESHOLD,
+    REVIEW_WINDOW,
+    points_for,
+)
 
 _MAX = 100
 
-# ── Пороги анти-чита (S-04). Скорость согласована с territories (40 км/ч). ──
-MAX_SPEED_MS = 11.2            # ~40 км/ч — серверный потолок (как в territories)
-MAX_RUN_DISTANCE_M = 100_000   # 100 км за один забег — неправдоподобно
-MAX_DAY_DISTANCE_M = 150_000   # 150 км/сутки суммарно — щедрый потолок против фарма
-MAX_RUNS_PER_DAY = 30          # >30 забегов/сутки — спам/автоматизация (для человека много)
-POINTS_PER_KM = 10             # очки = км × 10 (как было на клиенте, теперь на сервере)
-FUTURE_SKEW = timedelta(hours=12)   # допуск на часовые пояса/рассинхрон часов
-MAX_RUN_AGE = timedelta(days=30)    # старше — подозрение на реплей/бэкфилл фейков
-
-# Режим доверия (S-04): при накоплении флагнутых забегов помечаем аккаунт «на ревью».
-REVIEW_FLAGGED_THRESHOLD = 5        # столько флагов за окно → отметка модератору
-REVIEW_WINDOW = timedelta(days=7)
+# Не заваливать человека уведомлениями: о том, что забеги ушли на проверку,
+# сообщаем не чаще раза в сутки (иначе накрутчик получит десяток писем подряд,
+# а честный бегун с одним сбоем GPS — ровно одно).
+FLAG_NOTICE_COOLDOWN = 24 * 3600
 
 
 def _validate(uid, distance_m, duration_s, finished, mock=False):
@@ -78,6 +84,31 @@ def _maybe_flag_for_review(uid):
         Account.objects.filter(id=uid, needs_review=False).update(needs_review=True)
 
 
+def _notify_on_hold(uid):
+    """Сказать бегуну, что забег ушёл на проверку.
+
+    Раньше помеченный забег просто не приносил баллов, и человек оставался в
+    тишине: сам он видит обычную пробежку, а баллов нет — выглядит как поломка.
+    Пишем один раз в сутки и без обвинений: решение принимает человек, а сбой
+    GPS случается и у честных бегунов. Сбой уведомления не должен ронять приём
+    забега — он уже сохранён.
+    """
+    if not cache.add(f"run_hold_notice_{uid}", 1, FLAG_NOTICE_COOLDOWN):
+        return
+    try:
+        from notifications.models import create_notification
+
+        create_notification(
+            uid,
+            "Забег на проверке",
+            "Данные забега выглядят необычно, поэтому баллы пока не начислены. "
+            "Проверим вручную — если всё в порядке, баллы придут.",
+            type="system",
+        )
+    except Exception:
+        pass
+
+
 @api_view(["GET", "POST"])
 def runs(request):
     uid = user_id_from_request(request)
@@ -122,7 +153,7 @@ def runs(request):
     mock = bool(d.get("mockDetected"))  # клиент сообщает о mock-GPS (Android)
     reason = _validate(uid, distance_m, duration_s, finished, mock=mock)
     flagged = bool(reason)
-    points = 0 if flagged else round(distance_m / 1000.0 * POINTS_PER_KM)
+    points = 0 if flagged else points_for(distance_m)
 
     run = Run.objects.create(
         id=rid,
@@ -154,6 +185,7 @@ def runs(request):
     # Режим доверия: если забегов с флагом накопилось много — пометить на ревью.
     if flagged:
         _maybe_flag_for_review(uid)
+        _notify_on_hold(uid)
 
     # Аналитика (D-30): завершённый забег (км/очки/флаг).
     from analytics.models import E_RUN_FINISHED, track
@@ -168,22 +200,6 @@ def runs(request):
     })
 
 
-def approve_run(run):
-    """Модерация (S-04 ф.2): снять флаг с забега и начислить очки за бег.
-    Идемпотентно (по runId) — повторный вызов не дублирует начисление.
-    Возвращает кол-во начисленных за бег очков."""
-    points = round(run.distance_m / 1000.0 * POINTS_PER_KM)
-    if points > 0 and not LoyaltyTransaction.objects.filter(
-        user_id=run.user_id, run_id=run.id, source="runnerRun"
-    ).exists():
-        add_txn(run.user_id, points, "runnerRun",
-                f"Пробежка {run.distance_m / 1000.0:.1f} км (одобрено модератором)",
-                None, run.id)
-    run.flagged = False
-    run.flag_reason = ""
-    run.points_awarded = points
-    run.save(update_fields=["flagged", "flag_reason", "points_awarded"])
-    from runs.milestones import award_milestones
-
-    award_milestones(run.user_id, run.distance_m / 1000.0)
-    return points
+# Разбор помеченных забегов живёт в runs/review.py. Здесь оставлена ссылка:
+# на `runs.views.approve_run` уже завязаны админ-действия и тесты.
+from .review import approve_run  # noqa: E402,F401  (после моделей — избегаем цикла)

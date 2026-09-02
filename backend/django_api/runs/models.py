@@ -24,6 +24,12 @@ class Run(models.Model):
     flagged = models.BooleanField(default=False, db_index=True, verbose_name="Помечен (чит)")
     flag_reason = models.CharField(max_length=200, blank=True, default="", verbose_name="Причина пометки")
 
+    # Разбор помеченного забега человеком (S-04, фаза 2). Пока `reviewed_at` пуст —
+    # забег висит в очереди «Проверка забегов»; решение модератора проставляет дату
+    # и имя, и забег из очереди уходит (какое бы решение ни было принято).
+    reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name="Разобран")
+    reviewed_by = models.CharField(max_length=150, blank=True, default="", verbose_name="Кто разобрал")
+
     class Meta:
         db_table = "runs"
         ordering = ["-finished_at"]
@@ -33,6 +39,18 @@ class Run(models.Model):
     @property
     def distance_km(self) -> float:
         return self.distance_m / 1000.0
+
+    @property
+    def pending_review(self) -> bool:
+        """Ждёт решения модератора: помечен и ещё не разобран."""
+        return self.flagged and self.reviewed_at is None
+
+    @property
+    def speed_kmh(self) -> float:
+        """Средняя скорость забега — первое, на что смотрит модератор."""
+        if self.duration_s <= 0:
+            return 0.0
+        return self.distance_m / self.duration_s * 3.6
 
     def to_json(self) -> dict:
         return {
