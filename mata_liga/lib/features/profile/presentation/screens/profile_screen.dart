@@ -14,7 +14,8 @@ import '../../../loyalty/data/loyalty_provider.dart';
 import '../../../loyalty/presentation/widgets/loyalty_card.dart';
 import '../../../notifications/data/notifications_provider.dart';
 import '../../../run/data/completed_runs_provider.dart';
-import '../../data/badge_defs.dart';
+import '../../../medals/data/medal_defs.dart';
+import '../../../medals/data/medals_provider.dart';
 import '../../data/me_stats_provider.dart';
 import '../../data/digest_service.dart';
 import '../../../league/data/division_provider.dart';
@@ -1766,10 +1767,10 @@ class _TrophyEntryRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final runs = ref.watch(completedRunsProvider);
-    final loyalty = ref.watch(loyaltyProvider);
-    final facts = BadgeFacts.fromRuns(runs, balance: loyalty.balance);
-    final unlocked = kBadgeDefs.where((d) => d.unlocked(facts)).length;
+    // «Штамп МАТА»: счёт открытых медалей ведёт сервер (D-64).
+    final medals = ref.watch(medalsProvider).valueOrNull;
+    final unlocked = medals?.where((m) => m.earned).length;
+    final total = medals?.length ?? kMedals.length;
     return Material(
       color: AppColors.paper,
       borderRadius: BorderRadius.circular(AppTheme.rSm),
@@ -1812,7 +1813,9 @@ class _TrophyEntryRow extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      '$unlocked из ${kBadgeDefs.length} медалей',
+                      unlocked == null
+                          ? 'Штамп МАТА · $total наград'
+                          : '$unlocked из $total медалей',
                       style: TextStyle(fontSize: 12, color: AppColors.muted),
                     ),
                   ],

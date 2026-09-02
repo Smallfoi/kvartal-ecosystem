@@ -16,8 +16,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:liga_app/core/theme/app_colors.dart';
 import 'package:liga_app/core/theme/app_theme.dart';
 import 'package:liga_app/features/auth/presentation/screens/welcome_screen.dart';
-import 'package:liga_app/features/celebration/medal_ceremony.dart';
-import 'package:liga_app/features/profile/data/badge_defs.dart';
+import 'package:liga_app/features/medals/data/medal_defs.dart';
+import 'package:liga_app/features/medals/data/medals_provider.dart';
+import 'package:liga_app/features/medals/presentation/medal_widgets.dart';
+import 'package:liga_app/features/medals/presentation/shtamp_ceremony.dart';
 import 'package:liga_app/features/profile/presentation/screens/theme_screen.dart';
 import 'package:liga_app/features/run/presentation/screens/run_result_screen.dart';
 import 'package:liga_app/features/run/presentation/widgets/share_card.dart';
@@ -36,6 +38,12 @@ Future<void> _loadFonts() async {
     }
     await loader.load();
   }
+  // Unbounded — имена медалей и цифры гравировки «Штампа МАТА».
+  final unbounded = FontLoader('Unbounded');
+  for (final w in ['600', '700', '800']) {
+    unbounded.addFont(rootBundle.load('assets/fonts/Unbounded-$w.ttf'));
+  }
+  await unbounded.load();
 }
 
 RunResult _sampleResult({required bool captured}) {
@@ -181,26 +189,65 @@ void main() {
         ),
       ),
     );
+    // Чеканка «Штампа МАТА»: медаль вбивается, блик, строки поднимаются.
+    final medal = MedalFull(
+      medalById('d_first_run'),
+      MedalState(
+        id: 'd_first_run',
+        available: true,
+        earnedAtMs: DateTime.now().millisecondsSinceEpoch,
+        engraving: (v: '5,2 КМ', u: 'ПЕРВЫЙ БЕГ', sub: '01.09.2026'),
+      ),
+    );
     // ignore: unawaited_futures
-    showMedalCeremony(ctx, badge: kBadgeDefs[1]);
+    showShtampCeremony(ctx, medal);
     await tester.pump(const Duration(milliseconds: 250));
     var elapsed = 0;
     for (final (ms, name) in [
-      (400, 'f1_medal_drop'),
-      (1500, 'f1_medal_hops'),
-      (2900, 'f1_medal_flip'),
-      (3650, 'f1_medal_burst'),
-      (4600, 'f1_medal_final'),
+      (300, 'f1_medal_strike'),
+      (700, 'f1_medal_set'),
+      (1100, 'f1_medal_sheen'),
+      (1800, 'f1_medal_final'),
     ]) {
       await tester.pump(Duration(milliseconds: ms - elapsed));
       elapsed = ms;
       await capture(tester, key, name);
     }
     await tester.pump(const Duration(milliseconds: 400));
-    if (tester.any(find.text('Забрать'))) {
-      await tester.tap(find.text('Забрать'));
+    if (tester.any(find.text('Дальше'))) {
+      await tester.tap(find.text('Дальше'));
       await tester.pump(const Duration(milliseconds: 400));
     }
+  });
+
+  testWidgets('medal reverse engraving frame', (tester) async {
+    phoneSize(tester);
+    AppColors.isGraphite = true;
+    final key = GlobalKey();
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: key,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.current(),
+          home: Scaffold(
+            backgroundColor: const Color(0xFF20252B),
+            body: Center(
+              child: MedalReverse(
+                def: medalById('t_zones_100'),
+                engraving: (v: '127', u: 'ЗОН · ПИК', sub: '12.05.2026 · ЯКУТСК'),
+                size: 300,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    // Дать декодеру картинки дорисовать реверс.
+    await tester.runAsync(() => Future<void>.delayed(
+        const Duration(milliseconds: 300)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await capture(tester, key, 'f1_medal_reverse');
   });
 
   testWidgets('welcome pages frames', (tester) async {
