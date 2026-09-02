@@ -9,7 +9,12 @@
 Уровни доступа вкладки «Забеги» разведены по тяжести последствий:
 - «смотреть» — только читать очередь;
 - «редактировать» — решения по забегам, снять метку ревью, пересчитать баллы;
-- «редактировать и удалять» — блокировка аккаунта (отрезает вход человеку).
+- «редактировать и удалять» — блокировка аккаунта.
+
+Блокировка вдобавок требует прав на вкладку «Пользователи»: она отрезает человеку
+вход в приложение, то есть это действие над аккаунтом, а не над забегом. Иначе
+модератор бега получал бы власть над учётными записями в обход выданных вкладок
+(D-63: право выдаётся на вкладку).
 """
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
@@ -106,6 +111,10 @@ def _act(request):
 
     if action in ("block", "unblock"):
         need(LEVEL_FULL)
+        if not can(request.user, "accounts", LEVEL_EDIT):
+            raise PermissionDenied(
+                "Блокировка аккаунта требует доступа к вкладке «Пользователи»"
+            )
         if action == "block":
             reason = (request.POST.get("reason") or "Нарушение правил (анти-чит)")[:300]
             Account.objects.filter(id=uid).update(is_blocked=True, block_reason=reason)
@@ -158,7 +167,9 @@ def runs_review(request):
         "mode": mode,
         "note": request.session.pop("runs_review_note", ""),
         "may_edit": can(request.user, "runs", LEVEL_EDIT),
-        "may_block": can(request.user, "runs", LEVEL_FULL),
+        # Блокировка — действие над аккаунтом: нужны обе вкладки.
+        "may_block": (can(request.user, "runs", LEVEL_FULL)
+                      and can(request.user, "accounts", LEVEL_EDIT)),
         "summary": {
             "pending": pending_queryset().count(),
             "accounts": Account.objects.filter(needs_review=True).count(),

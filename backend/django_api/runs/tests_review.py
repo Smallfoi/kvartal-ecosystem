@@ -264,8 +264,26 @@ class ConsoleTests(TestCase):
         self.assertEqual(r.status_code, 403)
         self.assertFalse(Account.objects.get(id="u_run").is_blocked)
 
-    def test_full_level_may_block_and_unblock(self):
+    def test_blocking_needs_the_accounts_tab_too(self):
+        """Блокировка отрезает вход — это власть над учётной записью.
+
+        Полные права на «Забеги» её не дают: иначе модератор бега управлял бы
+        людьми в обход выданных вкладок (D-63).
+        """
         self.grant(LEVEL_FULL)
+        self._login(self.staff, self.staff_device)
+
+        html = self.client.get(self.url).content.decode()
+        self.assertNotIn('value="block"', html)
+
+        r = self.client.post(self.url, {"action": "block", "uid": "u_run"})
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(Account.objects.get(id="u_run").is_blocked)
+
+    def test_block_and_unblock_with_both_tabs(self):
+        self.grant(LEVEL_FULL)
+        TabPermission.objects.update_or_create(user=self.staff, tab="accounts",
+                                               defaults={"level": LEVEL_EDIT})
         self._login(self.staff, self.staff_device)
 
         self.client.post(self.url, {"action": "block", "uid": "u_run"})
@@ -275,6 +293,12 @@ class ConsoleTests(TestCase):
 
         self.client.post(self.url, {"action": "unblock", "uid": "u_run"})
         self.assertFalse(Account.objects.get(id="u_run").is_blocked)
+
+    def test_owner_may_block(self):
+        """У владельца все вкладки — кнопка на месте."""
+        self._login(self.owner, self.owner_device)
+        self.client.post(self.url, {"action": "block", "uid": "u_run"})
+        self.assertTrue(Account.objects.get(id="u_run").is_blocked)
 
     def test_decisions_are_written_to_the_access_journal(self):
         from staff.models import StaffAudit
