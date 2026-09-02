@@ -21,6 +21,8 @@ class OneCExchange(models.Model):
         ("categories", "Категории"),
         ("catalog", "Каталог"),
         ("prices", "Цены и остатки"),
+        ("orders", "Заказы в 1С"),
+        ("order-status", "Статусы из 1С"),
     ]
     STATUSES = [
         ("ok", "Успешно"),

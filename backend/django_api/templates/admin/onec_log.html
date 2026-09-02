@@ -55,8 +55,10 @@
 
 <div class="ex-tabs">
   <a class="ex-tab {% if op == 'all' %}on{% endif %}" href="?op=all&status={{ status }}">Все операции</a>
+  <a class="ex-tab {% if op == 'categories' %}on{% endif %}" href="?op=categories&status={{ status }}">Категории ({{ n_categories }})</a>
   <a class="ex-tab {% if op == 'catalog' %}on{% endif %}" href="?op=catalog&status={{ status }}">Каталог ({{ n_catalog }})</a>
   <a class="ex-tab {% if op == 'prices' %}on{% endif %}" href="?op=prices&status={{ status }}">Цены и остатки ({{ n_prices }})</a>
+  <a class="ex-tab {% if op == 'orders' %}on{% endif %}" href="?op=orders&status={{ status }}">Заказы в 1С ({{ n_orders }})</a>
 </div>
 
 <form class="ex-form" method="get">

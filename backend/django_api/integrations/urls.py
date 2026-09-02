@@ -9,5 +9,8 @@ urlpatterns = [
     path("1c/categories", views.onec_categories),
     path("1c/catalog", views.onec_catalog),
     path("1c/prices", views.onec_prices),
+    path("1c/orders", views.onec_orders),
+    path("1c/orders/ack", views.onec_orders_ack),
+    path("1c/orders/status", views.onec_order_status),
     path("1c/status", views.onec_status),
 ]
