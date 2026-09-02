@@ -83,8 +83,11 @@ def onec_log(request):
             "updated": agg["u"] or 0,
             "errors": d.filter(status="error").count(),
         },
+        "n_categories": OneCExchange.objects.filter(operation="categories").count(),
         "n_catalog": OneCExchange.objects.filter(operation="catalog").count(),
         "n_prices": OneCExchange.objects.filter(operation="prices").count(),
+        "n_orders": OneCExchange.objects.filter(
+            operation__in=("orders", "order-status")).count(),
         "enabled": bool((getattr(settings, "INTEGRATION_1C_TOKEN", "") or "").strip()),
         "last_ok": _local(last_ok.created_at) if last_ok else "",
         # Тишина дольше суток — повод разбираться: со стороны сервера молчание 1С

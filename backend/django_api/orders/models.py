@@ -29,6 +29,29 @@ class Order(models.Model):
     payload = models.JSONField(default=dict, verbose_name="Данные заказа (JSON)")
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Создан")
 
+    # ── Обратный поток «заказ → 1С» (D-62). 1С забирает заказы сама и подтверждает
+    # приём: свой сервер 1С обычно за NAT, достучаться до него мы не можем, а без
+    # подтверждения потерянная передача означала бы потерянный заказ.
+    onec_taken_at = models.DateTimeField(null=True, blank=True, db_index=True,
+                                         verbose_name="Забран в 1С")
+    onec_number = models.CharField(max_length=64, blank=True, default="",
+                                   verbose_name="Номер документа в 1С")
+    # Этапы 1С: «принят» и «собран» пары в нашем `status` не имеют — это кухня
+    # склада, её показываем отдельной строкой.
+    ONEC_STATUS_CHOICES = [
+        ("accepted", "Принят в 1С"),
+        ("assembled", "Собран"),
+        ("shipped", "Отгружен"),
+        ("delivered", "Доставлен"),
+        ("canceled", "Отменён"),
+        ("cancelled", "Отменён"),
+    ]
+    onec_status = models.CharField(max_length=20, blank=True, default="",
+                                   choices=ONEC_STATUS_CHOICES,
+                                   verbose_name="Статус в 1С")
+    onec_status_at = models.DateTimeField(null=True, blank=True,
+                                          verbose_name="Статус обновлён")
+
     class Meta:
         db_table = "store_orders"
         ordering = ["-created_at"]
