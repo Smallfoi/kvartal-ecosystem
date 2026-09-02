@@ -221,14 +221,14 @@ tbody tr:last-child td{border-bottom:none}
 @keyframes mgIn3{0%{transform:translate(14px,8px); opacity:0}100%{transform:none; opacity:1}}
 .a-mline{animation:mlineGlow 3.8s ease-in-out infinite alternate}
 @keyframes mlineGlow{0%{opacity:.16}100%{opacity:.42}}
-.a-arrow{animation:arrowFly 5.6s cubic-bezier(.55,0,.85,1) infinite}
-@keyframes arrowFly{0%{transform:translate(26px,-7px); opacity:0} 4%{opacity:1} 9%{transform:translate(0,0); opacity:1} 10%{opacity:0} 100%{transform:translate(0,0); opacity:0}}
-.a-shieldbody{animation:shieldHit 5.6s ease-out infinite}
-@keyframes shieldHit{0%,9%{transform:none} 11%{transform:translateX(-2.6px) rotate(-1.6deg)} 16%{transform:none} 100%{transform:none}}
-.a-frag1{animation:frag1 5.6s ease-out infinite}
-.a-frag2{animation:frag2 5.6s ease-out infinite}
-@keyframes frag1{0%,9%{opacity:0; transform:none} 10.5%{opacity:.9} 20%{opacity:0; transform:translate(7px,-7px)} 100%{opacity:0}}
-@keyframes frag2{0%,9%{opacity:0; transform:none} 10.5%{opacity:.9} 20%{opacity:0; transform:translate(8px,4px)} 100%{opacity:0}}
+/* оборона: три стрелы с разных сторон (полёт и торчание — SMIL в эмблеме),
+   щит вздрагивает на каждый удар: 6%, 23%, 40% цикла 7s */
+.a-shieldbody{animation:shieldHit 7s ease-out infinite}
+@keyframes shieldHit{
+  0%,5.5%{transform:none} 7%{transform:translateX(-2.6px) rotate(-1.6deg)} 11%{transform:none}
+  22%{transform:none} 23.5%{transform:translateX(2.4px) rotate(1.3deg)} 27.5%{transform:none}
+  39%{transform:none} 40.5%{transform:translateX(-2.1px) rotate(-1.1deg)} 44.5%{transform:none}
+  100%{transform:none}}
 
 /* перехват: один оборот — и замер */
 .a-g-swap .a-live{animation:swapTurn 5s cubic-bezier(.5,0,.15,1) infinite}
@@ -459,7 +459,7 @@ footer p{font-size:14px; color:var(--muted); max-width:64ch; line-height:1.55}
         <div class="layer"><span class="i">06</span><div><div class="t">Эмаль</div><div class="d">Только иридий и отдельные лимитированные. Лайм, голубой или графит — плоско, без градиента.</div></div></div>
         <div class="layer"><span class="i">07</span><div><div class="t">Эмблема-иллюстрация</div><div class="d">Не пиктограмма, а многослойная художественная чеканка на всё поле: гранёные самоцветы, крылья дивизионов, орденские звёзды. Цифра и год — на графитовой плашке с металлическим кантом.</div></div></div>
         <div class="layer"><span class="i">08</span><div><div class="t">Свет</div><div class="d">Купольное поле, затенение по краю, лужица света за эмблемой, глянцевый полумесяц сверху и кромочный свет на гранях. Золото и иридий несут заклёпки по углам, иридий — две искры. Никаких пульсаций и волн.</div></div></div>
-        <div class="layer"><span class="i">09</span><div><div class="t">Зерно и надписи</div><div class="d">Турбулентный шум 6&nbsp;% против пластиковой гладкости. По верхней дуге поля выгравирована категория, по нижней — «МАТА». Дуги круговые: буквы не сталкиваются и ни на что не налегают.</div></div></div>
+        <div class="layer"><span class="i">09</span><div><div class="t">Зерно и надписи</div><div class="d">Турбулентный шум 6&nbsp;% против пластиковой гладкости. По верхней дуге поля выгравирована категория, по нижней — имя награды: за что выдана медаль, читается прямо с аверса. У медалей с плашкой низ занят цифрой — там имя не гравируется. Дуги круговые: буквы не сталкиваются и ни на что не налегают.</div></div></div>
       </div>
     </div>
   </div>
@@ -526,12 +526,14 @@ footer p{font-size:14px; color:var(--muted); max-width:64ch; line-height:1.55}
       </div>
       <div>
         <div class="k">Флаттер</div>
-        <p>Кладём в <code>assets/medals/</code>, рисуем через <code>flutter_svg</code>. Закрытое
-          состояние — <code>ColorFilter.matrix</code> поверх того же файла, второй ассет не нужен.</p>
+        <p>Ассеты выгружаются из этого документа попиксельно (браузерный рендер → WebP 768,
+          конвейер уже построен) в <code>assets/medals/</code>. Закрытое состояние —
+          <code>ColorFilter.matrix</code> поверх того же файла; анимации переигрываются
+          средствами Flutter.</p>
       </div>
       <div>
         <div class="k">Движение</div>
-        <p>У каждой медали своя анимация самой эмблемы: щит принимает стрелу и вздрагивает, перехват делает один оборот и замирает, район смагничивается из трёх кварталов, разметка дороги бежит, солнце восходит, крылья дивизиона взмахивают, окна города загораются, снег идёт, лучи ордена вращаются. При появлении — «чеканка»: эмблема вбивается, плашка с цифрой выезжает снизу.
+        <p>У каждой медали своя анимация самой эмблемы: кольцо цели замыкается и вбивает галочку, дни недели зажигаются лесенкой, календарь заполняется волной, блик обходит годовое кольцо, шевроны нормы взлетают, бегунок пробегает маршрут серии заново, три стрелы с разных сторон впиваются в щит и остаются торчать, солнце всходит из-за горизонта и садится, метеор чиркает полночь, конфетти и серпантин празднуют кубок, лента Победы колышется, хоровод осуохая идёт вокруг сэргэ, фейерверки рвутся над городом, гирлянда ёлки мигает. При появлении — «чеканка»: эмблема вбивается, плашка с цифрой выезжает снизу.
           Круги, ударные волны и пульсации запрещены — по стандарту знака Квартала.</p>
       </div>
       <div>
@@ -786,6 +788,136 @@ function ghostRays(m, en, dark){
 }
 
 const EMB = {
+  /* первая цель — кольцо дневной цели: замкнуто, пере-собирается, галочка вбивается */
+  ring: (m,id)=>{
+    const C=(2*Math.PI*30).toFixed(1);
+    return `<circle cx="0" cy="0" r="30" fill="none" stroke="${mixc(m.deep,'#000000',.12)}" stroke-width="10.5" opacity=".55"/>`
+      + `<g transform="rotate(-90)"><circle cx="0" cy="0" r="30" fill="none" stroke="#DFF45F" stroke-width="9.4" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="2">`
+      + `<animate attributeName="stroke-dashoffset" values="2;2;${C};${C};2" keyTimes="0;.52;.56;.62;.94" dur="8s" repeatCount="indefinite"/>`
+      + `</circle></g>`
+      + `<g>${gemHex(14.5,7.6,m,id)}</g>`
+      + `<g><animateTransform attributeName="transform" type="scale" values="1;1;0;0;1.3;1" keyTimes="0;.52;.56;.9;.95;1" dur="8s" repeatCount="indefinite"/>`
+      + `<path d="M-6.4,.6 L-2,5.4 L7,-5.2" fill="none" stroke="#DFF45F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  },
+  /* идеальная неделя — лесенка семи дней растёт и зажигается, рядом чеканная «7» */
+  week: (m,id)=>{
+    const dk=mixc(m.mid,m.deep,.22), light=mixc(m.mid,m.hi,.55);
+    let s='';
+    for(let i=0;i<7;i++){
+      const x=-36+i*7.6, h=13+i*3.2, y=17-h,
+            on=(.45+i*.05).toFixed(3), on2=(.48+i*.05).toFixed(3);
+      const lastFill = i===6 ? '#DFF45F' : light;
+      s+=`<rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="${dk}" stroke="#0A0E12" stroke-opacity=".3" stroke-width=".6"/>`
+       + `<rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="${lastFill}">`
+       + `<animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;.36;.4;${on};${on2};1" dur="8s" repeatCount="indefinite"/></rect>`;
+    }
+    // чеканная «7» на свободном правом поле — сразу видно, о чём медаль
+    s+=`<g font-family="Unbounded,Manrope,sans-serif" font-size="34" font-weight="800" stroke="none">`
+     + `<text x="28.5" y="14" text-anchor="middle" fill="#0A0E12" opacity=".4">7</text>`
+     + `<text x="27" y="12.4" text-anchor="middle" fill="${m.hi}">7`
+     + `<animate attributeName="opacity" values=".85;1;.85" dur="5s" repeatCount="indefinite"/></text></g>`;
+    return s;
+  },
+  /* идеальный месяц — календарный лист, дни заполняются волной, последний — звезда */
+  month: (m,id)=>{
+    const pap=mixc(m.mid,m.hi,.28), head=mixc(m.mid,m.deep,.3),
+          cell=mixc(m.mid,m.deep,.28), lit=mixc(m.mid,m.hi,.6);
+    let s=`<g transform="scale(1.12)">`
+      + `<rect x="-30" y="-24" width="60" height="52" rx="4" fill="${pap}" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".9"/>`
+      + `<path d="M-30,-15 L30,-15 L30,-20 Q30,-24 26,-24 L-26,-24 Q-30,-24 -30,-20 Z" fill="${head}"/>`
+      + `<rect x="-14" y="-28" width="3" height="7" rx="1.5" fill="${m.cut}" opacity=".7"/>`
+      + `<rect x="11" y="-28" width="3" height="7" rx="1.5" fill="${m.cut}" opacity=".7"/>`;
+    for(let r=0;r<4;r++){
+      const t1=(.44+r*.09).toFixed(2), t2=(.48+r*.09).toFixed(2);
+      for(let c=0;c<6;c++){
+        const x=-26.1+c*8.7, y=-11+r*8.6, last=(r===3&&c===5);
+        s+=`<rect x="${x}" y="${y}" width="6.9" height="6" rx="1.2" fill="${cell}" opacity=".55"/>`;
+        if(last){
+          s+=`<g><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;.34;.38;${t1};${t2};1" dur="9s" repeatCount="indefinite"/>`
+           + `<rect x="${x}" y="${y}" width="6.9" height="6" rx="1.2" fill="${lit}"/>`
+           + `<polygon points="${starPts(5,2.6,1.1)}" transform="translate(${x+3.45},${y+3})" fill="#DFF45F" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".4"/></g>`;
+        } else {
+          s+=`<rect x="${x}" y="${y}" width="6.9" height="6" rx="1.2" fill="${lit}">`
+           + `<animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;.34;.38;${t1};${t2};1" dur="9s" repeatCount="indefinite"/></rect>`;
+        }
+      }
+    }
+    return s + `</g>`;
+  },
+  /* идеальный год — кольцо из 12 месяцев, блик обходит круг, в центре гранёная звезда */
+  year: (m,id)=>{
+    let s='';
+    for(let k=0;k<12;k++){
+      const a0=(90+k*30+3)*Math.PI/180, a1=(90+(k+1)*30-3)*Math.PI/180;
+      const p=(a)=>`${(27*Math.cos(a)).toFixed(1)},${(-27*Math.sin(a)).toFixed(1)}`;
+      s+=`<path d="M${p(a0)} A27,27 0 0 0 ${p(a1)}" fill="none" stroke="${k%2?mixc(m.mid,m.deep,.2):mixc(m.mid,m.hi,.4)}" stroke-width="7.6"/>`;
+    }
+    s+=`<g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="14s" repeatCount="indefinite"/>`
+     + `<path d="M0,-27 A27,27 0 0 1 22.4,-15" fill="none" stroke="${m.hi}" stroke-width="7.6" opacity=".4" stroke-linecap="round"/></g>`
+     + facetStar(13,5.4,0,mixc(m.mid,m.hi,.7),mixc(m.mid,m.deep,.35),m.cut)
+     + `<path d="${hexPath(4.4)}" fill="${m.hi}" stroke="${m.cut}" stroke-width=".6"/>`;
+    return s;
+  },
+  /* цель ×N — три шеврона взлетают, призрачный знак умножения позади */
+  mult: (m,id)=>{
+    const c1=mixc(m.mid,m.deep,.2), c2=mixc(m.mid,m.hi,.3), c3=mixc(m.mid,m.hi,.6);
+    const ch=(y,c)=>`<path d="M-15,${y} L0,${y-11} L15,${y}" fill="none" stroke="${c}" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const chSh=(y)=>`<path d="M-15,${y} L0,${y-11} L15,${y}" fill="none" stroke="#0A0E12" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round" opacity=".38" transform="translate(1.5,2)"/>`;
+    const flash=(y,t)=>`<path d="M-15,${y} L0,${y-11} L15,${y}" fill="none" stroke="${m.hi}" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round" opacity="0">`
+      + `<animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;${t};${(t+.07).toFixed(2)};${(t+.2).toFixed(2)};1" dur="3.8s" repeatCount="indefinite"/></path>`;
+    return `<text x="0" y="13" text-anchor="middle" font-family="Unbounded,Manrope,sans-serif" font-size="44" font-weight="800" fill="${m.hi}" opacity=".09" stroke="none">×</text>`
+      + `<g><animateTransform attributeName="transform" type="translate" values="0,1.5;0,-1.5;0,1.5" dur="4.2s" repeatCount="indefinite"/>`
+      + chSh(17)+chSh(4)+chSh(-9)
+      + ch(17,c1)+ch(4,c2)+ch(-9,c3)
+      + flash(17,.12)+flash(4,.24)+flash(-9,.36)
+      + `</g>`;
+  },
+  /* серия — маршрут пройден: лаймовый след, бегунок-комета пробегает путь заново */
+  streak: (m,id)=>{
+    const P='M-30,20 C-16,26 -18,4 -2,6 C12,7.5 6,-12 30,-17';
+    return `<path d="${P}" fill="none" stroke="${mixc(m.mid,m.deep,.25)}" stroke-width="6" stroke-linecap="round"/>`
+      + `<path d="${P}" fill="none" stroke="#DFF45F" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0">`
+      + `<animate attributeName="stroke-dashoffset" values="0;0;100;100;0" keyTimes="0;.3;.33;.37;.95" dur="7s" repeatCount="indefinite"/></path>`
+      + `<circle cx="-30" cy="20" r="4.2" fill="${mixc(m.mid,m.deep,.2)}" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".7"/>`
+      + `<g transform="translate(30,-17)">${gemHex(7,3.5,m,id)}</g>`
+      + `<g><animateMotion path="${P}" keyPoints="1;1;0;0;1" keyTimes="0;.3;.33;.37;.95" calcMode="linear" rotate="auto" dur="7s" repeatCount="indefinite"/>`
+      + `<line x1="-8" y1="0" x2="-2" y2="0" stroke="#DFF45F" stroke-width="2.6" stroke-linecap="round" opacity=".5"/>`
+      + `<circle cx="0" cy="0" r="3.4" fill="#DFF45F" stroke="#0A0E12" stroke-opacity=".45" stroke-width=".8"/></g>`;
+  },
+  /* Ысыах — резной сэргэ, живое солнце и осуохай вокруг */
+  serge: (m,id)=>{
+    const wood='#8F6B47', woodHi='#B08A5F', woodDk='#5F4026', ppl=mixc(m.mid,m.deep,.3);
+    let s=`<ellipse cx="0" cy="29" rx="20" ry="3" fill="#0A0E12" opacity=".16"/>`
+      // столб с гранью света
+      + `<path d="M-5.5,-30 L5.5,-30 L4.2,26 L-4.2,26 Z" fill="${wood}" stroke="#0A0E12" stroke-opacity=".45" stroke-width=".9"/>`
+      + `<path d="M-5.5,-30 L-1.6,-30 L-1.1,26 L-4.2,26 Z" fill="${woodHi}" opacity=".55"/>`
+      // навершие: шейка, шар и конус
+      + `<rect x="-6.5" y="-33" width="13" height="3.4" rx="1.4" fill="${woodDk}" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".6"/>`
+      + `<circle cx="0" cy="-37" r="3.4" fill="${wood}" stroke="#0A0E12" stroke-opacity=".45" stroke-width=".7"/>`
+      + `<polygon points="0,-45 3,-39.6 -3,-39.6" fill="${woodDk}"/>`;
+    // три резных пояса с ромбами
+    [[-21],[-7],[7]].forEach(([y])=>{
+      s+=`<rect x="-5.8" y="${y}" width="11.6" height="3.2" rx="1" fill="${woodDk}"/>`
+       + `<polygon points="0,${y-1.4} 2.2,${y+1.6} 0,${y+4.6} -2.2,${y+1.6}" fill="${woodHi}" opacity=".7"/>`;
+    });
+    // солнце: диск, вращающиеся лучи
+    let rays='';
+    for(let k=0;k<8;k++){
+      rays+=`<polygon points="0,-9.4 1.7,-6 -1.7,-6" transform="rotate(${k*45})" fill="#F0BE3C"/>`;
+    }
+    s+=`<g transform="translate(27,-26) scale(1.35)">`
+     + `<g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="24s" repeatCount="indefinite"/>${rays}</g>`
+     + `<circle cx="0" cy="0" r="6" fill="#FFE9A8"/><circle cx="0" cy="0" r="3.8" fill="#FFD35C"/></g>`;
+    // осуохай: пять фигурок, взявшихся за поднятые руки, хоровод идёт по кругу
+    let dancers=`<path d="M-24,20.5 Q-18,16.5 -12,22.5 Q-6,17.5 0,23.5 Q6,17.5 12,22.5 Q18,16.5 24,20.5" fill="none" stroke="${ppl}" stroke-width="1.7" stroke-linecap="round"/>`;
+    [[-24,22.5],[-12,25],[0,26],[12,25],[24,22.5]].forEach(([x,y])=>{
+      dancers+=`<circle cx="${x}" cy="${y}" r="2.2" fill="${woodHi}" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".5"/>`
+       + `<path d="M${x-2.8},${y+3.4} L${x+2.8},${y+3.4} L${x+3.6},${y+10.4} L${x-3.6},${y+10.4} Z" fill="${ppl}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".5"/>`
+       + `<line x1="${x-2.4}" y1="${y+9.6}" x2="${x+2.4}" y2="${y+9.6}" stroke="${woodHi}" stroke-width="1" opacity=".8"/>`;
+    });
+    s+=`<g><animateTransform attributeName="transform" type="translate" values="-2.5,0;2.5,0;-2.5,0" dur="5.2s" repeatCount="indefinite"/>${dancers}</g>`;
+    return `<g transform="translate(0,-1.5) scale(1.22)">` + s + `</g>`;
+  },
   /* бегун — шлейф скорости живёт, корпус держит ритм шага */
   run: (m,id)=>{
     const c=mixc(m.mid,m.hi,.5), st=`stroke="${c}" stroke-linecap="round" fill="none"`;
@@ -797,7 +929,12 @@ const EMB = {
       + `<path d="M12,-17 L26,-8 L36,-16" ${st} stroke-width="8"/>`
       + `<path d="M11,-19 L-4,-12 L-12,-22" ${st} stroke-width="8"/>`
       + `<path d="M3,4 L22,14 L28,32" ${st} stroke-width="9"/>`
-      + `<path d="M3,4 L-12,18 L-26,10" ${st} stroke-width="9"/></g>`;
+      + `<path d="M3,4 L-12,18 L-26,10" ${st} stroke-width="9"/></g>`
+      // искры скорости из-под шага
+      + [[24,33,0],[.5,23,.55]].map(([x,y,b])=>
+          `<circle cx="${x}" cy="${y}" r="1.5" fill="${c}" opacity="0">`
+        + `<animate attributeName="opacity" values="0;.8;0" dur="1.3s" begin="${b}s" repeatCount="indefinite"/>`
+        + `<animateTransform attributeName="transform" type="translate" values="0,0;-11,2" dur="1.3s" begin="${b}s" repeatCount="indefinite"/></circle>`).join('');
   },
   /* ледяной кристалл — гранёная снежинка */
   snow: (m,id)=>{
@@ -820,11 +957,18 @@ const EMB = {
       const a=(30+k*20)*Math.PI/180, L=(k%2?30:38);
       rays+=`<path d="M${(20*Math.cos(a)).toFixed(1)},${(8-20*Math.sin(a)).toFixed(1)} L${(L*Math.cos(a)+2.6*Math.sin(a)).toFixed(1)},${(8-L*Math.sin(a)+2.6*Math.cos(a)).toFixed(1)} L${(L*Math.cos(a)-2.6*Math.sin(a)).toFixed(1)},${(8-L*Math.sin(a)-2.6*Math.cos(a)).toFixed(1)} Z" fill="#F0BE3C"/>`;
     }
-    return `<g class="a-rays">${rays}</g>`
+    // солнце по-настоящему ВОСХОДИТ: небо обрезано горизонтом, диск с лучами
+    // поднимается из-за линии, держится и уходит вниз, чтобы взойти снова
+    return `<clipPath id="${id}sky"><rect x="-42" y="-44" width="84" height="52"/></clipPath>`
+      + `<g clip-path="url(#${id}sky)"><g>`
+      + `<animateTransform attributeName="transform" type="translate" values="0,0;0,0;0,16;0,16;0,0" keyTimes="0;.5;.62;.7;.88" calcMode="spline" keySplines=".4,0,.6,1;.4,0,.6,1;.4,0,.6,1;.25,.6,.35,1" dur="10s" repeatCount="indefinite"/>`
+      + `<g class="a-rays">${rays}</g>`
       + `<g class="a-sun"><path d="M-16,8 A16,16 0 0 1 16,8 Z" fill="#FFE9A8"/>`
       + `<path d="M-10.5,8 A10.5,10.5 0 0 1 10.5,8 Z" fill="#FFD35C"/></g>`
+      + `</g></g>`
       + `<line x1="-34" y1="8" x2="34" y2="8" stroke="${m.cut}" stroke-width="2.4" stroke-linecap="round"/>`
-      + `<g class="a-refl"><rect x="-10" y="14" width="20" height="3" rx="1.5" fill="#F0BE3C" opacity=".55"/>`
+      + `<g class="a-refl"><animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;.52;.64;.82;.96" dur="10s" repeatCount="indefinite"/>`
+      + `<rect x="-10" y="14" width="20" height="3" rx="1.5" fill="#F0BE3C" opacity=".55"/>`
       + `<rect x="-6.5" y="20" width="13" height="2.6" rx="1.3" fill="#F0BE3C" opacity=".38"/>`
       + `<rect x="-3.5" y="26" width="7" height="2.2" rx="1.1" fill="#F0BE3C" opacity=".25"/></g>`;
   },
@@ -844,7 +988,20 @@ const EMB = {
       + `</g>`
       + `<path class="a-tw1" d="M20,-18 L21.4,-14 L25.4,-12.6 L21.4,-11.2 L20,-7.2 L18.6,-11.2 L14.6,-12.6 L18.6,-14 Z" fill="#FFFDF8"/>`
       + `<path class="a-tw2" d="M28,4 L29,6.8 L31.8,7.8 L29,8.8 L28,11.6 L27,8.8 L24.2,7.8 L27,6.8 Z" fill="#FFFDF8"/>`
-      + `<path class="a-tw3" d="M20,20 L20.8,22.2 L23,23 L20.8,23.8 L20,26 L19.2,23.8 L17,23 L19.2,22.2 Z" fill="#FFFDF8"/>`;
+      + `<path class="a-tw3" d="M20,20 L20.8,22.2 L23,23 L20.8,23.8 L20,26 L19.2,23.8 L17,23 L19.2,22.2 Z" fill="#FFFDF8"/>`
+      // метеор чиркает раз в цикл — быстрый росчерк с угасанием
+      + `<g opacity="0"><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;.6;.64;.71;1" dur="9s" repeatCount="indefinite"/>`
+      + `<animateTransform attributeName="transform" type="translate" values="0,0;0,0;-24,17;-24,17" keyTimes="0;.6;.71;1" dur="9s" repeatCount="indefinite"/>`
+      + `<line x1="27" y1="-33" x2="35" y2="-39" stroke="#FFFDF8" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>`
+      + `<circle cx="26" cy="-32.3" r="1.5" fill="#FFFDF8"/></g>`
+      // спящие крыши: город досматривает сны, одно окно ещё не легло
+      + `<g fill="${mixc(m.deep,'#000000',.22)}" stroke="none">`
+      + `<path d="M-33,31 L-33,23 L-28,19 L-23,23 L-23,31 Z"/>`
+      + `<path d="M-21,31 L-21,25 L-17,21.6 L-13,25 L-13,31 Z"/>`
+      + `<rect x="-30" y="14.5" width="1.8" height="6" rx=".5"/>`
+      + `</g>`
+      + `<rect x="-19" y="25.4" width="2.6" height="2.8" rx=".5" fill="#FFE9A8">`
+      + `<animate attributeName="opacity" values=".9;.9;.15;.15;.9" keyTimes="0;.35;.42;.78;.86" dur="9s" repeatCount="indefinite"/></rect>`;
   },
   /* дивизион — крылья взмахивают, самоцвет дышит */
   div: (m,id)=>{
@@ -857,8 +1014,10 @@ const EMB = {
       }
       wings+=`<g${sgn<0?' transform="scale(-1,1)"':''}><g class="a-wing">${f}</g></g>`;
     });
-    return wings + `<g class="a-gem">${gemHex(14,7,m,id)}</g>`
-      + `<path d="M-14,24 L14,24 L11,31 L-11,31 Z" fill="${mixc(m.mid,m.deep,.25)}" stroke="#0A0E12" stroke-opacity=".3" stroke-width=".6"/>`;
+    return wings + `<g class="a-gem">${gemHex(17.5,9,m,id)}</g>`
+      + `<g transform="translate(0,-27)">${facetStar(7,3,0,mixc(m.mid,m.hi,.7),mixc(m.mid,m.deep,.35),m.cut)}</g>`
+      + `<path d="M-17,24 L17,24 L13.5,31 L-13.5,31 Z" fill="${mixc(m.mid,m.deep,.25)}" stroke="#0A0E12" stroke-opacity=".3" stroke-width=".6"/>`
+      + `<g class="a-gl1"><path d="M6,-8 L7,-5.4 L9.6,-4.4 L7,-3.4 L6,-.8 L5,-3.4 L2.4,-4.4 L5,-5.4 Z" fill="#FFFFFF"/></g>`;
   },
   /* сезон закрыт — клетчатая ткань полощется на древке */
   finish: (m,id)=>{
@@ -890,7 +1049,18 @@ const EMB = {
       + `<rect x="-13" y="22" width="26" height="5.5" rx="2" fill="${body}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".7"/>`
       + `<rect x="-17" y="27.5" width="34" height="6.5" rx="2.4" fill="${dk}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".7"/>`
       + `<clipPath id="${id}cupc"><path d="M-20,-31 L20,-31 C20,-2 12,10 0,13 C-12,10 -20,-2 -20,-31 Z"/></clipPath>`
-      + `<g clip-path="url(#${id}cupc)"><rect class="a-cupshine" x="-5" y="-36" width="7" height="56" fill="#FFFFFF" opacity="0" transform="rotate(16)"/></g>`;
+      + `<g clip-path="url(#${id}cupc)"><rect class="a-cupshine" x="-5" y="-36" width="7" height="56" fill="#FFFFFF" opacity="0" transform="rotate(16)"/></g>`
+      // торжество: серпантин по бокам, конфетти сыплется, глинты вспыхивают
+      + `<path d="M-31,-34 q5,5 0,11 q-5,6 1,12" fill="none" stroke="#DFF45F" stroke-width="2.2" stroke-linecap="round">`
+      + `<animateTransform attributeName="transform" type="rotate" values="-4 -30 -34;4 -30 -34;-4 -30 -34" dur="3.8s" repeatCount="indefinite"/></path>`
+      + `<path d="M31,-31 q-5,5 0,11 q5,6 -1,12" fill="none" stroke="#57BCD8" stroke-width="2.2" stroke-linecap="round">`
+      + `<animateTransform attributeName="transform" type="rotate" values="4 30 -31;-4 30 -31;4 30 -31" dur="4.4s" repeatCount="indefinite"/></path>`
+      + [[-27,-42,'#DFF45F',3.6,0],[-14,-46,'#FFFDF8',4.2,1.1],[7,-48,'#57BCD8',3.4,2],[22,-44,'#DFF45F',4.6,.6],[31,-42,'#FFFDF8',3.8,2.8],[-33,-40,'#57BCD8',4.4,1.7],[13,-46,'#FFE9A8',3.5,3.4],[-4,-50,'#DFF45F',4.0,2.4]].map(([x,y,c,d,b])=>
+          `<g opacity="0"><animate attributeName="opacity" values="0;.95;.95;0" keyTimes="0;.08;.82;1" dur="${d}s" begin="${b}s" repeatCount="indefinite"/>`
+        + `<animateTransform attributeName="transform" type="translate" values="${x},${y};${x+(x>0?-7:7)},34" dur="${d}s" begin="${b}s" repeatCount="indefinite"/>`
+        + `<rect x="-1.5" y="-1" width="3" height="2" fill="${c}"><animateTransform attributeName="transform" type="rotate" from="0" to="300" dur="${d}s" begin="${b}s" repeatCount="indefinite"/></rect></g>`).join('')
+      + `<g class="a-gl1"><path d="M-25,-20 L-23.9,-17 L-21,-15.9 L-23.9,-14.8 L-25,-11.8 L-26.1,-14.8 L-29,-15.9 L-26.1,-17 Z" fill="#FFFFFF"/></g>`
+      + `<g class="a-gl2"><path d="M25,-14 L25.9,-11.6 L28.3,-10.7 L25.9,-9.8 L25,-7.4 L24.1,-9.8 L21.7,-10.7 L24.1,-11.6 Z" fill="#FFFFFF"/></g>`;
   },
   /* чемпион — орденская звезда: вращающиеся лучи + гранёная золотая звезда */
   star: (m,id)=>{
@@ -937,10 +1107,34 @@ const EMB = {
       + `<polygon points="${starPts(5,6,2.5)}" transform="translate(0,-46)" fill="#DFF45F" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".5"/>`
       + `<circle cx="-8" cy="-9" r="2.4" fill="#57BCD8"/><circle cx="7" cy="-6" r="2.4" fill="#FFFDF8"/>`
       + `<circle cx="-13" cy="13" r="2.6" fill="#DFF45F"/><circle cx="1" cy="9" r="2.4" fill="#57BCD8"/>`
-      + `<circle cx="13" cy="15" r="2.6" fill="#FFFDF8"/>`;
+      + `<circle cx="13" cy="15" r="2.6" fill="#FFFDF8"/>`
+      // гирлянда: нить двумя дугами, огоньки мигают вразнобой
+      + `<path d="M-14,-14 Q0,-8 15,-15" fill="none" stroke="#6B4A2B" stroke-width=".9" opacity=".8"/>`
+      + `<path d="M-20,7 Q0,15 20,6" fill="none" stroke="#6B4A2B" stroke-width=".9" opacity=".8"/>`
+      + [[-9,-11.4,'#FFD35C',0],[3,-10.9,'#DFF45F',.9],[-12,10,'#FFD35C',1.6],[-2,12.2,'#57BCD8',.4],[9,10.6,'#FFD35C',2.2]].map(([x,y,c,b])=>
+          `<circle cx="${x}" cy="${y}" r="1.5" fill="${c}">`
+        + `<animate attributeName="opacity" values=".25;1;.25" dur="2.6s" begin="${b}s" repeatCount="indefinite"/></circle>`).join('');
   },
-  /* оборона — щит принимает стрелу и вздрагивает */
+  /* оборона — три стрелы с разных сторон впиваются в щит и остаются торчать */
   shield: (m,id)=>{
+    // стрела детализирована как щит: гранёный наконечник, древко с бликом,
+    // оперение с красной обмоткой; остриё влево, хвост вправо
+    const arrowBody =
+        `<polygon points="0,0 7.5,-3.6 7.5,3.6" fill="${m.cut}"/>`
+      + `<polygon points="0,0 7.5,-3.6 7.5,0" fill="${mixc(m.mid,m.hi,.35)}" opacity=".55"/>`
+      + `<rect x="7" y="-1.1" width="16.5" height="2.2" rx="1.1" fill="#8A6248"/>`
+      + `<rect x="7" y="-1.1" width="16.5" height=".95" rx=".47" fill="#B08A5F" opacity=".85"/>`
+      + `<rect x="17.6" y="-1.7" width="1.7" height="3.4" fill="#C4372F"/>`
+      + `<path d="M19.6,-1 L25.6,-4.8 L25.6,-1.5 L21.8,-1 Z" fill="#E8E4D8" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".4"/>`
+      + `<path d="M19.6,1 L25.6,4.8 L25.6,1.5 L21.8,1 Z" fill="#E8E4D8" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".4"/>`;
+    // полёт из-за края → удар (совпадает с вздрагиванием щита) → торчит → тает
+    const strike=(place,t0)=>{
+      const hit=(t0+.032).toFixed(3);
+      return `<g transform="${place}">`
+        + `<g><animateTransform attributeName="transform" type="translate" values="36,0;36,0;0,0;0,0" keyTimes="0;${t0};${hit};1" calcMode="linear" dur="7s" repeatCount="indefinite"/>`
+        + `<animate attributeName="opacity" values="0;0;1;1;1;0;0" keyTimes="0;${t0};${(t0+.01).toFixed(3)};.62;.68;.73;1" dur="7s" repeatCount="indefinite"/>`
+        + arrowBody + `</g></g>`;
+    };
     return `<g class="a-shieldbody">`
       + `<path d="M0,-36 L28,-25 L28,2 Q28,23 0,36 Q-28,23 -28,2 L-28,-25 Z" fill="${mixc(m.mid,m.deep,.1)}" stroke="#0A0E12" stroke-opacity=".45" stroke-width="1.2"/>`
       + `<path d="M0,-31 L23,-22 L23,1 Q23,19 0,30 Q-23,19 -23,1 L-23,-22 Z" fill="${mixc(m.mid,m.hi,.4)}"/>`
@@ -949,9 +1143,9 @@ const EMB = {
       + `<circle cx="-20" cy="-20" r="1.8" fill="${m.hi}"/><circle cx="20" cy="-20" r="1.8" fill="${m.hi}"/>`
       + `<circle cx="-19" cy="6" r="1.8" fill="${m.hi}"/><circle cx="19" cy="6" r="1.8" fill="${m.hi}"/>`
       + `</g>`
-      + `<g class="a-arrow" opacity="0"><polygon points="26,-6 31.4,-8.8 31.4,-3.2" fill="${m.cut}"/><line x1="31.4" y1="-6" x2="45" y2="-8" stroke="${m.cut}" stroke-width="2.6" stroke-linecap="round"/></g>`
-      + `<line class="a-frag1" x1="27" y1="-8" x2="33" y2="-13" stroke="${m.cut}" stroke-width="2.2" stroke-linecap="round" opacity="0"/>`
-      + `<line class="a-frag2" x1="27" y1="-4" x2="34" y2="-1" stroke="${m.cut}" stroke-width="2.2" stroke-linecap="round" opacity="0"/>`;
+      + strike('translate(17,-15) rotate(-14)', .028)
+      + strike('translate(-17,-3) scale(-1,1) rotate(-9)', .2)
+      + strike('translate(14,12) rotate(9)', .373);
   },
   /* дистанция — дорога в перспективе к финишу */
   road: (m,id)=>{
@@ -969,9 +1163,20 @@ const EMB = {
       + `<path d="M2.8,-40 L8.4,-39.2 L8.4,-35.7 L2.8,-36.5 Z" fill="#20252B"/>`
       + `<path d="M8.4,-35.7 L14,-35 L14,-31.5 L8.4,-32.2 Z" fill="#20252B"/></g>`;
   },
-  /* квартал — гранёный самоцвет */
-  hexcap: (m,id)=>gemHex(30,16.5,m,id)
-    + `<path d="M-9,-22 L2,-24" stroke="${m.hi}" stroke-opacity=".8" stroke-width="2" stroke-linecap="round" fill="none"/>`,
+  /* квартал — взятая зона с вымпелом; соседние кварталы тянутся связями */
+  hexcap: (m,id)=>{
+    const mini=(x,y,b)=>
+        `<line x1="${(x*.45).toFixed(1)}" y1="${(y*.45).toFixed(1)}" x2="${(x*.78).toFixed(1)}" y2="${(y*.78).toFixed(1)}" stroke="${m.hi}" stroke-width="1.5" opacity=".3">`
+      + `<animate attributeName="opacity" values=".3;.65;.3" dur="4.2s" begin="${b}s" repeatCount="indefinite"/></line>`
+      + `<g transform="translate(${x},${y})"><path d="${hexPath(8)}" fill="${mixc(m.mid,m.deep,.25)}" fill-opacity=".6" stroke="${m.hi}" stroke-opacity=".55" stroke-width="1.1"/>`
+      + `<path d="${hexPath(8)}" fill="${m.hi}" fill-opacity="0"><animate attributeName="fill-opacity" values="0;.35;0" dur="4.2s" begin="${b+.4}s" repeatCount="indefinite"/></path></g>`;
+    return mini(-31,-15,0) + mini(31,-11,1.4) + mini(-3,32,2.8)
+      + gemHex(25,14,m,id)
+      + `<path d="M-8,-18 L2,-20" stroke="${m.hi}" stroke-opacity=".8" stroke-width="2" stroke-linecap="round" fill="none"/>`
+      + `<line x1="0" y1="-24" x2="0" y2="-39" stroke="${m.cut}" stroke-width="2" stroke-linecap="round"/>`
+      + `<path fill="#DFF45F" stroke="#0A0E12" stroke-opacity=".4" stroke-width=".8" d="M0,-39 L14,-35.9 L0,-32.6 Z">`
+      + `<animate attributeName="d" values="M0,-39 L14,-35.9 L0,-32.6 Z; M0,-39 L13.4,-34.3 L0,-32.6 Z; M0,-39 L14,-35.9 L0,-32.6 Z" dur="2.2s" repeatCount="indefinite"/></path>`;
+  },
   /* весь район — кварталы смагничиваются в созвездие */
   hexgrid: (m,id)=>
       `<line class="a-mline" x1="0" y1="-16" x2="-15" y2="10" stroke="${m.hi}" stroke-width="1.2"/>`
@@ -987,7 +1192,13 @@ const EMB = {
       + `<rect x="-17.6" y="-36" width="3.2" height="70" rx="1.6" fill="${c}"/>`
       + `<path fill="#DFF45F" stroke="#0A0E12" stroke-opacity=".4" stroke-width="1" d="M-14,-34 L28,-25 L-14,-14 Z">`
       + `<animate attributeName="d" values="M-14,-34 L28,-25 L-14,-14 Z; M-14,-34 L27,-20.5 L-14,-14 Z; M-14,-34 L28,-25 L-14,-14 Z" dur="2.4s" repeatCount="indefinite"/></path>`
-      + `<ellipse cx="-4" cy="36" rx="15" ry="2.6" fill="#0A0E12" opacity=".16"/>`;
+      + `<ellipse cx="-4" cy="36" rx="15" ry="2.6" fill="#0A0E12" opacity=".16"/>`
+      // следы первопроходца проявляются шаг за шагом к древку
+      + [[24,30,-24,0],[17,22,18,1],[9,15,-20,2],[1,8,14,3],[-7,2,-16,4]].map(([x,y,r,i])=>
+          `<ellipse cx="${x}" cy="${y}" rx="1.7" ry="2.9" transform="rotate(${r} ${x} ${y})" fill="${m.cut}" opacity="0">`
+        + `<animate attributeName="opacity" values="0;0;.5;.5;0" keyTimes="0;${(.08+i*.09).toFixed(2)};${(.12+i*.09).toFixed(2)};.78;.9" dur="8s" repeatCount="indefinite"/></ellipse>`).join('')
+      + `<g class="a-gl1"><path d="M30,-32 L31,-29.4 L33.6,-28.4 L31,-27.4 L30,-24.8 L29,-27.4 L26.4,-28.4 L29,-29.4 Z" fill="#FFFFFF"/></g>`
+      + `<g class="a-gl2"><path d="M-24,-40 L-23.2,-38 L-21.2,-37.2 L-23.2,-36.4 L-24,-34.4 L-24.8,-36.4 L-26.8,-37.2 L-24.8,-38 Z" fill="#FFFFFF"/></g>`;
   },
   /* День города — вечерний город: окна загораются по очереди */
   city: (m,id)=>{
@@ -998,7 +1209,21 @@ const EMB = {
       + `<polygon points="-0.5,-38 3.4,-26 -4.4,-26" fill="${b2}"/>`
       + `<rect x="14" y="6" width="19" height="28" rx="1.5" fill="${b3}" stroke="#0A0E12" stroke-opacity=".35" stroke-width=".8"/>`
       + win(-30,4,'a-w1')+win(-22.5,13,'a-w2')+win(-6,-18,'a-w3')+win(1.5,-7,'a-w4')+win(-6,4,'a-w5')+win(19,12,'a-w6')
-      + `<line x1="-38" y1="34" x2="38" y2="34" stroke="${m.cut}" stroke-width="2" stroke-linecap="round" opacity=".7"/>`;
+      + `<line x1="-38" y1="34" x2="38" y2="34" stroke="${m.cut}" stroke-width="2" stroke-linecap="round" opacity=".7"/>`
+      // фейерверки: искра взлетает из-за крыш, разрывается снопом искр
+      + [[-24,-36,'#DFF45F',0],[24,-32,'#57BCD8',3.2]].map(([x,apex,c,b])=>{
+          let sp='';
+          for(let k=0;k<10;k++){
+            const a=Math.PI*2*k/10;
+            sp+=`<line x1="${(2.4*Math.cos(a)).toFixed(1)}" y1="${(2.4*Math.sin(a)).toFixed(1)}" x2="${(8*Math.cos(a)).toFixed(1)}" y2="${(8*Math.sin(a)).toFixed(1)}" stroke="${c}" stroke-width="1.3" stroke-linecap="round"/>`;
+          }
+          return `<line x1="${x}" y1="30" x2="${x}" y2="25.5" stroke="${c}" stroke-width="1.4" stroke-linecap="round" opacity="0">`
+            + `<animate attributeName="opacity" values="0;.9;.9;0;0" keyTimes="0;.02;.1;.13;1" dur="7s" begin="${b}s" repeatCount="indefinite"/>`
+            + `<animateTransform attributeName="transform" type="translate" values="0,0;0,${apex-25.5};0,${apex-25.5}" keyTimes="0;.12;1" dur="7s" begin="${b}s" repeatCount="indefinite"/></line>`
+            + `<g transform="translate(${x},${apex})" opacity="0">`
+            + `<animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;.12;.17;.3;1" dur="7s" begin="${b}s" repeatCount="indefinite"/>`
+            + `<g><animateTransform attributeName="transform" type="scale" values=".25;.25;1.35" keyTimes="0;.12;.3" dur="7s" begin="${b}s" repeatCount="indefinite"/>${sp}</g></g>`;
+        }).join('');
   }
 };
 
@@ -1046,6 +1271,12 @@ function renderMedal(o){
   if(!en){
     face += `<text class="a-arc" font-family="Unbounded,Manrope,sans-serif" font-size="4.2" font-weight="600" letter-spacing="1.6" fill="${m.cut}" fill-opacity=".62"><textPath href="#${id}a1" startOffset="50%" text-anchor="middle">${o.event||CATLABEL[o.cat]||'КВАРТАЛ'}</textPath></text>`;
   }
+  // Имя медали по нижней дуге — «за что выдана» читается прямо с аверса.
+  // Только там, где низ свободен: без плашки (она внизу) и без эмали.
+  if(!en && !(o.num!=null||o.year!=null)){
+    const nm=(o.name||'').toUpperCase().replace(/[«»]/g,'');
+    face += `<text class="a-arc" font-family="Unbounded,Manrope,sans-serif" font-size="4.2" font-weight="600" letter-spacing="1.4" fill="${m.cut}" fill-opacity=".55"><textPath href="#${id}a2" startOffset="50%" text-anchor="middle">${nm}</textPath></text>`;
+  }
 
   // призрачные лучи — фоновая жизнь в каждой медали (у чемпиона свои)
   if(o.glyph!=='star') face += ghostRays(m, !!en, dark);
@@ -1072,10 +1303,13 @@ function renderMedal(o){
   // плашка с цифрой или годом
   if(pt){
     const pfs = pt.length>3 ? 12.5 : (pt.length>2 ? 14.5 : 16.5);
+    // Оптический центр плашки (y 15…34): базовая линия = центр + полкапители
+    // (капитель Unbounded ≈ .72em) — цифра ложится ровно, не липнет к краям.
+    const py = (24.5 + pfs*0.36).toFixed(1);
     face += `<g class=\"a-plaque\"><rect x="${-pw}" y="16.6" width="${pw*2}" height="19" rx="7" fill="#0A0E12" opacity=".4"/>`
           + `<rect x="${-pw}" y="15" width="${pw*2}" height="19" rx="7" fill="url(#${id}pl)"/>`
           + `<rect x="${-pw}" y="15" width="${pw*2}" height="19" rx="7" fill="none" stroke="url(#${id}nt)" stroke-width="1.2"/>`
-          + `<text x="0" y="28.6" text-anchor="middle" font-family="Unbounded,Manrope,sans-serif" font-size="${pfs}" font-weight="800" letter-spacing="${pt.length>3?0:.5}" fill="url(#${id}nt)" stroke="none">${pt}</text></g>`;
+          + `<text x="0" y="${py}" text-anchor="middle" font-family="Unbounded,Manrope,sans-serif" font-size="${pfs}" font-weight="800" letter-spacing="${pt.length>3?0:.5}" fill="url(#${id}nt)" stroke="none">${pt}</text></g>`;
   }
 
   // приметы поверх эмблемы — у каждого события свои
@@ -1088,21 +1322,19 @@ function renderMedal(o){
           + `<animate attributeName="opacity" values="0;.6;.6;0" keyTimes="0;.2;.8;1" dur="9.5s" begin="2.8s" repeatCount="indefinite"/>`
           + `<path d="M23,-8.6 L24,-6 L26.6,-5 L24,-4 L23,-1.4 L22,-4 L19.4,-5 L22,-6 Z" fill="#FFFDF8"/></g>`;
   } else if(o.deco==='pobeda'){
-    // георгиевская лента между эмблемой и плашкой
-    face += `<g stroke="none">`
-          + `<rect x="-14" y="8.8" width="28" height="1.16" fill="#2E2A26"/>`
-          + `<rect x="-14" y="9.96" width="28" height="1.16" fill="#E8722D"/>`
-          + `<rect x="-14" y="11.12" width="28" height="1.16" fill="#2E2A26"/>`
-          + `<rect x="-14" y="12.28" width="28" height="1.16" fill="#E8722D"/>`
-          + `<rect x="-14" y="13.44" width="28" height="1.16" fill="#2E2A26"/></g>`;
-  } else if(o.deco==='ysyakh'){
-    // солнце Ысыаха рядом с сэргэ
-    face += `<g stroke="${m.cut}" stroke-opacity=".65" fill="none" stroke-width="1" stroke-linecap="round">`
-          + `<circle cx="13" cy="-20" r="2.8"/>`
-          + `<g><animateTransform attributeName="transform" type="rotate" values="0 13 -20; 360 13 -20" dur="26s" repeatCount="indefinite"/>`
-          + `<line x1="17.2" y1="-20" x2="18.6" y2="-20"/><line x1="15.1" y1="-23.6" x2="15.8" y2="-24.8"/>`
-          + `<line x1="10.9" y1="-23.6" x2="10.2" y2="-24.8"/><line x1="7.4" y1="-20" x2="8.8" y2="-20"/>`
-          + `<line x1="10.9" y1="-16.4" x2="10.2" y2="-15.2"/><line x1="15.1" y1="-16.4" x2="15.8" y2="-15.2"/></g></g>`;
+    // Георгиевская лента волной обвивает нижний луч звезды и колышется.
+    // Пять полос — трюк с тремя штрихами по одной волнистой осевой:
+    // чёрный 7.4 → оранжевый 4.5 → чёрный 1.5 дают 3 чёрные + 2 оранжевые.
+    const wA='M-27,7.5 C-16,4 -6,9.5 3,7 C11,4.5 19,9.5 27,6';
+    const wB='M-27,6 C-16,9 -6,4 3,6.5 C11,9 19,4 27,7.5';
+    const wave=(w,c)=>`<path d="${wA}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="butt">`
+      + `<animate attributeName="d" values="${wA};${wB};${wA}" dur="4.6s" repeatCount="indefinite"/></path>`;
+    face += `<g>`
+          // ласточкины хвосты на концах — лента, а не полоска
+          + `<polygon points="-27,3.4 -33,7.5 -27,11.6 -27,7.5" fill="#2E2A26"><animateTransform attributeName="transform" type="translate" values="0,0;0,-1.4;0,0" dur="4.6s" repeatCount="indefinite"/></polygon>`
+          + `<polygon points="27,1.9 33,6 27,10.1 27,6" fill="#2E2A26"><animateTransform attributeName="transform" type="translate" values="0,0;0,1.5;0,0" dur="4.6s" repeatCount="indefinite"/></polygon>`
+          + wave(7.4,'#2E2A26') + wave(4.5,'#E8722D') + wave(1.5,'#2E2A26')
+          + `</g>`;
   }
 
   return `<svg viewBox="-58 -58 116 116" role="img" aria-label="${o.name}">
@@ -1135,7 +1367,7 @@ function renderMedal(o){
     </linearGradient>
     <clipPath id="${id}c"><path d="${hexPath(50)}"/></clipPath>
     <clipPath id="${id}c2"><path d="${hexPath(41)}"/></clipPath>
-    ${!en?`<path id="${id}a1" d="M -31,0 A 31,31 0 0 1 31,0" fill="none"/>`:''}
+    ${!en?`<path id="${id}a1" d="M -31,0 A 31,31 0 0 1 31,0" fill="none"/><path id="${id}a2" d="M -31,0 A 31,31 0 0 0 31,0" fill="none"/>`:''}
     <filter id="${id}es" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="1.4" dy="2" stdDeviation=".7" flood-color="#0A0E12" flood-opacity=".5"/></filter>
     ${(en&&pt)?`<mask id="${id}mk"><rect x="-58" y="-58" width="116" height="116" fill="#fff"/><rect x="${-(pw+3)}" y="12.5" width="${(pw+3)*2}" height="25" rx="9" fill="#000"/></mask>`:''}
     <radialGradient id="${id}ao"><stop offset="60%" stop-color="${m.deep}" stop-opacity="0"/><stop offset="100%" stop-color="${m.deep}" stop-opacity=".48"/></radialGradient>
@@ -1357,7 +1589,7 @@ const FLIPS=[
 document.getElementById('flips').innerHTML = FLIPS.map(f=>
   `<div class="flipcard medal"><div class="flip-inner"><div class="face">${renderMedal(Object.assign({},f.front))}</div><div class="face f-back">${renderReverse(f.front.tier, f.v, f.u, f.sub)}</div></div><div class="nm">${f.front.name}</div><div class="rq">Нажмите — оборот с личной гравировкой</div></div>`).join('');
 if(matchMedia('(prefers-reduced-motion: reduce)').matches){
-  document.querySelectorAll('animateTransform, animate').forEach(a=>a.remove());
+  document.querySelectorAll('animateTransform, animate, animateMotion').forEach(a=>a.remove());
 }
 document.getElementById('flips').addEventListener('click',e=>{
   const c=e.target.closest('.flipcard'); if(c) c.classList.toggle('on');
