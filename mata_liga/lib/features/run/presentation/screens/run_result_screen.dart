@@ -8,9 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../celebration/medal_ceremony.dart';
-import '../../../loyalty/data/loyalty_provider.dart';
-import '../../../profile/data/badge_defs.dart';
+import '../../../medals/data/medals_provider.dart';
+import '../../../medals/presentation/shtamp_ceremony.dart';
 import '../../data/completed_runs_provider.dart';
 import '../widgets/share_card.dart';
 
@@ -142,29 +141,24 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
     if (t >= .995) _maybeShowMedals();
   }
 
-  /// Новые медали этой пробежки — церемония Варианта A по каждой.
+  /// Новые медали этой пробежки: сервер уже присвоил их лениво — забираем
+  /// свежий список и чеканим каждую непоказанную («Штамп МАТА», D-64).
+  /// Если бег ушёл в офлайн-очередь, медаль догонит на следующем финише.
   Future<void> _maybeShowMedals() async {
     if (_medalsShown || !mounted) return;
     _medalsShown = true;
-    final runs = ref.read(completedRunsProvider);
-    final balance = ref.read(loyaltyProvider).balance;
-    final r = widget.result;
-    final others = runs.where((x) => x.id != r.runId).toList();
-    final before = BadgeFacts.fromRuns(others, balance: balance);
-    final after = BadgeFacts(
-      runs: before.runs + 1,
-      totalKm: before.totalKm + r.distanceKm,
-      captures: before.captures + (r.hasCapture ? 1 : 0),
-      balance: balance,
-    );
-    final fresh = kBadgeDefs
-        .where((d) => !d.unlocked(before) && d.unlocked(after))
-        .toList();
-    for (final def in fresh) {
-      if (!mounted) return;
-      await Future<void>.delayed(const Duration(milliseconds: 450));
-      if (!mounted) return;
-      await showMedalCeremony(context, badge: def);
+    try {
+      ref.invalidate(medalsProvider);
+      final list = await ref.read(medalsProvider.future);
+      final fresh = await MedalCeremonyLedger.unshown(list);
+      for (final medal in fresh) {
+        if (!mounted) return;
+        await Future<void>.delayed(const Duration(milliseconds: 450));
+        if (!mounted) return;
+        await showShtampCeremony(context, medal);
+      }
+    } catch (_) {
+      // Нет сети — церемония подождёт следующего экрана итогов.
     }
   }
 

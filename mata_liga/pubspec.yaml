@@ -86,6 +86,9 @@ flutter:
     - assets/icons/
     - assets/zones.json
     - assets/audio/
+    # «Штамп МАТА»: 44 аверса + 5 реверсов, выгружены из эталона
+    # docs/design/medals/ (WebP 768px, попиксельно тот рендер, что утверждён).
+    - assets/medals/
 
   # Квартал 2.0 (Ф8): Manrope — дисплей/заголовки, Inter — текст и данные.
   # Unbounded остаётся зарегистрированным для знака «ЛИГА» на сплэше.

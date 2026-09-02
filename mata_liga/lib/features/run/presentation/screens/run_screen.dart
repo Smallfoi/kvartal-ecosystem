@@ -981,7 +981,7 @@ class _FirstQuestCard extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'Небольшой круг у дома — этого достаточно. '
-            'За первую пробежку — медаль «Арктический».',
+            'За первую пробежку — стальной штамп «Первый бег».',
             style: TextStyle(
               fontSize: 12.5,
               height: 1.45,
