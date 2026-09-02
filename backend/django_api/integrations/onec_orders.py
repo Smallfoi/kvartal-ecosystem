@@ -1,4 +1,4 @@
-"""Обратный поток обмена с 1С: заказы МАТА → 1С и статусы обратно (D-62, §5 ТЗ).
+"""Обратный поток обмена с 1С: заказы МАТА → 1С и статусы обратно (D-62; паспорт интеграции — `docs/INTEGRATION_1C.md` §7).
 
 **Почему 1С забирает, а не мы отправляем.** Сервер 1С почти всегда стоит внутри
 сети магазина, за NAT — постучаться к нему снаружи нельзя. Поэтому направление то
@@ -65,7 +65,7 @@ def _article_index(payload: dict) -> dict:
 
 
 def order_to_json(order: Order) -> dict:
-    """Заказ в виде, описанном в ТЗ для 1С (`docs/INTEGRATION_1C.md` §5)."""
+    """Заказ в виде, описанном в ТЗ для 1С (`docs/INTEGRATION_1C.md` §7)."""
     payload = order.payload or {}
     checkout = payload.get("checkoutData") or {}
     index = _article_index(payload)
