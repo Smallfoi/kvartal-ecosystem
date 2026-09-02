@@ -957,6 +957,13 @@ html.js.motion-off .hero .brand-wordmark span {
   color: var(--graphite);
 }
 
+/* Размера нет на складе: гасим и зачёркиваем — видно с одного взгляда. */
+.product-sizes span.is-out {
+  color: var(--muted);
+  border-color: color-mix(in srgb, var(--line) 60%, transparent);
+  text-decoration: line-through;
+}
+
 .product-bottom {
   display: flex;
   align-items: baseline;
@@ -1161,6 +1168,17 @@ html.js.motion-off .hero .brand-wordmark span {
 
 .pv-sizes button:hover {
   border-color: var(--accent);
+}
+
+.pv-sizes button.is-out {
+  color: var(--muted);
+  border-style: dashed;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.pv-sizes button.is-out:hover {
+  border-color: var(--line);
 }
 
 .pv-sizes button.is-selected {

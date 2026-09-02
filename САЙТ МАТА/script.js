@@ -281,11 +281,22 @@ function pvBuildSizes(card) {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+  // Размеры, которых нет на складе (остаток по размерам из 1С): показываем, но
+  // выбрать нельзя. Спрятать их — значит заставить человека гадать, был ли его размер.
+  const out = (card.dataset.outofstock || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   pvSize = null;
   wrap.innerHTML = sizes
-    .map((s) => `<button type="button" data-size="${s}">${s}</button>`)
+    .map((s) => {
+      const gone = out.includes(s);
+      return `<button type="button" data-size="${s}"${
+        gone ? ' class="is-out" disabled aria-disabled="true"' : ""
+      }>${s}</button>`;
+    })
     .join("");
-  wrap.querySelectorAll("button").forEach((b) => {
+  wrap.querySelectorAll("button:not([disabled])").forEach((b) => {
     b.addEventListener("click", () => {
       wrap.querySelectorAll("button").forEach((x) => x.classList.remove("is-selected"));
       b.classList.add("is-selected");

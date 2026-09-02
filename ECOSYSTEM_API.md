@@ -77,10 +77,15 @@
   "isFeatured": true,
   "rating": 4.7,
   "reviewCount": 203,
-  "inStock": true
+  "inStock": true,
+  "stockBySize": { "41": 0, "42": 7, "43": 3 }
 }
 ```
-> Расширения на будущее (из RECOMMENDATION ч.3): `subcategoryId`, `videoUrl`, `shortDescription`, `stockPerSizeColor`, `isBestseller`, `stockCount`, `materialComposition`, `careInstructions`, `weight`.
+> `stockBySize` — остаток по размерам из 1С. **Пустой объект = разбивки нет**
+> (товар заведён руками или 1С прислала общий остаток); тогда витрина считает
+> доступными все размеры. Размер с нулём — показываем, но купить нельзя.
+>
+> Расширения на будущее (из RECOMMENDATION ч.3): `subcategoryId`, `videoUrl`, `shortDescription`, `isBestseller`, `stockCount`, `materialComposition`, `careInstructions`, `weight`.
 
 ### 2.3 Order (Order)
 ```json
@@ -206,6 +211,40 @@ GET /sizes                              → string[]
 GET /products/price-range               → { min, max }
 GET /banners                            → Banner[]
 ```
+
+### Обмен с 1С (D-62) — приём номенклатуры
+
+1С шлёт данные сама, мы у неё ничего не запрашиваем. Авторизация — постоянный
+`Authorization: Bearer <токен>` (без 2FA: у робота нет телефона). Пустой токен в
+настройках = приём выключен, любой запрос получает 401.
+
+```
+POST /integrations/1c/categories  { categories: [...] }  → { received, created, updated, errors }
+POST /integrations/1c/catalog     { products: [...] }    → { received, created, updated, skipped, keptByOwner, unknownCategories, errors }
+POST /integrations/1c/prices      { prices: [...] }      → { received, updated, keptByOwner, errors }
+GET  /integrations/1c/status                             → { status, service, enabled, time }
+```
+Вместо объекта принимается и голый массив, и `{"items": [...]}`, и `{"data": [...]}`.
+
+**Порядок важен: категории → каталог → цены.** Товар с незаведённой категорией
+сохранится, но не попадёт ни в один раздел витрины — такие категории возвращаются
+в `unknownCategories` и попадают в журнал обмена как замечание.
+
+Элемент категории: `{ id, name, parentId?, sort? }`. 1С ведёт название, порядок и
+родителя; эмодзи и фото категории — наши, импорт их не трогает. Пропавшие из
+выгрузки категории НЕ удаляем: на них ссылаются товары.
+
+Элемент товара: `{ id, article, name, categoryId, brand?, active?, updatedAt?,
+price?, oldPrice?, description?, sizes?, colors?, images? }`.
+
+Элемент цены: `{ id | article, price, oldPrice?, stock? }` либо
+`{ ..., variants: [{ variantId, size, stock }] }` — тогда остаток раскладывается
+по размерам (`stockBySize`), а общий остаток считается суммой. Общий `stock` без
+вариантов очищает разбивку: она уже неправда.
+
+**Право вето владельца.** Поля `price`, `oldPrice`, `description`, `sizes`,
+`colors`, `images` владелец может вести сам в Конструкторе — тогда импорт их не
+перезаписывает и возвращает в `keptByOwner`. Остаток переопределять нельзя.
 
 ### Order
 ```

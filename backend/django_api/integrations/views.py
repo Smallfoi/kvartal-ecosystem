@@ -100,6 +100,24 @@ def _reject(operation: str, detail: str, status: int):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+def onec_categories(request):
+    """Справочник категорий из 1С. Слать ПЕРЕД каталогом: товар с незаведённой
+    категорией сохранится, но не покажется ни в одном разделе витрины."""
+    started = time.monotonic()
+    if not _onec_authorized(request):
+        return _reject("categories", "Требуется токен обмена", 401)
+    items = _onec_items(request, "categories")
+    if items is None:
+        return _reject("categories", "Ожидается массив категорий или {\"categories\": [...]}", 400)
+    from .log import record
+    from .onec import import_categories
+    result = import_categories(items)
+    record("categories", result, started=started)
+    return Response(result)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def onec_catalog(request):
     """Карточки товаров из 1С. Переопределённые владельцем поля не трогаем."""
     started = time.monotonic()

@@ -13,7 +13,7 @@ import hashlib
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from catalog.models import Product
+from catalog.models import Category, Product
 
 # Поле в JSON от 1С → поле модели. Ключи совпадают с Product.OVERRIDABLE.
 FIELD_MAP = {
@@ -63,11 +63,66 @@ def _apply(product: Product, payload: dict, fields: dict) -> list:
     return kept
 
 
+def import_categories(items) -> dict:
+    """Справочник категорий из 1С.
+
+    Что ведёт 1С: название, порядок, родитель. Что остаётся нашим: эмодзи и фото
+    категории — их в 1С нет, и затирать их пустотой при каждой выгрузке нельзя.
+
+    Пропавшие из выгрузки категории НЕ удаляем: на категорию ссылаются товары, и
+    молчаливое удаление увело бы их с витрины. Категория — вещь редкая, убрать её
+    осознанно проще в админке, чем разбираться, почему исчез раздел.
+    """
+    created = updated = 0
+    errors = []
+
+    for raw in items:
+        if not isinstance(raw, dict):
+            errors.append("элемент не объект")
+            continue
+        cid = str(raw.get("id") or "").strip()
+        if not cid:
+            errors.append("нет id категории")
+            continue
+        if len(cid) > 40:
+            errors.append(f"{cid[:20]}…: id длиннее 40 символов")
+            continue
+
+        category = Category.objects.filter(id=cid).first()
+        is_new = category is None
+        if is_new:
+            if not raw.get("name"):
+                errors.append(f"{cid}: нет названия")
+                continue
+            category = Category(id=cid)
+
+        if raw.get("name"):
+            category.name = str(raw["name"])[:120]
+        if "parentId" in raw:
+            category.parent_id = str(raw.get("parentId") or "")[:40]
+        if raw.get("sort") is not None:
+            try:
+                category.sort = int(raw["sort"])
+            except (TypeError, ValueError):
+                errors.append(f"{cid}: порядок не число")
+        category.save()
+        created += int(is_new)
+        updated += int(not is_new)
+
+    return {"received": len(items), "created": created, "updated": updated,
+            "errors": errors[:20]}
+
+
 def import_catalog(items) -> dict:
     """Карточки товаров: наименование, категория, бренд, описание, размеры, фото."""
     created = updated = skipped = 0
     kept_fields: set = set()
     errors = []
+    # Категория — простая строка, а не внешний ключ, поэтому товар с незнакомой
+    # категорией сохранится молча и пропадёт из разделов витрины. Молчать об этом
+    # нельзя: со стороны это выглядит как «товар не выгрузился».
+    known = set(Category.objects.values_list("id", flat=True))
+    unknown: set = set()
 
     for raw in items:
         if not isinstance(raw, dict):
@@ -93,7 +148,9 @@ def import_catalog(items) -> dict:
         if raw.get("name"):
             product.name = raw["name"]
         if raw.get("categoryId"):
-            product.category_id = raw["categoryId"]
+            product.category_id = str(raw["categoryId"])
+            if product.category_id not in known:
+                unknown.add(product.category_id)
         if "brand" in raw:
             product.brand = raw.get("brand") or ""
         if "active" in raw:
@@ -106,9 +163,13 @@ def import_catalog(items) -> dict:
         created += int(is_new)
         updated += int(not is_new)
 
+    for cid in sorted(unknown):
+        errors.append(f"категория «{cid}» не заведена — товары не попадут в раздел")
+
     return {
         "received": len(items), "created": created, "updated": updated,
-        "skipped": skipped, "keptByOwner": sorted(kept_fields), "errors": errors[:20],
+        "skipped": skipped, "keptByOwner": sorted(kept_fields),
+        "unknownCategories": sorted(unknown), "errors": errors[:20],
     }
 
 
@@ -133,13 +194,36 @@ def import_prices(items) -> dict:
 
         variants = raw.get("variants")
         if isinstance(variants, list):
-            total = sum(int(v.get("stock") or 0) for v in variants if isinstance(v, dict))
+            total = 0
+            by_size: dict = {}
+            for v in variants:
+                if not isinstance(v, dict):
+                    continue
+                try:
+                    stock = int(v.get("stock") or 0)
+                except (TypeError, ValueError):
+                    errors.append(f"{external_id or article}: остаток варианта не число")
+                    continue
+                total += stock
+                size = str(v.get("size") or "").strip()
+                if size:
+                    # Один размер может прийти несколькими строками (разные цвета
+                    # или склады) — складываем, а не перетираем.
+                    by_size[size] = by_size.get(size, 0) + stock
             product.stock_count = total
+            product.stock_by_size = by_size
             src = dict(product.from_1c or {})
             src["variants"] = variants
             product.from_1c = src
         elif "stock" in raw:
-            product.stock_count = int(raw.get("stock") or 0)
+            try:
+                product.stock_count = int(raw.get("stock") or 0)
+            except (TypeError, ValueError):
+                errors.append(f"{external_id or article}: остаток не число")
+                continue
+            # Общий остаток без разбивки: старую разбивку держать нельзя, она
+            # уже неправда.
+            product.stock_by_size = {}
 
         if product.stock_count is not None:
             product.in_stock = product.stock_count > 0
