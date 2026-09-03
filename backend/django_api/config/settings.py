@@ -94,6 +94,11 @@ def _owner_only(request):
 
 # Так админка подписана в приложении-аутентификаторе (D-49).
 OTP_TOTP_ISSUER = "МАТА"
+# Пауза между попытками кода растёт экспоненциально: 1, 2, 4, 8… секунд (D-68).
+# Без неё шестизначный код перебирается за вечер: миллион вариантов, а окно
+# TOTP держит код 30 секунд и допускает соседние.
+OTP_TOTP_THROTTLE_FACTOR = 1
+OTP_STATIC_THROTTLE_FACTOR = 1
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -177,6 +182,13 @@ if not DEBUG:
     # попасть. Закрыл браузер — сессия недействительна (D-39).
     SESSION_COOKIE_AGE = 8 * 60 * 60
     SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+    # Куки не уезжают на чужие сайты вместе с переходом: защита от CSRF на
+    # уровне браузера, до того как проверка токена вообще начнётся.
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_HTTPONLY = True
+    # Referrer наружу не утекает: адрес админки с параметрами — сам по себе улика.
+    SECURE_REFERRER_POLICY = "same-origin"
 
 # P0-страховка: НЕ стартуем прод (DEBUG=0) с дефолтными секретами/ALLOWED_HOSTS=*.
 # Защита от катастрофы №1 — выкатить прод с публичным dev-секретом.

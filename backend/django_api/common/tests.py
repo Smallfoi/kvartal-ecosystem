@@ -5,6 +5,7 @@ from unittest import mock
 from django.test import SimpleTestCase, TestCase
 
 from common.prodcheck import insecure_prod_settings
+from common.testutils import login_admin
 
 _DEV = "dev-secret-change-in-prod"
 _SECURE = dict(
@@ -263,10 +264,10 @@ class AdminLoginThrottleTests(TestCase):
             "root-test", "root@test.local", self.PASSWORD
         )
 
-    def _login(self, password, ip="203.0.113.7"):
+    def _login(self, password, ip="203.0.113.7", username="root-test"):
         return self.client.post(
             "/admin/login/",
-            {"username": "root-test", "password": password},
+            {"username": username, "password": password},
             HTTP_X_REAL_IP=ip,
         )
 
@@ -282,19 +283,37 @@ class AdminLoginThrottleTests(TestCase):
         from common.adminsec import MAX_FAILS
 
         for _ in range(MAX_FAILS):
-            self._login("wrong", ip="203.0.113.7")
+            self._login("wrong", ip="203.0.113.7", username="someone-else")
         # Чужой IP не должен страдать из-за перебора с соседнего.
-        self.assertNotEqual(self._login("wrong", ip="203.0.113.8").status_code, 429)
+        r = self._login("wrong", ip="203.0.113.8", username="third-party")
+        self.assertNotEqual(r.status_code, 429)
+
+    def test_limit_is_also_per_username(self):
+        """Перебор одной учётки с меняющихся адресов ловится по логину (D-68).
+
+        Только по IP это не поймать: список прокси даёт по девять попыток
+        с адреса и идёт дальше, а логин владельца предсказуем.
+        """
+        from common.adminsec import MAX_FAILS_USER
+
+        for i in range(MAX_FAILS_USER):
+            self._login("wrong", ip=f"198.51.100.{i + 1}")
+        # Новый, ни разу не встречавшийся адрес — но логин тот же.
+        r = self._login("wrong", ip="198.51.100.200")
+        self.assertEqual(r.status_code, 429)
 
     def test_successful_login_resets_counter(self):
         from common.adminsec import MAX_FAILS
 
-        for _ in range(MAX_FAILS - 1):
+        from common.adminsec import MAX_FAILS_USER
+
+        tries = min(MAX_FAILS, MAX_FAILS_USER) - 1
+        for _ in range(tries):
             self._login("wrong")
-        self._login(self.PASSWORD)  # удачный вход обнуляет счётчик
+        self._login(self.PASSWORD)  # удачный вход обнуляет оба счётчика
         self.client.logout()
         r = None
-        for _ in range(MAX_FAILS - 1):
+        for _ in range(tries):
             r = self._login("wrong")
         self.assertNotEqual(r.status_code, 429)
 
@@ -317,9 +336,25 @@ class AdminTwoFactorTests(TestCase):
 
         return TOTPDevice.objects.create(user=self.user, name="test", confirmed=True)
 
-    def test_without_device_admin_works_as_before(self):
-        """Нельзя запереть админа, который ещё не подключил второй фактор."""
-        self.assertEqual(self.client.get("/admin/").status_code, 200)
+    def test_without_device_admin_is_sent_to_setup(self):
+        """Без второго фактора в админку не пускают — даже суперпользователя (D-68).
+
+        Раньше здесь стояло обратное утверждение: «без устройства пускаем как
+        раньше». Это и была дыра — владелец на проде входил по одному паролю.
+        """
+        r = self.client.get("/admin/")
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r["Location"], "/admin/2fa/setup/")
+
+    def test_setup_page_itself_stays_open(self):
+        """Иначе первый администратор заперся бы снаружи навсегда."""
+        self.assertEqual(self.client.get("/admin/2fa/setup/").status_code, 200)
+
+    def test_no_device_cannot_slip_through_verify_page(self):
+        """Страница кода не должна становиться обходом для того, у кого нет устройства."""
+        r = self.client.get("/admin/2fa/?next=/admin/")
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r["Location"], "/admin/2fa/setup/")
 
     def test_with_device_admin_redirects_to_second_step(self):
         self._enroll()
@@ -388,7 +423,7 @@ class AdminViewSiteLinkTests(TestCase):
         from django.contrib.auth import get_user_model
 
         get_user_model().objects.create_superuser("site_link_admin", "s@t.dev", "pass12345")
-        self.client.login(username="site_link_admin", password="pass12345")
+        login_admin(self.client, "site_link_admin", "pass12345")
 
     def test_link_points_to_storefront_and_opens_in_new_tab(self):
         from django.conf import settings
