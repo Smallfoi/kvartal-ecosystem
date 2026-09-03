@@ -3,7 +3,9 @@
 Две вещи, которых не хватало обмену: категории приходилось заводить руками, а
 остаток по размерам приезжал и терялся — витрина знала только «есть/нет» целиком.
 """
+from django.db import connection
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 
 from catalog.models import Category, Product
 
@@ -165,3 +167,66 @@ class OneCStockBySizeTests(TestCase):
             "variants": [{"size": "40", "stock": "много"}, {"size": "41", "stock": 2}]}]})
         self.assertTrue(r.json()["errors"])
         self.assertEqual(Product.objects.get(external_id="SS-0042").stock_by_size, {"41": 2})
+
+
+@override_settings(INTEGRATION_1C_TOKEN=TOKEN)
+class OneCBatchTests(TestCase):
+    """Пакетная запись. Раньше на каждую позицию уходило по несколько обращений
+    к базе, и выгрузка в тысячу товаров упиралась в таймаут. Тест держит это
+    свойство: число запросов не должно расти вместе с числом позиций."""
+
+    def _post(self, url, payload):
+        return self.client.post(url, payload, content_type="application/json",
+                                HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
+
+    def _catalog(self, n, start=0):
+        return {"products": [
+            {"id": f"G{i}", "article": f"A{i}", "name": f"Товар {i}",
+             "categoryId": "shoes", "price": 100 + i}
+            for i in range(start, start + n)
+        ]}
+
+    def setUp(self):
+        Category.objects.create(id="shoes", name="Кроссовки")
+
+    def test_query_count_does_not_grow_with_items(self):
+        with CaptureQueriesContext(connection) as small:
+            self._post(CATALOG, self._catalog(5))
+        with CaptureQueriesContext(connection) as big:
+            self._post(CATALOG, self._catalog(50, start=100))
+        self.assertEqual(Product.objects.count(), 55)
+        # Запросов на 50 товаров должно быть примерно столько же, сколько на 5.
+        self.assertLess(len(big), len(small) + 5,
+                        f"на 5 товаров {len(small)} запросов, на 50 — {len(big)}")
+
+    def test_second_run_updates_in_bulk(self):
+        self._post(CATALOG, self._catalog(30))
+        with CaptureQueriesContext(connection) as ctx:
+            self._post(CATALOG, self._catalog(30))
+        self.assertEqual(Product.objects.count(), 30)
+        self.assertLess(len(ctx), 20, f"обновление 30 товаров заняло {len(ctx)} запросов")
+
+    def test_duplicate_inside_one_upload_does_not_create_twice(self):
+        """Одна и та же позиция дважды в одной выгрузке — это один товар."""
+        item = {"id": "G-DUP", "article": "A-DUP", "name": "Товар",
+                "categoryId": "shoes", "price": 100}
+        r = self._post(CATALOG, {"products": [item, dict(item, name="Товар 2")]})
+        self.assertEqual(r.json()["created"], 1)
+        self.assertEqual(Product.objects.filter(external_id="G-DUP").count(), 1)
+        self.assertEqual(Product.objects.get(external_id="G-DUP").name, "Товар 2")
+
+    def test_prices_update_in_bulk(self):
+        self._post(CATALOG, self._catalog(30))
+        with CaptureQueriesContext(connection) as ctx:
+            self._post(PRICES, {"prices": [
+                {"id": f"G{i}", "price": 500, "stock": 3} for i in range(30)]})
+        self.assertLess(len(ctx), 20, f"обновление 30 цен заняло {len(ctx)} запросов")
+        self.assertEqual(Product.objects.filter(stock_count=3).count(), 30)
+
+    def test_too_big_upload_is_refused_with_a_clear_reason(self):
+        from integrations.onec import MAX_ITEMS
+        r = self._post(CATALOG, {"products": [
+            {"id": f"X{i}", "name": "Т"} for i in range(MAX_ITEMS + 1)]})
+        self.assertEqual(r.status_code, 413)
+        self.assertIn("частями", r.json()["detail"])
+        self.assertEqual(Product.objects.count(), 0)

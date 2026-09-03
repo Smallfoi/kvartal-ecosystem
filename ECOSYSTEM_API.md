@@ -246,6 +246,42 @@ price?, oldPrice?, description?, sizes?, colors?, images? }`.
 `colors`, `images` владелец может вести сам в Конструкторе — тогда импорт их не
 перезаписывает и возвращает в `keptByOwner`. Остаток переопределять нельзя.
 
+**Размер выгрузки.** За один запрос принимаем до 20 000 позиций; больше — 413 с
+просьбой прислать частями. Внутри всё пишется пачками, число обращений к базе не
+зависит от числа позиций.
+
+### Обмен с 1С — заказы МАТА → 1С (обратный поток)
+
+Направление то же: **1С забирает сама**, её сервер обычно за NAT и достучаться до
+него мы не можем.
+
+```
+GET  /integrations/1c/orders[?limit=200]              → { orders: [...] }
+POST /integrations/1c/orders/ack     { orderIds: [] } → { acked, unknown[] }
+POST /integrations/1c/orders/status  { orders: [...] }→ { received, updated, errors }
+```
+
+**Заказ остаётся в очереди, пока 1С не подтвердит приём** через `ack`. Оборванная
+связь не должна стоить покупателю заказа, поэтому выдача и подтверждение — разные
+запросы. Повторный `ack` не ошибка (`acked: 0`).
+
+**В очередь попадают только заказы, готовые к сборке:** оплата не требуется
+(`none`) или уже прошла (`paid`). Заказ, ждущий оплаты, в 1С не уходит — иначе там
+копятся брошенные корзины.
+
+Заказ отдаётся в виде: `{ orderId, createdAt, customer{phone,name,email}, items[],
+total, deliveryCost, pointsRedeemed, payment, paymentStatus, delivery, address,
+postalCode }`. Позиция: `{ id, article, productId, name, size, color, qty, price }` —
+`id` и `article` подставляются из карточки товара, чтобы склад не сопоставлял позиции
+по названию.
+
+**Статусы обратно:** `{ orderId, status, number? }`, где `status` — `accepted`,
+`assembled`, `shipped`, `delivered`, `canceled`. `shipped`/`delivered`/`canceled`
+двигают общий статус заказа; `accepted` и `assembled` — этапы склада: их видно
+покупателю отдельной строкой, но общий статус не меняют. Один и тот же статус
+повторно ничего не меняет и не шлёт уведомление второй раз. Пришедший статус
+снимает заказ с очереди, даже если `ack` потерялся.
+
 ### Order
 ```
 POST /orders     { items, checkoutData, pointsRedeemed } → Order   (создаёт заказ + ShoeAsset для обуви)

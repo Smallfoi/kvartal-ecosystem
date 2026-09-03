@@ -89,6 +89,14 @@ def _onec_items(request, key: str):
     return None
 
 
+def _too_many(items) -> bool:
+    """Защита от бессмысленно большой выгрузки: всё уже разобрано в память DRF,
+    и дальше пачка такого размера будет только вредить. Порог высокий — полная
+    выгрузка каталога в него укладывается."""
+    from .onec import MAX_ITEMS
+    return len(items) > MAX_ITEMS
+
+
 def _reject(operation: str, detail: str, status: int):
     """Отказ + строка в журнале. Неудачную авторизацию пишем не чаще раза в 5 минут:
     иначе перебор токена превратился бы в способ забить базу."""
@@ -107,6 +115,10 @@ def onec_categories(request):
     if not _onec_authorized(request):
         return _reject("categories", "Требуется токен обмена", 401)
     items = _onec_items(request, "categories")
+    if items is not None and _too_many(items):
+        from .onec import MAX_ITEMS
+        return _reject("categories", f"Слишком большая выгрузка: {len(items)} категорий. "
+                       f"Пришлите частями не больше {MAX_ITEMS} за раз.", 413)
     if items is None:
         return _reject("categories", "Ожидается массив категорий или {\"categories\": [...]}", 400)
     from .log import record
@@ -124,6 +136,10 @@ def onec_catalog(request):
     if not _onec_authorized(request):
         return _reject("catalog", "Требуется токен обмена", 401)
     items = _onec_items(request, "products")
+    if items is not None and _too_many(items):
+        from .onec import MAX_ITEMS
+        return _reject("catalog", f"Слишком большая выгрузка: {len(items)} товаров. "
+                       f"Пришлите частями не больше {MAX_ITEMS} за раз.", 413)
     if items is None:
         return _reject("catalog", "Ожидается массив товаров или {\"products\": [...]}", 400)
     from .log import record
@@ -141,12 +157,84 @@ def onec_prices(request):
     if not _onec_authorized(request):
         return _reject("prices", "Требуется токен обмена", 401)
     items = _onec_items(request, "prices")
+    if items is not None and _too_many(items):
+        from .onec import MAX_ITEMS
+        return _reject("prices", f"Слишком большая выгрузка: {len(items)} позиций. "
+                       f"Пришлите частями не больше {MAX_ITEMS} за раз.", 413)
     if items is None:
         return _reject("prices", "Ожидается массив позиций или {\"prices\": [...]}", 400)
     from .log import record
     from .onec import import_prices
     result = import_prices(items)
     record("prices", result, started=started)
+    return Response(result)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def onec_orders(request):
+    """Очередь заказов для 1С. Заказ остаётся в очереди, пока 1С не подтвердит приём
+    через `1c/orders/ack` — оборванная связь не должна стоить покупателю заказа."""
+    started = time.monotonic()
+    if not _onec_authorized(request):
+        return _reject("orders", "Требуется токен обмена", 401)
+    from .log import record
+    from .onec_orders import MAX_ORDERS_PER_PULL, order_to_json, pending_orders
+
+    try:
+        limit = int(request.query_params.get("limit") or MAX_ORDERS_PER_PULL)
+    except (TypeError, ValueError):
+        limit = MAX_ORDERS_PER_PULL
+    rows = pending_orders(limit)
+    result = {"orders": [order_to_json(o) for o in rows]}
+    record("orders", {"received": len(rows), "updated": len(rows)}, started=started)
+    return Response(result)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def onec_orders_ack(request):
+    """1С подтверждает, что документы созданы: снимаем заказы с очереди."""
+    started = time.monotonic()
+    if not _onec_authorized(request):
+        return _reject("orders", "Требуется токен обмена", 401)
+    body = request.data if isinstance(request.data, dict) else {}
+    ids = body.get("orderIds")
+    if isinstance(request.data, list):
+        ids = request.data
+    if not isinstance(ids, list):
+        return _reject("orders", "Ожидается {\"orderIds\": [...]}", 400)
+
+    from .log import record
+    from .onec_orders import mark_taken
+
+    result = mark_taken(ids)
+    record("orders", {"received": len(ids), "updated": result["acked"],
+                      "errors": [f"{o}: заказ не найден" for o in result["unknown"]]},
+           started=started)
+    return Response(result)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def onec_order_status(request):
+    """Статусы заказов из 1С: принят → собран → отгружен → доставлен/отменён."""
+    started = time.monotonic()
+    if not _onec_authorized(request):
+        return _reject("order-status", "Требуется токен обмена", 401)
+    items = _onec_items(request, "orders")
+    if items is not None and _too_many(items):
+        from .onec import MAX_ITEMS
+        return _reject("order-status", f"Слишком большая выгрузка: {len(items)} заказов. "
+                       f"Пришлите частями не больше {MAX_ITEMS} за раз.", 413)
+    if items is None:
+        return _reject("order-status", "Ожидается массив статусов или {\"orders\": [...]}", 400)
+
+    from .log import record
+    from .onec_orders import apply_statuses
+
+    result = apply_statuses(items)
+    record("order-status", result, started=started)
     return Response(result)
 
 

@@ -148,7 +148,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
   Widget build(BuildContext context) {
     final zonesAsync = ref.watch(zoneProvider);
     final zones = zonesAsync.valueOrNull ?? const <BlockZone>[];
-    final capturedAreas = ref.watch(capturedAreasProvider);
     final territories = ref.watch(territoryProvider).territories;
     final posAsync = ref.watch(positionStreamProvider);
     final runState = ref.watch(runProvider);
@@ -229,21 +228,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                   const TextSourceAttribution('© OpenStreetMap'),
                 ],
               ),
-              if (capturedAreas.isNotEmpty)
-                PolygonLayer(
-                  polygons: capturedAreas
-                      .map(
-                        (area) => Polygon(
-                          points: area.vertices,
-                          color: AppColors.electricBlue.withValues(alpha: 0.18),
-                          borderColor: AppColors.electricBlue.withValues(
-                            alpha: 0.70,
-                          ),
-                          borderStrokeWidth: 1.2,
-                        ),
-                      )
-                      .toList(),
-                ),
+              // Локальный слой «захваченных областей» убран («Идеальный
+              // маршрут», 03.09): он рисовал СЫРОЙ клиентский полигон поверх
+              // серверного и давал двойной контур. Источник правды один —
+              // серверные territories ниже.
 
               // City block territory polygons
               PolygonLayer(
@@ -511,7 +499,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TabVisibility {
                     padding: const EdgeInsets.only(bottom: 16),
                     child: _BottomPanel(
                       runState: runState,
-                      zones: zones,
+                      territories: territories,
                       closureStatus: closureStatus,
                     ),
                   ),
@@ -1334,21 +1322,26 @@ class _IconBtn extends StatelessWidget {
 
 class _BottomPanel extends StatelessWidget {
   final RunState runState;
-  final List<BlockZone> zones;
+  final List<ServerTerritory> territories;
   final LoopClosureStatus closureStatus;
 
   const _BottomPanel({
     required this.runState,
-    required this.zones,
+    required this.territories,
     required this.closureStatus,
   });
 
   @override
   Widget build(BuildContext context) {
     final isRunning = runState.status != RunStatus.idle;
-    final mine = zones.where((z) => z.owner == ZoneOwner.mine).length;
-    final enemy = zones.where((z) => z.owner == ZoneOwner.enemy).length;
-    final club = zones.where((z) => z.owner == ZoneOwner.club).length;
+    // Счёт по СЕРВЕРНЫМ территориям — раньше панель считала демо-сетку
+    // и показывала «Мои 0» при живой зоне («Идеальный маршрут», 03.09).
+    final mine =
+        territories.where((t) => t.rel == TerritoryRel.mine).length;
+    final enemy =
+        territories.where((t) => t.rel == TerritoryRel.enemy).length;
+    final club =
+        territories.where((t) => t.rel == TerritoryRel.club).length;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),

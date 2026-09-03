@@ -167,7 +167,13 @@ class ZoneNotifier extends StateNotifier<AsyncValue<List<BlockZone>>> {
   Future<void> _init() async {
     await _clearMapDataOnce();
     _capturedZoneIds = await _loadCapturedZoneIds();
-    _capturedAreas = await _loadCapturedAreas();
+    // Локальные «захваченные области» больше не живут между сессиями:
+    // на карте один источник правды — серверные territories («Идеальный
+    // маршрут», 03.09). Старые сохранённые контуры чистим.
+    _capturedAreas = [];
+    unawaited(SharedPreferences.getInstance().then(
+      (p) => p.remove(_capturedAreasKey),
+    ));
 
     for (int attempt = 1; ; attempt++) {
       try {
@@ -225,37 +231,6 @@ class ZoneNotifier extends StateNotifier<AsyncValue<List<BlockZone>>> {
     }
   }
 
-  Future<List<CapturedArea>> _loadCapturedAreas() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_capturedAreasKey);
-      if (raw == null) return const [];
-      final list = jsonDecode(raw) as List;
-      return list
-          .map((item) {
-            final data = item as Map<String, dynamic>;
-            final points = (data['vertices'] as List)
-                .map(
-                  (p) => LatLng(
-                    ((p as List)[0] as num).toDouble(),
-                    (p[1] as num).toDouble(),
-                  ),
-                )
-                .toList();
-            return CapturedArea(
-              id: data['id'] as String,
-              vertices: points,
-              capturedAt: DateTime.fromMillisecondsSinceEpoch(
-                data['capturedAtMs'] as int,
-              ),
-            );
-          })
-          .where((area) => area.vertices.length >= 4)
-          .toList();
-    } catch (_) {
-      return const [];
-    }
-  }
 
   Future<void> retry() async {
     state = const AsyncValue.loading();

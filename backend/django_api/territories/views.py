@@ -22,12 +22,31 @@ from clubs.models import ClubMember
 from common.security import user_id_from_request
 from loyalty.models import LoyaltyTransaction, add_txn
 
-# Валидный сглаженный captured-полигон из WKT (упрощение ~5 м, фикс самопересечений,
-# извлекаем только полигоны и оборачиваем в MultiPolygon).
-_CAP = (
-    "ST_Multi(ST_CollectionExtract("
-    "ST_MakeValid(ST_SimplifyPreserveTopology(ST_GeomFromText(%s,4326),0.00005)),3))"
+# Валидный сглаженный captured-полигон из WKT. Порядок обработки — броня от
+# GPS-игл (03.09.2026, «Идеальный маршрут»):
+# 1) ST_MakeValid — самопересечения «бабочек» становятся отдельными кусками;
+# 2) морфологическое ОТКРЫТИЕ: буфер внутрь-наружу ∓CLOSE_EPS_M по geography —
+#    тонкие выступы-иглы схлопываются в ноль, тело зоны восстанавливается
+#    (лишь острые углы скругляются на ~CLOSE_EPS_M);
+# 3) упрощение ~5 м + извлечение полигонов;
+# 4) фильтр осколков: куски мельче SLIVER_MIN_M2 выбрасываются — остаётся зона.
+CLOSE_EPS_M = 5.0
+SLIVER_MIN_M2 = 50.0
+_CAP_SQL = """
+WITH v AS (
+  SELECT ST_MakeValid(ST_GeomFromText(%s, 4326)) AS g
+), c AS (
+  SELECT ST_Buffer(ST_Buffer(g::geography, -%s), %s)::geometry AS g FROM v
+), s AS (
+  SELECT ST_Multi(ST_CollectionExtract(
+           ST_MakeValid(ST_SimplifyPreserveTopology(g, 0.00005)), 3)) AS g
+  FROM c
+), d AS (
+  SELECT (ST_Dump(g)).geom AS p FROM s
 )
+SELECT ST_AsEWKT(ST_Multi(ST_Collect(p)))
+FROM d WHERE ST_Area(p::geography) >= %s
+"""
 
 # Живой слой территорий держится 7 дней без подтверждения забегом (мягкий распад).
 # (имя HOLD_HOURS сохраняем — его импортирует leaderboard для фильтра свежести.)
@@ -117,10 +136,18 @@ def capture(request):
                 [HOLD_HOURS],
             )
             # 1) материализуем валидный сглаженный контур ОДИН раз (переиспользуем)
-            cur.execute(f"SELECT ST_AsEWKT({_CAP})", [wkt])
+            cur.execute(_CAP_SQL, [wkt, CLOSE_EPS_M, CLOSE_EPS_M, SLIVER_MIN_M2])
             cap_ewkt = (cur.fetchone() or [None])[0]
-            if not cap_ewkt:
-                return Response({"detail": "Не удалось обработать контур забега."}, status=400)
+            if not cap_ewkt or "EMPTY" in cap_ewkt.upper():
+                # После закрытия и фильтра осколков не осталось тела зоны —
+                # это была дрожь GPS, честно отвечаем как про маленькую петлю.
+                return Response(
+                    {
+                        "detail": "Слишком маленькая территория. "
+                        "Замкни контур побольше."
+                    },
+                    status=400,
+                )
             # 2) античит по площади контура (по полному контуру забега)
             cur.execute("SELECT ST_Area(ST_GeomFromEWKT(%s)::geography)", [cap_ewkt])
             cap_area = (cur.fetchone() or [0])[0] or 0
@@ -261,8 +288,18 @@ def list_territories(request):
         return Response({"detail": "Нет токена"}, status=401)
     my_club = _club_of(uid)
     bbox = request.query_params.get("bbox")
-    # На отдалённом виде упрощаем геометрию сильнее (легче и быстрее).
-    simplify = "ST_SimplifyPreserveTopology(geom,0.00003)"
+    # Упрощение адаптивное: на отдалённом виде сильнее (легче и быстрее),
+    # на ближнем зуме (узкий bbox < ~2 км) — ~1 м, чтобы закрас ложился
+    # по маршруту, а не «примерно рядом» («Идеальный маршрут», 03.09).
+    tolerance = 0.00003
+    if bbox:
+        try:
+            _a, _b, _c, _d = (float(x) for x in bbox.split(","))
+            if abs(_c - _a) < 0.02 and abs(_d - _b) < 0.02:
+                tolerance = 0.00001
+        except Exception:
+            pass  # некорректный bbox отсеет основная ветка ниже
+    simplify = f"ST_SimplifyPreserveTopology(geom,{tolerance})"
     # Остаток удержания в часах (для UI «защищено ещё Nч»).
     hold_left = (
         "EXTRACT(EPOCH FROM (captured_at + make_interval(hours => %s) - now())) / 3600.0"
