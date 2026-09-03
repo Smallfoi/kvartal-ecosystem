@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api/api_config.dart';
 import '../../auth/data/auth_provider.dart';
 import '../../loyalty/data/loyalty_provider.dart';
+import '../../run/data/route_cleaner.dart';
 
 /// Отношение территории к текущему пользователю (приходит с сервера).
 enum TerritoryRel { mine, club, enemy }
@@ -199,11 +200,15 @@ class TerritoryNotifier extends StateNotifier<TerritoryState> {
   }) async {
     final token = _token;
     if (token == null || route.length < 3) return null;
+    // Чистим трек ЗДЕСЬ (шипы + Дуглас-Пекер): одна точка входа защищает и
+    // онлайн-захват, и офлайн-очередь («Идеальный маршрут», 03.09.2026).
+    final cleaned = cleanRoute(route);
+    if (cleaned.length < 3) return null;
     final captureId = _newCaptureId();
     state = state.copyWith(isCapturing: true, clearError: true, clearMessage: true);
     final body = <String, dynamic>{
       'points': [
-        for (final p in route) [p.latitude, p.longitude],
+        for (final p in cleaned) [p.latitude, p.longitude],
       ],
       'captureId': captureId, // идемпотентность (S-04): ретрай не задвоит
       if (distanceMeters != null) 'distanceMeters': distanceMeters,

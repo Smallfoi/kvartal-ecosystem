@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../shoes/data/shoes_provider.dart';
 import 'completed_runs_provider.dart';
 import 'gps_kalman.dart';
+import 'route_cleaner.dart';
 
 enum RunStatus { idle, active, paused }
 
@@ -22,6 +23,16 @@ const _minRoutePointDistanceMeters = 2.0;
 const _maxRoutePointGapMeters = 80.0;
 // Жёстче по точности — отсекаем «гуляющие» фиксы, дающие дрожь на 2–3 м.
 const _maxAcceptedAccuracyMeters = 35.0;
+// «Идеальный маршрут» (03.09.2026): три новых рубежа против GPS-игл.
+// Телепорт: скорость МЕЖДУ фиксами (расстояние ÷ время) выше этой — выброс;
+// «скорость чипа» при рикошете от зданий врёт (часто ноль), поэтому считаем сами.
+const _maxJumpSpeedMs = 12.0;
+// Подтверждение карантина: следующий фикс ближе этого к подозрительному —
+// значит прыжок настоящий (потеря сигнала), а не одиночный выброс.
+const _jumpConfirmRadiusMeters = 30.0;
+// Стоп-детекция: стоим (светофор, подъезд) — качели GPS в маршрут не пишем.
+const _stopSpeedMs = 0.6;
+const _stopNearbyMeters = 15.0;
 // Фильтр на уровне ОС: не репортим, пока реально не сдвинулись (убирает дрожь на месте).
 const _locationDistanceFilterMeters = 5;
 const _locationServiceChannel = MethodChannel('kvartal/location_service');
@@ -94,11 +105,28 @@ class RunNotifier extends StateNotifier<RunState> {
   /// Сглаживание GPS — каждый забег со своим чистым фильтром.
   final GpsKalman _kalman = GpsKalman();
 
+  // Последний ПРИНЯТЫЙ сырой фикс — база для межточечной скорости.
+  Position? _lastRawAccepted;
+  // Подозрительный «телепорт» ждёт подтверждения вторым фиксом рядом.
+  Position? _quarantined;
+  DateTime? _quarantinedAt;
+  // Подтверждённый разрыв (потеря сигнала): следующей точке разрешён
+  // большой шаг — иначе маршрут навсегда упрётся в gap-фильтр.
+  bool _segmentBreak = false;
+
+  void _resetGpsGuards() {
+    _kalman.reset();
+    _lastRawAccepted = null;
+    _quarantined = null;
+    _quarantinedAt = null;
+    _segmentBreak = false;
+  }
+
   Future<void> start() async {
     debugPrint('KVARTAL_RUN_START_TAP');
     if (state.status == RunStatus.active) return;
-    // Новый забег (не resume) — сбрасываем фильтр сглаживания.
-    if (state.status == RunStatus.idle) _kalman.reset();
+    // Новый забег (не resume) — сбрасываем фильтр сглаживания и стражей GPS.
+    if (state.status == RunStatus.idle) _resetGpsGuards();
 
     final canTrack = await _ensureLocationReady();
     if (!canTrack) {
@@ -178,10 +206,16 @@ class RunNotifier extends StateNotifier<RunState> {
 
   Future<void> _seedCurrentPosition() async {
     try {
+      // Прогрев GPS-чипа. В МАРШРУТ первую точку НЕ пишем: холодный фикс в
+      // городе врёт на 50–500 м и раньше рисовал «хвост» от старта
+      // («Идеальный маршрут», 03.09). Маршрут начнётся с первого потокового
+      // фикса, прошедшего все фильтры; метку на карте ведёт location_provider.
       final current = await Geolocator.getCurrentPosition(
         locationSettings: _foregroundLocationSettings(),
       );
-      await _applyPosition(current, force: true);
+      debugPrint(
+        'KVARTAL_RUN_GPS_WARMED: accuracy=${current.accuracy.toStringAsFixed(0)}m',
+      );
     } catch (error) {
       debugPrint('KVARTAL_RUN_GPS_SEED_ERROR: $error');
     }
@@ -202,7 +236,7 @@ class RunNotifier extends StateNotifier<RunState> {
         );
   }
 
-  Future<void> _applyPosition(Position position, {bool force = false}) async {
+  Future<void> _applyPosition(Position position) async {
     if (state.status != RunStatus.active) return;
     // Анти-чит S-04: подделка геолокации (Android mock-provider). Фиксируем флаг
     // даже если точка дальше отфильтруется — сервер обнулит очки за такой забег.
@@ -210,8 +244,68 @@ class RunNotifier extends StateNotifier<RunState> {
       debugPrint('KVARTAL_RUN_MOCK_GPS_DETECTED');
       state = state.copyWith(mockDetected: true);
     }
-    if (!force && position.accuracy > _maxAcceptedAccuracyMeters) return;
-    if (!force && position.speed > _maxRunSpeedMs) return;
+    if (position.accuracy > _maxAcceptedAccuracyMeters) return;
+    if (position.speed > _maxRunSpeedMs) return;
+
+    final now = DateTime.now();
+    final prevRaw = _lastRawAccepted;
+    final rawGap = prevRaw == null
+        ? 0.0
+        : Geolocator.distanceBetween(
+            prevRaw.latitude,
+            prevRaw.longitude,
+            position.latitude,
+            position.longitude,
+          );
+
+    // Стоп-детекция: стоим на месте — качели GPS (иглы у подъезда) в маршрут
+    // не пишем. Если скорость чипа недостоверна (speedAccuracy ≤ 0), верим
+    // ей только вблизи последней принятой точки.
+    if (prevRaw != null &&
+        position.speed >= 0 &&
+        position.speed < _stopSpeedMs &&
+        (position.speedAccuracy > 0 || rawGap < _stopNearbyMeters)) {
+      return;
+    }
+
+    // Межточечная скорость: телепорт против последнего ПРИНЯТОГО сырого фикса.
+    // Одиночный выброс умирает в карантине; настоящий разрыв (потеря сигнала
+    // в тоннеле) подтверждается вторым фиксом рядом — тогда принимаем и
+    // начинаем сглаживание заново, чтобы Кальман не размазывал скачок.
+    if (prevRaw != null) {
+      final dtS =
+          position.timestamp.difference(prevRaw.timestamp).inMilliseconds /
+              1000.0;
+      final jumpSpeed = dtS > 0 ? rawGap / dtS : double.infinity;
+      if (jumpSpeed > _maxJumpSpeedMs) {
+        final q = _quarantined;
+        final confirmed = q != null &&
+            _quarantinedAt != null &&
+            now.difference(_quarantinedAt!).inSeconds <= 12 &&
+            Geolocator.distanceBetween(
+                  q.latitude,
+                  q.longitude,
+                  position.latitude,
+                  position.longitude,
+                ) <
+                _jumpConfirmRadiusMeters;
+        if (!confirmed) {
+          _quarantined = position;
+          _quarantinedAt = now;
+          debugPrint(
+            'KVARTAL_RUN_GPS_JUMP_QUARANTINED: '
+            '${rawGap.toStringAsFixed(0)}m @${jumpSpeed.toStringAsFixed(1)}m/s',
+          );
+          return;
+        }
+        debugPrint('KVARTAL_RUN_GPS_JUMP_CONFIRMED: сегмент начат заново');
+        _kalman.reset();
+        _segmentBreak = true;
+      }
+    }
+    _quarantined = null;
+    _quarantinedAt = null;
+    _lastRawAccepted = position;
 
     // Сглаживаем фикс фильтром Калмана: метку и линию рисуем по сглаженной
     // точке, а не по «дрожащему» сырому GPS. Точность фикса = вес доверия.
@@ -219,7 +313,7 @@ class RunNotifier extends StateNotifier<RunState> {
       lat: position.latitude,
       lng: position.longitude,
       accuracy: position.accuracy,
-      timestampMs: DateTime.now().millisecondsSinceEpoch,
+      timestampMs: now.millisecondsSinceEpoch,
     );
     final route = [...state.route];
     var distanceMeters = state.distanceMeters;
@@ -232,8 +326,8 @@ class RunNotifier extends StateNotifier<RunState> {
         next.latitude,
         next.longitude,
       );
-      if (!force && gapMeters < _minRoutePointDistanceMeters) return;
-      if (!force && gapMeters > _maxRoutePointGapMeters) {
+      if (gapMeters < _minRoutePointDistanceMeters) return;
+      if (gapMeters > _maxRoutePointGapMeters && !_segmentBreak) {
         debugPrint(
           'KVARTAL_RUN_GPS_JUMP_REJECTED: ${gapMeters.toStringAsFixed(1)}m',
         );
@@ -241,6 +335,7 @@ class RunNotifier extends StateNotifier<RunState> {
       }
       distanceMeters += gapMeters;
     }
+    _segmentBreak = false;
 
     route.add(next);
     state = state.copyWith(route: route, distanceMeters: distanceMeters);
@@ -301,10 +396,12 @@ class RunNotifier extends StateNotifier<RunState> {
     int capturedZones,
     bool capturedTerritory,
   ) async {
+    // Финальная чистка трека: срез шипов + Дуглас-Пекер («Идеальный маршрут»).
+    // Тот же чистый маршрут увидит и история, и карта.
     final run = CompletedRun(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       finishedAt: DateTime.now(),
-      route: completed.route,
+      route: cleanRoute(completed.route),
       elapsed: completed.elapsed,
       distanceMeters: completed.distanceMeters,
       capturedZones: capturedZones,
