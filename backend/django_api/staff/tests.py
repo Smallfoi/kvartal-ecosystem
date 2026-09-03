@@ -299,9 +299,22 @@ class OnboardingTests(Base):
         self.assertEqual(r.status_code, 302)
         self.assertEqual(r.url, "/admin/2fa/setup/")
 
-    def test_owner_is_not_forced(self):
+    def test_owner_is_forced_too(self):
+        """Владелец без второго фактора идёт на привязку, а не в админку (D-68).
+
+        Раньше здесь проверялось обратное — что владельца не принуждают. Именно
+        поэтому на проде второй фактор оказался у сотрудника и не оказался
+        у владельца: самая ценная учётная запись держалась на одном пароле.
+        """
         from django_otp.plugins.otp_totp.models import TOTPDevice
         TOTPDevice.objects.filter(user=self.owner).delete()
+        self.login_owner()
+        r = self.client.get("/admin/1c-log/")
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r.url, "/admin/2fa/setup/")
+
+    def test_owner_with_device_works_normally(self):
+        """Привязал — и дальше всё как обычно, без лишних шагов."""
         self.login_owner()
         self.assertEqual(self.client.get("/admin/1c-log/").status_code, 200)
 

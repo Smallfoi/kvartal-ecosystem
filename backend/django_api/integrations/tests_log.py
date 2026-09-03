@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 
 from catalog.models import Category, Product
 from integrations.models import OneCExchange
+from common.testutils import login_admin
 
 TOKEN = "test-1c-token"
 AUTH = {"HTTP_AUTHORIZATION": f"Bearer {TOKEN}"}
@@ -81,7 +82,7 @@ class OneCLogTests(TestCase):
 class OneCLogPageTests(TestCase):
     def setUp(self):
         User.objects.create_superuser("log_admin", "c@t.dev", "pass12345")
-        self.client.login(username="log_admin", password="pass12345")
+        login_admin(self.client, "log_admin", "pass12345")
         OneCExchange.objects.create(operation="catalog", status="ok",
                                     received=3, created_count=2, updated_count=1)
         OneCExchange.objects.create(operation="prices", status="error",

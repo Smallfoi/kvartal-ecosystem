@@ -7,7 +7,7 @@ from unittest import mock
 from django.core.cache import cache
 from django.test import SimpleTestCase, TestCase, override_settings
 
-from common.testutils import ApiTestCase
+from common.testutils import ApiTestCase, login_admin
 
 
 class SmsOtpTests(SimpleTestCase):
@@ -351,7 +351,7 @@ class BroadcastAdminTests(TestCase):
         from django.contrib.auth.models import User
 
         User.objects.create_superuser("boss", "boss@x.dev", "pass-12345")
-        self.assertTrue(self.client.login(username="boss", password="pass-12345"))
+        login_admin(self.client, "boss", "pass-12345")
 
     def test_form_shown_without_apply(self):
         from accounts.models import Account

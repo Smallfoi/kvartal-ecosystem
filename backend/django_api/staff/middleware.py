@@ -41,14 +41,14 @@ class StaffOnboardingMiddleware:
                 and user is not None
                 and user.is_authenticated
                 and user.is_staff
-                and user.is_active
-                and not user.is_superuser):
+                and user.is_active):
 
             from common.admin2fa import user_has_device
             if not user_has_device(user):
                 return HttpResponseRedirect(SETUP_PATH)
 
-            if path == "/admin/" and not can(user, "dashboard"):
+            if (path == "/admin/" and not user.is_superuser
+                    and not can(user, "dashboard")):
                 # Совсем без прав — на страницу-заглушку, а не на сводку
                 # с выручкой: «ничего не выдали» не должно означать «видно всё».
                 return HttpResponseRedirect(self._first_tab(user) or NO_ACCESS_PATH)

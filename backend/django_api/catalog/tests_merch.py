@@ -6,12 +6,13 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 
 from catalog.models import Product
+from common.testutils import login_admin
 
 
 class MerchConsoleTests(TestCase):
     def setUp(self):
         User.objects.create_superuser("merch_admin", "a@t.dev", "pass12345")
-        self.client.login(username="merch_admin", password="pass12345")
+        login_admin(self.client, "merch_admin", "pass12345")
         Product.objects.create(id="m1", name="M1", category_id="c", price=100,
                                sort_site=0, sort_app=0)
         Product.objects.create(id="m2", name="M2", category_id="c", price=200,
@@ -135,7 +136,7 @@ class MerchBannerTests(TestCase):
 
     def setUp(self):
         User.objects.create_superuser("bnr_admin", "b@t.dev", "pass12345")
-        self.client.login(username="bnr_admin", password="pass12345")
+        login_admin(self.client, "bnr_admin", "pass12345")
 
     def _img(self):
         from io import BytesIO
@@ -228,7 +229,7 @@ class MerchOverride1CTests(TestCase):
 
     def setUp(self):
         User.objects.create_superuser("merch_1c", "b@t.dev", "pass12345")
-        self.client.login(username="merch_1c", password="pass12345")
+        login_admin(self.client, "merch_1c", "pass12345")
         self.p = Product.objects.create(
             id="k1", name="Кроссовки", category_id="c", price=11990,
             external_id="1c-guid-1", article="ART-1",

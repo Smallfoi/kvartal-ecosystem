@@ -59,3 +59,33 @@ class ApiTestCase(TestCase):
         return sum(
             t.amount for t in LoyaltyTransaction.objects.filter(user_id=self.uid)
         )
+
+
+def verify_admin(client, user):
+    """Пройти второй фактор в тесте: привязать устройство и отметить сессию.
+
+    Второй фактор обязателен для всех, у кого есть админка (D-68), поэтому
+    одного `client.login()` для админ-страниц больше не хватает: без отметки
+    об устройстве middleware уводит на привязку.
+    """
+    from django_otp import DEVICE_ID_SESSION_KEY
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+
+    device = (TOTPDevice.objects.filter(user=user, confirmed=True).first()
+              or TOTPDevice.objects.create(user=user, name="test", confirmed=True))
+    session = client.session
+    session[DEVICE_ID_SESSION_KEY] = device.persistent_id
+    session.save()
+    return device
+
+
+def login_admin(client, username, password, user=None):
+    """Полный вход в админку для теста: пароль плюс второй фактор."""
+    from django.contrib.auth import get_user_model
+
+    assert client.login(username=username, password=password), "пароль не подошёл"
+    if user is None:
+        User = get_user_model()
+        user = User.objects.get(**{User.USERNAME_FIELD: username})
+    verify_admin(client, user)
+    return user

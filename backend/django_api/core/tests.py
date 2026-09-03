@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from common.testutils import login_admin
 
 
 @override_settings(ANALYTICS_EVENT_RETENTION_DAYS=365, READ_NOTIFICATION_RETENTION_DAYS=90)
@@ -93,7 +94,7 @@ class ErrorsConsoleTests(TestCase):
         from django.contrib.auth.models import User
 
         User.objects.create_superuser("boss2", "boss2@x.dev", "pass-12345")
-        self.client.login(username="boss2", password="pass-12345")
+        login_admin(self.client, "boss2", "pass-12345")
 
     def test_errors_page_renders(self):
         # GlitchTip может быть не настроен (CI) — страница всё равно 200 (graceful).
