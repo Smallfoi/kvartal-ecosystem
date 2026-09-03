@@ -891,7 +891,10 @@ class _RunTile extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
                 const SizedBox(height: 2),
-                Text(' км', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  '${run.distanceKm.toStringAsFixed(2)} км',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ],
             ),
           ),
