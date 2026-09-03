@@ -328,3 +328,127 @@ class OneCEndpointIsClosed(TestCase):
         r = self.client.post("/v1/integrations/1c/catalog", data="{}", content_type="application/json",
                              HTTP_AUTHORIZATION="Bearer definitely-not-the-token")
         self.assertEqual(r.status_code, 401)
+
+
+class SelfServiceTwoFactor(TestCase):
+    """Управление своим вторым фактором (D-69): смена устройства и запасные коды.
+
+    Главная угроза здесь не «неудобно», а «перехватили сессию». Если сменить
+    устройство можно без подтверждения текущим фактором, то укравший сессию
+    перепривязывает фактор на свой телефон и запирает владельца навсегда.
+    Поэтому каждое действие требует кода — из приложения или запасного.
+    """
+
+    URL = "/admin/account/security/"
+    PASSWORD = "strong-pass-12345"
+
+    def setUp(self):
+        cache.clear()
+        User = get_user_model()
+        self.user = User.objects.create_superuser("ss_owner", "s@t.dev", self.PASSWORD)
+        self.device = _device(self.user)
+        self.client.login(username="ss_owner", password=self.PASSWORD)
+        self._verify()
+
+    def _verify(self):
+        from django_otp import DEVICE_ID_SESSION_KEY
+
+        session = self.client.session
+        session[DEVICE_ID_SESSION_KEY] = self.device.persistent_id
+        session.save()
+
+    def _code(self):
+        from django_otp.oath import totp
+
+        d = self.device
+        return f"{totp(d.bin_key, d.step, d.t0, d.digits, d.drift):06d}"
+
+    def _backup_codes(self):
+        from staff.views import _issue_backup_codes
+
+        return _issue_backup_codes(self.user)
+
+    def test_page_opens_for_verified_user(self):
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("Второй фактор", r.content.decode())
+
+    def test_page_is_not_under_the_open_2fa_prefix(self):
+        """Страница обязана быть ВНЕ /admin/2fa/ — тот префикс пропускает без кода."""
+        from common.admin2fa import _ALLOWED
+
+        self.assertFalse(self.URL.startswith(_ALLOWED),
+                         "страница управления попала под открытый префикс")
+
+    def test_unverified_session_cannot_open_it(self):
+        """Не ввёл код при входе — управлять фактором нельзя."""
+        from django_otp import DEVICE_ID_SESSION_KEY
+
+        session = self.client.session
+        del session[DEVICE_ID_SESSION_KEY]
+        session.save()
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(r["Location"].startswith("/admin/2fa/"))
+
+    def test_rotate_without_code_is_refused(self):
+        """Перехваченная сессия не должна перепривязать фактор на чужой телефон."""
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+
+        r = self.client.post(self.URL, {"action": "rotate_device", "code": ""})
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(TOTPDevice.objects.filter(user=self.user, confirmed=True).exists())
+
+    def test_rotate_with_wrong_code_is_refused(self):
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+
+        r = self.client.post(self.URL, {"action": "rotate_device", "code": "000000"})
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("не подошёл", r.content.decode())
+        self.assertTrue(TOTPDevice.objects.filter(user=self.user, confirmed=True).exists())
+
+    def test_rotate_with_valid_code_sends_to_setup(self):
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+
+        r = self.client.post(self.URL, {"action": "rotate_device", "code": self._code()})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r["Location"], "/admin/2fa/setup/")
+        self.assertFalse(TOTPDevice.objects.filter(user=self.user).exists())
+
+    def test_backup_code_works_when_phone_is_lost(self):
+        """Телефона нет — именно для этого случая и нужны запасные коды."""
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+
+        codes = self._backup_codes()
+        r = self.client.post(self.URL, {"action": "rotate_device", "code": codes[0]})
+        self.assertEqual(r.status_code, 302)
+        self.assertFalse(TOTPDevice.objects.filter(user=self.user).exists())
+
+    def test_new_codes_refused_without_valid_code(self):
+        from django_otp.plugins.otp_static.models import StaticToken
+
+        old = self._backup_codes()
+        r = self.client.post(self.URL, {"action": "new_codes", "code": "000000"})
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(StaticToken.objects.filter(token=old[0]).exists(),
+                        "коды перевыпустились без подтверждения")
+
+    def test_new_codes_replace_old_ones(self):
+        """Отдельным тестом: после неверной попытки django-otp держит паузу,
+        и верный код в том же тесте честно не прошёл бы."""
+        from django_otp.plugins.otp_static.models import StaticToken
+
+        old = self._backup_codes()
+        r = self.client.post(self.URL, {"action": "new_codes", "code": self._code()},
+                             follow=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(StaticToken.objects.filter(token=old[0]).exists(),
+                         "старые запасные коды продолжают работать")
+        self.assertIn("Новые запасные коды", r.content.decode())
+
+    def test_changes_are_written_to_the_journal(self):
+        from staff.models import StaffAudit
+
+        self.client.post(self.URL, {"action": "new_codes", "code": self._code()})
+        self.assertTrue(
+            StaffAudit.objects.filter(action__contains="запасных кодов").exists())

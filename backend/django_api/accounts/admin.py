@@ -98,7 +98,8 @@ admin.site.unregister(Group)
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin, ModelAdmin):
     # Даты входа/регистрации — только история; «Пароль» — кнопка безопасной смены.
-    readonly_fields = ("last_login", "date_joined", "change_password_link")
+    readonly_fields = ("last_login", "date_joined", "change_password_link",
+                       "two_factor_link")
 
     @admin.display(description="Пароль")
     def change_password_link(self, obj=None):
@@ -111,6 +112,27 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
             '<a href="{}" style="display:inline-flex;align-items:center;'
             'padding:7px 14px;border-radius:8px;background:#0A84FF;color:#fff;'
             'font-weight:600;text-decoration:none;">Сменить пароль</a>',
+            url,
+        )
+
+    @admin.display(description="Второй фактор")
+    def two_factor_link(self, obj=None):
+        """Кнопка управления своим вторым фактором.
+
+        Раньше отсюда можно было сменить почту и пароль, а второй фактор
+        не показывался вообще: сменить телефон было негде, и человек не знал,
+        подключён ли фактор и сколько запасных кодов у него осталось.
+        """
+        if obj is None or not obj.pk:
+            return "—"
+        url = reverse("account_security")
+        return format_html(
+            '<a href="{}" style="display:inline-flex;align-items:center;'
+            'padding:7px 14px;border-radius:8px;background:#20252b;color:#fff;'
+            'font-weight:600;text-decoration:none;">Настроить второй фактор</a>'
+            '<div style="margin-top:6px;font-size:12px;color:#6f7278;">'
+            'Смена устройства и запасные коды. Отключить нельзя — фактор '
+            'обязателен для всех.</div>',
             url,
         )
 
@@ -133,9 +155,14 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
                 fields = tuple(f for f in fields if f != "date_joined")  # только последний вход
             if "password" in fields:
                 # Хэш (алгоритм/соль) не показываем. На его месте — кнопка «Сменить пароль»
-                # прямо в настройках аккаунта (не отдельным пунктом меню).
+                # прямо в настройках аккаунта (не отдельным пунктом меню). Рядом —
+                # кнопка второго фактора: пароль и фактор это одна тема «как я вхожу»,
+                # и искать их в разных местах человек не должен (D-69).
                 fields = tuple("change_password_link" if f == "password" else f
                                for f in fields)
+                if obj is not None and "two_factor_link" not in fields:
+                    i = fields.index("change_password_link")
+                    fields = fields[:i + 1] + ("two_factor_link",) + fields[i + 1:]
             out.append((name, {**opts, "fields": fields}))
         return out
 

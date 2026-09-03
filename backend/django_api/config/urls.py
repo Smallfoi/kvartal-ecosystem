@@ -68,6 +68,10 @@ urlpatterns = [
     path("admin/runs-review/", runs_review, name="runs_review"),
     path("admin/errors/<str:issue_id>/", error_detail, name="error_detail"),
     # Сотрудники и права (S-12). Тоже ДО admin/ — иначе перехватит catch-all.
+    # Свой второй фактор. НЕ под /admin/2fa/ — тот префикс пропускает мимо
+    # проверки кода, а управлять фактором вправе лишь прошедший его (D-69).
+    path("admin/account/security/", staff_views.account_security,
+         name="account_security"),
     path("admin/staff/", staff_views.staff_list, name="staff_list"),
     path("admin/staff/create", staff_views.staff_create, name="staff_create"),
     path("admin/staff/<int:pk>/", staff_views.staff_member, name="staff_member"),

@@ -388,3 +388,85 @@ def staff_no_access(request):
         "name": getattr(getattr(request.user, "staff_profile", None), "full_name", "")
                 or request.user.get_username(),
     })
+
+
+# ─────────────────── Второй фактор: управление своим (D-69) ───────────────────
+
+def _issue_backup_codes(user):
+    """Выдать новый комплект запасных кодов, старые погасить."""
+    from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
+
+    StaticDevice.objects.filter(user=user).delete()
+    device = StaticDevice.objects.create(user=user, name="Запасные коды", confirmed=True)
+    codes = [StaticToken.random_token() for _ in range(10)]
+    for code in codes:
+        StaticToken.objects.create(device=device, token=code)
+    return codes
+
+
+def _check_current_code(user, raw):
+    """Проверить код текущего второго фактора: из приложения или запасной.
+
+    Зачем это нужно, если страница и так открыта только после ввода кода при
+    входе: сессию могли перехватить уже ПОСЛЕ входа. Смена устройства без
+    повторного подтверждения означала бы, что укравший сессию перепривязывает
+    второй фактор на свой телефон и запирает владельца снаружи навсегда.
+    Так же поступает GitHub и все, кто относится к этому серьёзно.
+    """
+    from django_otp import devices_for_user
+
+    token = re.sub(r"\s", "", raw or "")
+    if not token:
+        return False
+    return any(d.verify_token(token) for d in devices_for_user(user, confirmed=True))
+
+
+@staff_member_required
+def account_security(request):
+    """Свой второй фактор: посмотреть, сменить устройство, перевыпустить коды.
+
+    Страница НАМЕРЕННО лежит вне префикса `/admin/2fa/`: тот префикс пропускает
+    мимо проверки кода (иначе нельзя было бы привязать первое устройство), а
+    управлять вторым фактором вправе только тот, кто этот фактор уже прошёл.
+    """
+    from django_otp.plugins.otp_static.models import StaticDevice
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+
+    from common.admin2fa import SETUP_PATH, user_has_device
+
+    user = request.user
+    if not user_has_device(user):
+        return redirect(SETUP_PATH)
+    # Подстраховка на случай, если список открытых путей когда-нибудь расширят.
+    if hasattr(user, "is_verified") and not user.is_verified():
+        return redirect(f"/admin/2fa/?next={request.path}")
+
+    codes = request.session.pop("staff_new_backup_codes", None)
+    error = None
+
+    if request.method == "POST" and not codes:
+        action = (request.POST.get("action") or "").strip()
+        if not _check_current_code(user, request.POST.get("code")):
+            error = ("Код не подошёл. Введите текущий код из приложения "
+                     "или один из запасных кодов.")
+        elif action == "rotate_device":
+            # Старое устройство убираем — дальше middleware сам отправит на привязку.
+            TOTPDevice.objects.filter(user=user).delete()
+            StaffAudit.write(request, "смена устройства второго фактора", target=user)
+            return redirect(SETUP_PATH)
+        elif action == "new_codes":
+            request.session["staff_new_backup_codes"] = _issue_backup_codes(user)
+            StaffAudit.write(request, "перевыпуск запасных кодов", target=user)
+            return redirect("account_security")
+
+    totp = TOTPDevice.objects.filter(user=user, confirmed=True).first()
+    static = StaticDevice.objects.filter(user=user, confirmed=True).first()
+    return render(request, "admin/staff/security.html", {
+        **django_admin.site.each_context(request),
+        "title": "Второй фактор",
+        "new_codes": codes,
+        "error": error,
+        "device_name": totp.name if totp else "",
+        "codes_left": static.token_set.count() if static else 0,
+        "username": user.get_username(),
+    })
