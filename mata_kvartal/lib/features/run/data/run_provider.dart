@@ -491,6 +491,15 @@ class RunNotifier extends StateNotifier<RunState> {
 
     if (route.isEmpty) return null;
 
+    // Времена точек обязаны выживать вместе с маршрутом: без них молчат
+    // сплиты паспорта и тропы (реальный случай — 44-минутная пробежка
+    // владельца с погашенным экраном потеряла времена при восстановлении).
+    var routeTimes = ((data['routeTimes'] as List?) ?? const [])
+        .whereType<num>()
+        .map((v) => v.toInt())
+        .toList();
+    if (routeTimes.length != route.length) routeTimes = const [];
+
     var elapsed = Duration(
       seconds: (data['elapsedSeconds'] as num? ?? 0).toInt(),
     );
@@ -506,6 +515,7 @@ class RunNotifier extends StateNotifier<RunState> {
     return RunState(
       status: restoredStatus,
       route: route,
+      routeTimes: routeTimes,
       elapsed: elapsed,
       distanceMeters: (data['distanceMeters'] as num? ?? 0).toDouble(),
       mockDetected: data['mockDetected'] as bool? ?? false,
@@ -517,6 +527,7 @@ class RunNotifier extends StateNotifier<RunState> {
     await prefs.reload();
 
     var route = state.route;
+    var routeTimes = state.routeTimes;
     var distanceMeters = state.distanceMeters;
     final raw = prefs.getString(activeRunStorageKey);
     if (raw != null && state.status == RunStatus.active) {
@@ -531,9 +542,21 @@ class RunNotifier extends StateNotifier<RunState> {
             .toList();
         if (savedRoute.length > route.length) {
           route = savedRoute;
+          // Времена — той же длины, что сохранённый маршрут, иначе пусто:
+          // рассинхрон хуже отсутствия (сплиты посчитаются неверно).
+          final savedTimes = ((saved['routeTimes'] as List?) ?? const [])
+              .whereType<num>()
+              .map((v) => v.toInt())
+              .toList();
+          routeTimes =
+              savedTimes.length == savedRoute.length ? savedTimes : const [];
           distanceMeters = (saved['distanceMeters'] as num? ?? distanceMeters)
               .toDouble();
-          state = state.copyWith(route: route, distanceMeters: distanceMeters);
+          state = state.copyWith(
+            route: route,
+            routeTimes: routeTimes,
+            distanceMeters: distanceMeters,
+          );
         }
       } catch (_) {
         // Ignore malformed saved state; the new state below will replace it.
@@ -550,6 +573,7 @@ class RunNotifier extends StateNotifier<RunState> {
       'route': [
         for (final p in route) [p.latitude, p.longitude],
       ],
+      'routeTimes': routeTimes,
     };
     await prefs.setString(activeRunStorageKey, jsonEncode(data));
   }
