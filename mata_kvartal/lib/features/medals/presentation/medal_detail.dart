@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/medal_defs.dart';
 import '../data/medals_provider.dart';
+import 'medal_share.dart' show showMedalShareSheet;
 import 'medal_widgets.dart';
 
 /// Карточка медали: чеканка при появлении, тап — 3D-оборот с гравировкой.
@@ -176,7 +177,18 @@ class _MedalDetailState extends State<_MedalDetail>
                     style: TextStyle(fontSize: 12.5, color: Colors.white38),
                   )),
                 const SizedBox(height: 26),
-                _rise(5, CupertinoButton(
+                if (earned)
+                  _rise(5, CupertinoButton(
+                    onPressed: () => showMedalShareSheet(context, m),
+                    child: Text(
+                      'Поделиться',
+                      style: TextStyle(
+                        color: AppColors.lime,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )),
+                _rise(earned ? 6 : 5, CupertinoButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(
                     'Закрыть',

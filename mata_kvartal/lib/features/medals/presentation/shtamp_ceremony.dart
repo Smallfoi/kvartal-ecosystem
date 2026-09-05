@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/medals_provider.dart';
 import 'medal_detail.dart' show showMedalDetail;
+import 'medal_share.dart' show showMedalShareSheet;
 import 'medal_widgets.dart';
 
 /// Церемония «Штамп МАТА»: медаль вбивается чеканкой, один блик, строки
@@ -173,7 +174,19 @@ class _CeremonyState extends State<_Ceremony>
                 ),
               )),
               const SizedBox(height: 6),
+              // Горячий момент шаринга: медаль только что вбилась (правило
+              // Стравы — кнопка на пике эмоции, не в меню).
               _rise(4, TextButton(
+                onPressed: () => showMedalShareSheet(context, m),
+                child: Text(
+                  'Поделиться',
+                  style: TextStyle(
+                    color: AppColors.lime,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              )),
+              _rise(5, TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
                   'Дальше',

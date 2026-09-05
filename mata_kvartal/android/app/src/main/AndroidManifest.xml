@@ -77,6 +77,18 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <!-- Стикеры для сторис Инстаграма: Инста читает файл по content://-uri
+             этого провайдера (свой, отдельный от share_plus). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.instashare"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/insta_share_paths" />
+        </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -95,6 +107,8 @@
         </intent>
         <!-- Проверить, есть ли на телефоне Health Connect (иначе предложим установить) -->
         <package android:name="com.google.android.apps.healthdata" />
+        <!-- Шаринг стикера в сторис: увидеть Инстаграм на Android 11+ -->
+        <package android:name="com.instagram.android" />
         <!-- url_launcher: открыть страницу регистрации на забег во внешнем браузере -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
