@@ -26,12 +26,12 @@ const _ink = Color(0xFFEDEFE8);
 const _muted = Color(0xFF97A0A6);
 const _lime = Color(0xFFDFF45F);
 
-// Meta App ID — публичный (см. medal_share.dart), продублирован константой,
-// чтобы не тянуть медали в модуль пробежек.
-const _metaAppId = String.fromEnvironment(
-  'META_APP_ID',
-  defaultValue: '1058928553560826',
-);
+// Meta App ID — публичный (см. medal_share.dart, там же грабля про пустой
+// --dart-define, перекрывающий defaultValue). Дубль, чтобы не тянуть медали
+// в модуль пробежек.
+const _envMetaAppId = String.fromEnvironment('META_APP_ID');
+const _metaAppId =
+    _envMetaAppId == '' ? '1058928553560826' : _envMetaAppId;
 
 /// Данные для карточки: у пробежки может не быть routeTimes/баллов — карточка
 /// строится из того, что есть.
