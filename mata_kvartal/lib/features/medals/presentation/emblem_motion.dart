@@ -134,6 +134,21 @@ const Map<String, List<String>> emblemParts = {
     'seg0', 'shine', 'rib1', 'rib2', 'conf1', 'conf2', 'conf3', 'conf4',
     'conf5', 'conf6', 'conf7', 'conf8', 'gl1', 'gl2', 'seg13',
   ],
+  // Партия 4 — Лимитированные (все 44 медали живые).
+  'l_ny_2026': [
+    'seg0', 'li1', 'li2', 'li3', 'li4', 'li5', 'seg5', 'snow1', 'snow2', 'seg7',
+  ],
+  'l_pobeda_2026': [
+    'seg0', 'rays', 'seg1', 'gl1', 'gl2', 'seg3', 'tail1', 'tail2',
+    'w1A', 'w1B', 'w2A', 'w2B', 'w3A', 'w3B', 'seg8',
+  ],
+  'l_ysyakh_2026': ['seg0', 'sunrays', 'seg1', 'dance', 'seg2'],
+  'l_city_2026': [
+    'seg0', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'seg6',
+    'fw1a', 'fw1b', 'fw2a', 'fw2b', 'seg10',
+  ],
+  'l_eco_2026': ['seg0', 'sway', 'seg1'],
+  'l_race_2026': ['seg0', 'sway', 'seg1'],
 };
 
 /// Таймлайны. Значения = эталон × масштаб эмблемы (esc/ey из renderMedal).
@@ -333,6 +348,14 @@ final Map<String, List<EmblemLayer>> emblemMotion = {
   's_div_gold': _div(.52),
   's_div_elite': _div(.50),
   's_club_cup': _cup(),
+
+  // ── Партия 4: Лимитированные ──────────────────────────────────────────
+  'l_ny_2026': _fir(),
+  'l_pobeda_2026': _star5(),
+  'l_ysyakh_2026': _serge(),
+  'l_city_2026': _city(),
+  'l_eco_2026': _leafSway(),
+  'l_race_2026': _mataSway(),
 };
 
 // ── Глифовые таймлайны партии 2 (медали одного глифа делят ключи; ─────────
@@ -722,6 +745,131 @@ List<EmblemLayer> _cup() {
     _glint('gl2', const Offset(13, -3.56), 3200),
   ];
 }
+
+// ── Глифовые таймлайны партии 4 (Лимитированные; esc .38, ey −8/−10) ───
+
+/// Новый год: гирлянда мигает вразнобой, за ёлкой падает снег.
+List<EmblemLayer> _fir() => [
+  for (final (i, d) in const [(0, 0), (1, 900), (2, 1600), (3, 400), (4, 2200)])
+    EmblemLayer('li${i + 1}', periodMs: 2600, delayMs: d, keys: const [
+      EmblemKey(0, opacity: .25),
+      EmblemKey(.5, opacity: 1),
+      EmblemKey(1, opacity: .25),
+    ]),
+  const EmblemLayer('snow1', periodMs: 7000, keys: [
+    EmblemKey(0, dy: -2.66, opacity: 0),
+    EmblemKey(.18, dy: -1.29, opacity: .75),
+    EmblemKey(.78, dy: 3.27, opacity: .75),
+    EmblemKey(1, dy: 4.94, opacity: 0),
+  ]),
+  const EmblemLayer('snow2', periodMs: 9500, delayMs: 2800, keys: [
+    EmblemKey(0, dy: -3.8, opacity: 0),
+    EmblemKey(.2, dy: -2.2, opacity: .6),
+    EmblemKey(.8, dy: 2.58, opacity: .6),
+    EmblemKey(1, dy: 4.18, opacity: 0),
+  ]),
+];
+
+/// День Победы: сияние ордена вращается, искры вспыхивают на лучах,
+/// георгиевская лента колышется (морф кроссфейдом), хвосты подрагивают.
+List<EmblemLayer> _star5() => [
+  const EmblemLayer('rays', periodMs: 34000, pivot: Offset(0, -10), keys: [
+    EmblemKey(0, rot: 0),
+    EmblemKey(1, rot: 360),
+  ]),
+  _glint('gl1', const Offset(0, -24.44), 1000),
+  _glint('gl2', const Offset(13.68, -13.27), 3200),
+  const EmblemLayer('tail1', periodMs: 4600, curve: Curves.easeInOut, keys: [
+    EmblemKey(0), EmblemKey(.5, dy: -.53), EmblemKey(1),
+  ]),
+  const EmblemLayer('tail2', periodMs: 4600, curve: Curves.easeInOut, keys: [
+    EmblemKey(0), EmblemKey(.5, dy: .57), EmblemKey(1),
+  ]),
+  for (var i = 1; i <= 3; i++) ...[
+    EmblemLayer('w${i}A', periodMs: 4600, curve: Curves.easeInOut, keys: const [
+      EmblemKey(0), EmblemKey(.5, opacity: 0), EmblemKey(1),
+    ]),
+    EmblemLayer('w${i}B', periodMs: 4600, curve: Curves.easeInOut, keys: const [
+      EmblemKey(0, opacity: 0), EmblemKey(.5), EmblemKey(1, opacity: 0),
+    ]),
+  ],
+];
+
+/// Ысыах: солнце над сэргэ вращает лучи, осуохай водит хоровод.
+List<EmblemLayer> _serge() => const [
+  EmblemLayer('sunrays', periodMs: 24000, pivot: Offset(12.52, -20.62), keys: [
+    EmblemKey(0, rot: 0),
+    EmblemKey(1, rot: 360),
+  ]),
+  EmblemLayer('dance', periodMs: 5200, keys: [
+    EmblemKey(0, dx: -1.16),
+    EmblemKey(.5, dx: 1.16),
+    EmblemKey(1, dx: -1.16),
+  ]),
+];
+
+/// День города: окна загораются по очереди и гаснут под утро, два
+/// фейерверка взлетают из-за крыш и разрываются снопами искр.
+List<EmblemLayer> _city() => [
+  for (final (i, d) in const [
+    (1, 400), (2, 2200), (3, 3600), (4, 5400), (5, 7100), (6, 8800),
+  ])
+    EmblemLayer('w$i', periodMs: 12000, delayMs: d, keys: const [
+      EmblemKey(0, opacity: 0),
+      EmblemKey(.055, opacity: 0),
+      EmblemKey(.06, opacity: .95),
+      EmblemKey(.74, opacity: .95),
+      EmblemKey(.75, opacity: 0),
+      EmblemKey(1, opacity: 0),
+    ]),
+  const EmblemLayer('fw1a', periodMs: 7000, keys: [
+    EmblemKey(0, opacity: 0),
+    EmblemKey(.02, dy: -3.9, opacity: .9),
+    EmblemKey(.1, dy: -19.48, opacity: .9),
+    EmblemKey(.13, dy: -23.37, opacity: 0),
+    EmblemKey(1, dy: -23.37, opacity: 0),
+  ]),
+  const EmblemLayer('fw1b', periodMs: 7000, pivot: Offset(-9.12, -21.68), keys: [
+    EmblemKey(0, opacity: 0, scale: .25),
+    EmblemKey(.12, opacity: 0, scale: .25),
+    EmblemKey(.17, opacity: 1, scale: .56),
+    EmblemKey(.3, opacity: 0, scale: 1.35),
+    EmblemKey(1, opacity: 0, scale: .25),
+  ]),
+  const EmblemLayer('fw2a', periodMs: 7000, delayMs: 3200, keys: [
+    EmblemKey(0, opacity: 0),
+    EmblemKey(.02, dy: -3.64, opacity: .9),
+    EmblemKey(.1, dy: -18.22, opacity: .9),
+    EmblemKey(.13, dy: -21.85, opacity: 0),
+    EmblemKey(1, dy: -21.85, opacity: 0),
+  ]),
+  const EmblemLayer('fw2b', periodMs: 7000, delayMs: 3200,
+      pivot: Offset(9.12, -20.16), keys: [
+    EmblemKey(0, opacity: 0, scale: .25),
+    EmblemKey(.12, opacity: 0, scale: .25),
+    EmblemKey(.17, opacity: 1, scale: .56),
+    EmblemKey(.3, opacity: 0, scale: 1.35),
+    EmblemKey(1, opacity: 0, scale: .25),
+  ]),
+];
+
+/// Экодень: лист покачивается, подвешенный за черешок (CSS leafSway).
+List<EmblemLayer> _leafSway() => const [
+  EmblemLayer('sway', periodMs: 4400, alternate: true,
+      curve: Curves.easeInOut, pivot: Offset(0, -15.8), keys: [
+    EmblemKey(0, rot: -4.5),
+    EmblemKey(1, rot: 4.5),
+  ]),
+];
+
+/// Забег МАТА: эмблема дышит покачиванием (CSS gemSway).
+List<EmblemLayer> _mataSway() => const [
+  EmblemLayer('sway', periodMs: 5500, alternate: true,
+      curve: Curves.easeInOut, pivot: Offset(0, -9), keys: [
+    EmblemKey(0, rot: -3.5),
+    EmblemKey(1, rot: 3.5),
+  ]),
+];
 
 /// Аверс медали, живущий своей анимацией. Для медалей без спецификации,
 /// незаработанных и при выключенных анимациях системы — обычный статичный
