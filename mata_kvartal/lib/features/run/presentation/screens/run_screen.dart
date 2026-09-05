@@ -15,6 +15,7 @@ import '../../../permissions/presentation/location_setup_sheet.dart';
 import '../../data/run_mode_provider.dart';
 import '../../data/run_provider.dart';
 import 'run_result_screen.dart';
+import 'runs_journal_screen.dart' show RunTileCard;
 import '../../data/completed_runs_provider.dart';
 import '../../../shoes/presentation/shoe_run_picker.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
@@ -135,7 +136,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () => context.push('/runs'),
                       child: Text(
                         'Все',
                         style: TextStyle(
@@ -151,7 +152,13 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                 if (recentRuns.isEmpty)
                   const _EmptyRunsHint()
                 else
-                  ...recentRuns.take(3).map((r) => _RunTile(run: r)),
+                  for (final r in recentRuns.take(3)) ...[
+                    RunTileCard(
+                      run: r,
+                      onTap: () => context.push('/runs/passport', extra: r),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
               ],
             ),
           ),
@@ -993,72 +1000,6 @@ class _WeeklyGoalCard extends StatelessWidget {
   }
 }
 
-class _RunTile extends StatelessWidget {
-  final CompletedRun run;
-  const _RunTile({required this.run});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.separator),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.electricBlue.withValues(alpha: 0.13),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              CupertinoIcons.location_north_fill,
-              color: AppColors.warning,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  run.dateLabel,
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${run.distanceKm.toStringAsFixed(2)} км',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                run.elapsedFormatted,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              Text(
-                '${run.paceFormatted} /км',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// Ф3 «Вход в игру»: первый квест — 800 метров, конец кроется медалью дня 1.
 class _FirstQuestCard extends StatelessWidget {

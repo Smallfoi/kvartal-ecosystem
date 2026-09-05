@@ -6,8 +6,11 @@ import '../../features/auth/presentation/screens/phone_screen.dart';
 import '../../features/auth/presentation/screens/welcome_screen.dart';
 import '../../features/auth/presentation/screens/otp_screen.dart';
 import '../../features/map/presentation/screens/map_screen.dart';
+import '../../features/run/data/completed_runs_provider.dart';
 import '../../features/run/presentation/screens/run_screen.dart';
 import '../../features/run/presentation/screens/run_result_screen.dart';
+import '../../features/run/presentation/screens/run_passport_screen.dart';
+import '../../features/run/presentation/screens/runs_journal_screen.dart';
 import '../../features/permissions/presentation/location_setup_sheet.dart';
 import '../../features/league/presentation/screens/focus_screen.dart';
 import '../../features/league/presentation/screens/league_screen.dart';
@@ -119,6 +122,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/run/result',
         builder: (_, state) =>
             RunResultScreen(result: state.extra as RunResult),
+      ),
+      // «Паспорт пробежки» + журнал (дизайн 05.09.2026): детальный экран
+      // с маршрутом-героем и шарингом в любой момент.
+      GoRoute(
+        path: '/runs',
+        builder: (_, __) => const RunsJournalScreen(),
+      ),
+      GoRoute(
+        path: '/runs/passport',
+        builder: (_, state) =>
+            RunPassportScreen(run: state.extra as CompletedRun),
       ),
       GoRoute(
         path: '/club/scan',

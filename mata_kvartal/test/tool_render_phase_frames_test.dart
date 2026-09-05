@@ -22,7 +22,7 @@ import 'package:kvartal_app/features/medals/presentation/medal_widgets.dart';
 import 'package:kvartal_app/features/medals/presentation/shtamp_ceremony.dart';
 import 'package:kvartal_app/features/profile/presentation/screens/theme_screen.dart';
 import 'package:kvartal_app/features/run/presentation/screens/run_result_screen.dart';
-import 'package:kvartal_app/features/run/presentation/widgets/share_card.dart';
+import 'package:kvartal_app/features/run/presentation/widgets/run_share.dart';
 
 Future<void> _loadFonts() async {
   final cupertino = FontLoader('packages/cupertino_icons/CupertinoIcons');
@@ -273,7 +273,22 @@ void main() {
         key,
         Scaffold(
           backgroundColor: const Color(0xFFF5F4EE),
-          body: Center(child: ShareCard(result: _sampleResult(captured: true))),
+          body: Center(
+            child: Builder(builder: (context) {
+              final r = _sampleResult(captured: true);
+              return RunStoryCard(
+                data: RunShareData(
+                  route: r.route,
+                  elapsed: r.elapsed,
+                  distanceMeters: r.distanceMeters,
+                  capturedZones: r.capturedZones,
+                  finishedAt: r.finishedAt,
+                ),
+                runner: 'Михаил Татаринов',
+                city: 'Якутск',
+              );
+            }),
+          ),
         ),
       ),
     );
