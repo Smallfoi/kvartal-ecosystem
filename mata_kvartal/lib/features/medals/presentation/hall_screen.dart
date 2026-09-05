@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../auth/data/auth_provider.dart';
 import '../data/medals_provider.dart';
+import 'medal_share.dart' show showHallShareSheet;
 import 'medal_widgets.dart';
 
 /// Зал славы (вариант «Пьедестал» без пьедестала — финал по слову владельца 02.09.2026).
@@ -75,7 +76,14 @@ class _TrophyHallScreenState extends ConsumerState<TrophyHallScreen>
               final total = list.length;
               return Column(
                 children: [
-                  _TopBar(name: name, earned: earned.length, total: total),
+                  _TopBar(
+                    name: name,
+                    earned: earned.length,
+                    total: total,
+                    onShare: earned.isEmpty
+                        ? null
+                        : () => showHallShareSheet(context, list),
+                  ),
                   Expanded(
                     child: earned.isEmpty
                         ? _EmptyHero(float: _float)
@@ -111,7 +119,13 @@ class _TrophyHallScreenState extends ConsumerState<TrophyHallScreen>
 class _TopBar extends StatelessWidget {
   final String name;
   final int earned, total;
-  const _TopBar({required this.name, required this.earned, required this.total});
+  final VoidCallback? onShare;
+  const _TopBar({
+    required this.name,
+    required this.earned,
+    required this.total,
+    this.onShare,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +138,18 @@ class _TopBar extends StatelessWidget {
             icon: const Icon(CupertinoIcons.back, color: _hallInk),
           ),
         ),
+        if (onShare != null)
+          Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              onPressed: onShare,
+              tooltip: 'Поделиться залом',
+              icon: const Icon(
+                CupertinoIcons.square_arrow_up,
+                color: _hallInk,
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Column(

@@ -77,7 +77,7 @@ Future<void> _share(GlobalKey boundaryKey) async {
   await file.writeAsBytes(bytes.buffer.asUint8List());
   await Share.shareXFiles(
     [XFile(file.path, mimeType: 'image/png')],
-    text: 'Моя пробежка в ЛИГЕ',
+    text: 'Моя пробежка в КВАРТАЛЕ',
   );
 }
 
