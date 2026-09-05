@@ -11,7 +11,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../medals/data/medals_provider.dart';
 import '../../../medals/presentation/shtamp_ceremony.dart';
 import '../../data/completed_runs_provider.dart';
-import '../widgets/share_card.dart';
+import '../widgets/run_share.dart';
 
 /// Итог пробежки для церемонии (Ф1 «Праздник», утверждено 31.08.2026).
 class RunResult {
@@ -470,7 +470,16 @@ class _StatsPanel extends StatelessWidget {
                     foregroundColor: const Color(0xFFDFF45F),
                     minimumSize: const Size(64, 50),
                   ),
-                  onPressed: () => showShareCardSheet(context, result),
+                  onPressed: () => showRunShareSheet(
+                    context,
+                    RunShareData(
+                      route: result.route,
+                      elapsed: result.elapsed,
+                      distanceMeters: result.distanceMeters,
+                      capturedZones: result.capturedZones,
+                      finishedAt: result.finishedAt,
+                    ),
+                  ),
                   child: const Text('Поделиться'),
                 ),
               ),
@@ -488,6 +497,24 @@ class _StatsPanel extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          // Паспорт пробежки: свежая пробежка уже сохранена — первая в истории.
+          Consumer(
+            builder: (context, ref, _) {
+              final runs = ref.watch(completedRunsProvider);
+              if (runs.isEmpty) return const SizedBox.shrink();
+              return TextButton(
+                onPressed: () =>
+                    context.push('/runs/passport', extra: runs.first),
+                child: const Text(
+                  'Подробнее о пробежке',
+                  style: TextStyle(
+                    color: Color(0xFF20252B),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
