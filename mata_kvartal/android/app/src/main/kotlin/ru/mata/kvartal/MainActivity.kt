@@ -50,6 +50,8 @@ class MainActivity : FlutterFragmentActivity() {
         val uri = androidx.core.content.FileProvider.getUriForFile(
             this, "$packageName.instashare", file)
         val intent = Intent("com.instagram.share.ADD_TO_STORY").apply {
+            // Явный адресат надёжнее неявного выборщика: уходит именно в Инсту.
+            setPackage("com.instagram.android")
             putExtra("source_application", appId)
             putExtra("com.facebook.platform.extra.APPLICATION_ID", appId)
             if (sticker) {
@@ -64,10 +66,12 @@ class MainActivity : FlutterFragmentActivity() {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         grantUriPermission("com.instagram.android", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        return if (packageManager.resolveActivity(intent, 0) != null) {
+        // Не resolveActivity: на части прошивок он возвращает null даже при
+        // объявленной видимости — честнее просто запустить и поймать отказ.
+        return try {
             startActivity(intent)
             true
-        } else {
+        } catch (_: android.content.ActivityNotFoundException) {
             false
         }
     }

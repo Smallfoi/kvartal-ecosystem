@@ -31,10 +31,14 @@ import 'medal_widgets.dart';
 /// (он виден в каждом APK любого приложения с шарингом в сторис);
 /// секретом у Меты является только App Secret, который здесь не нужен.
 /// CI может переопределить через --dart-define=META_APP_ID.
-const kMetaAppId = String.fromEnvironment(
-  'META_APP_ID',
-  defaultValue: '1058928553560826',
-);
+///
+/// ГРАБЛЯ (поймана 05.09 на телефоне владельца): `--dart-define=META_APP_ID=`
+/// с ПУСТЫМ значением (нераскрытый секрет CI) ПЕРЕКРЫВАЕТ defaultValue —
+/// fromEnvironment возвращает "", нативный путь молча падал в фолбэк.
+/// Поэтому пустое окружение всегда откатывается на вшитый ID.
+const _envMetaAppId = String.fromEnvironment('META_APP_ID');
+const kMetaAppId =
+    _envMetaAppId == '' ? '1058928553560826' : _envMetaAppId;
 
 const _instaChannel = MethodChannel('kvartal/instagram_share');
 

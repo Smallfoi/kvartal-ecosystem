@@ -84,8 +84,7 @@ jobs:
           flutter pub get
           # Только arm64 (все современные телефоны) — APK ~вдвое легче универсального.
           flutter build apk --release --target-platform android-arm64 --build-number="$BUILD_NUMBER" \
-            --dart-define=CARTO_API_KEY="${{ secrets.CARTO_API_KEY }}" \
-            --dart-define=META_APP_ID="${{ secrets.META_APP_ID }}"
+            --dart-define=CARTO_API_KEY="${{ secrets.CARTO_API_KEY }}"
 
       - name: Publish to S3
         if: steps.detect.outputs.changed == 'true'
