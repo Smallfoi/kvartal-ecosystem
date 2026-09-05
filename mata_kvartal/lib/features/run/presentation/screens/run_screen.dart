@@ -13,6 +13,7 @@ import '../../../territory/data/territory_provider.dart';
 import '../../../permissions/data/location_access_provider.dart';
 import '../../../permissions/presentation/location_setup_sheet.dart';
 import '../../data/run_provider.dart';
+import 'run_result_screen.dart';
 import '../../data/completed_runs_provider.dart';
 import '../../../shoes/presentation/shoe_run_picker.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
@@ -77,7 +78,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
       backgroundColor: AppColors.bgDark,
       // Фоновый градиент (синий сверху → чёрный) — как на профиле/клубе/рейтинге.
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.bg,
         ),
         child: SafeArea(
@@ -85,13 +86,18 @@ class _IdleViewState extends ConsumerState<_IdleView> {
             onRefresh: _refresh,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 128),
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _RunHeader(),
                 const SizedBox(height: 16),
                 const LocationWarningBanner(),
+                // Ф3: первый квест до первой пробежки — короткий и достижимый.
+                if (recentRuns.isEmpty) ...[
+                  const _FirstQuestCard(),
+                  const SizedBox(height: 16),
+                ],
                 _QuickStatsRow(stats: stats),
                 const SizedBox(height: 20),
                 _StartCard(),
@@ -129,7 +135,7 @@ class _IdleViewState extends ConsumerState<_IdleView> {
                     ),
                     GestureDetector(
                       onTap: () {},
-                      child: const Text(
+                      child: Text(
                         'Все',
                         style: TextStyle(
                           fontSize: 13,
@@ -302,7 +308,7 @@ class _QuickStat extends StatelessWidget {
             const SizedBox(height: 7),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -312,7 +318,7 @@ class _QuickStat extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 color: AppColors.textSecondary,
               ),
@@ -339,7 +345,7 @@ class _StartCard extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [AppColors.graphite, Color(0xFF15181C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -379,19 +385,21 @@ class _StartCard extends ConsumerWidget {
                           color: AppColors.lime,
                           borderRadius: BorderRadius.circular(AppTheme.rPill),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
+                          children: const [
+                            // На лайме — только константный тёмный: AppColors.ink
+                            // в графитовой теме светлый и на лайме невидим.
                             Icon(
                               CupertinoIcons.play_fill,
-                              color: AppColors.ink,
+                              color: Color(0xFF171C19),
                               size: 13,
                             ),
                             SizedBox(width: 8),
                             Text(
                               'НАЧАТЬ',
                               style: TextStyle(
-                                color: AppColors.ink,
+                                color: Color(0xFF171C19),
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
                                 letterSpacing: 1.2,
@@ -478,7 +486,7 @@ class _ActiveRunView extends ConsumerWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.separator),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         CupertinoIcons.xmark,
                         color: AppColors.textSecondary,
                         size: 16,
@@ -491,7 +499,7 @@ class _ActiveRunView extends ConsumerWidget {
 
               Text(
                 runState.distanceKm.toStringAsFixed(2),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 84,
                   fontWeight: FontWeight.w900,
                   color: AppColors.textPrimary,
@@ -499,7 +507,7 @@ class _ActiveRunView extends ConsumerWidget {
                   letterSpacing: -4,
                 ),
               ),
-              const Text(
+              Text(
                 'КМ',
                 style: TextStyle(
                   fontSize: 12,
@@ -598,7 +606,7 @@ class _ActiveRunView extends ConsumerWidget {
           'Время: ${run.elapsedFormatted}\n'
           'До старта: $gap м\n'
           '$captureHint',
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -608,9 +616,19 @@ class _ActiveRunView extends ConsumerWidget {
           if (!canCapture)
             TextButton(
               onPressed: () {
+                final result = RunResult(
+                  route: List.of(run.route),
+                  elapsed: run.elapsed,
+                  distanceMeters: run.distanceMeters,
+                  capturedZones: 0,
+                  capturedTerritory: false,
+                  finishedAt: DateTime.now(),
+                  runId: '',
+                );
                 ref.read(runProvider.notifier).stop();
                 Navigator.pop(ctx);
-                context.go('/map');
+                // Без захвата — без салюта: церемония пройдёт тихой веткой.
+                context.push('/run/result', extra: result);
               },
               child: const Text('Завершить без захвата'),
             ),
@@ -633,6 +651,15 @@ class _ActiveRunView extends ConsumerWidget {
                             elapsedSeconds: run.elapsed.inSeconds,
                           ),
                     );
+                    final result = RunResult(
+                      route: List.of(run.route),
+                      elapsed: run.elapsed,
+                      distanceMeters: run.distanceMeters,
+                      capturedZones: captured.length,
+                      capturedTerritory: true,
+                      finishedAt: DateTime.now(),
+                      runId: '',
+                    );
                     ref
                         .read(runProvider.notifier)
                         .stop(
@@ -640,7 +667,7 @@ class _ActiveRunView extends ConsumerWidget {
                           capturedTerritory: true,
                         );
                     Navigator.pop(ctx);
-                    context.go('/map');
+                    context.push('/run/result', extra: result);
                   }
                 : null,
             style: FilledButton.styleFrom(
@@ -782,7 +809,7 @@ class _EmptyRunsHint extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.separator),
       ),
-      child: const Text(
+      child: Text(
         'Завершённые пробежки появятся здесь после первого старта.',
         style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
       ),
@@ -834,7 +861,7 @@ class _WeeklyGoalCard extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: AppColors.bgElevated,
-              valueColor: const AlwaysStoppedAnimation(AppColors.electricBlue),
+              valueColor: AlwaysStoppedAnimation(AppColors.electricBlue),
             ),
           ),
           const SizedBox(height: 10),
@@ -875,7 +902,7 @@ class _RunTile extends StatelessWidget {
               color: AppColors.electricBlue.withValues(alpha: 0.13),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               CupertinoIcons.location_north_fill,
               color: AppColors.warning,
               size: 20,
@@ -912,6 +939,58 @@ class _RunTile extends StatelessWidget {
                 ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ф3 «Вход в игру»: первый квест — 800 метров, конец кроется медалью дня 1.
+class _FirstQuestCard extends StatelessWidget {
+  const _FirstQuestCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.block,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ПЕРВЫЙ КВЕСТ',
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.6,
+              color: Color(0xFFDFF45F),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Пробеги 800 метров',
+            style: TextStyle(
+              fontFamily: AppTheme.fontDisplay,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFFEDEFE8),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Небольшой круг у дома — этого достаточно. '
+            'За первую пробежку — стальной штамп «Первый бег».',
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF9AA59D),
+            ),
           ),
         ],
       ),
