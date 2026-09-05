@@ -84,6 +84,11 @@ Chrome, для медали размечаются ЖИВЫЕ узлы (SMIL/CSS
 переводятся руками в ключи `emblem_motion.dart` (координаты ×esc/ey из
 `renderMedal`). Грабли: скрытые узлы ПРЯТАТЬ visibility, не удалять — у
 отсоединённых узлов ломается compareDocumentPosition и сегменты режутся мусором.
+Грабли слоёв: (а) у слоя внутри SVG-клипа снимать clip-path у предков —
+Chrome прячет контент clipPath вместе со скрытым корнем и слой вырезается
+в ноль (клип переигрывается Flutter-Rect'ом); (б) сбрасывать не только
+opacity="0", но и fill-opacity="0". Страж: emblem_assets_audit_test
+(пустой слой = красный CI). Гравировка реверса ужимается engravingFitToWidth.
 Проверка: `EMBLEM_FRAMES_DIR=… flutter test test/tool_render_emblem_frames_test.dart`
 — стоп-кадры цикла; кадр t=0 обязан совпадать с статичным аверсом.
 Пилот: s_champion (лучи), d_dawn (восход за горизонт), t_defense_7 (стрелы+щит),

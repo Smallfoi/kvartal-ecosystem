@@ -87,6 +87,23 @@ class _NewRimPainter extends CustomPainter {
   bool shouldRepaint(covariant _NewRimPainter oldDelegate) => false;
 }
 
+/// Гравировка обязана влезать в поле штампа (правило эталона: НИКАКИХ
+/// наложений; реальный случай — «Личное время на 5 км» вылезало за рамку,
+/// слово владельца 05.09). Строка шире [maxWidth] — кегль и трекинг
+/// ужимаются пропорционально по честному замеру TextPainter.
+TextStyle engravingFitToWidth(String text, TextStyle style, double maxWidth) {
+  final tp = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  if (tp.width <= maxWidth || tp.width == 0) return style;
+  final k = maxWidth / tp.width;
+  return style.copyWith(
+    fontSize: (style.fontSize ?? 14) * k,
+    letterSpacing: (style.letterSpacing ?? 0) * k,
+  );
+}
+
 /// Реверс: база металла из ассета + личная гравировка (значение · подпись ·
 /// дата по нижней дуге) — рисуется здесь, потому что она у каждого своя.
 class MedalReverse extends StatelessWidget {
@@ -157,6 +174,7 @@ class _EngravingPainter extends CustomPainter {
       gradient: [hi, noble],
       center: c,
       baselineY: 3.6 * s,
+      maxWidth: 46 * s,
     );
     _baselineText(
       canvas,
@@ -170,6 +188,7 @@ class _EngravingPainter extends CustomPainter {
       gradient: [hi.withValues(alpha: .8), noble.withValues(alpha: .8)],
       center: c,
       baselineY: 11.2 * s,
+      maxWidth: 52 * s,
     );
 
     // Дата · город — по нижней дуге R=30, буквы макушкой к центру.
@@ -187,8 +206,10 @@ class _EngravingPainter extends CustomPainter {
     required List<Color> gradient,
     required Offset center,
     required double baselineY,
+    double? maxWidth,
   }) {
     if (text.isEmpty) return;
+    if (maxWidth != null) style = engravingFitToWidth(text, style, maxWidth);
     final tp = TextPainter(
       text: TextSpan(text: text, style: style),
       textDirection: TextDirection.ltr,
