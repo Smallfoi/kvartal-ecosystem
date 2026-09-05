@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/medal_defs.dart';
 import '../data/medals_provider.dart';
+import 'emblem_motion.dart';
 
 /// Виджеты штампа: аверс из ассета, реверс с личной гравировкой, 3D-флип.
 ///
@@ -321,12 +322,9 @@ class _MedalFlipState extends State<MedalFlip>
                       size: widget.size,
                     ),
                   )
-                : MedalImage(
-                    def: widget.medal.def,
-                    earned: widget.medal.earned,
-                    isNew: false,
-                    size: widget.size,
-                  ),
+                // Аверс живёт своей анимацией (эмблема по эталону D-64);
+                // у медалей без спецификации это тот же статичный ассет.
+                : LiveMedalImage(medal: widget.medal, size: widget.size),
           );
         },
       ),
