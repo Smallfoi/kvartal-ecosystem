@@ -26,8 +26,15 @@ import 'medal_widgets.dart';
 ///   честно падает в системный шит.
 /// - «Отправить» — системный шит (share_plus): любой мессенджер.
 ///
-/// Meta App ID приходит из CI: --dart-define=META_APP_ID=…; пустой = фоллбэк.
-const kMetaAppId = String.fromEnvironment('META_APP_ID');
+/// Meta App ID приложения «MATA-ECOSYSTEM» (developers.facebook.com,
+/// аккаунт владельца, создано 05.09.2026). App ID — публичное значение
+/// (он виден в каждом APK любого приложения с шарингом в сторис);
+/// секретом у Меты является только App Secret, который здесь не нужен.
+/// CI может переопределить через --dart-define=META_APP_ID.
+const kMetaAppId = String.fromEnvironment(
+  'META_APP_ID',
+  defaultValue: '1058928553560826',
+);
 
 const _instaChannel = MethodChannel('kvartal/instagram_share');
 
