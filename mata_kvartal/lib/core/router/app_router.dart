@@ -22,6 +22,7 @@ import '../../features/club/presentation/screens/club_screen.dart';
 import '../../features/club/presentation/screens/club_scan_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/theme_screen.dart';
+import '../../features/medals/presentation/hall_screen.dart';
 import '../../features/profile/presentation/screens/trophy_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/legal_documents_screen.dart';
@@ -253,9 +254,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/profile/privacy',
                 builder: (_, __) => const PrivacyScreen(),
               ),
+              // Зал славы (пьедестал, утверждён 02.09.2026); полный каталог
+              // 44 штампов — вложенным маршрутом за кнопкой «Все медали».
               GoRoute(
                 path: '/profile/trophies',
-                builder: (_, __) => const TrophyScreen(),
+                builder: (_, __) => const TrophyHallScreen(),
+              ),
+              GoRoute(
+                path: '/profile/trophies/all',
+                builder: (_, __) => const MedalCatalogScreen(),
               ),
               GoRoute(
                 path: '/profile/theme',
