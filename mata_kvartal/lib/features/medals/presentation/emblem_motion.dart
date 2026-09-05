@@ -24,6 +24,8 @@ class EmblemKey {
   final double dx, dy; // сдвиг, единицы viewBox (116 на всю медаль)
   final double rot; // градусы, по часовой (экранные координаты SVG)
   final double opacity;
+  final double scale; // вокруг pivot (глинты, галочка цели, сноп фейерверка)
+  final double skewY; // градусы (ткань финишного флага)
 
   const EmblemKey(
     this.t, {
@@ -31,6 +33,8 @@ class EmblemKey {
     this.dy = 0,
     this.rot = 0,
     this.opacity = 1,
+    this.scale = 1,
+    this.skewY = 0,
   });
 }
 
@@ -65,10 +69,52 @@ const Map<String, List<String>> emblemParts = {
   'd_dawn': ['seg0', 'sun', 'seg1', 'refl', 'seg2'],
   't_defense_7': ['seg0', 'body', 'arr1', 'arr2', 'arr3', 'seg4'],
   'd_first_run': ['seg0', 'st1', 'st2', 'st3', 'runner', 'sparks', 'seg5'],
+  // Партия 2 — Ритм + Территория (порядок из конвейера, документный).
+  'r_goal_first': ['seg0', 'check', 'seg1'],
+  'r_week_perfect': [
+    'seg0', 'day0', 'seg1', 'day1', 'seg2', 'day2', 'seg3', 'day3', 'seg4',
+    'day4', 'seg5', 'day5', 'seg6', 'day6', 'seg7', 'seven', 'seg8',
+  ],
+  'r_month_perfect': [
+    'seg0', 'row0', 'seg1', 'row1', 'seg2', 'row2', 'seg3', 'row3', 'seg4',
+  ],
+  'r_year_perfect': ['seg0', 'glint', 'seg1'],
+  'r_goal_x2': ['seg0', 'chev', 'fl1', 'fl2', 'fl3', 'seg4'],
+  'r_goal_x3': ['seg0', 'chev', 'fl1', 'fl2', 'fl3', 'seg4'],
+  'r_goal_x5': ['seg0', 'chev', 'fl1', 'fl2', 'fl3', 'seg4'],
+  'r_streak_7': ['seg0', 'comet', 'seg1'],
+  'r_streak_30': ['seg0', 'comet', 'seg1'],
+  'r_streak_100': ['seg0', 'comet', 'seg1'],
+  'r_streak_365': ['seg0', 'comet', 'seg1'],
+  't_first_zone': [
+    'seg0', 'link1', 'seg1', 'hexfl1', 'link2', 'seg3', 'hexfl2', 'link3',
+    'seg5', 'hexfl3', 'seg6', 'pennA', 'pennB', 'seg7',
+  ],
+  't_zones_10': [
+    'seg0', 'link1', 'seg1', 'hexfl1', 'link2', 'seg3', 'hexfl2', 'link3',
+    'seg5', 'hexfl3', 'seg6', 'pennA', 'pennB', 'seg7',
+  ],
+  't_zones_50': [
+    'seg0', 'link1', 'seg1', 'hexfl1', 'link2', 'seg3', 'hexfl2', 'link3',
+    'seg5', 'hexfl3', 'seg6', 'pennA', 'pennB', 'seg7',
+  ],
+  't_zones_100': [
+    'seg0', 'link1', 'seg1', 'hexfl1', 'link2', 'seg3', 'hexfl2', 'link3',
+    'seg5', 'hexfl3', 'seg6', 'pennA', 'pennB', 'seg7',
+  ],
+  't_district': ['seg0', 'mlines', 'seg1'],
+  't_intercept': ['seg0', 'turn', 'seg1'],
+  't_night_capture': [
+    'seg0', 'wrap', 'tw1', 'tw2', 'tw3', 'meteor', 'seg5', 'window', 'seg6',
+  ],
+  't_pioneer': [
+    'seg0', 'pennA', 'pennB', 'seg1', 'step1', 'step2', 'step3', 'step4',
+    'step5', 'gl1', 'gl2', 'seg8',
+  ],
 };
 
-/// Таймлайны пилотной партии. Значения = эталон × масштаб эмблемы.
-const Map<String, List<EmblemLayer>> emblemMotion = {
+/// Таймлайны. Значения = эталон × масштаб эмблемы (esc/ey из renderMedal).
+final Map<String, List<EmblemLayer>> emblemMotion = {
   // Чемпион сезона: лучи ордена делают полный оборот за 26 с (SMIL rotate).
   's_champion': [
     EmblemLayer(
@@ -222,7 +268,282 @@ const Map<String, List<EmblemLayer>> emblemMotion = {
       ],
     ),
   ],
+
+  // ── Партия 2: Ритм ────────────────────────────────────────────────────
+  'r_goal_first': _ring(),
+  'r_week_perfect': _week(),
+  'r_month_perfect': _month(),
+  'r_year_perfect': _year(),
+  'r_goal_x2': _mult(),
+  'r_goal_x3': _mult(),
+  'r_goal_x5': _mult(),
+  'r_streak_7': _streak(),
+  'r_streak_30': _streak(),
+  'r_streak_100': _streak(),
+  'r_streak_365': _streak(),
+
+  // ── Партия 2: Территория ──────────────────────────────────────────────
+  't_first_zone': _hexcap(),
+  't_zones_10': _hexcap(),
+  't_zones_50': _hexcap(),
+  't_zones_100': _hexcap(),
+  't_district': _hexgrid(),
+  't_intercept': _swap(),
+  't_night_capture': _moon(.50),
+  't_pioneer': _flag(),
 };
+
+// ── Глифовые таймлайны партии 2 (медали одного глифа делят ключи; ─────────
+// ассеты у каждой свои — металл ранга красит эмблему).
+
+/// Первая цель: галочка исчезает вместе с кольцом и вбивается заново
+/// (SMIL scale 8 с; перерисовка кольца — dash, в статике след полный).
+List<EmblemLayer> _ring() => const [
+  EmblemLayer('check', periodMs: 8000, pivot: Offset(0, 2), keys: [
+    EmblemKey(0),
+    EmblemKey(.52),
+    EmblemKey(.56, scale: 0, opacity: 0),
+    EmblemKey(.9, scale: 0, opacity: 0),
+    EmblemKey(.95, scale: 1.3),
+    EmblemKey(1),
+  ]),
+];
+
+/// Идеальная неделя: дни гаснут и зажигаются лесенкой, «7» дышит.
+List<EmblemLayer> _week() => [
+  for (var i = 0; i < 7; i++)
+    EmblemLayer('day$i', periodMs: 8000, keys: [
+      const EmblemKey(0),
+      const EmblemKey(.36),
+      const EmblemKey(.4, opacity: 0),
+      EmblemKey(.45 + i * .05, opacity: 0),
+      EmblemKey(.48 + i * .05),
+      const EmblemKey(1),
+    ]),
+  const EmblemLayer('seven', periodMs: 5000, keys: [
+    EmblemKey(0, opacity: .85),
+    EmblemKey(.5),
+    EmblemKey(1, opacity: .85),
+  ]),
+];
+
+/// Идеальный месяц: календарь гаснет и заполняется волной по рядам.
+List<EmblemLayer> _month() => [
+  for (var r = 0; r < 4; r++)
+    EmblemLayer('row$r', periodMs: 9000, keys: [
+      const EmblemKey(0),
+      const EmblemKey(.34),
+      const EmblemKey(.38, opacity: 0),
+      EmblemKey(.44 + r * .09, opacity: 0),
+      EmblemKey(.48 + r * .09),
+      const EmblemKey(1),
+    ]),
+];
+
+/// Идеальный год: блик обходит кольцо месяцев за 14 с.
+List<EmblemLayer> _year() => const [
+  EmblemLayer('glint', periodMs: 14000, pivot: Offset(0, 2), keys: [
+    EmblemKey(0, rot: 0),
+    EmblemKey(1, rot: 360),
+  ]),
+];
+
+/// Цель ×N: шевроны дышат вверх-вниз, вспышки пробегают снизу вверх.
+List<EmblemLayer> _mult() => const [
+  EmblemLayer('chev', periodMs: 4200, keys: [
+    EmblemKey(0, dy: .57),
+    EmblemKey(.5, dy: -.57),
+    EmblemKey(1, dy: .57),
+  ]),
+  EmblemLayer('fl1', periodMs: 3800, keys: [
+    EmblemKey(0, opacity: 0),
+    EmblemKey(.12, opacity: 0),
+    EmblemKey(.19, opacity: .9),
+    EmblemKey(.32, opacity: 0),
+    EmblemKey(1, opacity: 0),
+  ]),
+  EmblemLayer('fl2', periodMs: 3800, keys: [
+    EmblemKey(0, opacity: 0),
+    EmblemKey(.24, opacity: 0),
+    EmblemKey(.31, opacity: .9),
+    EmblemKey(.44, opacity: 0),
+    EmblemKey(1, opacity: 0),
+  ]),
+  EmblemLayer('fl3', periodMs: 3800, keys: [
+    EmblemKey(0, opacity: 0),
+    EmblemKey(.36, opacity: 0),
+    EmblemKey(.43, opacity: .9),
+    EmblemKey(.56, opacity: 0),
+    EmblemKey(1, opacity: 0),
+  ]),
+];
+
+/// Маршрут серии, снятый конвейером с кривой эталона: [s, x, y, угол°].
+/// s — доля длины пути, координаты локальные (× esc .38 при переводе).
+const List<List<double>> _streakPath = [
+  [0, -30, 20, 22.4], [.042, -26.99, 20.92, 7.9], [.083, -23.86, 20.84, -15.9],
+  [.125, -21.06, 19.45, -38.9], [.167, -18.83, 17.24, -50.7],
+  [.208, -16.92, 14.73, -54.1], [.25, -15.05, 12.19, -52],
+  [.292, -13.9, 8, -44.7], [.333, -10.58, 7.79, -32.2],
+  [.375, -7.75, 6.43, -16.4], [.417, -4.66, 5.89, -1.6],
+  [.458, -1.51, 6.04, 3.2], [.5, 1.62, 5.86, -14.1],
+  [.542, 4.49, 4.6, -36.8], [.583, 6.74, 2.41, -52.5],
+  [.625, 8.51, -.19, -58.5], [.667, 10.14, -2.89, -58.5],
+  [.708, 11.85, -5.54, -54.9], [.75, 13.76, -8.04, -49],
+  [.792, 15.95, -10.31, -41.8], [.833, 18.41, -12.28, -34.4],
+  [.875, 21.1, -13.91, -27.3], [.917, 23.96, -15.23, -21.1],
+  [.958, 26.94, -16.24, -15.8], [1, 30, -17, 0],
+];
+
+EmblemKey _cometAt(double t, double s) {
+  const esc = .38;
+  var row = _streakPath.last;
+  for (var i = 1; i < _streakPath.length; i++) {
+    if (s <= _streakPath[i][0]) {
+      final a = _streakPath[i - 1], b = _streakPath[i];
+      final f = (s - a[0]) / (b[0] - a[0]);
+      row = [
+        s,
+        a[1] + (b[1] - a[1]) * f,
+        a[2] + (b[2] - a[2]) * f,
+        a[3] + (b[3] - a[3]) * f,
+      ];
+      break;
+    }
+  }
+  return EmblemKey(t, dx: row[1] * esc, dy: row[2] * esc, rot: row[3]);
+}
+
+/// Серия: комета стоит на финише, отматывается к старту и пробегает
+/// маршрут заново (SMIL animateMotion; перерисовку следа dash-анимацией
+/// послойный экспорт не переносит — след живёт полным, это компромисс).
+List<EmblemLayer> _streak() => [
+  EmblemLayer('comet', periodMs: 7000, pivot: const Offset(0, -8), keys: [
+    _cometAt(0, 1),
+    _cometAt(.3, 1),
+    for (var k = 1; k <= 6; k++) _cometAt(.3 + .03 * k / 6, 1 - k / 6),
+    _cometAt(.37, 0),
+    for (var k = 1; k <= 24; k++) _cometAt(.37 + .58 * k / 24, k / 24),
+    _cometAt(1, 1),
+  ]),
+];
+
+/// Квартал взят: связи с соседями теплятся, соседние зоны вспыхивают,
+/// вымпел полощется (морф двумя кадрами-кроссфейдом).
+List<EmblemLayer> _hexcap() => [
+  for (var i = 0; i < 3; i++)
+    EmblemLayer('link${i + 1}', periodMs: 4200, delayMs: i * 1400, keys: const [
+      EmblemKey(0, opacity: .3),
+      EmblemKey(.5, opacity: .65),
+      EmblemKey(1, opacity: .3),
+    ]),
+  for (var i = 0; i < 3; i++)
+    EmblemLayer('hexfl${i + 1}', periodMs: 4200, delayMs: 400 + i * 1400,
+        keys: const [
+      EmblemKey(0, opacity: 0),
+      EmblemKey(.5, opacity: .35),
+      EmblemKey(1, opacity: 0),
+    ]),
+  const EmblemLayer('pennA', periodMs: 2200, curve: Curves.easeInOut, keys: [
+    EmblemKey(0),
+    EmblemKey(.5, opacity: 0),
+    EmblemKey(1),
+  ]),
+  const EmblemLayer('pennB', periodMs: 2200, curve: Curves.easeInOut, keys: [
+    EmblemKey(0, opacity: 0),
+    EmblemKey(.5),
+    EmblemKey(1, opacity: 0),
+  ]),
+];
+
+/// Весь район: связи созвездия теплятся (CSS mlineGlow).
+List<EmblemLayer> _hexgrid() => const [
+  EmblemLayer('mlines', periodMs: 3800, alternate: true,
+      curve: Curves.easeInOut, keys: [
+    EmblemKey(0, opacity: .16),
+    EmblemKey(1, opacity: .42),
+  ]),
+];
+
+/// Перехват: эмблема делает один резкий оборот и замирает (CSS swapTurn).
+List<EmblemLayer> _swap() => const [
+  EmblemLayer('turn', periodMs: 5000, curve: Cubic(.5, 0, .15, 1),
+      pivot: Offset(0, 1), keys: [
+    EmblemKey(0, rot: 0),
+    EmblemKey(.16, rot: 360),
+    EmblemKey(1, rot: 360),
+  ]),
+];
+
+/// Ночь: месяц дрейфует, звёзды мерцают вразнобой, раз в цикл чиркает
+/// метеор, одно окно в спящем городе гаснет и зажигается.
+List<EmblemLayer> _moon(double esc) => [
+  EmblemLayer('wrap', periodMs: 6000, alternate: true,
+      curve: Curves.easeInOut, keys: [
+    EmblemKey(0, dy: -1.6 * esc),
+    EmblemKey(1, dy: 1.6 * esc),
+  ]),
+  for (var i = 0; i < 3; i++)
+    EmblemLayer('tw${i + 1}', periodMs: 4400, delayMs: i * 1400, keys: const [
+      EmblemKey(0, opacity: .25),
+      EmblemKey(.12, opacity: 1),
+      EmblemKey(.24, opacity: .25),
+      EmblemKey(1, opacity: .25),
+    ]),
+  EmblemLayer('meteor', periodMs: 9000, keys: [
+    const EmblemKey(0, opacity: 0),
+    const EmblemKey(.6, opacity: 0),
+    EmblemKey(.64, dx: -8.73 * esc, dy: 6.18 * esc, opacity: .9),
+    EmblemKey(.71, dx: -24 * esc, dy: 17 * esc, opacity: 0),
+    EmblemKey(1, dx: -24 * esc, dy: 17 * esc, opacity: 0),
+  ]),
+  const EmblemLayer('window', periodMs: 9000, keys: [
+    EmblemKey(0, opacity: .9),
+    EmblemKey(.35, opacity: .9),
+    EmblemKey(.42, opacity: .15),
+    EmblemKey(.78, opacity: .15),
+    EmblemKey(.86, opacity: .9),
+    EmblemKey(1, opacity: .9),
+  ]),
+];
+
+/// Первопроходец: вымпел полощется, следы проявляются шаг за шагом
+/// к древку, глинты вспыхивают.
+List<EmblemLayer> _flag() => [
+  const EmblemLayer('pennA', periodMs: 2400, curve: Curves.easeInOut, keys: [
+    EmblemKey(0),
+    EmblemKey(.5, opacity: 0),
+    EmblemKey(1),
+  ]),
+  const EmblemLayer('pennB', periodMs: 2400, curve: Curves.easeInOut, keys: [
+    EmblemKey(0, opacity: 0),
+    EmblemKey(.5),
+    EmblemKey(1, opacity: 0),
+  ]),
+  for (var i = 0; i < 5; i++)
+    EmblemLayer('step${i + 1}', periodMs: 8000, keys: [
+      const EmblemKey(0, opacity: 0),
+      EmblemKey(.08 + i * .09, opacity: 0),
+      EmblemKey(.12 + i * .09, opacity: .5),
+      const EmblemKey(.78, opacity: .5),
+      const EmblemKey(.9, opacity: 0),
+      const EmblemKey(1, opacity: 0),
+    ]),
+  const EmblemLayer('gl1', periodMs: 4600, delayMs: 1000,
+      pivot: Offset(15.6, -12.77), keys: [
+    EmblemKey(0, opacity: 0, scale: .4),
+    EmblemKey(.06, opacity: .95, scale: 1),
+    EmblemKey(.13, opacity: 0, scale: .5),
+    EmblemKey(1, opacity: 0, scale: .4),
+  ]),
+  const EmblemLayer('gl2', periodMs: 4600, delayMs: 3200,
+      pivot: Offset(-12.48, -17.34), keys: [
+    EmblemKey(0, opacity: 0, scale: .4),
+    EmblemKey(.06, opacity: .95, scale: 1),
+    EmblemKey(.13, opacity: 0, scale: .5),
+    EmblemKey(1, opacity: 0, scale: .4),
+  ]),
+];
 
 /// Аверс медали, живущий своей анимацией. Для медалей без спецификации,
 /// незаработанных и при выключенных анимациях системы — обычный статичный
@@ -305,6 +626,8 @@ class _LiveMedalImageState extends State<LiveMedalImage>
           dy: a.dy + (b.dy - a.dy) * f,
           rot: a.rot + (b.rot - a.rot) * f,
           opacity: a.opacity + (b.opacity - a.opacity) * f,
+          scale: a.scale + (b.scale - a.scale) * f,
+          skewY: a.skewY + (b.skewY - a.skewY) * f,
         );
       }
     }
@@ -359,14 +682,14 @@ class _LiveMedalImageState extends State<LiveMedalImage>
       builder: (context, child) {
         final k = _sample(l, _controllers[i].value);
         final pivotPx = center + l.pivot * s;
-        Widget w = Transform(
-          transform: Matrix4.identity()
-            ..translate(k.dx * s, k.dy * s)
-            ..translate(pivotPx.dx, pivotPx.dy)
-            ..rotateZ(k.rot * math.pi / 180)
-            ..translate(-pivotPx.dx, -pivotPx.dy),
-          child: child,
-        );
+        final m = Matrix4.identity()
+          ..translate(k.dx * s, k.dy * s)
+          ..translate(pivotPx.dx, pivotPx.dy)
+          ..rotateZ(k.rot * math.pi / 180);
+        if (k.scale != 1) m.scale(k.scale, k.scale, 1);
+        if (k.skewY != 0) m.setEntry(1, 0, math.tan(k.skewY * math.pi / 180));
+        m.translate(-pivotPx.dx, -pivotPx.dy);
+        Widget w = Transform(transform: m, child: child);
         if (k.opacity < 1) {
           w = Opacity(opacity: k.opacity.clamp(0.0, 1.0), child: w);
         }
