@@ -111,6 +111,29 @@ const Map<String, List<String>> emblemParts = {
     'seg0', 'pennA', 'pennB', 'seg1', 'step1', 'step2', 'step3', 'step4',
     'step5', 'gl1', 'gl2', 'seg8',
   ],
+  // Партия 3 — Дистанция + Сезон.
+  'd_run_5k': ['seg0', 'flow', 'seg1', 'hflag', 'seg2'],
+  'd_run_10k': ['seg0', 'flow', 'seg1', 'hflag', 'seg2'],
+  'd_half_marathon': ['seg0', 'flow', 'seg1', 'hflag', 'seg2'],
+  'd_marathon': ['seg0', 'flow', 'seg1', 'hflag', 'seg2'],
+  'd_month_100': ['seg0', 'flow', 'seg1', 'hflag', 'seg2'],
+  'd_total_1000': ['seg0', 'flow', 'seg1', 'hflag', 'seg2'],
+  'd_midnight': [
+    'seg0', 'wrap', 'tw1', 'tw2', 'tw3', 'meteor', 'seg5', 'window', 'seg6',
+  ],
+  'd_frost_40': ['seg0', 'spin', 'seg1'],
+  'd_workouts_100': [
+    'seg0', 'st1', 'st2', 'st3', 'runner', 'sparks', 'seg5',
+  ],
+  's_season_closed': ['seg0', 'cloth', 'seg1'],
+  's_div_bronze': ['seg0', 'wing1', 'wing2', 'gem', 'seg3', 'gl1', 'seg4'],
+  's_div_silver': ['seg0', 'wing1', 'wing2', 'gem', 'seg3', 'gl1', 'seg4'],
+  's_div_gold': ['seg0', 'wing1', 'wing2', 'gem', 'seg3', 'gl1', 'seg4'],
+  's_div_elite': ['seg0', 'wing1', 'wing2', 'gem', 'seg3', 'gl1', 'seg4'],
+  's_club_cup': [
+    'seg0', 'shine', 'rib1', 'rib2', 'conf1', 'conf2', 'conf3', 'conf4',
+    'conf5', 'conf6', 'conf7', 'conf8', 'gl1', 'gl2', 'seg13',
+  ],
 };
 
 /// Таймлайны. Значения = эталон × масштаб эмблемы (esc/ey из renderMedal).
@@ -291,6 +314,25 @@ final Map<String, List<EmblemLayer>> emblemMotion = {
   't_intercept': _swap(),
   't_night_capture': _moon(.50),
   't_pioneer': _flag(),
+
+  // ── Партия 3: Дистанция ───────────────────────────────────────────────
+  'd_run_5k': _road(),
+  'd_run_10k': _road(),
+  'd_half_marathon': _road(),
+  'd_marathon': _road(),
+  'd_month_100': _road(),
+  'd_total_1000': _road(),
+  'd_midnight': _moon(.52),
+  'd_frost_40': _snowSpin(),
+  'd_workouts_100': _run(.38, -8),
+
+  // ── Партия 3: Сезон и лига ────────────────────────────────────────────
+  's_season_closed': _finish(),
+  's_div_bronze': _div(.52),
+  's_div_silver': _div(.52),
+  's_div_gold': _div(.52),
+  's_div_elite': _div(.50),
+  's_club_cup': _cup(),
 };
 
 // ── Глифовые таймлайны партии 2 (медали одного глифа делят ключи; ─────────
@@ -544,6 +586,142 @@ List<EmblemLayer> _flag() => [
     EmblemKey(1, opacity: 0, scale: .4),
   ]),
 ];
+
+// ── Глифовые таймлайны партии 3 ────────────────────────────────────────
+
+/// Вспышка-глинт (CSS glint): проявляется с ростом и тает. Общий для
+/// дивизионов, кубка и прочих искр.
+EmblemLayer _glint(String part, Offset pivot, int delayMs) => EmblemLayer(
+  part, periodMs: 4600, delayMs: delayMs, pivot: pivot, keys: const [
+    EmblemKey(0, opacity: 0, scale: .4),
+    EmblemKey(.06, opacity: .95, scale: 1),
+    EmblemKey(.13, opacity: 0, scale: .5),
+    EmblemKey(1, opacity: 0, scale: .4),
+  ],
+);
+
+/// Дорога: разметка бежит к финишу внутри полотна, флажок на горизонте
+/// машет (CSS roadFlow/hflagWave; esc .38, ey −8 — у всех road есть плашка).
+List<EmblemLayer> _road() => const [
+  EmblemLayer('flow', periodMs: 1500,
+      clip: Rect.fromLTWH(-3.2, -18.26, 6.4, 23.5), keys: [
+    EmblemKey(0),
+    EmblemKey(1, dy: 4.94),
+  ]),
+  EmblemLayer('hflag', periodMs: 2200, alternate: true,
+      curve: Curves.easeInOut, pivot: Offset(3.04, -21.68), keys: [
+    EmblemKey(0, rot: -4),
+    EmblemKey(1, rot: 4),
+  ]),
+];
+
+/// Мороз −40: гранёная снежинка медленно вращается (CSS spinSlow, 40 с).
+List<EmblemLayer> _snowSpin() => const [
+  EmblemLayer('spin', periodMs: 40000, pivot: Offset(0, -8), keys: [
+    EmblemKey(0, rot: 0),
+    EmblemKey(1, rot: 360),
+  ]),
+];
+
+/// Бегун (глиф run) в произвольном масштабе — пилотные ключи, приведённые
+/// к esc/ey медали (у «100 тренировок» эмблема мельче из-за плашки).
+List<EmblemLayer> _run(double esc, double ey) {
+  final k = esc / .52; // пилотные значения сняты при esc .52
+  return [
+    EmblemLayer('runner', periodMs: 850, alternate: true,
+        curve: Curves.easeInOut, pivot: Offset(8 * esc, ey), keys: [
+      EmblemKey(0, dy: -1.2 * esc, rot: -1.4),
+      EmblemKey(1, dy: 1.2 * esc, rot: 1.2),
+    ]),
+    for (var i = 0; i < 3; i++)
+      EmblemLayer('st${i + 1}', periodMs: 1300, delayMs: i * 250, keys: [
+        EmblemKey(0, dx: 3.12 * k, opacity: 0),
+        EmblemKey(.3, dx: 0.78 * k, opacity: .75),
+        EmblemKey(1, dx: -4.68 * k, opacity: 0),
+      ]),
+    EmblemLayer('sparks', periodMs: 1300, keys: [
+      const EmblemKey(0, opacity: 0),
+      EmblemKey(.5, dx: -5.5 * esc, dy: esc, opacity: .8),
+      EmblemKey(1, dx: -11 * esc, dy: 2 * esc, opacity: 0),
+    ]),
+  ];
+}
+
+/// Сезон закрыт: клетчатая ткань полощется на древке (CSS clothSway).
+List<EmblemLayer> _finish() => const [
+  EmblemLayer('cloth', periodMs: 2000, alternate: true,
+      curve: Curves.easeInOut, pivot: Offset(0.5, -11), keys: [
+    EmblemKey(0, skewY: -1.8),
+    EmblemKey(1, skewY: 1.8),
+  ]),
+];
+
+/// Дивизион: крылья парят в противофазе зеркала, самоцвет дышит,
+/// глинт вспыхивает (CSS wingSway/gemSway/glint).
+List<EmblemLayer> _div(double esc) => [
+  EmblemLayer('wing1', periodMs: 3600, alternate: true,
+      curve: Curves.easeInOut, pivot: Offset(11 * esc, 2), keys: const [
+    EmblemKey(0, rot: -2),
+    EmblemKey(1, rot: 2),
+  ]),
+  EmblemLayer('wing2', periodMs: 3600, alternate: true,
+      curve: Curves.easeInOut, pivot: Offset(-11 * esc, 2), keys: const [
+    EmblemKey(0, rot: 2),
+    EmblemKey(1, rot: -2),
+  ]),
+  const EmblemLayer('gem', periodMs: 5500, alternate: true,
+      curve: Curves.easeInOut, pivot: Offset(0, 2), keys: [
+    EmblemKey(0, rot: -3.5),
+    EmblemKey(1, rot: 3.5),
+  ]),
+  _glint('gl1', Offset(6 * esc, 2 - 4.4 * esc), 1000),
+];
+
+/// Клубный кубок празднует: блик проходит по чаше, серпантин качается,
+/// конфетти сыплется с собственным вращением, глинты вспыхивают.
+List<EmblemLayer> _cup() {
+  const esc = .52;
+  // Конфетти из эталона: [x, y, dur мс, begin мс] — конец полёта (x∓7, 34).
+  const conf = [
+    [-27.0, -42.0, 3600, 0], [-14.0, -46.0, 4200, 1100],
+    [7.0, -48.0, 3400, 2000], [22.0, -44.0, 4600, 600],
+    [31.0, -42.0, 3800, 2800], [-33.0, -40.0, 4400, 1700],
+    [13.0, -46.0, 3500, 3400], [-4.0, -50.0, 4000, 2400],
+  ];
+  EmblemKey confKey(double t, List<num> c, double o, double r) {
+    final endX = c[0] > 0 ? c[0] - 7 : c[0] + 7;
+    final x = c[0] + (endX - c[0]) * t;
+    final y = c[1] + (34 - c[1]) * t;
+    return EmblemKey(t, dx: x * esc, dy: y * esc, opacity: o, rot: r);
+  }
+  return [
+    const EmblemLayer('shine', periodMs: 4200,
+        clip: Rect.fromLTWH(-10.4, -14.12, 20.8, 22.9), keys: [
+      EmblemKey(0, dx: -12.99, dy: -3.73, opacity: 0),
+      EmblemKey(.12, dx: -1.0, dy: -.29, opacity: .55),
+      EmblemKey(.26, dx: 12.99, dy: 3.73, opacity: 0),
+      EmblemKey(1, dx: 12.99, dy: 3.73, opacity: 0),
+    ]),
+    const EmblemLayer('rib1', periodMs: 3800,
+        curve: Curves.easeInOut, pivot: Offset(-15.6, -15.68), keys: [
+      EmblemKey(0, rot: -4), EmblemKey(.5, rot: 4), EmblemKey(1, rot: -4),
+    ]),
+    const EmblemLayer('rib2', periodMs: 4400,
+        curve: Curves.easeInOut, pivot: Offset(15.6, -14.12), keys: [
+      EmblemKey(0, rot: 4), EmblemKey(.5, rot: -4), EmblemKey(1, rot: 4),
+    ]),
+    for (var i = 0; i < 8; i++)
+      EmblemLayer('conf${i + 1}', periodMs: conf[i][2] as int,
+          delayMs: conf[i][3] as int, pivot: const Offset(0, 2), keys: [
+        confKey(0, conf[i], 0, 0),
+        confKey(.08, conf[i], .95, 24),
+        confKey(.82, conf[i], .95, 246),
+        confKey(1, conf[i], 0, 300),
+      ]),
+    _glint('gl1', const Offset(-13, -6.27), 1000),
+    _glint('gl2', const Offset(13, -3.56), 3200),
+  ];
+}
 
 /// Аверс медали, живущий своей анимацией. Для медалей без спецификации,
 /// незаработанных и при выключенных анимациях системы — обычный статичный
