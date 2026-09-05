@@ -157,10 +157,7 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
                   minimumSize: const Size(64, 52),
                 ),
                 onPressed: _busy ? null : () => _send(instagram: true),
-                child: const Text(
-                  'В сторис Инстаграма',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
+                child: const InstagramButtonLabel(),
               ),
             ),
             const SizedBox(height: 8),
@@ -277,6 +274,34 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
     );
     await file.writeAsBytes(bytes.buffer.asUint8List());
     return file;
+  }
+}
+
+/// Подпись главной кнопки: «В сторис Instagram» — слово Instagram
+/// по-английски фирменным курсивом (слово владельца 06.09.2026).
+class InstagramButtonLabel extends StatelessWidget {
+  const InstagramButtonLabel({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: const [
+        Text(
+          'В сторис ',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        Padding(
+          // Курсивный логотайп визуально сидит ниже — приподнимаем.
+          padding: EdgeInsets.only(bottom: 2),
+          child: Text(
+            'Instagram',
+            style: TextStyle(fontFamily: 'GrandHotel', fontSize: 21, height: 1),
+          ),
+        ),
+      ],
+    );
   }
 }
 
