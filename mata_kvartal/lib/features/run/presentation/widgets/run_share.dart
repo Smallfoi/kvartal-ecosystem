@@ -12,6 +12,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
 import '../../../auth/data/auth_provider.dart';
+import '../../../medals/presentation/medal_share.dart'
+    show InstagramButtonLabel;
 import '../screens/run_result_screen.dart' show RoutePainter;
 
 /// Шаринг пробежки «Росчерк» (дизайн утверждён 05.09.2026): маршрут — герой.
@@ -143,10 +145,7 @@ class _RunShareSheetState extends ConsumerState<_RunShareSheet> {
                   minimumSize: const Size(64, 52),
                 ),
                 onPressed: _busy ? null : () => _send(instagram: true),
-                child: const Text(
-                  'В сторис Инстаграма',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
+                child: const InstagramButtonLabel(),
               ),
             ),
             const SizedBox(height: 8),

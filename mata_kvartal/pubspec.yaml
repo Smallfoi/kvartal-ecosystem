@@ -95,6 +95,11 @@ flutter:
   # Квартал 2.0 (Ф8): Manrope — дисплей/заголовки, Inter — текст и данные.
   # Unbounded остаётся зарегистрированным для знака «КВАРТАЛ» на сплэше.
   fonts:
+    # Слово «Instagram» на кнопках шаринга — фирменным курсивом (Grand Hotel,
+    # OFL: открытый двойник логотайпа Инсты; сам Billabong проприетарен).
+    - family: GrandHotel
+      fonts:
+        - asset: assets/fonts/GrandHotel-Regular.ttf
     - family: Manrope
       fonts:
         - asset: assets/fonts/Manrope-400.ttf
