@@ -42,6 +42,17 @@ const kMetaAppId =
 
 const _instaChannel = MethodChannel('kvartal/instagram_share');
 
+/// Кладёт готовый PNG в галерею телефона (Pictures/KVARTAL) через нативный
+/// канал. Путь «как у Стравы» (слово владельца 06.09.2026): прозрачный стикер
+/// из галереи ложится штатным фото-стикером на любое фото и видео в любом
+/// редакторе — без ограничений интерактивных стикеров Инсты.
+Future<bool> saveShareImageToGallery(String path) async {
+  if (!Platform.isAndroid) return false;
+  return await _instaChannel
+          .invokeMethod<bool>('saveToGallery', {'path': path}) ??
+      false;
+}
+
 // Палитра карточек — константы сторис-мира (карточка живёт в чужой ленте,
 // от темы приложения не зависит).
 const _bg = Color(0xFF12161B);
@@ -107,7 +118,9 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
                 medal: widget.medal!, runner: runner, city: city);
 
     return SafeArea(
-      child: Padding(
+      // Скролл — страховка от переполнения на невысоких экранах: контент
+      // шита выше 700 логических пикселей (правило «никаких наложений»).
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -146,6 +159,8 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
                 value: _engraving,
                 onChanged: (v) => setState(() => _engraving = v),
               ),
+              const StickerHint(),
+              const SizedBox(height: 8),
             ] else
               const SizedBox(height: 10),
             SizedBox(
@@ -158,6 +173,20 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
                 ),
                 onPressed: _busy ? null : () => _send(instagram: true),
                 child: const InstagramButtonLabel(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _ink,
+                  side: BorderSide(color: _ink.withValues(alpha: .3)),
+                  minimumSize: const Size(64, 48),
+                ),
+                onPressed: _busy ? null : _saveToGallery,
+                icon: const Icon(Icons.download_rounded, size: 19),
+                label: const Text('Сохранить в галерею'),
               ),
             ),
             const SizedBox(height: 8),
@@ -177,6 +206,26 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _saveToGallery() async {
+    setState(() => _busy = true);
+    try {
+      final file = await _renderToFile();
+      if (file == null) return;
+      final ok = await saveShareImageToGallery(file.path);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ok
+            ? (!_isHall && _stickerMode
+                ? 'Стикер в галерее — клади его на фото и видео в любом редакторе'
+                : 'Карточка сохранена в галерею')
+            : 'Не получилось сохранить — проверь доступ к памяти'),
+      ));
+      if (ok) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Widget _modeSwitch() {
@@ -274,6 +323,23 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
     );
     await file.writeAsBytes(bytes.buffer.asUint8List());
     return file;
+  }
+}
+
+/// Подсказка в режиме стикера: главная причина отказов Инсты — бегун кладёт
+/// своё фото ПОВЕРХ интерактивного стикера («стикер нельзя закрыть другим
+/// слоем»). Плюс путь через галерею — он работает и с видео.
+class StickerHint extends StatelessWidget {
+  const StickerHint({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text(
+      'В сторис своё фото добавляй фоном (значок галереи) — стикер ляжет '
+      'поверх. А стикер из галереи можно класть и на видео.',
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 10.5, height: 1.35, color: _muted),
+    );
   }
 }
 

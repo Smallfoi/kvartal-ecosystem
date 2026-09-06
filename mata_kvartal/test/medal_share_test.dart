@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kvartal_app/features/medals/data/medal_defs.dart';
 import 'package:kvartal_app/features/medals/data/medals_provider.dart';
 import 'package:kvartal_app/features/medals/presentation/medal_share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Карточки шаринга: собираются без падений, держат сторис-пропорцию
 /// и следуют решениям владельца (без пустых слотов, гравировку можно скрыть).
@@ -48,6 +50,39 @@ void main() {
       engraving: false,
     )));
     expect(find.textContaining('0,5 КМ'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'шит: «Сохранить в галерею» всегда, подсказка про фон — в режиме стикера',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: FilledButton(
+                onPressed: () =>
+                    showMedalShareSheet(context, earned('d_first_run')),
+                child: const Text('открыть'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('открыть'));
+    await tester.pumpAndSettle();
+
+    // Путь «как у Стравы»: сохранение доступно и для карточки, и для стикера.
+    expect(find.text('Сохранить в галерею'), findsOneWidget);
+    expect(find.byType(StickerHint), findsNothing);
+
+    await tester.tap(find.text('Стикер на своё фото'));
+    await tester.pumpAndSettle();
+    expect(find.byType(StickerHint), findsOneWidget);
+    expect(find.text('Сохранить в галерею'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

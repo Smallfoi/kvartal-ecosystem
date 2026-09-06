@@ -14,6 +14,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Камера: скан QR-кода приглашения в клуб (mobile_scanner) -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Сохранение стикера в галерею на Android 8–9; с Android 10 (API 29)
+         MediaStore пишет в Pictures без разрешений -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Health Connect: тренировки с часов (COROS, Samsung, Amazfit, Polar и прочих)
