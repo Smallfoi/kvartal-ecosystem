@@ -131,6 +131,7 @@ class RunPassportScreen extends ConsumerWidget {
         distanceMeters: run.distanceMeters,
         capturedZones: run.capturedZones,
         finishedAt: run.finishedAt,
+        runId: run.id,
       ),
     );
   }

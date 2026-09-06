@@ -25,16 +25,24 @@ void main() {
         home: Scaffold(body: Center(child: child)),
       );
 
-  testWidgets('сторис-карточка медали 9:16 собирается', (tester) async {
+  testWidgets('сторис-карточка медали 9:16 собирается (v2)', (tester) async {
     await tester.pumpWidget(host(MedalStoryCard(
       medal: earned('d_first_run'),
       runner: 'Михаил Татаринов',
       city: 'Якутск',
+      hallEarned: 7,
     )));
     final size = tester.getSize(find.byType(MedalStoryCard));
     expect(size.width / size.height, closeTo(9 / 16, .001));
     expect(find.text('Первый бег'), findsOneWidget);
-    expect(find.text('mata-club.ru/app'), findsOneWidget);
+    // v2: гравировка — капсулой, прогресс зала — хвастовство пути.
+    expect(find.text('0,5 КМ · ПЕРВЫЙ БЕГ'), findsOneWidget);
+    expect(find.text('ШТАМП МАТА · МЕДАЛЬ 7 ИЗ ${kMedals.length}'),
+        findsOneWidget);
+    // Подпись бренда — вариант А (без слогана и ссылки, решение 06.09.2026).
+    expect(find.byType(BrandMark), findsOneWidget);
+    expect(find.text('КВАРТАЛ'), findsOneWidget);
+    expect(find.textContaining('mata-club.ru'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
