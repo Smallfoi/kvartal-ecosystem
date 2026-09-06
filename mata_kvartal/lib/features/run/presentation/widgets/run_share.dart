@@ -10,10 +10,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/kvartal_logo.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../medals/presentation/medal_share.dart'
-    show InstagramButtonLabel, StickerHint, saveShareImageToGallery;
+    show BrandMark, InstagramButtonLabel, StickerHint, saveShareImageToGallery;
 import '../screens/run_result_screen.dart' show RoutePainter;
 
 /// Шаринг пробежки «Росчерк» (дизайн утверждён 05.09.2026): маршрут — герой.
@@ -424,7 +423,7 @@ class RunStoryCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const _BrandRow(),
+                const BrandMark(),
               ],
             ),
           ),
@@ -535,37 +534,8 @@ class RunSticker extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 9),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xF20F1216),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _lime.withValues(alpha: .5)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomPaint(
-                  size: const Size(15, 15),
-                  painter: KvartalMarkPainter(
-                    outline: _lime,
-                    fill: Colors.transparent,
-                    close: 1,
-                  ),
-                ),
-                const SizedBox(width: 7),
-                const Text(
-                  'КВАРТАЛ',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .6,
-                    color: _ink,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Вариант А и на стикере: без капсулы, тень держит читаемость.
+          const BrandMark(shadow: true),
         ],
       ),
     );
@@ -656,61 +626,6 @@ class _StickerTrackPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _StickerTrackPainter old) =>
       old.route != route;
-}
-
-class _BrandRow extends StatelessWidget {
-  const _BrandRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: _panel.withValues(alpha: .85),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _lime.withValues(alpha: .4)),
-      ),
-      child: Row(
-        children: [
-          CustomPaint(
-            size: const Size(20, 20),
-            painter: KvartalMarkPainter(
-              outline: _lime,
-              fill: Colors.transparent,
-              close: 1,
-            ),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: const Text(
-                    'КВАРТАЛ — беги и захватывай',
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: .3,
-                      color: _ink,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 1),
-                const Text(
-                  'mata-club.ru/app',
-                  style: TextStyle(fontSize: 8.5, color: _muted),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 String _fmtElapsed(Duration e) {
