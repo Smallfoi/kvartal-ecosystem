@@ -108,13 +108,22 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
     final user = ref.watch(authProvider).user;
     final runner = user?.name ?? 'Бегун КВАРТАЛ';
     final city = user?.city;
+    final earnedCount = (ref.watch(medalsProvider).valueOrNull ??
+            const <MedalFull>[])
+        .where((m) => m.earned)
+        .length;
 
     final preview = _isHall
         ? HallStoryCard(medals: widget.hall!, runner: runner)
         : _stickerMode
             ? MedalSticker(medal: widget.medal!, engraving: _engraving)
             : MedalStoryCard(
-                medal: widget.medal!, runner: runner, city: city);
+                medal: widget.medal!,
+                runner: runner,
+                city: city,
+                // 0 медалей на карточке уже полученной медали не бывает —
+                // provider ещё не доехал, честнее скрыть строку прогресса.
+                hallEarned: earnedCount == 0 ? null : earnedCount);
 
     return SafeArea(
       // Скролл — страховка от переполнения на невысоких экранах: контент
@@ -377,11 +386,16 @@ class MedalStoryCard extends StatelessWidget {
   final String runner;
   final String? city;
 
+  /// Сколько медалей уже добыто — строка прогресса зала «N из 44»
+  /// (хвастовство пути; null — строка скрыта).
+  final int? hallEarned;
+
   const MedalStoryCard({
     super.key,
     required this.medal,
     required this.runner,
     this.city,
+    this.hallEarned,
   });
 
   @override
@@ -427,10 +441,52 @@ class MedalStoryCard extends StatelessWidget {
               ),
             ),
           ),
+          // Пылинки в луче — глубина прожектора (статика, D-46 не про нас).
+          for (final (l, t, s, a) in const [
+            (110.0, 70.0, 2.0, .5),
+            (158.0, 104.0, 1.5, .35),
+            (140.0, 58.0, 1.0, .3),
+            (96.0, 132.0, 1.5, .25),
+          ])
+            Positioned(
+              left: l,
+              top: t,
+              child: Container(
+                width: s,
+                height: s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _ink.withValues(alpha: a),
+                ),
+              ),
+            ),
           Column(
             children: [
               const Spacer(flex: 3),
-              MedalImage(def: medal.def, earned: true, size: 168),
+              // Медаль «стоит» на сцене: мягкий свет пола под ней.
+              Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    bottom: -10,
+                    child: Container(
+                      width: 190,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            _lime.withValues(alpha: .16),
+                            _lime.withValues(alpha: 0),
+                          ],
+                          stops: const [0, .7],
+                        ),
+                      ),
+                    ),
+                  ),
+                  MedalImage(def: medal.def, earned: true, size: 168),
+                ],
+              ),
               const SizedBox(height: 16),
               Text(
                 medal.def.name,
@@ -442,19 +498,31 @@ class MedalStoryCard extends StatelessWidget {
                 ),
               ),
               if (e != null && e.v.isNotEmpty) ...[
-                const SizedBox(height: 5),
-                Text(
-                  '${e.v} · ${e.u}',
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .5,
-                    color: _lime,
+                const SizedBox(height: 7),
+                // Гравировка — капсулой, как реверс настоящей медали.
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xF20F1216),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: _lime.withValues(alpha: .5)),
+                  ),
+                  child: Text(
+                    '${e.v} · ${e.u}',
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .5,
+                      color: _lime,
+                    ),
                   ),
                 ),
               ],
               if (date != null) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 7),
                 Text(
                   'ПОЛУЧЕНА ${_fmt(date)}${city == null ? '' : ' · ${city!.toUpperCase()}'}',
                   style: const TextStyle(
@@ -465,7 +533,7 @@ class MedalStoryCard extends StatelessWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               Text(
                 runner,
                 style: TextStyle(
@@ -474,6 +542,31 @@ class MedalStoryCard extends StatelessWidget {
                   color: _ink.withValues(alpha: .75),
                 ),
               ),
+              if (hallEarned != null) ...[
+                const SizedBox(height: 11),
+                Text(
+                  'ШТАМП МАТА · МЕДАЛЬ $hallEarned ИЗ ${kMedals.length}',
+                  style: const TextStyle(
+                    fontSize: 8,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w700,
+                    color: _muted,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                SizedBox(
+                  width: 170,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: (hallEarned! / kMedals.length).clamp(0, 1),
+                      minHeight: 3,
+                      backgroundColor: _muted.withValues(alpha: .25),
+                      valueColor: const AlwaysStoppedAnimation(_lime),
+                    ),
+                  ),
+                ),
+              ],
               const Spacer(flex: 4),
               const BrandMark(),
               const SizedBox(height: 14),
