@@ -419,28 +419,33 @@ class RunStoryCard extends StatelessWidget {
                       const SizedBox(height: 9),
                     ],
                     // Микspace-строка: дата · время · [погода] · город · бегун.
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(text: '$date · $time'),
-                          if (t != null)
+                    // FittedBox, а не многоточие: имя бегуна дорезать нельзя —
+                    // длинная строка чуть ужимает кегль и влезает целиком.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: '$date · $time'),
+                            if (t != null)
+                              TextSpan(
+                                text: ' · ${t > 0 ? '+' : ''}$t°C',
+                                style: const TextStyle(color: _cyan),
+                              ),
                             TextSpan(
-                              text: ' · ${t > 0 ? '+' : ''}$t°C',
-                              style: const TextStyle(color: _cyan),
+                              text:
+                                  '${city == null ? '' : ' · ${city!.toUpperCase()}'} · ${runner.toUpperCase()}',
                             ),
-                          TextSpan(
-                            text:
-                                '${city == null ? '' : ' · ${city!.toUpperCase()}'} · ${runner.toUpperCase()}',
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 7.5,
-                        letterSpacing: .8,
-                        fontWeight: FontWeight.w700,
-                        color: _muted,
+                          ],
+                        ),
+                        maxLines: 1,
+                        style: const TextStyle(
+                          fontSize: 7.5,
+                          letterSpacing: .8,
+                          fontWeight: FontWeight.w700,
+                          color: _muted,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 7),
@@ -618,11 +623,14 @@ class _RunMedalPlaque extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 1),
-                Text(
-                  sub,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 8, color: _muted),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    sub,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: 8, color: _muted),
+                  ),
                 ),
               ],
             ),
