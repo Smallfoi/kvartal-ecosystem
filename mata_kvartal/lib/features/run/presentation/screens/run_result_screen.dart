@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart' show LatLng;
 import '../../../../core/theme/app_theme.dart';
 import '../../../medals/data/medals_provider.dart';
 import '../../../medals/presentation/shtamp_ceremony.dart';
+import '../../../weather/data/weather_provider.dart';
 import '../../data/completed_runs_provider.dart';
 import '../widgets/run_share.dart';
 
@@ -405,13 +406,13 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
   );
 }
 
-class _StatsPanel extends StatelessWidget {
+class _StatsPanel extends ConsumerWidget {
   final RunResult result;
 
   const _StatsPanel({required this.result});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     Widget stat(String value, String label) => Expanded(
       child: Column(
         children: [
@@ -478,6 +479,14 @@ class _StatsPanel extends StatelessWidget {
                       distanceMeters: result.distanceMeters,
                       capturedZones: result.capturedZones,
                       finishedAt: result.finishedAt,
+                      runId: result.runId,
+                      // Финиш только что — текущая погода честно равна
+                      // погоде забега (у старых пробежек слот скрыт).
+                      temperatureC: ref
+                          .watch(weatherProvider)
+                          .valueOrNull
+                          ?.tempC
+                          .round(),
                     ),
                   ),
                   child: const Text('Поделиться'),

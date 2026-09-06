@@ -1,24 +1,29 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart' show LatLng;
+import 'package:latlong2/latlong.dart' show Distance, LatLng;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/data/auth_provider.dart';
+import '../../../medals/data/medal_defs.dart';
+import '../../../medals/data/medals_provider.dart';
+import '../../data/completed_runs_provider.dart' show lastRunPointsProvider;
 import '../../../medals/presentation/medal_share.dart'
     show BrandMark, InstagramButtonLabel, StickerHint, saveShareImageToGallery;
-import '../screens/run_result_screen.dart' show RoutePainter;
 
-/// Шаринг пробежки «Росчерк» (дизайн утверждён 05.09.2026): маршрут — герой.
-/// Карточка 9:16 — неоновый росчерк на сетке города, при захвате — заголовок
-/// вызова «Забрал N кварталов»; прозрачный стикер — только трек и цифры на
-/// собственное фото бегуна. Механика Инсты общая с медалями (тот же канал).
+/// Шаринг пробежки «Росчерк» (дизайн утверждён 05.09.2026; карточка v2 —
+/// эталон «Выше Стравы», утверждён 06.09.2026): маршрут — герой на сетке
+/// города, росчерк с градиентом и км-точками, при захвате — заголовок вызова
+/// и гекс-контуры кварталов, медаль забега — настоящим штампом; прозрачный
+/// стикер — только трек и цифры на собственное фото бегуна. Механика Инсты
+/// общая с медалями (тот же канал).
 const _instaChannel = MethodChannel('kvartal/instagram_share');
 
 const _bg = Color(0xFF12161B);
@@ -26,6 +31,7 @@ const _panel = Color(0xFF1B2129);
 const _ink = Color(0xFFEDEFE8);
 const _muted = Color(0xFF97A0A6);
 const _lime = Color(0xFFDFF45F);
+const _cyan = Color(0xFF6FD3E0);
 
 // Meta App ID — публичный (см. medal_share.dart, там же грабля про пустой
 // --dart-define, перекрывающий defaultValue). Дубль, чтобы не тянуть медали
@@ -34,8 +40,8 @@ const _envMetaAppId = String.fromEnvironment('META_APP_ID');
 const _metaAppId =
     _envMetaAppId == '' ? '1058928553560826' : _envMetaAppId;
 
-/// Данные для карточки: у пробежки может не быть routeTimes/баллов — карточка
-/// строится из того, что есть.
+/// Данные для карточки: у пробежки может не быть баллов или температуры —
+/// карточка строится из того, что есть, пустые слоты честно скрыты.
 class RunShareData {
   final List<LatLng> route;
   final Duration elapsed;
@@ -43,12 +49,22 @@ class RunShareData {
   final int capturedZones;
   final DateTime finishedAt;
 
+  /// id забега — по нему шит находит баллы последней синкнутой пробежки.
+  final String? runId;
+
+  /// Температура на старте (климат-козырь «бежал в −40»). Сейчас её передаёт
+  /// только экран финиша (текущая погода ≈ погода забега); у старых пробежек
+  /// поля нет — слот скрыт, врать карточка не будет.
+  final int? temperatureC;
+
   const RunShareData({
     required this.route,
     required this.elapsed,
     required this.distanceMeters,
     required this.capturedZones,
     required this.finishedAt,
+    this.runId,
+    this.temperatureC,
   });
 
   double get distanceKm => distanceMeters / 1000;
@@ -84,9 +100,38 @@ class _RunShareSheetState extends ConsumerState<_RunShareSheet> {
   Widget build(BuildContext context) {
     final runner = ref.watch(authProvider).user?.name ?? 'Бегун КВАРТАЛ';
     final city = ref.watch(authProvider).user?.city;
+    // Медали, взятые в этом забеге, — то же окно, что в Паспорте:
+    // [старт−1 мин, финиш+10 мин] (сервер судит при синке после финиша).
+    final d = widget.data;
+    final started = d.finishedAt.subtract(d.elapsed);
+    final medals = ref.watch(medalsProvider).valueOrNull ?? const <MedalFull>[];
+    final awards = [
+      for (final m in medals)
+        if (m.state.earnedAtMs != null &&
+            m.state.earnedAtMs! >=
+                started
+                    .subtract(const Duration(minutes: 1))
+                    .millisecondsSinceEpoch &&
+            m.state.earnedAtMs! <=
+                d.finishedAt
+                    .add(const Duration(minutes: 10))
+                    .millisecondsSinceEpoch)
+          m,
+    ];
+    final lastPoints = ref.watch(lastRunPointsProvider);
+    final points = lastPoints != null && lastPoints.runId == d.runId
+        ? lastPoints.points
+        : null;
     final preview = _stickerMode
         ? RunSticker(data: widget.data, showStats: _showStats)
-        : RunStoryCard(data: widget.data, runner: runner, city: city);
+        : RunStoryCard(
+            data: widget.data,
+            runner: runner,
+            city: city,
+            medal: awards.isEmpty ? null : awards.first,
+            extraAwards: awards.isEmpty ? 0 : awards.length - 1,
+            points: points,
+          );
 
     return SafeArea(
       // Скролл — страховка от переполнения на невысоких экранах: контент
@@ -285,18 +330,30 @@ class _RunShareSheetState extends ConsumerState<_RunShareSheet> {
   }
 }
 
-/// Сторис-карточка 9:16: неон-росчерк над сеткой города; при захвате —
-/// заголовок-вызов вместо сухих цифр (вариант B дизайна).
+/// Сторис-карточка 9:16, эталон v2 «Выше Стравы» (утверждён 06.09.2026):
+/// росчерк с градиентом лайм→бирюза, км-точки, старт-кольцо и финиш-флаг на
+/// сетке города; при захвате — заголовок-вызов и гекс-контуры кварталов
+/// (стилизованные — адрес не выдают); медаль забега — настоящим штампом.
 class RunStoryCard extends StatelessWidget {
   final RunShareData data;
   final String runner;
   final String? city;
+
+  /// Медаль, взятая в этом забеге (окно Паспорта), и сколько ещё сверх неё.
+  final MedalFull? medal;
+  final int extraAwards;
+
+  /// Баллы за пробежку — если известны (последний синк).
+  final int? points;
 
   const RunStoryCard({
     super.key,
     required this.data,
     required this.runner,
     this.city,
+    this.medal,
+    this.extraAwards = 0,
+    this.points,
   });
 
   @override
@@ -310,6 +367,7 @@ class RunStoryCard extends StatelessWidget {
     final pace = d.distanceKm < .01 || d.elapsed.inSeconds == 0
         ? '--:--'
         : _fmtPace((d.elapsed.inSeconds / d.distanceKm).round());
+    final t = d.temperatureC;
 
     return Container(
       width: 270,
@@ -324,106 +382,248 @@ class RunStoryCard extends StatelessWidget {
           stops: [0, .55, 1],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Expanded(
-            child: d.route.length >= 2
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
-                    child: CustomPaint(
-                      painter: RoutePainter(
-                        route: d.route,
-                        progress: 1,
-                        fill: captured ? 1 : 0,
-                        fitFactor: 1,
-                        topInset: 8,
+          // Сетка города — глубина фона, растворяется к подвалу.
+          Positioned.fill(child: CustomPaint(painter: _CityGridPainter())),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: d.route.length >= 2
+                    ? Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+                        child: CustomPaint(
+                          painter: _CardTrackPainter(
+                            d.route,
+                            hexes: captured ? d.capturedZones : 0,
+                          ),
+                          child: const SizedBox.expand(),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(
+                          Icons.route,
+                          size: 64,
+                          color: _lime.withValues(alpha: .4),
+                        ),
                       ),
-                      child: const SizedBox.expand(),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (medal != null) ...[
+                      _RunMedalPlaque(medal: medal!, extra: extraAwards),
+                      const SizedBox(height: 9),
+                    ],
+                    // Микspace-строка: дата · время · [погода] · город · бегун.
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: '$date · $time'),
+                          if (t != null)
+                            TextSpan(
+                              text: ' · ${t > 0 ? '+' : ''}$t°C',
+                              style: const TextStyle(color: _cyan),
+                            ),
+                          TextSpan(
+                            text:
+                                '${city == null ? '' : ' · ${city!.toUpperCase()}'} · ${runner.toUpperCase()}',
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 7.5,
+                        letterSpacing: .8,
+                        fontWeight: FontWeight.w700,
+                        color: _muted,
+                      ),
                     ),
-                  )
-                : Center(
-                    child: Icon(
-                      Icons.route,
-                      size: 64,
-                      color: _lime.withValues(alpha: .4),
-                    ),
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (captured) ...[
-                  Text(
-                    'Забрал ${d.capturedZones} ${_qWord(d.capturedZones)}',
-                    style: const TextStyle(
-                      fontFamily: AppTheme.fontDisplay,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w900,
-                      height: 1.1,
-                      color: _ink,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${d.distanceKm.toStringAsFixed(2)} км · вернуть можно только бегом',
-                    style: const TextStyle(fontSize: 11, color: _muted),
-                  ),
-                ] else ...[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
+                    const SizedBox(height: 7),
+                    if (captured) ...[
                       Text(
-                        d.distanceKm.toStringAsFixed(2),
+                        'Забрал ${d.capturedZones} ${_qWord(d.capturedZones)}',
                         style: const TextStyle(
                           fontFamily: AppTheme.fontDisplay,
-                          fontSize: 40,
+                          fontSize: 21,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: -1.5,
-                          height: 1,
+                          height: 1.1,
                           color: _ink,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      const Text(
-                        'КМ',
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontDisplay,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: _lime,
-                        ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${d.distanceKm.toStringAsFixed(2)} км · вернуть можно только бегом',
+                        style: const TextStyle(fontSize: 11, color: _muted),
                       ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 3),
-                Text(
-                  '$date · $time${city == null ? '' : ' · ${city!.toUpperCase()}'} · $runner',
-                  style: const TextStyle(
-                    fontSize: 8.5,
-                    letterSpacing: .8,
-                    fontWeight: FontWeight.w700,
-                    color: _muted,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _statChip(_fmtElapsed(d.elapsed), 'ВРЕМЯ'),
-                    const SizedBox(width: 7),
-                    _statChip(pace, 'ТЕМП /КМ'),
-                    if (captured) ...[
-                      const SizedBox(width: 7),
-                      _statChip('+${d.capturedZones}', 'КВАРТАЛА', lime: true),
-                    ],
+                    ] else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            d.distanceKm.toStringAsFixed(2),
+                            style: const TextStyle(
+                              fontFamily: AppTheme.fontDisplay,
+                              fontSize: 40,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1.5,
+                              height: 1,
+                              color: _ink,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'КМ',
+                            style: TextStyle(
+                              fontFamily: AppTheme.fontDisplay,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: _lime,
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 9),
+                    _statLine(
+                      elapsed: _fmtElapsed(d.elapsed),
+                      pace: pace,
+                      captured: captured,
+                      zones: d.capturedZones,
+                    ),
+                    const SizedBox(height: 12),
+                    const BrandMark(),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const BrandMark(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Статы строкой с тонкими разделителями — вместо коробок-чипов (v2).
+  Widget _statLine({
+    required String elapsed,
+    required String pace,
+    required bool captured,
+    required int zones,
+  }) {
+    final items = <(String, String, bool)>[
+      (elapsed, 'ВРЕМЯ', false),
+      (pace, 'ТЕМП /КМ', false),
+      if (captured)
+        ('+$zones', 'КВАРТАЛА', true)
+      else if (points != null)
+        ('+$points', 'БАЛЛОВ', false),
+    ];
+    return Container(
+      padding: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: _muted.withValues(alpha: .22)),
+        ),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0)
+              Container(
+                width: 1,
+                height: 24,
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                color: _muted.withValues(alpha: .22),
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    items[i].$1,
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontDisplay,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -.3,
+                      color: items[i].$3 ? _lime : _ink,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    items[i].$2,
+                    style: const TextStyle(
+                      fontSize: 7,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w700,
+                      color: _muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Плашка медали, взятой в этом забеге, — настоящий штамп (ход Стравы
+/// апреля-2025 «награды на маршруте», но у нас металл, а не бейдж).
+class _RunMedalPlaque extends StatelessWidget {
+  final MedalFull medal;
+  final int extra;
+  const _RunMedalPlaque({required this.medal, required this.extra});
+
+  @override
+  Widget build(BuildContext context) {
+    final e = medal.state.engraving;
+    final sub = [
+      medal.def.tier.title.toLowerCase(),
+      medal.def.cat.title.toLowerCase(),
+      if (e != null && e.v.isNotEmpty) '${e.u.toLowerCase()} ${e.v}',
+    ].join(' · ');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: _panel.withValues(alpha: .72),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: _lime.withValues(alpha: .35)),
+      ),
+      child: Row(
+        children: [
+          Image.asset(medal.def.asset, width: 30, height: 30),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'МЕДАЛЬ «${medal.def.name.toUpperCase()}» — ВЗЯТА В ЭТОМ ЗАБЕГЕ${extra > 0 ? ' +$extra' : ''}',
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .4,
+                      color: _ink,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 8, color: _muted),
+                ),
               ],
             ),
           ),
@@ -431,45 +631,199 @@ class RunStoryCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _statChip(String v, String l, {bool lime = false}) => Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-          decoration: BoxDecoration(
-            color: _panel.withValues(alpha: .75),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: lime
-                  ? _lime.withValues(alpha: .55)
-                  : Colors.white.withValues(alpha: .09),
-            ),
-          ),
-          child: Column(
-            children: [
-              Text(
-                v,
-                style: TextStyle(
-                  fontFamily: AppTheme.fontDisplay,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -.3,
-                  color: lime ? _lime : _ink,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                l,
-                style: const TextStyle(
-                  fontSize: 7.5,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
-                  color: _muted,
-                ),
-              ),
-            ],
-          ),
-        ),
+/// Тонкая сетка города поверх радиального фона; растворяется к подвалу,
+/// чтобы не спорить с данными.
+class _CityGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const step = 44.0;
+    final paint = Paint()
+      ..strokeWidth = 1
+      ..shader = ui.Gradient.linear(
+        Offset.zero,
+        Offset(0, size.height),
+        [
+          _muted.withValues(alpha: .06),
+          _muted.withValues(alpha: .06),
+          _muted.withValues(alpha: 0),
+        ],
+        [0, .62, .88],
       );
+    for (var x = step; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (var y = step; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CityGridPainter old) => false;
+}
+
+/// Росчерк карточки v2: градиент лайм→бирюза вдоль пути, свечение, км-точки,
+/// старт-кольцо, финиш-флаг; при захвате — стилизованный кластер гексов
+/// (форма не географическая — адрес не выдаёт).
+class _CardTrackPainter extends CustomPainter {
+  final List<LatLng> route;
+  final int hexes;
+  _CardTrackPainter(this.route, {this.hexes = 0});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (route.length < 2) return;
+    var minLat = route.first.latitude, maxLat = minLat;
+    var minLng = route.first.longitude, maxLng = minLng;
+    for (final p in route) {
+      minLat = p.latitude < minLat ? p.latitude : minLat;
+      maxLat = p.latitude > maxLat ? p.latitude : maxLat;
+      minLng = p.longitude < minLng ? p.longitude : minLng;
+      maxLng = p.longitude > maxLng ? p.longitude : maxLng;
+    }
+    final latSpan = (maxLat - minLat).abs().clamp(1e-6, double.infinity);
+    final lngSpan = (maxLng - minLng).abs().clamp(1e-6, double.infinity);
+    const pad = 22.0;
+    final scale = ((size.width - pad * 2) / lngSpan)
+        .clamp(0, (size.height - pad * 2) / latSpan)
+        .toDouble();
+    final w = lngSpan * scale, h = latSpan * scale;
+    final ox = (size.width - w) / 2, oy = (size.height - h) / 2;
+    Offset pt(LatLng p) => Offset(
+          ox + (p.longitude - minLng) * scale,
+          oy + (maxLat - p.latitude) * scale,
+        );
+
+    // Гексы захвата — под треком, кластером у верхней трети росчерка.
+    if (hexes > 0) {
+      final r = size.shortestSide * .13;
+      final c = Offset(ox + w / 2, oy + h * .3);
+      final offsets = [
+        Offset(-r, -r * .6),
+        Offset(r, -r * .6),
+        Offset(0, r * 1.1),
+      ];
+      for (var i = 0; i < math.min(hexes, 3); i++) {
+        final hc = c + offsets[i];
+        final hex = Path();
+        for (var k = 0; k < 6; k++) {
+          final a = math.pi / 180 * (60 * k - 90);
+          final p = hc + Offset(math.cos(a), math.sin(a)) * r;
+          k == 0 ? hex.moveTo(p.dx, p.dy) : hex.lineTo(p.dx, p.dy);
+        }
+        hex.close();
+        canvas.drawPath(
+          hex,
+          Paint()..color = _lime.withValues(alpha: .085 - i * .012),
+        );
+        canvas.drawPath(
+          hex,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.4
+            ..color = _lime.withValues(alpha: .5 - i * .06),
+        );
+      }
+    }
+
+    final path = Path()..moveTo(pt(route.first).dx, pt(route.first).dy);
+    for (final p in route.skip(1)) {
+      path.lineTo(pt(p).dx, pt(p).dy);
+    }
+
+    // Градиент вдоль диагонали рамки трека: старт-лайм → финиш-бирюза.
+    final shader = ui.Gradient.linear(
+      Offset(ox, oy + h),
+      Offset(ox + w, oy),
+      const [_lime, _cyan],
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 9
+        ..strokeJoin = StrokeJoin.round
+        ..strokeCap = StrokeCap.round
+        ..shader = shader
+        ..color = Colors.white.withValues(alpha: .55)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4.5
+        ..strokeJoin = StrokeJoin.round
+        ..strokeCap = StrokeCap.round
+        ..shader = shader,
+    );
+
+    // Км-точки: честные отметки каждого целого километра вдоль пути.
+    const dist = Distance();
+    var total = 0.0;
+    for (var i = 1; i < route.length; i++) {
+      total += dist(route[i - 1], route[i]);
+    }
+    if (total >= 1000) {
+      var cum = 0.0;
+      var nextKm = 1;
+      for (var i = 1; i < route.length && nextKm <= 30; i++) {
+        final seg = dist(route[i - 1], route[i]);
+        while (cum + seg >= nextKm * 1000 && nextKm <= 30) {
+          // Последний км сливается с финиш-флагом — не рисуем.
+          if (nextKm * 1000 > total - 120) break;
+          final f = seg == 0 ? 0.0 : (nextKm * 1000 - cum) / seg;
+          final a = pt(route[i - 1]), b = pt(route[i]);
+          final p = Offset.lerp(a, b, f)!;
+          final col = Color.lerp(_lime, _cyan, nextKm * 1000 / total)!;
+          canvas.drawCircle(p, 2.6, Paint()..color = const Color(0xFF0E1116));
+          canvas.drawCircle(
+            p,
+            2.6,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1.6
+              ..color = col,
+          );
+          nextKm++;
+        }
+        cum += seg;
+      }
+    }
+
+    // Старт-кольцо.
+    final start = pt(route.first);
+    canvas.drawCircle(start, 6, Paint()..color = const Color(0xFF171C19));
+    canvas.drawCircle(
+      start,
+      6,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = _lime,
+    );
+    // Финиш-флаг (бирюза — конец градиента).
+    final fin = pt(route.last);
+    canvas.drawLine(
+      fin,
+      fin - const Offset(0, 20),
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 2.6
+        ..strokeCap = StrokeCap.round,
+    );
+    final flag = Path()
+      ..moveTo(fin.dx, fin.dy - 20)
+      ..lineTo(fin.dx + 15, fin.dy - 15.5)
+      ..lineTo(fin.dx, fin.dy - 11)
+      ..close();
+    canvas.drawPath(flag, Paint()..color = _cyan);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CardTrackPainter old) =>
+      old.route != route || old.hexes != hexes;
 }
 
 /// Прозрачный стикер: росчерк + (опционально) цифры с тенями. Ноль подложки.
