@@ -13,7 +13,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/kvartal_logo.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../medals/presentation/medal_share.dart'
-    show InstagramButtonLabel;
+    show InstagramButtonLabel, StickerHint, saveShareImageToGallery;
 import '../screens/run_result_screen.dart' show RoutePainter;
 
 /// Шаринг пробежки «Росчерк» (дизайн утверждён 05.09.2026): маршрут — герой.
@@ -90,7 +90,9 @@ class _RunShareSheetState extends ConsumerState<_RunShareSheet> {
         : RunStoryCard(data: widget.data, runner: runner, city: city);
 
     return SafeArea(
-      child: Padding(
+      // Скролл — страховка от переполнения на невысоких экранах: контент
+      // шита выше 700 логических пикселей (правило «никаких наложений»).
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -122,7 +124,7 @@ class _RunShareSheetState extends ConsumerState<_RunShareSheet> {
               ),
               child: RepaintBoundary(key: _boundaryKey, child: preview),
             ),
-            if (_stickerMode)
+            if (_stickerMode) ...[
               SwitchListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
@@ -133,8 +135,10 @@ class _RunShareSheetState extends ConsumerState<_RunShareSheet> {
                 ),
                 value: _showStats,
                 onChanged: (v) => setState(() => _showStats = v),
-              )
-            else
+              ),
+              const StickerHint(),
+              const SizedBox(height: 8),
+            ] else
               const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -146,6 +150,20 @@ class _RunShareSheetState extends ConsumerState<_RunShareSheet> {
                 ),
                 onPressed: _busy ? null : () => _send(instagram: true),
                 child: const InstagramButtonLabel(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _ink,
+                  side: BorderSide(color: _ink.withValues(alpha: .3)),
+                  minimumSize: const Size(64, 48),
+                ),
+                onPressed: _busy ? null : _saveToGallery,
+                icon: const Icon(Icons.download_rounded, size: 19),
+                label: const Text('Сохранить в галерею'),
               ),
             ),
             const SizedBox(height: 8),
@@ -195,22 +213,48 @@ class _RunShareSheetState extends ConsumerState<_RunShareSheet> {
     );
   }
 
+  Future<File?> _renderToFile() async {
+    final boundary = _boundaryKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
+    if (boundary == null) return null;
+    final image = await boundary.toImage(pixelRatio: 4);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (bytes == null) return null;
+    final dir = await getTemporaryDirectory();
+    final shareDir = Directory('${dir.path}/insta_share');
+    await shareDir.create(recursive: true);
+    final file = File(
+      '${shareDir.path}/kvartal_run_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
+    await file.writeAsBytes(bytes.buffer.asUint8List());
+    return file;
+  }
+
+  Future<void> _saveToGallery() async {
+    setState(() => _busy = true);
+    try {
+      final file = await _renderToFile();
+      if (file == null) return;
+      final ok = await saveShareImageToGallery(file.path);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ok
+            ? (_stickerMode
+                ? 'Росчерк в галерее — клади его на фото и видео в любом редакторе'
+                : 'Карточка сохранена в галерею')
+            : 'Не получилось сохранить — проверь доступ к памяти'),
+      ));
+      if (ok) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _send({required bool instagram}) async {
     setState(() => _busy = true);
     try {
-      final boundary = _boundaryKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) return;
-      final image = await boundary.toImage(pixelRatio: 4);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (bytes == null) return;
-      final dir = await getTemporaryDirectory();
-      final shareDir = Directory('${dir.path}/insta_share');
-      await shareDir.create(recursive: true);
-      final file = File(
-        '${shareDir.path}/kvartal_run_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await file.writeAsBytes(bytes.buffer.asUint8List());
+      final file = await _renderToFile();
+      if (file == null) return;
 
       if (instagram) {
         var ok = false;
