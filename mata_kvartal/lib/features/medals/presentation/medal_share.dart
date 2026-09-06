@@ -56,7 +56,6 @@ Future<bool> saveShareImageToGallery(String path) async {
 // Палитра карточек — константы сторис-мира (карточка живёт в чужой ленте,
 // от темы приложения не зависит).
 const _bg = Color(0xFF12161B);
-const _panel = Color(0xFF1B2129);
 const _ink = Color(0xFFEDEFE8);
 const _muted = Color(0xFF97A0A6);
 const _lime = Color(0xFFDFF45F);
@@ -476,8 +475,8 @@ class MedalStoryCard extends StatelessWidget {
                 ),
               ),
               const Spacer(flex: 4),
-              const _BrandRow(),
-              const SizedBox(height: 12),
+              const BrandMark(),
+              const SizedBox(height: 14),
             ],
           ),
         ],
@@ -636,67 +635,54 @@ class HallStoryCard extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          const _BrandRow(),
-          const SizedBox(height: 12),
+          const BrandMark(),
+          const SizedBox(height: 14),
         ],
       ),
     );
   }
 }
 
-/// Несмываемая плашка бренда — на каждом экспорте (вирусный контур).
-class _BrandRow extends StatelessWidget {
-  const _BrandRow();
+/// Короткая подпись бренда на экспортах — вариант А, слово владельца
+/// 06.09.2026 (дизайн-разбор «Выше Стравы»): знак + «КВАРТАЛ» с разрядкой,
+/// без плашки, слогана и ссылки — как подпись Стравы на их стикерах.
+class BrandMark extends StatelessWidget {
+  /// На прозрачном стикере фон бегуна любой — тень держит читаемость.
+  final bool shadow;
+  const BrandMark({super.key, this.shadow = false});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: _panel.withValues(alpha: .85),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _lime.withValues(alpha: .4)),
-      ),
-      child: Row(
-        children: [
-          CustomPaint(
-            size: const Size(20, 20),
-            painter: KvartalMarkPainter(
-              outline: _lime,
-              fill: Colors.transparent,
-              close: 1,
-            ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CustomPaint(
+          size: const Size(13, 13),
+          painter: KvartalMarkPainter(
+            outline: _lime,
+            fill: Colors.transparent,
+            close: 1,
           ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: const Text(
-                    'КВАРТАЛ — беги и захватывай',
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: .3,
-                      color: _ink,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          'КВАРТАЛ',
+          style: TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2.6,
+            color: _ink.withValues(alpha: .85),
+            shadows: shadow
+                ? [
+                    Shadow(
+                      blurRadius: 8,
+                      color: Colors.black.withValues(alpha: .6),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 1),
-                const Text(
-                  'mata-club.ru/app',
-                  style: TextStyle(fontSize: 8.5, color: _muted),
-                ),
-              ],
-            ),
+                  ]
+                : null,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

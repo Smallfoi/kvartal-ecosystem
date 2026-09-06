@@ -34,7 +34,10 @@ void main() {
     final size = tester.getSize(find.byType(MedalStoryCard));
     expect(size.width / size.height, closeTo(9 / 16, .001));
     expect(find.text('Первый бег'), findsOneWidget);
-    expect(find.text('mata-club.ru/app'), findsOneWidget);
+    // Подпись бренда — вариант А (без слогана и ссылки, решение 06.09.2026).
+    expect(find.byType(BrandMark), findsOneWidget);
+    expect(find.text('КВАРТАЛ'), findsOneWidget);
+    expect(find.textContaining('mata-club.ru'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
